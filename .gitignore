@@ -9,6 +9,7 @@
 # Node.js dependencies and build output
 **/node_modules/
 **/dist/
+**/.angular/
 
 # IDE and local tooling
 .vs/

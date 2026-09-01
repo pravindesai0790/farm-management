@@ -1,0 +1,70 @@
+<section class="dashboard-page" aria-labelledby="dashboard-title">
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">Overview</p>
+      <h1 id="dashboard-title">Good morning, farmer.</h1>
+      <p class="page-description">Your farm management workspace starts here.</p>
+    </div>
+    <div class="season-chip">
+      <mat-icon aria-hidden="true">wb_sunny</mat-icon>
+      <span>Phase 0 foundation</span>
+    </div>
+  </div>
+
+  <div class="dashboard-grid">
+    <mat-card class="status-card">
+      <mat-card-content>
+        <div class="card-header">
+          <div>
+            <p class="card-eyebrow">System status</p>
+            <h2>API connectivity</h2>
+          </div>
+          <div class="status-icon" [class.status-icon-error]="apiStatus() === 'unavailable'" aria-hidden="true">
+            <mat-icon>{{ apiStatus() === 'connected' ? 'cloud_done' : 'cloud' }}</mat-icon>
+          </div>
+        </div>
+
+        @if (apiStatus() === 'checking') {
+          <div class="status-value status-value-checking">
+            <mat-spinner diameter="22" />
+            <span>Checking connection…</span>
+          </div>
+        } @else if (apiStatus() === 'connected') {
+          <div class="status-value status-value-connected">
+            <span class="status-dot"></span>
+            <span>API Status: Connected</span>
+          </div>
+          <p class="status-detail">{{ pingResponse()?.message }}</p>
+        } @else {
+          <div class="status-value status-value-error">
+            <span class="status-dot"></span>
+            <span>API Status: Unavailable</span>
+          </div>
+          <p class="status-detail">{{ lastError() }}</p>
+        }
+
+        <button mat-stroked-button type="button" (click)="refreshApiStatus()">
+          <mat-icon>refresh</mat-icon>
+          Check again
+        </button>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="welcome-card">
+      <mat-card-content>
+        <div class="welcome-illustration" aria-hidden="true">
+          <mat-icon>agriculture</mat-icon>
+        </div>
+        <div>
+          <p class="card-eyebrow">A clear view of the work ahead</p>
+          <h2>Build your farm story, one season at a time.</h2>
+          <p class="status-detail">Farm, crop, and activity workspaces will be introduced in the next phases.</p>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  @if (pingResponse(); as ping) {
+    <p class="last-checked">Last response received {{ ping.timestamp | date: 'medium' }}</p>
+  }
+</section>

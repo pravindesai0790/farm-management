@@ -1,0 +1,160 @@
+.layout-container {
+  height: 100vh;
+  background: var(--app-background);
+}
+
+.navigation {
+  width: 260px;
+  border-right: 1px solid var(--app-border);
+  background: #fbfcfa;
+  padding: 24px 14px 18px;
+}
+
+.navigation-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px 28px;
+  color: var(--app-ink);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.brand-mark {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--app-primary);
+  color: #fff;
+}
+
+.navigation-label {
+  margin: 0 12px 10px;
+  color: var(--app-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.navigation a {
+  margin: 4px 0;
+  border-radius: 10px;
+  color: var(--app-muted);
+}
+
+.navigation a mat-icon {
+  color: #8b9b8e;
+}
+
+.navigation a.navigation-item-active {
+  background: #e5f0e7;
+  color: var(--app-primary);
+  font-weight: 600;
+}
+
+.navigation a.navigation-item-active mat-icon {
+  color: var(--app-primary);
+}
+
+.navigation-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: auto 12px 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--app-border);
+  color: var(--app-muted);
+  font-size: 0.75rem;
+}
+
+.navigation-footer mat-icon {
+  font-size: 18px;
+}
+
+.content-container {
+  min-width: 0;
+}
+
+.topbar {
+  height: 82px;
+  padding: 0 32px;
+  border-bottom: 1px solid var(--app-border);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.topbar-title {
+  display: flex;
+  flex-direction: column;
+  margin-left: 12px;
+}
+
+.eyebrow {
+  color: var(--app-primary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.topbar-heading {
+  margin-top: 2px;
+  color: var(--app-ink);
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.topbar-spacer {
+  flex: 1;
+}
+
+.profile-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--app-ink);
+}
+
+.profile-avatar {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 50%;
+  background: #d9eadc;
+  color: var(--app-primary);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.profile-button mat-icon {
+  color: var(--app-muted);
+}
+
+.page-shell {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 36px 40px 56px;
+}
+
+@media (max-width: 720px) {
+  .navigation {
+    width: 230px;
+  }
+
+  .topbar {
+    height: 72px;
+    padding: 0 16px;
+  }
+
+  .topbar-heading,
+  .profile-label {
+    display: none;
+  }
+
+  .page-shell {
+    padding: 24px 18px 40px;
+  }
+}

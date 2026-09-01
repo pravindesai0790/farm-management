@@ -1,0 +1,59 @@
+@use '@angular/material' as mat;
+
+// Angular Material 20 uses the Material 3 theme API.
+$theme: mat.define-theme((
+  color: (
+    theme-type: light,
+    primary: mat.$green-palette,
+    tertiary: mat.$yellow-palette
+  ),
+  typography: (
+    plain-family: 'Segoe UI, sans-serif',
+    brand-family: 'Georgia, serif',
+    bold-weight: 700,
+    medium-weight: 500,
+    regular-weight: 400
+  ),
+  density: (
+    scale: 0
+  )
+));
+
+@include mat.all-component-themes($theme);
+
+:root {
+  color-scheme: light;
+  --app-background: #f6f8f5;
+  --app-surface: #ffffff;
+  --app-ink: #1c2a22;
+  --app-muted: #65746a;
+  --app-border: #dce5de;
+  --app-primary: #2f6f4e;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--app-background);
+  color: var(--app-ink);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+h1,
+h2,
+h3 {
+  font-family: Georgia, serif;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}

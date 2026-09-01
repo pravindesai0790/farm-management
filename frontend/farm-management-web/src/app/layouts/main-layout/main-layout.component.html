@@ -1,0 +1,51 @@
+<mat-sidenav-container class="layout-container">
+  <mat-sidenav #sidenav class="navigation" mode="side" opened>
+    <div class="navigation-brand">
+      <div class="brand-mark" aria-hidden="true">
+        <mat-icon>eco</mat-icon>
+      </div>
+      <span>Farm Management</span>
+    </div>
+
+    <p class="navigation-label">Workspace</p>
+    <mat-nav-list>
+      @for (item of navigationItems; track item.route) {
+        <a
+          mat-list-item
+          [routerLink]="item.route"
+          routerLinkActive="navigation-item-active"
+          [routerLinkActiveOptions]="{ exact: true }">
+          <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+          <span matListItemTitle>{{ item.label }}</span>
+        </a>
+      }
+    </mat-nav-list>
+
+    <div class="navigation-footer">
+      <mat-icon aria-hidden="true">info_outline</mat-icon>
+      <span>Phase 0 foundation</span>
+    </div>
+  </mat-sidenav>
+
+  <mat-sidenav-content class="content-container">
+    <mat-toolbar class="topbar">
+      <button mat-icon-button type="button" aria-label="Toggle navigation" (click)="sidenav.toggle()">
+        <mat-icon>menu</mat-icon>
+      </button>
+      <div class="topbar-title">
+        <span class="eyebrow">Farm Management Platform</span>
+        <span class="topbar-heading">Plan better. Grow with confidence.</span>
+      </div>
+      <span class="topbar-spacer"></span>
+      <button mat-button type="button" class="profile-button">
+        <span class="profile-avatar">FM</span>
+        <span class="profile-label">Profile</span>
+        <mat-icon>expand_more</mat-icon>
+      </button>
+    </mat-toolbar>
+
+    <main class="page-shell">
+      <router-outlet />
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>

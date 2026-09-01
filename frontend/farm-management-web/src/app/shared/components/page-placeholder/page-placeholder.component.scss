@@ -1,0 +1,66 @@
+.placeholder-page {
+  display: grid;
+  gap: 28px;
+}
+
+.page-heading {
+  max-width: 680px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--app-primary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  color: var(--app-ink);
+  font-size: clamp(2.1rem, 4vw, 3.4rem);
+  line-height: 1.05;
+}
+
+.page-description {
+  margin: 14px 0 0;
+  color: var(--app-muted);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.placeholder-card {
+  max-width: 720px;
+  border: 1px solid var(--app-border);
+  border-radius: 18px;
+  box-shadow: none;
+}
+
+.placeholder-card mat-card-content {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 28px;
+}
+
+.placeholder-icon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 14px;
+  background: #e5f0e7;
+  color: var(--app-primary);
+}
+
+h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.placeholder-card p {
+  margin: 6px 0 0;
+  color: var(--app-muted);
+}
