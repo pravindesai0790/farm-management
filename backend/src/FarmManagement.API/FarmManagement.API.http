@@ -1,6 +1,9 @@
 @FarmManagement.API_HostAddress = http://localhost:5108
 
-GET {{FarmManagement.API_HostAddress}}/weatherforecast/
+GET {{FarmManagement.API_HostAddress}}/health
 Accept: application/json
 
 ###
+
+GET {{FarmManagement.API_HostAddress}}/api/system/ping
+Accept: application/json
