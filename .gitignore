@@ -1,0 +1,17 @@
+# Local environment values and secrets
+.env
+!.env.example
+
+# .NET build output
+**/bin/
+**/obj/
+
+# Node.js dependencies and build output
+**/node_modules/
+**/dist/
+
+# IDE and local tooling
+.vs/
+.idea/
+*.user
+*.suo
