@@ -36,8 +36,18 @@ public sealed class JwtTokenService(IOptions<JwtOptions> options) : IJwtTokenSer
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N"))
         };
 
-        claims.AddRange(ToClaims(AuthorizationConstants.RoleClaimType, roles));
+        var roleClaims = ToClaims(AuthorizationConstants.RoleClaimType, roles).ToArray();
+        claims.AddRange(roleClaims);
         claims.AddRange(ToClaims(AuthorizationConstants.PermissionClaimType, permissions));
+        if (roleClaims.Any(claim => string.Equals(
+                claim.Value,
+                AuthorizationConstants.SuperAdminRoleName,
+                StringComparison.Ordinal)))
+        {
+            claims.Add(new Claim(
+                AuthorizationConstants.OrganizationScopeClaimType,
+                AuthorizationConstants.AllOrganizationsScope));
+        }
 
         var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Secret));
         var credentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);

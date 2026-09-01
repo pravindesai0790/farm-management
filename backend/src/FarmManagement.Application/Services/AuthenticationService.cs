@@ -1,4 +1,5 @@
 using System.Text.Json;
+using FarmManagement.Application.Common;
 using FarmManagement.Application.Common.Exceptions;
 using FarmManagement.Application.Common.Models.Authentication;
 using FarmManagement.Application.DTOs.Authentication;
@@ -16,17 +17,6 @@ public sealed class AuthenticationService(
 {
     private const int MaximumFailedLoginAttempts = 5;
     private static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
-
-    private static readonly HashSet<string> CommonPasswords =
-        new(StringComparer.OrdinalIgnoreCase)
-        {
-            "123456789012",
-            "1234567890!aA",
-            "admin123!Aaa",
-            "letmein123!A",
-            "qwerty123!A",
-            "welcome123!A"
-        };
 
     public async Task<AuthenticationResult> LoginAsync(
         LoginRequest request,
@@ -243,50 +233,11 @@ public sealed class AuthenticationService(
 
     private static void ValidateNewPassword(User user, string password)
     {
-        var errors = new List<string>();
-        if (password.Length < 12)
-        {
-            errors.Add("Password must be at least 12 characters long.");
-        }
-
-        if (!password.Any(char.IsUpper))
-        {
-            errors.Add("Password must contain at least one uppercase letter.");
-        }
-
-        if (!password.Any(char.IsLower))
-        {
-            errors.Add("Password must contain at least one lowercase letter.");
-        }
-
-        if (!password.Any(char.IsDigit))
-        {
-            errors.Add("Password must contain at least one number.");
-        }
-
-        if (!password.Any(character => !char.IsLetterOrDigit(character)))
-        {
-            errors.Add("Password must contain at least one special character.");
-        }
-
-        if (string.Equals(password, user.Email, StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(password, user.FirstName, StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(password, user.LastName, StringComparison.OrdinalIgnoreCase))
-        {
-            errors.Add("Password must not match the email address or name.");
-        }
-
-        if (CommonPasswords.Contains(password))
-        {
-            errors.Add("Password is too common.");
-        }
-
-        if (errors.Count > 0)
-        {
-            throw new ValidationException(
-                "Password does not meet the password policy.",
-                new Dictionary<string, string[]> { ["newPassword"] = [.. errors] });
-        }
+        PasswordPolicy.ValidateNewPassword(
+            password,
+            user.Email,
+            user.FirstName,
+            user.LastName);
     }
 
     private static (IReadOnlyList<string> Roles, IReadOnlyList<string> Permissions)

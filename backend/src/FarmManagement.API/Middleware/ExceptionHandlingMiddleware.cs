@@ -34,6 +34,9 @@ public sealed class ExceptionHandlingMiddleware(
             var statusCode = exception switch
             {
                 ValidationException => StatusCodes.Status400BadRequest,
+                ConflictException => StatusCodes.Status409Conflict,
+                ResourceNotFoundException => StatusCodes.Status404NotFound,
+                ForbiddenException => StatusCodes.Status403Forbidden,
                 UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
                 _ => StatusCodes.Status500InternalServerError
             };

@@ -6,12 +6,18 @@ public sealed class UserRole
     {
     }
 
-    public UserRole(Guid userId, Guid roleId, DateTimeOffset assignedAt, Guid? assignedBy = null)
+    public UserRole(
+        Guid userId,
+        Guid roleId,
+        DateTimeOffset assignedAt,
+        Guid? assignedBy = null,
+        Role? role = null)
     {
         UserId = userId;
         RoleId = roleId;
         AssignedAt = assignedAt;
         AssignedBy = assignedBy;
+        Role = role!;
     }
 
     public Guid UserId { get; private set; }

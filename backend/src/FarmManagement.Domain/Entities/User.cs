@@ -143,4 +143,71 @@ public sealed class User
         PasswordHash = passwordHash;
         UpdatedAt = now;
     }
+
+    public bool UpdateProfile(
+        string firstName,
+        string lastName,
+        DateTimeOffset now)
+    {
+        if (string.IsNullOrWhiteSpace(firstName))
+        {
+            throw new ArgumentException("A first name is required.", nameof(firstName));
+        }
+
+        if (string.IsNullOrWhiteSpace(lastName))
+        {
+            throw new ArgumentException("A last name is required.", nameof(lastName));
+        }
+
+        var normalizedFirstName = firstName.Trim();
+        var normalizedLastName = lastName.Trim();
+        var changed = !string.Equals(FirstName, normalizedFirstName, StringComparison.Ordinal) ||
+            !string.Equals(LastName, normalizedLastName, StringComparison.Ordinal);
+
+        if (changed)
+        {
+            FirstName = normalizedFirstName;
+            LastName = normalizedLastName;
+            UpdatedAt = now;
+        }
+
+        return changed;
+    }
+
+    public bool Activate(DateTimeOffset now)
+    {
+        if (IsActive)
+        {
+            return false;
+        }
+
+        IsActive = true;
+        UpdatedAt = now;
+        return true;
+    }
+
+    public bool Deactivate(DateTimeOffset now)
+    {
+        if (!IsActive)
+        {
+            return false;
+        }
+
+        IsActive = false;
+        UpdatedAt = now;
+        return true;
+    }
+
+    public bool Unlock(DateTimeOffset now)
+    {
+        if (FailedLoginCount == 0 && LockoutEnd is null)
+        {
+            return false;
+        }
+
+        FailedLoginCount = 0;
+        LockoutEnd = null;
+        UpdatedAt = now;
+        return true;
+    }
 }

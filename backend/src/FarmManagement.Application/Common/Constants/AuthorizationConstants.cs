@@ -8,6 +8,12 @@ public static class AuthorizationConstants
 
     public const string RoleClaimType = "roles";
 
+    public const string OrganizationScopeClaimType = "organization_scope";
+
+    public const string AllOrganizationsScope = "all";
+
+    public const string SuperAdminRoleName = "SuperAdmin";
+
     public const string PermissionPolicyPrefix = "Permission:";
 
     public static string PermissionPolicyName(string permission)
