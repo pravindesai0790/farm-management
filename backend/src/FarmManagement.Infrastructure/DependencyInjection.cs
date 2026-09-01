@@ -1,4 +1,5 @@
 using FarmManagement.Infrastructure.Persistence;
+using FarmManagement.Infrastructure.Persistence.Seed;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,6 +23,7 @@ public static class DependencyInjection
         services.AddDbContext<ApplicationDbContext>(options => options
             .UseNpgsql(connectionString, npgsqlOptions =>
                 npgsqlOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
+        services.AddScoped<IdentityDataSeeder>();
 
         return services;
     }

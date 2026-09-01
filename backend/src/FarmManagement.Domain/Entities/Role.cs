@@ -43,4 +43,9 @@ public sealed class Role
     public ICollection<UserRole> UserRoles { get; private set; }
 
     public ICollection<RolePermission> RolePermissions { get; private set; }
+
+    public void MarkAsSystemRole()
+    {
+        IsSystemRole = true;
+    }
 }

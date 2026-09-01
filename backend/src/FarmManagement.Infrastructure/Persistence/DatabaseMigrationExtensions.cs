@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using FarmManagement.Infrastructure.Persistence.Seed;
 
 namespace FarmManagement.Infrastructure.Persistence;
 
@@ -26,5 +27,8 @@ public static class DatabaseMigrationExtensions
         }
 
         logger.LogInformation("Database migrations applied successfully.");
+
+        var seeder = scope.ServiceProvider.GetRequiredService<IdentityDataSeeder>();
+        await seeder.SeedAsync(cancellationToken);
     }
 }
