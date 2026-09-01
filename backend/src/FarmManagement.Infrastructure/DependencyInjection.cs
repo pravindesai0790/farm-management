@@ -30,6 +30,7 @@ public static class DependencyInjection
             .Bind(configuration.GetSection(JwtOptions.SectionName));
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
         services.AddSingleton<IPasswordService, PasswordService>();
+        services.AddScoped<IAuthenticationStore, AuthenticationStore>();
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();
         services.AddScoped<IdentityDataSeeder>();
 

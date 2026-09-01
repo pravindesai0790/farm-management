@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
+using FarmManagement.Application.Common.Exceptions;
 
 namespace FarmManagement.API.Middleware;
 
@@ -30,14 +31,27 @@ public sealed class ExceptionHandlingMiddleware(
             }
 
             context.Response.Clear();
-            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+            var statusCode = exception switch
+            {
+                ValidationException => StatusCodes.Status400BadRequest,
+                UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
+                _ => StatusCodes.Status500InternalServerError
+            };
+
+            context.Response.StatusCode = statusCode;
             context.Response.ContentType = "application/json";
 
             var response = new
             {
                 success = false,
-                message = "An unexpected error occurred",
-                traceId
+                statusCode,
+                message = statusCode == StatusCodes.Status500InternalServerError
+                    ? "An unexpected error occurred"
+                    : exception.Message,
+                traceId,
+                errors = exception is ValidationException validationException
+                    ? validationException.Errors
+                    : null
             };
 
             await context.Response.WriteAsync(JsonSerializer.Serialize(response));

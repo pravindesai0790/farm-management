@@ -89,4 +89,58 @@ public sealed class User
     public ICollection<RefreshToken> RefreshTokens { get; private set; }
 
     public ICollection<AuditLog> AuditLogs { get; private set; }
+
+    public bool IsLockedOut(DateTimeOffset now)
+    {
+        return LockoutEnd is not null && LockoutEnd > now;
+    }
+
+    public void RecordFailedLogin(
+        DateTimeOffset now,
+        int maximumAttempts,
+        TimeSpan lockoutDuration)
+    {
+        if (maximumAttempts <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(maximumAttempts));
+        }
+
+        if (lockoutDuration <= TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(nameof(lockoutDuration));
+        }
+
+        if (LockoutEnd is not null && LockoutEnd <= now)
+        {
+            FailedLoginCount = 0;
+            LockoutEnd = null;
+        }
+
+        FailedLoginCount++;
+        if (FailedLoginCount >= maximumAttempts)
+        {
+            LockoutEnd = now.Add(lockoutDuration);
+        }
+
+        UpdatedAt = now;
+    }
+
+    public void RecordSuccessfulLogin(DateTimeOffset now)
+    {
+        FailedLoginCount = 0;
+        LockoutEnd = null;
+        LastLoginAt = now;
+        UpdatedAt = now;
+    }
+
+    public void ChangePassword(string passwordHash, DateTimeOffset now)
+    {
+        if (string.IsNullOrWhiteSpace(passwordHash))
+        {
+            throw new ArgumentException("A password hash is required.", nameof(passwordHash));
+        }
+
+        PasswordHash = passwordHash;
+        UpdatedAt = now;
+    }
 }

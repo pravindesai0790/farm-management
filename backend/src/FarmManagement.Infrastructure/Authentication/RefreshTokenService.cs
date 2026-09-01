@@ -219,7 +219,8 @@ public sealed class RefreshTokenService(
             refreshToken.ClientType == clientType &&
             refreshToken.IsActive(now) &&
             refreshToken.User.IsActive &&
-            refreshToken.User.Organization.IsActive;
+            refreshToken.User.Organization.IsActive &&
+            !refreshToken.User.IsLockedOut(now);
     }
 
     private int GetRefreshTokenLifetimeDays()
