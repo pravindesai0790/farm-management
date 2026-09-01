@@ -11,6 +11,7 @@ using FarmManagement.Infrastructure.Authentication;
 using FarmManagement.Infrastructure.Persistence;
 using Serilog;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
@@ -30,6 +31,31 @@ if (string.IsNullOrWhiteSpace(connectionString))
 }
 
 builder.Services.AddControllers();
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var errors = context.ModelState
+            .Where(entry => entry.Value is not null)
+            .ToDictionary(
+                entry => entry.Key,
+                entry => entry.Value!.Errors
+                    .Select(error => error.Exception is not null || string.IsNullOrWhiteSpace(error.ErrorMessage)
+                        ? "The value is invalid."
+                        : error.ErrorMessage)
+                    .ToArray());
+        var traceId = TraceIdSupport.GetOrCreate(context.HttpContext);
+
+        return new ObjectResult(new ApiErrorResponse(
+            StatusCodes.Status400BadRequest,
+            "Validation failed",
+            traceId,
+            errors))
+        {
+            StatusCode = StatusCodes.Status400BadRequest
+        };
+    };
+});
 builder.Services.AddOpenApi();
 builder.Services.AddOptions<RefreshTokenCookieOptions>()
     .Bind(builder.Configuration.GetSection(RefreshTokenCookieOptions.SectionName));
@@ -82,8 +108,34 @@ var app = builder.Build();
 
 app.Logger.LogInformation("Farm Management API is starting.");
 
-app.UseMiddleware<ExceptionHandlingMiddleware>();
-app.UseSerilogRequestLogging();
+app.UseMiddleware<GlobalExceptionMiddleware>();
+app.UseHttpsRedirection();
+app.UseMiddleware<RequestLoggingMiddleware>();
+app.UseStatusCodePages(async statusCodeContext =>
+{
+    var httpContext = statusCodeContext.HttpContext;
+    var statusCode = httpContext.Response.StatusCode;
+
+    if (!httpContext.Request.Path.StartsWithSegments("/api") || statusCode < 400)
+    {
+        return;
+    }
+
+    var traceId = TraceIdSupport.GetOrCreate(httpContext);
+    httpContext.Response.ContentType = "application/json";
+    await httpContext.Response.WriteAsJsonAsync(
+        new ApiErrorResponse(
+            statusCode,
+            statusCode switch
+            {
+                StatusCodes.Status401Unauthorized => "Unauthorized",
+                StatusCodes.Status403Forbidden => "Forbidden",
+                StatusCodes.Status404NotFound => "Resource not found",
+                _ => "The request could not be completed."
+            },
+            traceId),
+        httpContext.RequestAborted);
+});
 
 if (app.Environment.IsDevelopment())
 {
