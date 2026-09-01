@@ -60,4 +60,42 @@ public sealed class RefreshToken
     public string? RevokedByIp { get; private set; }
 
     public User User { get; private set; } = null!;
+
+    public bool IsActive(DateTimeOffset now)
+    {
+        return RevokedAt is null && ExpiresAt > now;
+    }
+
+    public bool Revoke(DateTimeOffset revokedAt, string? revokedByIp = null)
+    {
+        if (RevokedAt is not null)
+        {
+            return false;
+        }
+
+        RevokedAt = revokedAt;
+        RevokedByIp = revokedByIp?.Trim();
+        return true;
+    }
+
+    public bool Rotate(
+        Guid replacementTokenId,
+        DateTimeOffset revokedAt,
+        string? revokedByIp = null)
+    {
+        if (replacementTokenId == Guid.Empty)
+        {
+            throw new ArgumentException(
+                "A replacement refresh token is required.",
+                nameof(replacementTokenId));
+        }
+
+        if (!Revoke(revokedAt, revokedByIp))
+        {
+            return false;
+        }
+
+        ReplacedByTokenId = replacementTokenId;
+        return true;
+    }
 }

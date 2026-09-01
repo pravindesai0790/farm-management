@@ -1,8 +1,11 @@
+using FarmManagement.Application.Interfaces.Authentication;
+using FarmManagement.Infrastructure.Authentication;
 using FarmManagement.Infrastructure.Persistence;
 using FarmManagement.Infrastructure.Persistence.Seed;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace FarmManagement.Infrastructure;
 
@@ -23,6 +26,11 @@ public static class DependencyInjection
         services.AddDbContext<ApplicationDbContext>(options => options
             .UseNpgsql(connectionString, npgsqlOptions =>
                 npgsqlOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
+        services.AddOptions<JwtOptions>()
+            .Bind(configuration.GetSection(JwtOptions.SectionName));
+        services.AddSingleton<IJwtTokenService, JwtTokenService>();
+        services.AddSingleton<IPasswordService, PasswordService>();
+        services.AddScoped<IRefreshTokenService, RefreshTokenService>();
         services.AddScoped<IdentityDataSeeder>();
 
         return services;
