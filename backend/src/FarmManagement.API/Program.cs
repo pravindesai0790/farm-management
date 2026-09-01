@@ -4,6 +4,7 @@ using FarmManagement.API.Extensions;
 using FarmManagement.Application.Interfaces;
 using FarmManagement.Application.Interfaces.Authentication;
 using FarmManagement.Application.Interfaces.Users;
+using FarmManagement.Application.Interfaces.Roles;
 using FarmManagement.Application.Services;
 using FarmManagement.Infrastructure;
 using FarmManagement.Infrastructure.Authentication;
@@ -75,6 +76,7 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddSingleton<ISystemService, SystemService>();
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<IUserAdministrationService, UserAdministrationService>();
+builder.Services.AddScoped<IRoleAdministrationService, RoleAdministrationService>();
 
 var app = builder.Build();
 

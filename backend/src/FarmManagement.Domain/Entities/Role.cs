@@ -48,4 +48,55 @@ public sealed class Role
     {
         IsSystemRole = true;
     }
+
+    public bool UpdateDetails(
+        string name,
+        string? description,
+        DateTimeOffset now)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            throw new ArgumentException("A role name is required.", nameof(name));
+        }
+
+        var normalizedName = name.Trim();
+        var normalizedDescription = string.IsNullOrWhiteSpace(description)
+            ? null
+            : description.Trim();
+        var changed = !string.Equals(Name, normalizedName, StringComparison.Ordinal) ||
+            !string.Equals(Description, normalizedDescription, StringComparison.Ordinal);
+
+        if (changed)
+        {
+            Name = normalizedName;
+            Description = normalizedDescription;
+            UpdatedAt = now;
+        }
+
+        return changed;
+    }
+
+    public bool Activate(DateTimeOffset now)
+    {
+        if (IsActive)
+        {
+            return false;
+        }
+
+        IsActive = true;
+        UpdatedAt = now;
+        return true;
+    }
+
+    public bool Deactivate(DateTimeOffset now)
+    {
+        if (!IsActive)
+        {
+            return false;
+        }
+
+        IsActive = false;
+        UpdatedAt = now;
+        return true;
+    }
 }

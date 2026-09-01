@@ -6,10 +6,11 @@ public sealed class RolePermission
     {
     }
 
-    public RolePermission(Guid roleId, Guid permissionId)
+    public RolePermission(Guid roleId, Guid permissionId, Permission? permission = null)
     {
         RoleId = roleId;
         PermissionId = permissionId;
+        Permission = permission!;
     }
 
     public Guid RoleId { get; private set; }

@@ -1,5 +1,6 @@
 using FarmManagement.Application.Interfaces.Authentication;
 using FarmManagement.Application.Interfaces.Users;
+using FarmManagement.Application.Interfaces.Roles;
 using FarmManagement.Infrastructure.Authentication;
 using FarmManagement.Infrastructure.Persistence;
 using FarmManagement.Infrastructure.Persistence.Seed;
@@ -33,6 +34,7 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordService, PasswordService>();
         services.AddScoped<IAuthenticationStore, AuthenticationStore>();
         services.AddScoped<IUserAdministrationStore, UserAdministrationStore>();
+        services.AddScoped<IRoleAdministrationStore, RoleAdministrationStore>();
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();
         services.AddScoped<IdentityDataSeeder>();
 
