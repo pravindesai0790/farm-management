@@ -1,5 +1,6 @@
 using FarmManagement.API.Middleware;
 using FarmManagement.API.Configuration;
+using FarmManagement.API.Extensions;
 using FarmManagement.Application.Interfaces;
 using FarmManagement.Application.Interfaces.Authentication;
 using FarmManagement.Application.Services;
@@ -49,7 +50,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ClockSkew = TimeSpan.FromSeconds(30)
         };
     });
-builder.Services.AddAuthorization();
+builder.Services.AddPermissionAuthorization();
 builder.Services.AddCors(options =>
 {
     var allowedOrigins = builder.Configuration

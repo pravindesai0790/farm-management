@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using FarmManagement.Application.Common.Constants;
 using FarmManagement.Application.Common.Models.Authentication;
 using FarmManagement.Application.Interfaces.Authentication;
 using FarmManagement.Domain.Entities;
@@ -29,12 +30,14 @@ public sealed class JwtTokenService(IOptions<JwtOptions> options) : IJwtTokenSer
         {
             new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new(JwtRegisteredClaimNames.Email, user.Email),
-            new("organization_id", user.OrganizationId.ToString()),
+            new(
+                AuthorizationConstants.OrganizationIdClaimType,
+                user.OrganizationId.ToString()),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N"))
         };
 
-        claims.AddRange(ToClaims("roles", roles));
-        claims.AddRange(ToClaims("permissions", permissions));
+        claims.AddRange(ToClaims(AuthorizationConstants.RoleClaimType, roles));
+        claims.AddRange(ToClaims(AuthorizationConstants.PermissionClaimType, permissions));
 
         var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Secret));
         var credentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
