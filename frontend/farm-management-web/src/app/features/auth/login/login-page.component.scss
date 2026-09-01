@@ -1,0 +1,116 @@
+:host {
+  display: block;
+  min-height: 100vh;
+}
+
+.login-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 470px);
+  align-items: center;
+  gap: clamp(48px, 9vw, 140px);
+  width: min(1120px, 100%);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 48px 32px;
+}
+
+.login-intro {
+  max-width: 560px;
+}
+
+.brand-mark {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  margin-bottom: 36px;
+  place-items: center;
+  border-radius: 17px;
+  background: var(--app-primary);
+  color: #fff;
+}
+
+.brand-mark mat-icon {
+  font-size: 28px;
+}
+
+.eyebrow {
+  margin: 0 0 12px;
+  color: var(--app-primary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+h1 {
+  max-width: 540px;
+  margin: 0;
+  color: var(--app-ink);
+  font-size: clamp(2.8rem, 6vw, 5.6rem);
+  line-height: 0.98;
+}
+
+.intro-copy {
+  max-width: 440px;
+  margin: 24px 0 0;
+  color: var(--app-muted);
+  font-size: 1.08rem;
+  line-height: 1.6;
+}
+
+.login-card {
+  border: 1px solid var(--app-border);
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(38, 72, 48, 0.08);
+}
+
+.login-card mat-card-header {
+  padding: 28px 28px 0;
+}
+
+.login-card mat-card-title {
+  font-size: 1.7rem;
+}
+
+.login-card mat-card-content {
+  padding: 24px 28px 30px;
+}
+
+form {
+  display: grid;
+  gap: 12px;
+}
+
+button[type='submit'] {
+  min-height: 48px;
+  margin-top: 6px;
+}
+
+button mat-spinner {
+  margin: 0 auto;
+}
+
+.form-error {
+  margin: 0 0 4px;
+  color: #a23b2f;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 760px) {
+  .login-page {
+    grid-template-columns: 1fr;
+    align-content: center;
+    gap: 32px;
+    padding: 32px 20px;
+  }
+
+  .brand-mark {
+    margin-bottom: 24px;
+  }
+
+  h1 {
+    font-size: clamp(2.7rem, 12vw, 4.4rem);
+  }
+}
+

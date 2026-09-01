@@ -1,10 +1,13 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+
+import { AuthService } from '../../core/auth/auth.service';
 
 interface NavigationItem {
   readonly label: string;
@@ -30,6 +33,12 @@ interface NavigationItem {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class MainLayoutComponent {
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
+
+  readonly currentUser = this.authService.user;
+
   readonly navigationItems: readonly NavigationItem[] = [
     { label: 'Dashboard', icon: 'space_dashboard', route: '/dashboard' },
     { label: 'Farms', icon: 'landscape', route: '/farms' },
@@ -37,4 +46,20 @@ export class MainLayoutComponent {
     { label: 'Activities', icon: 'event_note', route: '/activities' },
     { label: 'Settings', icon: 'settings', route: '/settings' }
   ];
+
+  logout(): void {
+    this.authService.logout()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => void this.router.navigateByUrl('/login'),
+        error: () => void this.router.navigateByUrl('/login')
+      });
+  }
+
+  get userInitials(): string {
+    const user = this.currentUser();
+    return user === null
+      ? 'FM'
+      : `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
+  }
 }

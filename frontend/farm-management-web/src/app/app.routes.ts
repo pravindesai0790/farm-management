@@ -1,11 +1,24 @@
 import { Routes } from '@angular/router';
 
 import { MainLayoutComponent } from './layouts/main-layout/main-layout.component';
+import { authGuard } from './core/guards/auth.guard';
+import { ForbiddenPageComponent } from './pages/forbidden/forbidden-page.component';
 
 export const routes: Routes = [
   {
+    path: 'login',
+    title: 'Sign in',
+    loadComponent: () => import('./features/auth/login/login-page.component').then((module) => module.LoginPageComponent)
+  },
+  {
+    path: 'forbidden',
+    title: 'Forbidden',
+    component: ForbiddenPageComponent
+  },
+  {
     path: '',
     component: MainLayoutComponent,
+    canActivate: [authGuard],
     children: [
       {
         path: '',
