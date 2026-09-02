@@ -31,6 +31,10 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
 
     public DbSet<FarmArea> FarmAreas => Set<FarmArea>();
 
+    public DbSet<Crop> Crops => Set<Crop>();
+
+    public DbSet<CropVariety> CropVarieties => Set<CropVariety>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);

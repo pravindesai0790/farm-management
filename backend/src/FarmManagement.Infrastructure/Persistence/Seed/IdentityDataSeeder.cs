@@ -49,7 +49,17 @@ public sealed class IdentityDataSeeder(
         new("FarmArea.Create", "Create farm areas.", "Farm Areas"),
         new("FarmArea.Update", "Update farm areas.", "Farm Areas"),
         new("FarmArea.Activate", "Activate farm areas.", "Farm Areas"),
-        new("FarmArea.Deactivate", "Deactivate farm areas.", "Farm Areas")
+        new("FarmArea.Deactivate", "Deactivate farm areas.", "Farm Areas"),
+        new("Crop.View", "View crops.", "Crops"),
+        new("Crop.Create", "Create crops.", "Crops"),
+        new("Crop.Update", "Update crops.", "Crops"),
+        new("Crop.Activate", "Activate crops.", "Crops"),
+        new("Crop.Deactivate", "Deactivate crops.", "Crops"),
+        new("CropVariety.View", "View crop varieties.", "Crop Varieties"),
+        new("CropVariety.Create", "Create crop varieties.", "Crop Varieties"),
+        new("CropVariety.Update", "Update crop varieties.", "Crop Varieties"),
+        new("CropVariety.Activate", "Activate crop varieties.", "Crop Varieties"),
+        new("CropVariety.Deactivate", "Deactivate crop varieties.", "Crop Varieties")
     ];
 
     private static readonly IReadOnlySet<string> OrganizationAdminPermissions =
@@ -73,7 +83,17 @@ public sealed class IdentityDataSeeder(
             "FarmArea.Create",
             "FarmArea.Update",
             "FarmArea.Activate",
-            "FarmArea.Deactivate"
+            "FarmArea.Deactivate",
+            "Crop.View",
+            "Crop.Create",
+            "Crop.Update",
+            "Crop.Activate",
+            "Crop.Deactivate",
+            "CropVariety.View",
+            "CropVariety.Create",
+            "CropVariety.Update",
+            "CropVariety.Activate",
+            "CropVariety.Deactivate"
         };
 
     private static readonly IReadOnlyList<SeedFarmOwnershipType> SeedFarmOwnershipTypes =
@@ -105,6 +125,23 @@ public sealed class IdentityDataSeeder(
         new("PLANT", "Plant", "plant", UnitCategory.Count, "NUMBER", 1m, 30)
     ];
 
+    private static readonly IReadOnlyList<SeedCrop> SeedCrops =
+    [
+        new("GRAPES", "Grapes", "FRUIT", "PERENNIAL"),
+        new("TOMATO", "Tomato", "VEGETABLE", "ANNUAL"),
+        new("CHILI", "Chili", "VEGETABLE", "SEASONAL"),
+        new("MANGO", "Mango", "FRUIT", "PERENNIAL"),
+        new("BANANA", "Banana", "FRUIT", "PERENNIAL")
+    ];
+
+    private static readonly IReadOnlyList<SeedCropVariety> SeedCropVarieties =
+    [
+        new("GRAPES", "THOMPSON_SEEDLESS", "Thompson Seedless"),
+        new("GRAPES", "SHARAD_SEEDLESS", "Sharad Seedless"),
+        new("GRAPES", "SONAKA", "Sonaka"),
+        new("GRAPES", "MANIK_CHAMAN", "Manik Chaman")
+    ];
+
     public async Task SeedAsync(CancellationToken cancellationToken = default)
     {
         var initialAdmin = ReadInitialAdminConfiguration();
@@ -118,6 +155,8 @@ public sealed class IdentityDataSeeder(
         await SeedRolePermissionsAsync(roles, permissions, cancellationToken);
         await SeedUnitsAsync(cancellationToken);
         await SeedFarmOwnershipTypesAsync(cancellationToken);
+        await SeedCropsAsync(cancellationToken);
+        await SeedCropVarietiesAsync(cancellationToken);
         await SeedInitialSuperAdminAsync(organization, roles["SuperAdmin"], initialAdmin, cancellationToken);
 
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -164,6 +203,53 @@ public sealed class IdentityDataSeeder(
             if (!exists)
             {
                 dbContext.FarmOwnershipTypes.Add(new FarmOwnershipType(seedType.Code, seedType.Name));
+            }
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task SeedCropsAsync(CancellationToken cancellationToken)
+    {
+        foreach (var seedCrop in SeedCrops)
+        {
+            var exists = await dbContext.Crops.AnyAsync(
+                crop => crop.IsSystem && crop.OrganizationId == null && crop.Code == seedCrop.Code,
+                cancellationToken);
+            if (!exists)
+            {
+                dbContext.Crops.Add(new Crop(
+                    organizationId: null,
+                    code: seedCrop.Code,
+                    name: seedCrop.Name,
+                    cropType: seedCrop.CropType,
+                    cropDurationType: seedCrop.DurationType,
+                    isSystem: true));
+            }
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task SeedCropVarietiesAsync(CancellationToken cancellationToken)
+    {
+        foreach (var seedVariety in SeedCropVarieties)
+        {
+            var crop = await dbContext.Crops.SingleAsync(
+                item => item.IsSystem && item.OrganizationId == null && item.Code == seedVariety.CropCode,
+                cancellationToken);
+            var exists = await dbContext.CropVarieties.AnyAsync(
+                variety => variety.IsSystem && variety.OrganizationId == null &&
+                           variety.CropId == crop.Id && variety.Code == seedVariety.Code,
+                cancellationToken);
+            if (!exists)
+            {
+                dbContext.CropVarieties.Add(new CropVariety(
+                    organizationId: null,
+                    cropId: crop.Id,
+                    code: seedVariety.Code,
+                    name: seedVariety.Name,
+                    isSystem: true));
             }
         }
 
@@ -389,6 +475,10 @@ public sealed class IdentityDataSeeder(
         int DisplayOrder);
 
     private sealed record SeedFarmOwnershipType(string Code, string Name);
+
+    private sealed record SeedCrop(string Code, string Name, string CropType, string DurationType);
+
+    private sealed record SeedCropVariety(string CropCode, string Code, string Name);
 
     private sealed record InitialAdminConfiguration(string Email, string Password);
 }
