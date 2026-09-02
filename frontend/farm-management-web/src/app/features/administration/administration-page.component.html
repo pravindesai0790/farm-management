@@ -1,0 +1,34 @@
+<section class="administration-page" aria-labelledby="administration-title">
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">Administration</p>
+      <h1 id="administration-title">Keep your workspace in good order.</h1>
+      <p class="page-description">Manage people, roles, and the permissions that shape access.</p>
+    </div>
+    <mat-icon class="heading-icon" aria-hidden="true">admin_panel_settings</mat-icon>
+  </div>
+
+  <nav class="admin-tabs" aria-label="Administration sections">
+    @if (permissionService.has('Users.View')) {
+      <a mat-button routerLink="users" routerLinkActive="tab-active">
+        <mat-icon>group</mat-icon>
+        Users
+      </a>
+    }
+    @if (permissionService.has('Roles.View')) {
+      <a mat-button routerLink="roles" routerLinkActive="tab-active">
+        <mat-icon>shield</mat-icon>
+        Roles
+      </a>
+    }
+    @if (permissionService.has('Permissions.View')) {
+      <a mat-button routerLink="permissions" routerLinkActive="tab-active">
+        <mat-icon>key</mat-icon>
+        Permissions
+      </a>
+    }
+  </nav>
+
+  <router-outlet />
+</section>
+

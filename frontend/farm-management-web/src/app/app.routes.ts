@@ -3,6 +3,8 @@ import { Routes } from '@angular/router';
 import { MainLayoutComponent } from './layouts/main-layout/main-layout.component';
 import { authGuard } from './core/guards/auth.guard';
 import { ForbiddenPageComponent } from './pages/forbidden/forbidden-page.component';
+import { permissionGuard } from './core/guards/permission.guard';
+import { AdministrationPageComponent } from './features/administration/administration-page.component';
 
 export const routes: Routes = [
   {
@@ -24,6 +26,68 @@ export const routes: Routes = [
         path: '',
         pathMatch: 'full',
         redirectTo: 'dashboard'
+      },
+      {
+        path: 'administration',
+        title: 'Administration',
+        component: AdministrationPageComponent,
+        canActivate: [permissionGuard],
+        data: { permissions: ['Users.View', 'Roles.View', 'Permissions.View'] },
+        children: [
+          {
+            path: '',
+            loadComponent: () => import('./features/administration/admin-home-page.component').then((module) => module.AdminHomePageComponent)
+          },
+          {
+            path: 'users',
+            title: 'Users',
+            canActivate: [permissionGuard],
+            data: { permission: 'Users.View' },
+            loadComponent: () => import('./features/administration/users/users-page.component').then((module) => module.UsersPageComponent)
+          },
+          {
+            path: 'users/new',
+            title: 'Create user',
+            canActivate: [permissionGuard],
+            data: { permission: 'Users.Create' },
+            loadComponent: () => import('./features/administration/users/user-editor-page.component').then((module) => module.UserEditorPageComponent)
+          },
+          {
+            path: 'users/:id/edit',
+            title: 'Edit user',
+            canActivate: [permissionGuard],
+            data: { permission: 'Users.Update' },
+            loadComponent: () => import('./features/administration/users/user-editor-page.component').then((module) => module.UserEditorPageComponent)
+          },
+          {
+            path: 'roles',
+            title: 'Roles',
+            canActivate: [permissionGuard],
+            data: { permission: 'Roles.View' },
+            loadComponent: () => import('./features/administration/roles/roles-page.component').then((module) => module.RolesPageComponent)
+          },
+          {
+            path: 'roles/new',
+            title: 'Create role',
+            canActivate: [permissionGuard],
+            data: { permission: 'Roles.Create' },
+            loadComponent: () => import('./features/administration/roles/role-editor-page.component').then((module) => module.RoleEditorPageComponent)
+          },
+          {
+            path: 'roles/:id/edit',
+            title: 'Edit role',
+            canActivate: [permissionGuard],
+            data: { permission: 'Roles.Update' },
+            loadComponent: () => import('./features/administration/roles/role-editor-page.component').then((module) => module.RoleEditorPageComponent)
+          },
+          {
+            path: 'permissions',
+            title: 'Permissions',
+            canActivate: [permissionGuard],
+            data: { permission: 'Permissions.View' },
+            loadComponent: () => import('./features/administration/permissions/permissions-page.component').then((module) => module.PermissionsPageComponent)
+          }
+        ]
       },
       {
         path: 'dashboard',
@@ -48,7 +112,14 @@ export const routes: Routes = [
       {
         path: 'settings',
         title: 'Settings',
-        loadComponent: () => import('./features/settings/settings-page.component').then((module) => module.SettingsPageComponent)
+        loadComponent: () => import('./features/settings/settings-page.component').then((module) => module.SettingsPageComponent),
+        children: [
+          {
+            path: 'change-password',
+            title: 'Change password',
+            loadComponent: () => import('./features/settings/change-password/change-password-page.component').then((module) => module.ChangePasswordPageComponent)
+          }
+        ]
       },
       {
         path: '**',

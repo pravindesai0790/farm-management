@@ -12,6 +12,25 @@
 
 ---
 
+## Current Implementation Status
+
+As of September 2, 2026, the repository already includes the following Phase 1 work:
+
+- Backend API host with Serilog, OpenAPI in development, CORS, JWT authentication, permission-based authorization, health checks, and automatic EF Core migrations in development.
+- Authentication flow for login, refresh, logout, current-user lookup, and change-password.
+- Administration APIs for users, roles, and permissions, including pagination, activation and deactivation, role assignment, and role-permission management.
+- Infrastructure for PostgreSQL persistence, seed data, JWT and refresh-token handling, password hashing, and request logging and error handling.
+- Angular web app shell with login, authenticated layout, dashboard API ping, and placeholder pages for farms, crops, activities, and settings.
+- Frontend auth state management that keeps the access token in memory and uses an HttpOnly refresh-token cookie.
+
+Not yet implemented:
+
+- Farm, field, crop, crop-cycle, and activity business workflows are still UI placeholders.
+- Reporting, file uploads, and crop-specific modules have not been added yet.
+- Mobile-specific client work has not started.
+
+---
+
 # 1. Phase 1 Purpose
 
 Phase 1 establishes the security and administration foundation for the Farm Management Platform.
@@ -2959,6 +2978,8 @@ Edit Role
 Permission Assignment
 
 Permission List
+
+Change Password
 ```
 
 Use Angular Material.

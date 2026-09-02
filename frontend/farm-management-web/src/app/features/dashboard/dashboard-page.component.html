@@ -2,7 +2,7 @@
   <div class="page-heading">
     <div>
       <p class="eyebrow">Overview</p>
-      <h1 id="dashboard-title">Good morning, farmer.</h1>
+      <h1 id="dashboard-title">Good morning, {{currentUser()?.firstName}} {{currentUser()?.lastName}}.</h1>
       <p class="page-description">Your farm management workspace starts here.</p>
     </div>
     <div class="season-chip">

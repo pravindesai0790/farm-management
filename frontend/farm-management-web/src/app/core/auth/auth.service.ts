@@ -6,6 +6,7 @@ import { catchError, finalize, map, shareReplay, switchMap, tap } from 'rxjs/ope
 import { environment } from '../../../environments/environment';
 import {
   AuthState,
+  ChangePasswordRequest,
   CurrentUser,
   LoginRequest,
   LoginResponse,
@@ -110,5 +111,9 @@ export class AuthService {
 
   get snapshot(): AuthState {
     return this.store.state();
+  }
+
+  changePassword(request: ChangePasswordRequest): Observable<void> {
+    return this.http.post<void>(`${this.authEndpoint}/change-password`, request);
   }
 }

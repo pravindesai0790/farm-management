@@ -1,0 +1,8 @@
+<div class="section-heading"><div><h2>Permissions</h2><p>System-controlled permissions available to roles.</p></div><mat-icon aria-hidden="true">lock</mat-icon></div>
+<mat-card><mat-card-content>
+  <mat-form-field appearance="outline" class="search-field"><mat-label>Search permissions</mat-label><mat-icon matIconPrefix>search</mat-icon><input matInput [formControl]="searchForm.controls.search" placeholder="Permission or module" /></mat-form-field>
+  @if (isLoading()) { <div class="loading-state"><mat-spinner diameter="36" /><span>Loading permissions…</span></div> }
+  @else if (groupedPermissions().length === 0) { <div class="empty-state"><mat-icon>key_off</mat-icon><h3>No permissions found</h3><p>Try a different search.</p></div> }
+  @else { <div class="permission-grid">@for (group of groupedPermissions(); track group[0]) { <section class="permission-group"><h3>{{ group[0] }}</h3>@for (permission of group[1]; track permission.id) { <div class="permission-row"><div><strong>{{ permission.name }}</strong><p>{{ permission.description || 'No description provided.' }}</p></div><mat-icon aria-hidden="true">verified_user</mat-icon></div> }</section> }</div> }
+</mat-card-content></mat-card>
+

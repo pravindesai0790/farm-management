@@ -30,3 +30,7 @@ export interface RefreshResponse {
   readonly expiresIn: number;
 }
 
+export interface ChangePasswordRequest {
+  readonly currentPassword: string;
+  readonly newPassword: string;
+}

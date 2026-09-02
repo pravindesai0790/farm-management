@@ -9,6 +9,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 
 import { SystemPingResponse } from '../../core/models/system-ping-response.model';
 import { SystemService } from '../../core/services/system.service';
+import { AuthService } from '../../core/auth/auth.service';
 
 type ApiStatus = 'checking' | 'connected' | 'unavailable';
 
@@ -28,6 +29,9 @@ export class DashboardPageComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly snackBar = inject(MatSnackBar);
   private readonly systemService = inject(SystemService);
+  private readonly authService = inject(AuthService);
+
+  readonly currentUser = this.authService.user;
 
   ngOnInit(): void {
     this.refreshApiStatus();

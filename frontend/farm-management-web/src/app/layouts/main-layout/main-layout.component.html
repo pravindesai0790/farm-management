@@ -9,7 +9,7 @@
 
     <p class="navigation-label">Workspace</p>
     <mat-nav-list>
-      @for (item of navigationItems; track item.route) {
+      @for (item of visibleNavigationItems(); track item.route) {
         <a
           mat-list-item
           [routerLink]="item.route"
