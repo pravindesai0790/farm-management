@@ -4,6 +4,7 @@ using FarmManagement.Application.Interfaces.Crops;
 using FarmManagement.Application.Interfaces.Users;
 using FarmManagement.Application.Interfaces.Roles;
 using FarmManagement.Application.Interfaces.Plantations;
+using FarmManagement.Application.Interfaces.CropCycles;
 using FarmManagement.Infrastructure.Authentication;
 using FarmManagement.Infrastructure.Persistence;
 using FarmManagement.Infrastructure.Persistence.Seed;
@@ -43,6 +44,7 @@ public static class DependencyInjection
         services.AddScoped<ICropStore, CropStore>();
         services.AddScoped<ICropLifecycleTemplateStore, CropLifecycleTemplateStore>();
         services.AddScoped<IPlantationStore, PlantationStore>();
+        services.AddScoped<ICropCycleStore, CropCycleStore>();
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();
         services.AddScoped<IdentityDataSeeder>();
 
