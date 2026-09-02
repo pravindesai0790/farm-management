@@ -110,6 +110,28 @@ public sealed class PlantationStore(ApplicationDbContext dbContext) : IPlantatio
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<CropCycle>> CancelActiveCyclesAsync(
+        Guid plantationId,
+        Guid organizationId,
+        DateOnly cancellationDate,
+        Guid cancellationReasonId,
+        string? cancellationNotes,
+        DateTimeOffset now,
+        Guid updatedBy,
+        CancellationToken cancellationToken = default)
+    {
+        var activeCycles = await dbContext.CropCycles
+            .FromSqlInterpolated($"SELECT * FROM crop_cycles WHERE plantation_id = {plantationId} AND organization_id = {organizationId} AND status = {CropCycleStatus.Active.ToString().ToUpperInvariant()} FOR UPDATE")
+            .ToListAsync(cancellationToken);
+
+        foreach (var cycle in activeCycles)
+        {
+            cycle.Cancel(cancellationDate, cancellationReasonId, cancellationNotes, now, updatedBy);
+        }
+
+        return activeCycles;
+    }
+
     public async Task<T> ExecuteInTransactionAsync<T>(Func<CancellationToken, Task<T>> operation, CancellationToken cancellationToken = default)
     {
         await using var transaction = await dbContext.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);

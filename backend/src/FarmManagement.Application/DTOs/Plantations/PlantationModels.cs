@@ -62,7 +62,8 @@ public sealed record UpdatePlantationRequest(
 public sealed record TerminatePlantationRequest(
     DateOnly? TerminationDate,
     Guid? EndReasonId,
-    string? Notes);
+    string? Notes,
+    bool CancelActiveCycles = false);
 
 public sealed record PlantationListResponse(
     IReadOnlyList<PlantationResponse> Items,

@@ -156,8 +156,7 @@ public sealed class PlantationService(IPlantationStore store) : IPlantationServi
         return await store.ExecuteInTransactionAsync(async transactionCancellationToken =>
         {
             var current = await FindPlantationOrThrowAsync(actor, plantationId, transactionCancellationToken);
-            var area = await FindLockedAreaOrThrowAsync(actor, current.FarmAreaId, transactionCancellationToken);
-            EnsureAreaIsAvailable(area);
+            await FindLockedAreaOrThrowAsync(actor, current.FarmAreaId, transactionCancellationToken);
             if (current.Status != PlantationStatus.Active)
             {
                 throw new ConflictException("Only an active plantation can be terminated.");
@@ -171,7 +170,45 @@ public sealed class PlantationService(IPlantationStore store) : IPlantationServi
                 return false;
             }
 
-            AddAudit(actor, current, "Plantation.Terminated", new { PreviousStatus = previousStatus.ToString().ToUpperInvariant(), NewStatus = "TERMINATED", current.ActualEndDate, current.EndReasonId, current.EndNotes }, ipAddress);
+            var cancelledCycles = request.CancelActiveCycles
+                ? await store.CancelActiveCyclesAsync(
+                    current.Id,
+                    actor.OrganizationId,
+                    request.TerminationDate.Value,
+                    endReason.Id,
+                    request.Notes,
+                    DateTimeOffset.UtcNow,
+                    actor.UserId,
+                    transactionCancellationToken)
+                : [];
+
+            AddAudit(actor, current, "Plantation.Terminated", new
+            {
+                PreviousStatus = previousStatus.ToString().ToUpperInvariant(),
+                NewStatus = "TERMINATED",
+                TerminationDate = current.ActualEndDate,
+                ReasonId = current.EndReasonId,
+                ReasonCode = endReason.Code,
+                ReasonName = endReason.Name,
+                Notes = current.EndNotes,
+                CancelActiveCycles = request.CancelActiveCycles,
+                CancelledCycleCount = cancelledCycles.Count
+            }, ipAddress);
+
+            foreach (var cycle in cancelledCycles)
+            {
+                AddAudit(actor, current.OrganizationId, "CropCycle", cycle.Id, "CropCycle.Cancelled", new
+                {
+                    PlantationId = current.Id,
+                    PreviousStatus = "ACTIVE",
+                    NewStatus = "CANCELLED",
+                    CancellationDate = cycle.ActualEndDate,
+                    CancellationReasonId = cycle.CancellationReasonId,
+                    CancellationReasonCode = endReason.Code,
+                    CancellationNotes = cycle.CancellationNotes
+                }, ipAddress);
+            }
+
             await store.SaveChangesAsync(transactionCancellationToken);
             return true;
         }, cancellationToken);
@@ -277,7 +314,17 @@ public sealed class PlantationService(IPlantationStore store) : IPlantationServi
     }
 
     private void AddAudit(PlantationActor actor, CropPlantation plantation, string action, object details, string? ipAddress) =>
-        store.AddAuditLog(new AuditLog(action, plantation.OrganizationId, actor.UserId, "Plantation", plantation.Id, JsonSerializer.SerializeToDocument(details), ipAddress));
+        AddAudit(actor, plantation.OrganizationId, "Plantation", plantation.Id, action, details, ipAddress);
+
+    private void AddAudit(
+        PlantationActor actor,
+        Guid organizationId,
+        string entityType,
+        Guid entityId,
+        string action,
+        object details,
+        string? ipAddress) =>
+        store.AddAuditLog(new AuditLog(action, organizationId, actor.UserId, entityType, entityId, JsonSerializer.SerializeToDocument(details), ipAddress));
 
     private static PlantationResponse ToResponse(CropPlantation plantation) =>
         ToResponse(plantation, plantation.FarmArea!, plantation.Crop!, plantation.Variety, plantation.LifecycleTemplate, plantation.AreaUnit!, plantation.EndReason);

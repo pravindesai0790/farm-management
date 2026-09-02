@@ -23,6 +23,15 @@ public interface IPlantationStore
     Task<bool> CodeExistsAsync(Guid organizationId, string code, Guid? excludingPlantationId = null, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<CropPlantation>> ListActiveAllocationsAsync(Guid farmAreaId, Guid? excludingPlantationId = null, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<FarmArea>> ListActiveChildrenAsync(Guid parentFarmAreaId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<CropCycle>> CancelActiveCyclesAsync(
+        Guid plantationId,
+        Guid organizationId,
+        DateOnly cancellationDate,
+        Guid cancellationReasonId,
+        string? cancellationNotes,
+        DateTimeOffset now,
+        Guid updatedBy,
+        CancellationToken cancellationToken = default);
     Task<T> ExecuteInTransactionAsync<T>(Func<CancellationToken, Task<T>> operation, CancellationToken cancellationToken = default);
     void Add(CropPlantation plantation);
     void AddAuditLog(AuditLog auditLog);
