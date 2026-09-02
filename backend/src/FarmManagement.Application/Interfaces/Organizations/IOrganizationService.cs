@@ -9,6 +9,10 @@ public sealed record OrganizationActor(
 
 public interface IOrganizationService
 {
+    Task<OrganizationListResponse> ListAsync(
+        OrganizationActor actor,
+        CancellationToken cancellationToken = default);
+
     Task<OrganizationResponse> CreateAsync(
         OrganizationActor actor,
         CreateOrganizationRequest request,

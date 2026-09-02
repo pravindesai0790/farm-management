@@ -4,6 +4,9 @@ namespace FarmManagement.Application.Interfaces.Organizations;
 
 public interface IOrganizationStore
 {
+    Task<IReadOnlyList<Organization>> ListAsync(
+        CancellationToken cancellationToken = default);
+
     Task<Organization?> FindAsync(
         Guid organizationId,
         CancellationToken cancellationToken = default);

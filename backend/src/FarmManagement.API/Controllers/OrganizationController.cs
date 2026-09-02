@@ -13,6 +13,14 @@ namespace FarmManagement.API.Controllers;
 [Authorize]
 public sealed class OrganizationController(IOrganizationService organizationService) : ControllerBase
 {
+    [HttpGet("organizations")]
+    [Authorize(Policy = "Permission:Organization.View")]
+    [ProducesResponseType(typeof(OrganizationListResponse), StatusCodes.Status200OK)]
+    public async Task<ActionResult<OrganizationListResponse>> List(CancellationToken cancellationToken)
+    {
+        return Ok(await organizationService.ListAsync(GetActor(), cancellationToken));
+    }
+
     [HttpPost("organizations")]
     [Authorize(Policy = "Permission:Organization.Create")]
     [ProducesResponseType(typeof(OrganizationResponse), StatusCodes.Status201Created)]

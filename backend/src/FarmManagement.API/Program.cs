@@ -115,6 +115,7 @@ builder.Services.AddScoped<ICropLifecycleTemplateService, CropLifecycleTemplateS
 builder.Services.AddScoped<IPlantationService, PlantationService>();
 builder.Services.AddScoped<ICropCycleService, CropCycleService>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
+builder.Services.AddScoped<IMasterDataService, MasterDataService>();
 
 var app = builder.Build();
 

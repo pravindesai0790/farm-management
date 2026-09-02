@@ -17,6 +17,8 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { AdministrationService } from '../../../core/administration/administration.service';
 import { Role, User } from '../../../core/administration/administration.models';
 import { getApiErrorMessage, getApiValidationErrors } from '../../../core/models/api-error.model';
+import { FarmManagementService } from '../../../core/farm-management/farm-management.service';
+import { Organization } from '../../../core/farm-management/farm-management.models';
 
 function passwordsMatch(control: AbstractControl): ValidationErrors | null {
   const password = control.get('password')?.value as string | undefined;
@@ -50,6 +52,7 @@ export class UserEditorPageComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly farmManagementService = inject(FarmManagementService);
   readonly permissionService = inject(PermissionService);
 
   readonly userForm = this.formBuilder.nonNullable.group({
@@ -63,6 +66,7 @@ export class UserEditorPageComponent implements OnInit {
   }, { validators: passwordsMatch });
 
   readonly roles = signal<readonly Role[]>([]);
+  readonly organizations = signal<readonly Organization[]>([]);
   readonly isLoading = signal(true);
   readonly isSubmitting = signal(false);
   readonly errorMessage = signal<string | null>(null);
@@ -78,13 +82,17 @@ export class UserEditorPageComponent implements OnInit {
       this.userForm.controls.organizationId.updateValueAndValidity();
     }
     const roles$ = this.administrationService.listRoles(true);
+    const organizations$ = !this.isEditing && this.isGlobalAdministrator
+      ? this.farmManagementService.listOrganizations()
+      : of({ items: [] as readonly Organization[] });
     const user$ = this.userId === null ? of(null) : this.administrationService.getUser(this.userId);
-    forkJoin({ roles: roles$, user: user$ }).pipe(
+    forkJoin({ roles: roles$, user: user$, organizations: organizations$ }).pipe(
       takeUntilDestroyed(this.destroyRef),
       finalize(() => this.isLoading.set(false))
     ).subscribe({
-      next: ({ roles, user }) => {
+      next: ({ roles, user, organizations }) => {
         this.roles.set(roles);
+        this.organizations.set(organizations.items);
         if (user !== null) {
           this.populateForm(user);
         } else if (!this.permissionService.has('Users.ManageRoles')) {

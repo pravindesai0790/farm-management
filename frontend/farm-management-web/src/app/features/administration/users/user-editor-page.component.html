@@ -54,11 +54,13 @@
 
           @if (!isEditing && isGlobalAdministrator) {
             <mat-form-field appearance="outline" class="wide-field">
-              <mat-label>Organization ID</mat-label>
-              <input matInput formControlName="organizationId" placeholder="Organization UUID" />
+              <mat-label>Organization</mat-label>
+              <mat-select formControlName="organizationId">
+                <mat-option value="">Select an organization</mat-option>
+                @for (organization of organizations(); track organization.id) { <mat-option [value]="organization.id">{{ organization.name }} ({{ organization.code }})</mat-option> }
+              </mat-select>
               <mat-hint>Required for a global administrator creating a user.</mat-hint>
               @if (userForm.controls.organizationId.hasError('required')) { <mat-error>Organization ID is required.</mat-error> }
-              @else if (userForm.controls.organizationId.hasError('pattern')) { <mat-error>Enter a valid organization UUID.</mat-error> }
               @else if (apiError('organizationId'); as message) { <mat-error>{{ message }}</mat-error> }
             </mat-form-field>
           }

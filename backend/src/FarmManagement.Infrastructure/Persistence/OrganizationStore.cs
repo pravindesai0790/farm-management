@@ -6,6 +6,14 @@ namespace FarmManagement.Infrastructure.Persistence;
 
 public sealed class OrganizationStore(ApplicationDbContext dbContext) : IOrganizationStore
 {
+    public async Task<IReadOnlyList<Organization>> ListAsync(
+        CancellationToken cancellationToken = default) =>
+        await dbContext.Organizations
+            .AsNoTracking()
+            .OrderBy(organization => organization.Name)
+            .ThenBy(organization => organization.Id)
+            .ToListAsync(cancellationToken);
+
     public Task<Organization?> FindAsync(
         Guid organizationId,
         CancellationToken cancellationToken = default) =>

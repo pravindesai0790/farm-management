@@ -44,9 +44,12 @@ export class MainLayoutComponent {
 
   readonly navigationItems: readonly NavigationItem[] = [
     { label: 'Dashboard', icon: 'space_dashboard', route: '/dashboard' },
-    { label: 'Farms', icon: 'landscape', route: '/farms' },
-    { label: 'Crops', icon: 'grass', route: '/crops' },
+    { label: 'Farms', icon: 'landscape', route: '/farms', permissions: ['Farm.View'] },
+    { label: 'Crops', icon: 'grass', route: '/crops', permissions: ['Crop.View'] },
+    { label: 'Plantations', icon: 'spa', route: '/plantations', permissions: ['Plantation.View'] },
+    { label: 'Crop cycles', icon: 'calendar_month', route: '/crop-cycles', permissions: ['CropCycle.View'] },
     { label: 'Activities', icon: 'event_note', route: '/activities' },
+    { label: 'Organization', icon: 'business', route: '/organization', permissions: ['Organization.View'] },
     {
       label: 'Administration',
       icon: 'admin_panel_settings',

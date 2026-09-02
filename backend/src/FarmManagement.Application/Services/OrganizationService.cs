@@ -11,6 +11,17 @@ public sealed class OrganizationService(IOrganizationStore store) : IOrganizatio
     private const int MaximumNameLength = 200;
     private const int MaximumCodeLength = 50;
 
+    public async Task<OrganizationListResponse> ListAsync(
+        OrganizationActor actor,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        var organizations = actor.CanManageAllOrganizations
+            ? await store.ListAsync(cancellationToken)
+            : [await FindOrganizationOrThrowAsync(actor, cancellationToken)];
+        return new OrganizationListResponse(organizations.Select(ToResponse).ToArray());
+    }
+
     public async Task<OrganizationResponse> CreateAsync(
         OrganizationActor actor,
         CreateOrganizationRequest request,

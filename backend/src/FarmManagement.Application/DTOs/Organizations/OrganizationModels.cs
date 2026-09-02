@@ -15,3 +15,6 @@ public sealed record CreateOrganizationRequest(
 public sealed record UpdateOrganizationRequest(
     string? Name,
     string? Code);
+
+public sealed record OrganizationListResponse(
+    IReadOnlyList<OrganizationResponse> Items);
