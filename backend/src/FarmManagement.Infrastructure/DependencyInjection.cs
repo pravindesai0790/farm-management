@@ -40,6 +40,7 @@ public static class DependencyInjection
         services.AddScoped<IFarmStore, FarmStore>();
         services.AddScoped<IFarmAreaStore, FarmAreaStore>();
         services.AddScoped<ICropStore, CropStore>();
+        services.AddScoped<ICropLifecycleTemplateStore, CropLifecycleTemplateStore>();
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();
         services.AddScoped<IdentityDataSeeder>();
 

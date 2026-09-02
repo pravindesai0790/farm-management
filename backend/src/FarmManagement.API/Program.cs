@@ -108,6 +108,7 @@ builder.Services.AddScoped<IRoleAdministrationService, RoleAdministrationService
 builder.Services.AddScoped<IFarmService, FarmService>();
 builder.Services.AddScoped<IFarmAreaService, FarmAreaService>();
 builder.Services.AddScoped<ICropService, CropService>();
+builder.Services.AddScoped<ICropLifecycleTemplateService, CropLifecycleTemplateService>();
 
 var app = builder.Build();
 

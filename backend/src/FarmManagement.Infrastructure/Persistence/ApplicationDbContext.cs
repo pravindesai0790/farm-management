@@ -35,6 +35,10 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
 
     public DbSet<CropVariety> CropVarieties => Set<CropVariety>();
 
+    public DbSet<CropLifecycleTemplate> CropLifecycleTemplates => Set<CropLifecycleTemplate>();
+
+    public DbSet<CropLifecycleStage> CropLifecycleStages => Set<CropLifecycleStage>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);

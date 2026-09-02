@@ -59,7 +59,12 @@ public sealed class IdentityDataSeeder(
         new("CropVariety.Create", "Create crop varieties.", "Crop Varieties"),
         new("CropVariety.Update", "Update crop varieties.", "Crop Varieties"),
         new("CropVariety.Activate", "Activate crop varieties.", "Crop Varieties"),
-        new("CropVariety.Deactivate", "Deactivate crop varieties.", "Crop Varieties")
+        new("CropVariety.Deactivate", "Deactivate crop varieties.", "Crop Varieties"),
+        new("CropLifecycleTemplate.View", "View crop lifecycle templates.", "Crop Lifecycle Templates"),
+        new("CropLifecycleTemplate.Create", "Create crop lifecycle templates.", "Crop Lifecycle Templates"),
+        new("CropLifecycleTemplate.Update", "Update crop lifecycle templates and stages.", "Crop Lifecycle Templates"),
+        new("CropLifecycleTemplate.Activate", "Activate crop lifecycle templates and stages.", "Crop Lifecycle Templates"),
+        new("CropLifecycleTemplate.Deactivate", "Deactivate crop lifecycle templates and stages.", "Crop Lifecycle Templates")
     ];
 
     private static readonly IReadOnlySet<string> OrganizationAdminPermissions =
@@ -93,7 +98,12 @@ public sealed class IdentityDataSeeder(
             "CropVariety.Create",
             "CropVariety.Update",
             "CropVariety.Activate",
-            "CropVariety.Deactivate"
+            "CropVariety.Deactivate",
+            "CropLifecycleTemplate.View",
+            "CropLifecycleTemplate.Create",
+            "CropLifecycleTemplate.Update",
+            "CropLifecycleTemplate.Activate",
+            "CropLifecycleTemplate.Deactivate"
         };
 
     private static readonly IReadOnlyList<SeedFarmOwnershipType> SeedFarmOwnershipTypes =
