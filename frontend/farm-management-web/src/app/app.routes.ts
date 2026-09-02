@@ -184,7 +184,7 @@ export const routes: Routes = [
         loadComponent: () => import('./features/organization/organization-page.component').then((module) => module.OrganizationPageComponent)
       },
       {
-        path: 'organization/new', title: 'Create organization', canActivate: [permissionGuard], data: { permission: 'Organization.Create' },
+        path: 'organization/new', title: 'Create organization', canActivate: [permissionGuard], data: { permission: 'Organization.Create', role: 'SuperAdmin' },
         loadComponent: () => import('./features/organization/organization-page.component').then((module) => module.OrganizationPageComponent)
       },
       {

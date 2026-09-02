@@ -13,5 +13,8 @@ export class PermissionService {
   hasAny(permissions: readonly string[]): boolean {
     return permissions.some((permission) => this.has(permission));
   }
-}
 
+  hasRole(role: string): boolean {
+    return this.authStore.user()?.roles.includes(role) ?? false;
+  }
+}

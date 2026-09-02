@@ -106,7 +106,6 @@ public sealed class IdentityDataSeeder(
             "Roles.View",
             "Permissions.View",
             "Organization.View",
-            "Organization.Create",
             "Organization.Update",
             "Organization.Activate",
             "Organization.Deactivate",

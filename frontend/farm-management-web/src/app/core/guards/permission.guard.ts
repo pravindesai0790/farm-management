@@ -9,9 +9,10 @@ export const permissionGuard: CanActivateFn = (route) => {
   const requiredPermissions = route.data['permissions'] as readonly string[] | undefined;
   const singlePermission = route.data['permission'] as string | undefined;
   const permissions = requiredPermissions ?? (singlePermission === undefined ? [] : [singlePermission]);
+  const requiredRole = route.data['role'] as string | undefined;
 
-  return permissions.length === 0 || permissionService.hasAny(permissions)
+  return (permissions.length === 0 || permissionService.hasAny(permissions)) &&
+    (requiredRole === undefined || permissionService.hasRole(requiredRole))
     ? true
     : router.createUrlTree(['/forbidden']);
 };
-
