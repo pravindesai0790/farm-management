@@ -25,6 +25,10 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
 
     public DbSet<Unit> Units => Set<Unit>();
 
+    public DbSet<FarmOwnershipType> FarmOwnershipTypes => Set<FarmOwnershipType>();
+
+    public DbSet<Farm> Farms => Set<Farm>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);

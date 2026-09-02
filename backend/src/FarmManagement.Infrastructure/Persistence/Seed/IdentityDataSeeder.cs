@@ -39,7 +39,12 @@ public sealed class IdentityDataSeeder(
         new("Roles.Activate", "Activate roles.", "Roles"),
         new("Roles.Deactivate", "Deactivate roles.", "Roles"),
         new("Roles.ManagePermissions", "Manage role permissions.", "Roles"),
-        new("Permissions.View", "View permissions.", "Permissions")
+        new("Permissions.View", "View permissions.", "Permissions"),
+        new("Farm.View", "View farms.", "Farms"),
+        new("Farm.Create", "Create farms.", "Farms"),
+        new("Farm.Update", "Update farms.", "Farms"),
+        new("Farm.Activate", "Activate farms.", "Farms"),
+        new("Farm.Deactivate", "Deactivate farms.", "Farms")
     ];
 
     private static readonly IReadOnlySet<string> OrganizationAdminPermissions =
@@ -53,8 +58,22 @@ public sealed class IdentityDataSeeder(
             "Users.Unlock",
             "Users.ManageRoles",
             "Roles.View",
-            "Permissions.View"
+            "Permissions.View",
+            "Farm.View",
+            "Farm.Create",
+            "Farm.Update",
+            "Farm.Activate",
+            "Farm.Deactivate"
         };
+
+    private static readonly IReadOnlyList<SeedFarmOwnershipType> SeedFarmOwnershipTypes =
+    [
+        new("OWNED", "Owned"),
+        new("LEASED", "Leased"),
+        new("RENTED", "Rented"),
+        new("MANAGED", "Managed"),
+        new("OTHER", "Other")
+    ];
 
     private static readonly IReadOnlyList<SeedUnit> SeedUnits =
     [
@@ -88,6 +107,7 @@ public sealed class IdentityDataSeeder(
 
         await SeedRolePermissionsAsync(roles, permissions, cancellationToken);
         await SeedUnitsAsync(cancellationToken);
+        await SeedFarmOwnershipTypesAsync(cancellationToken);
         await SeedInitialSuperAdminAsync(organization, roles["SuperAdmin"], initialAdmin, cancellationToken);
 
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -120,6 +140,21 @@ public sealed class IdentityDataSeeder(
                 conversionFactor: seedUnit.ConversionFactor,
                 isSystem: true,
                 displayOrder: seedUnit.DisplayOrder));
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task SeedFarmOwnershipTypesAsync(CancellationToken cancellationToken)
+    {
+        foreach (var seedType in SeedFarmOwnershipTypes)
+        {
+            var exists = await dbContext.FarmOwnershipTypes
+                .AnyAsync(item => item.Code == seedType.Code, cancellationToken);
+            if (!exists)
+            {
+                dbContext.FarmOwnershipTypes.Add(new FarmOwnershipType(seedType.Code, seedType.Name));
+            }
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -342,6 +377,8 @@ public sealed class IdentityDataSeeder(
         string BaseUnitCode,
         decimal ConversionFactor,
         int DisplayOrder);
+
+    private sealed record SeedFarmOwnershipType(string Code, string Name);
 
     private sealed record InitialAdminConfiguration(string Email, string Password);
 }
