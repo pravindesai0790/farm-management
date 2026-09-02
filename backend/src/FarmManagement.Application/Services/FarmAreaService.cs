@@ -144,7 +144,9 @@ public sealed class FarmAreaService(IFarmAreaStore store) : IFarmAreaService
         var farmArea = await FindAreaOrThrowAsync(actor, farmAreaId, cancellationToken);
         var areaUnit = farmArea.AreaUnit ?? await FindAreaUnitOrThrowAsync(actor, farmArea.AreaUnitId, cancellationToken);
         var children = await store.ListActiveChildrenAsync(farmArea.Id, cancellationToken: cancellationToken);
-        var allocatedBaseArea = children.Sum(child => ToBaseArea(child.TotalArea, RequireAreaUnit(child.AreaUnit)));
+        var plantations = await store.ListActivePlantationsAsync(farmArea.Id, cancellationToken);
+        var allocatedBaseArea = children.Sum(child => ToBaseArea(child.TotalArea, RequireAreaUnit(child.AreaUnit))) +
+            plantations.Sum(plantation => ToBaseArea(plantation.AllocatedArea, RequireAreaUnit(plantation.AreaUnit)));
         var totalBaseArea = ToBaseArea(farmArea.TotalArea, areaUnit);
         var availableBaseArea = totalBaseArea - allocatedBaseArea;
 

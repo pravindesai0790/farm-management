@@ -41,6 +41,10 @@ public interface IFarmAreaStore
         Guid? excludingFarmAreaId = null,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<CropPlantation>> ListActivePlantationsAsync(
+        Guid farmAreaId,
+        CancellationToken cancellationToken = default);
+
     Task<bool> HasChildrenAsync(
         Guid parentFarmAreaId,
         CancellationToken cancellationToken = default);

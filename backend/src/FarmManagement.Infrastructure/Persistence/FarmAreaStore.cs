@@ -78,6 +78,15 @@ public sealed class FarmAreaStore(ApplicationDbContext dbContext) : IFarmAreaSto
     public Task<bool> HasChildrenAsync(Guid parentFarmAreaId, CancellationToken cancellationToken = default) =>
         dbContext.FarmAreas.AnyAsync(area => area.ParentFarmAreaId == parentFarmAreaId, cancellationToken);
 
+    public async Task<IReadOnlyList<CropPlantation>> ListActivePlantationsAsync(
+        Guid farmAreaId,
+        CancellationToken cancellationToken = default) =>
+        await dbContext.CropPlantations
+            .Include(plantation => plantation.AreaUnit)
+            .Where(plantation => plantation.FarmAreaId == farmAreaId && plantation.Status == Domain.Enums.PlantationStatus.Active)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
     public void Add(FarmArea farmArea) => dbContext.FarmAreas.Add(farmArea);
 
     public void AddAuditLog(AuditLog auditLog) => dbContext.AuditLogs.Add(auditLog);

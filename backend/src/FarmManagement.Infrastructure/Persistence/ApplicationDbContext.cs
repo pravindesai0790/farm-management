@@ -39,6 +39,10 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
 
     public DbSet<CropLifecycleStage> CropLifecycleStages => Set<CropLifecycleStage>();
 
+    public DbSet<PlantationEndReason> PlantationEndReasons => Set<PlantationEndReason>();
+
+    public DbSet<CropPlantation> CropPlantations => Set<CropPlantation>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);

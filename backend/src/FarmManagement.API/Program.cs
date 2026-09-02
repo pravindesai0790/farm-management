@@ -5,6 +5,7 @@ using FarmManagement.Application.Interfaces;
 using FarmManagement.Application.Interfaces.Authentication;
 using FarmManagement.Application.Interfaces.Farms;
 using FarmManagement.Application.Interfaces.Crops;
+using FarmManagement.Application.Interfaces.Plantations;
 using FarmManagement.Application.Interfaces.Users;
 using FarmManagement.Application.Interfaces.Roles;
 using FarmManagement.Application.Services;
@@ -109,6 +110,7 @@ builder.Services.AddScoped<IFarmService, FarmService>();
 builder.Services.AddScoped<IFarmAreaService, FarmAreaService>();
 builder.Services.AddScoped<ICropService, CropService>();
 builder.Services.AddScoped<ICropLifecycleTemplateService, CropLifecycleTemplateService>();
+builder.Services.AddScoped<IPlantationService, PlantationService>();
 
 var app = builder.Build();
 

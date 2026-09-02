@@ -64,7 +64,17 @@ public sealed class IdentityDataSeeder(
         new("CropLifecycleTemplate.Create", "Create crop lifecycle templates.", "Crop Lifecycle Templates"),
         new("CropLifecycleTemplate.Update", "Update crop lifecycle templates and stages.", "Crop Lifecycle Templates"),
         new("CropLifecycleTemplate.Activate", "Activate crop lifecycle templates and stages.", "Crop Lifecycle Templates"),
-        new("CropLifecycleTemplate.Deactivate", "Deactivate crop lifecycle templates and stages.", "Crop Lifecycle Templates")
+        new("CropLifecycleTemplate.Deactivate", "Deactivate crop lifecycle templates and stages.", "Crop Lifecycle Templates"),
+        new("Plantation.View", "View crop plantations.", "Plantations"),
+        new("Plantation.Create", "Create crop plantations.", "Plantations"),
+        new("Plantation.Update", "Update crop plantations.", "Plantations"),
+        new("Plantation.Activate", "Activate crop plantations.", "Plantations"),
+        new("Plantation.Terminate", "Terminate crop plantations.", "Plantations"),
+        new("PlantationEndReason.View", "View plantation end reasons.", "Plantation End Reasons"),
+        new("PlantationEndReason.Create", "Create plantation end reasons.", "Plantation End Reasons"),
+        new("PlantationEndReason.Update", "Update plantation end reasons.", "Plantation End Reasons"),
+        new("PlantationEndReason.Activate", "Activate plantation end reasons.", "Plantation End Reasons"),
+        new("PlantationEndReason.Deactivate", "Deactivate plantation end reasons.", "Plantation End Reasons")
     ];
 
     private static readonly IReadOnlySet<string> OrganizationAdminPermissions =
@@ -103,7 +113,17 @@ public sealed class IdentityDataSeeder(
             "CropLifecycleTemplate.Create",
             "CropLifecycleTemplate.Update",
             "CropLifecycleTemplate.Activate",
-            "CropLifecycleTemplate.Deactivate"
+            "CropLifecycleTemplate.Deactivate",
+            "Plantation.View",
+            "Plantation.Create",
+            "Plantation.Update",
+            "Plantation.Activate",
+            "Plantation.Terminate",
+            "PlantationEndReason.View",
+            "PlantationEndReason.Create",
+            "PlantationEndReason.Update",
+            "PlantationEndReason.Activate",
+            "PlantationEndReason.Deactivate"
         };
 
     private static readonly IReadOnlyList<SeedFarmOwnershipType> SeedFarmOwnershipTypes =
@@ -152,6 +172,23 @@ public sealed class IdentityDataSeeder(
         new("GRAPES", "MANIK_CHAMAN", "Manik Chaman")
     ];
 
+    private static readonly IReadOnlyList<SeedPlantationEndReason> SeedPlantationEndReasons =
+    [
+        new("HARVEST_COMPLETED", "Harvest Completed"),
+        new("WEATHER_DISASTER", "Weather Disaster"),
+        new("FLOOD", "Flood"),
+        new("DROUGHT", "Drought"),
+        new("CYCLONE", "Cyclone"),
+        new("PEST_INFESTATION", "Pest Infestation"),
+        new("DISEASE", "Disease"),
+        new("CROP_FAILURE", "Crop Failure"),
+        new("POOR_CROP_HEALTH", "Poor Crop Health"),
+        new("SOIL_PROBLEM", "Soil Problem"),
+        new("REPLANT_REQUIRED", "Replant Required"),
+        new("FARMER_DECISION", "Farmer Decision"),
+        new("OTHER", "Other")
+    ];
+
     public async Task SeedAsync(CancellationToken cancellationToken = default)
     {
         var initialAdmin = ReadInitialAdminConfiguration();
@@ -167,6 +204,7 @@ public sealed class IdentityDataSeeder(
         await SeedFarmOwnershipTypesAsync(cancellationToken);
         await SeedCropsAsync(cancellationToken);
         await SeedCropVarietiesAsync(cancellationToken);
+        await SeedPlantationEndReasonsAsync(cancellationToken);
         await SeedInitialSuperAdminAsync(organization, roles["SuperAdmin"], initialAdmin, cancellationToken);
 
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -259,6 +297,26 @@ public sealed class IdentityDataSeeder(
                     cropId: crop.Id,
                     code: seedVariety.Code,
                     name: seedVariety.Name,
+                    isSystem: true));
+            }
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task SeedPlantationEndReasonsAsync(CancellationToken cancellationToken)
+    {
+        foreach (var seedReason in SeedPlantationEndReasons)
+        {
+            var exists = await dbContext.PlantationEndReasons.AnyAsync(
+                reason => reason.IsSystem && reason.OrganizationId == null && reason.Code == seedReason.Code,
+                cancellationToken);
+            if (!exists)
+            {
+                dbContext.PlantationEndReasons.Add(new PlantationEndReason(
+                    organizationId: null,
+                    code: seedReason.Code,
+                    name: seedReason.Name,
                     isSystem: true));
             }
         }
@@ -489,6 +547,8 @@ public sealed class IdentityDataSeeder(
     private sealed record SeedCrop(string Code, string Name, string CropType, string DurationType);
 
     private sealed record SeedCropVariety(string CropCode, string Code, string Name);
+
+    private sealed record SeedPlantationEndReason(string Code, string Name);
 
     private sealed record InitialAdminConfiguration(string Email, string Password);
 }
