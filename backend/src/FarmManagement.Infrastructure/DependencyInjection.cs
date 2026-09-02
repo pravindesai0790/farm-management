@@ -37,6 +37,7 @@ public static class DependencyInjection
         services.AddScoped<IUserAdministrationStore, UserAdministrationStore>();
         services.AddScoped<IRoleAdministrationStore, RoleAdministrationStore>();
         services.AddScoped<IFarmStore, FarmStore>();
+        services.AddScoped<IFarmAreaStore, FarmAreaStore>();
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();
         services.AddScoped<IdentityDataSeeder>();
 

@@ -44,7 +44,12 @@ public sealed class IdentityDataSeeder(
         new("Farm.Create", "Create farms.", "Farms"),
         new("Farm.Update", "Update farms.", "Farms"),
         new("Farm.Activate", "Activate farms.", "Farms"),
-        new("Farm.Deactivate", "Deactivate farms.", "Farms")
+        new("Farm.Deactivate", "Deactivate farms.", "Farms"),
+        new("FarmArea.View", "View farm areas.", "Farm Areas"),
+        new("FarmArea.Create", "Create farm areas.", "Farm Areas"),
+        new("FarmArea.Update", "Update farm areas.", "Farm Areas"),
+        new("FarmArea.Activate", "Activate farm areas.", "Farm Areas"),
+        new("FarmArea.Deactivate", "Deactivate farm areas.", "Farm Areas")
     ];
 
     private static readonly IReadOnlySet<string> OrganizationAdminPermissions =
@@ -63,7 +68,12 @@ public sealed class IdentityDataSeeder(
             "Farm.Create",
             "Farm.Update",
             "Farm.Activate",
-            "Farm.Deactivate"
+            "Farm.Deactivate",
+            "FarmArea.View",
+            "FarmArea.Create",
+            "FarmArea.Update",
+            "FarmArea.Activate",
+            "FarmArea.Deactivate"
         };
 
     private static readonly IReadOnlyList<SeedFarmOwnershipType> SeedFarmOwnershipTypes =

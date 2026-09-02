@@ -105,6 +105,7 @@ builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<IUserAdministrationService, UserAdministrationService>();
 builder.Services.AddScoped<IRoleAdministrationService, RoleAdministrationService>();
 builder.Services.AddScoped<IFarmService, FarmService>();
+builder.Services.AddScoped<IFarmAreaService, FarmAreaService>();
 
 var app = builder.Build();
 
