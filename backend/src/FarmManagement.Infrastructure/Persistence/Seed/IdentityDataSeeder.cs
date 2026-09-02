@@ -1,4 +1,5 @@
 using FarmManagement.Domain.Entities;
+using FarmManagement.Domain.Enums;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -55,6 +56,26 @@ public sealed class IdentityDataSeeder(
             "Permissions.View"
         };
 
+    private static readonly IReadOnlyList<SeedUnit> SeedUnits =
+    [
+        new("ACRE", "Acre", "ac", UnitCategory.Area, "SQUARE_METER", 4046.8564224m, 10),
+        new("HECTARE", "Hectare", "ha", UnitCategory.Area, "SQUARE_METER", 10000m, 20),
+        new("SQUARE_METER", "Square Meter", "m²", UnitCategory.Area, "SQUARE_METER", 1m, 30),
+        new("SQUARE_FEET", "Square Feet", "ft²", UnitCategory.Area, "SQUARE_METER", 0.09290304m, 40),
+        new("KILOGRAM", "Kilogram", "kg", UnitCategory.Weight, "KILOGRAM", 1m, 10),
+        new("GRAM", "Gram", "g", UnitCategory.Weight, "KILOGRAM", 0.001m, 20),
+        new("TON", "Ton", "t", UnitCategory.Weight, "KILOGRAM", 1000m, 30),
+        new("QUINTAL", "Quintal", "q", UnitCategory.Weight, "KILOGRAM", 100m, 40),
+        new("LITER", "Liter", "L", UnitCategory.Volume, "LITER", 1m, 10),
+        new("MILLILITER", "Milliliter", "mL", UnitCategory.Volume, "LITER", 0.001m, 20),
+        new("METER", "Meter", "m", UnitCategory.Length, "METER", 1m, 10),
+        new("CENTIMETER", "Centimeter", "cm", UnitCategory.Length, "METER", 0.01m, 20),
+        new("FOOT", "Foot", "ft", UnitCategory.Length, "METER", 0.3048m, 30),
+        new("NUMBER", "Number", "#", UnitCategory.Count, "NUMBER", 1m, 10),
+        new("PIECE", "Piece", "pc", UnitCategory.Count, "NUMBER", 1m, 20),
+        new("PLANT", "Plant", "plant", UnitCategory.Count, "NUMBER", 1m, 30)
+    ];
+
     public async Task SeedAsync(CancellationToken cancellationToken = default)
     {
         var initialAdmin = ReadInitialAdminConfiguration();
@@ -66,12 +87,42 @@ public sealed class IdentityDataSeeder(
         var permissions = await SeedPermissionsAsync(cancellationToken);
 
         await SeedRolePermissionsAsync(roles, permissions, cancellationToken);
+        await SeedUnitsAsync(cancellationToken);
         await SeedInitialSuperAdminAsync(organization, roles["SuperAdmin"], initialAdmin, cancellationToken);
 
         await dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
         logger.LogInformation("Identity data seeding completed.");
+    }
+
+    private async Task SeedUnitsAsync(CancellationToken cancellationToken)
+    {
+        foreach (var seedUnit in SeedUnits)
+        {
+            var unitExists = await dbContext.Units
+                .AnyAsync(
+                    unit => unit.OrganizationId == null && unit.Code == seedUnit.Code,
+                    cancellationToken);
+
+            if (unitExists)
+            {
+                continue;
+            }
+
+            dbContext.Units.Add(new Unit(
+                organizationId: null,
+                code: seedUnit.Code,
+                name: seedUnit.Name,
+                symbol: seedUnit.Symbol,
+                unitCategory: seedUnit.Category,
+                baseUnitCode: seedUnit.BaseUnitCode,
+                conversionFactor: seedUnit.ConversionFactor,
+                isSystem: true,
+                displayOrder: seedUnit.DisplayOrder));
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
     }
 
     private async Task<Organization> SeedOrganizationAsync(CancellationToken cancellationToken)
@@ -282,6 +333,15 @@ public sealed class IdentityDataSeeder(
     private sealed record SeedRole(string Name, string Description);
 
     private sealed record SeedPermission(string Name, string Description, string Module);
+
+    private sealed record SeedUnit(
+        string Code,
+        string Name,
+        string Symbol,
+        UnitCategory Category,
+        string BaseUnitCode,
+        decimal ConversionFactor,
+        int DisplayOrder);
 
     private sealed record InitialAdminConfiguration(string Email, string Password);
 }
