@@ -1,14 +1,14 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, signal } from "@angular/core";
 
-import { AuthState, CurrentUser } from './auth.models';
+import { AuthState, CurrentUser } from "./auth.models";
 
 const initialState: AuthState = {
   accessToken: null,
   user: null,
-  isAuthenticated: false
+  isAuthenticated: false,
 };
 
-@Injectable({ providedIn: 'root' })
+@Injectable({ providedIn: "root" })
 export class AuthStore {
   private readonly stateSignal = signal<AuthState>(initialState);
 
@@ -21,7 +21,7 @@ export class AuthStore {
     this.stateSignal.set({
       accessToken,
       user,
-      isAuthenticated: true
+      isAuthenticated: true,
     });
   }
 
@@ -30,7 +30,7 @@ export class AuthStore {
     this.stateSignal.set({
       ...currentState,
       accessToken,
-      isAuthenticated: true
+      isAuthenticated: true,
     });
   }
 
@@ -39,7 +39,7 @@ export class AuthStore {
     this.stateSignal.set({
       ...currentState,
       user,
-      isAuthenticated: currentState.accessToken !== null
+      isAuthenticated: currentState.accessToken !== null,
     });
   }
 
@@ -47,4 +47,3 @@ export class AuthStore {
     this.stateSignal.set(initialState);
   }
 }
-

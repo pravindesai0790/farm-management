@@ -1,0 +1,75 @@
+<div class="section-heading">
+  <a mat-button routerLink="/crops">← Back to crops</a>
+  <p class="eyebrow">Crop catalogue</p>
+  <h2>{{ id ? "Edit crop" : "New crop" }}</h2>
+</div>
+
+@if (isLoading()) {
+  <div class="loading-state">
+    <mat-spinner diameter="36" />
+  </div>
+} @else {
+  <mat-card>
+    <mat-card-content>
+      <form [formGroup]="form" (ngSubmit)="submit()">
+        <div class="form-grid">
+          <mat-form-field appearance="outline">
+            <mat-label>Code</mat-label>
+            <input matInput formControlName="code" />
+            @if (form.controls.code.hasError("required")) {
+              <mat-error>Code is required.</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Name</mat-label>
+            <input matInput formControlName="name" />
+            @if (form.controls.name.hasError("required")) {
+              <mat-error>Name is required.</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Scientific name</mat-label>
+            <input matInput formControlName="scientificName" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Crop type</mat-label>
+            <input matInput formControlName="cropType" placeholder="GENERAL" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Duration</mat-label>
+            <mat-select formControlName="cropDurationType">
+              <mat-option value="ANNUAL">Annual</mat-option>
+              <mat-option value="PERENNIAL">Perennial</mat-option>
+              <mat-option value="SEASONAL">Seasonal</mat-option>
+              <mat-option value="OTHER">Other</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="wide">
+            <mat-label>Description</mat-label>
+            <textarea
+              matInput
+              rows="3"
+              formControlName="description"
+            ></textarea>
+          </mat-form-field>
+        </div>
+
+        @if (errorMessage()) {
+          <p class="form-error">{{ errorMessage() }}</p>
+        }
+
+        <div class="form-actions">
+          <a mat-button routerLink="/crops">Cancel</a>
+          <button mat-flat-button color="primary" [disabled]="isSubmitting()">
+            {{ id ? "Save changes" : "Create crop" }}
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+}

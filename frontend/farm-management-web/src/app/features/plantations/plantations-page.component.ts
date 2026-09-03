@@ -1,3 +1,79 @@
-import { ChangeDetectionStrategy,Component,DestroyRef,OnInit,inject,signal } from '@angular/core'; import { takeUntilDestroyed } from '@angular/core/rxjs-interop'; import { MatButtonModule } from '@angular/material/button'; import { MatCardModule } from '@angular/material/card'; import { MatFormFieldModule } from '@angular/material/form-field'; import { MatIconModule } from '@angular/material/icon'; import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'; import { MatSelectModule } from '@angular/material/select'; import { MatTableModule } from '@angular/material/table'; import { MatSnackBar } from '@angular/material/snack-bar'; import { RouterLink } from '@angular/router'; import { FarmManagementService } from '../../core/farm-management/farm-management.service'; import { Plantation } from '../../core/farm-management/farm-management.models'; import { PermissionService } from '../../core/auth/permission.service'; import { getApiErrorMessage } from '../../core/models/api-error.model';
-@Component({selector:'app-plantations-page',standalone:true,imports:[MatButtonModule,MatCardModule,MatFormFieldModule,MatIconModule,MatProgressSpinnerModule,MatSelectModule,MatTableModule,RouterLink],changeDetection:ChangeDetectionStrategy.OnPush,template:`<div class="section-heading"><div><p class="eyebrow">Growing operations</p><h2>Plantations</h2><p>Track crop instances, area allocation and their lifecycle status.</p></div>@if(permissionService.has('Plantation.Create')){<a mat-flat-button color="primary" routerLink="/plantations/new"><mat-icon>add</mat-icon>Add plantation</a>}</div><mat-card><mat-card-content><mat-form-field appearance="outline"><mat-label>Status</mat-label><mat-select [value]="status()" (valueChange)="status.set($event);load()"><mat-option value="">All plantations</mat-option><mat-option value="PLANNED">Planned</mat-option><mat-option value="ACTIVE">Active</mat-option><mat-option value="TERMINATED">Terminated</mat-option><mat-option value="ARCHIVED">Archived</mat-option></mat-select></mat-form-field>@if(isLoading()){<div class="loading-state"><mat-spinner diameter="36"/></div>}@else if(plantations().length===0){<div class="empty-state"><mat-icon>spa</mat-icon><h3>No plantations found</h3><p>Register a plantation to begin allocating crops to your areas.</p></div>}@else{<div class="table-wrap"><table mat-table [dataSource]="plantations()"><ng-container matColumnDef="plantation"><th mat-header-cell *matHeaderCellDef>Plantation</th><td mat-cell *matCellDef="let p"><strong>{{p.plantationName}}</strong><small>{{p.plantationCode}}</small></td></ng-container><ng-container matColumnDef="crop"><th mat-header-cell *matHeaderCellDef>Crop</th><td mat-cell *matCellDef="let p">{{p.cropName}}<small>{{p.varietyName||'No variety'}}</small></td></ng-container><ng-container matColumnDef="area"><th mat-header-cell *matHeaderCellDef>Area</th><td mat-cell *matCellDef="let p">{{p.farmAreaName}}<small>{{p.allocatedArea}} {{p.areaUnitSymbol}}</small></td></ng-container><ng-container matColumnDef="date"><th mat-header-cell *matHeaderCellDef>Planted</th><td mat-cell *matCellDef="let p">{{p.plantingDate}}</td></ng-container><ng-container matColumnDef="status"><th mat-header-cell *matHeaderCellDef>Status</th><td mat-cell *matCellDef="let p"><span class="status-pill" [class.status-pill-inactive]="p.status!=='ACTIVE'">{{p.status}}</span></td></ng-container><ng-container matColumnDef="actions"><th mat-header-cell *matHeaderCellDef>Actions</th><td mat-cell *matCellDef="let p"><a mat-button [routerLink]="['/plantations',p.id]">View</a>@if(permissionService.has('Plantation.Update')&&p.status!=='TERMINATED'&&p.status!=='ARCHIVED'){<a mat-icon-button [routerLink]="['/plantations',p.id,'edit']"><mat-icon>edit</mat-icon></a>}</td></ng-container><tr mat-header-row *matHeaderRowDef="columns"></tr><tr mat-row *matRowDef="let row;columns:columns"></tr></table></div>}</mat-card-content></mat-card>`,styles:[`:host{display:block}.section-heading{display:flex;justify-content:space-between;margin-bottom:24px}.section-heading h2{margin:4px 0}.section-heading p{color:var(--app-muted)}.table-wrap{overflow:auto}table{width:100%}td small{display:block;color:var(--app-muted)}@media(max-width:640px){.section-heading{flex-direction:column;gap:12px}}`]})
-export class PlantationsPageComponent implements OnInit{private readonly service=inject(FarmManagementService);private readonly snack=inject(MatSnackBar);private readonly destroyRef=inject(DestroyRef);readonly permissionService=inject(PermissionService);readonly columns=['plantation','crop','area','date','status','actions'];readonly plantations=signal<readonly Plantation[]>([]);readonly status=signal('');readonly isLoading=signal(false);ngOnInit():void{this.load();}load():void{this.isLoading.set(true);this.service.listPlantations(undefined,undefined,this.status()||undefined).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({next:r=>{this.plantations.set(r.items);this.isLoading.set(false);},error:e=>{this.isLoading.set(false);this.snack.open(getApiErrorMessage(e,'Plantations could not be loaded.'),'Dismiss',{duration:5000})}});}}
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  OnInit,
+  inject,
+  signal,
+} from "@angular/core";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { MatButtonModule } from "@angular/material/button";
+import { MatCardModule } from "@angular/material/card";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIconModule } from "@angular/material/icon";
+import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
+import { MatSelectModule } from "@angular/material/select";
+import { MatTableModule } from "@angular/material/table";
+import { MatSnackBar } from "@angular/material/snack-bar";
+import { RouterLink } from "@angular/router";
+import { FarmManagementService } from "../../core/farm-management/farm-management.service";
+import { Plantation } from "../../core/farm-management/farm-management.models";
+import { PermissionService } from "../../core/auth/permission.service";
+import { getApiErrorMessage } from "../../core/models/api-error.model";
+@Component({
+  selector: "app-plantations-page",
+  standalone: true,
+  imports: [
+    MatButtonModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatProgressSpinnerModule,
+    MatSelectModule,
+    MatTableModule,
+    RouterLink,
+  ],
+  templateUrl: "./plantations-page.component.html",
+  styleUrl: "./plantations-page.component.scss",
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class PlantationsPageComponent implements OnInit {
+  private readonly service = inject(FarmManagementService);
+  private readonly snack = inject(MatSnackBar);
+  private readonly destroyRef = inject(DestroyRef);
+  readonly permissionService = inject(PermissionService);
+  readonly columns = [
+    "plantation",
+    "crop",
+    "area",
+    "date",
+    "status",
+    "actions",
+  ];
+  readonly plantations = signal<readonly Plantation[]>([]);
+  readonly status = signal("");
+  readonly isLoading = signal(false);
+  ngOnInit(): void {
+    this.load();
+  }
+  load(): void {
+    this.isLoading.set(true);
+    this.service
+      .listPlantations(undefined, undefined, this.status() || undefined)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (r) => {
+          this.plantations.set(r.items);
+          this.isLoading.set(false);
+        },
+        error: (e) => {
+          this.isLoading.set(false);
+          this.snack.open(
+            getApiErrorMessage(e, "Plantations could not be loaded."),
+            "Dismiss",
+            { duration: 5000 },
+          );
+        },
+      });
+  }
+}

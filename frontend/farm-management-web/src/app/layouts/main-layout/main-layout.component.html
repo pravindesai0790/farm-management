@@ -14,7 +14,8 @@
           mat-list-item
           [routerLink]="item.route"
           routerLinkActive="navigation-item-active"
-          [routerLinkActiveOptions]="{ exact: true }">
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
           <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
           <span matListItemTitle>{{ item.label }}</span>
         </a>
@@ -29,7 +30,12 @@
 
   <mat-sidenav-content class="content-container">
     <mat-toolbar class="topbar">
-      <button mat-icon-button type="button" aria-label="Toggle navigation" (click)="sidenav.toggle()">
+      <button
+        mat-icon-button
+        type="button"
+        aria-label="Toggle navigation"
+        (click)="sidenav.toggle()"
+      >
         <mat-icon>menu</mat-icon>
       </button>
       <div class="topbar-title">
@@ -37,7 +43,12 @@
         <span class="topbar-heading">Plan better. Grow with confidence.</span>
       </div>
       <span class="topbar-spacer"></span>
-      <button mat-button type="button" class="profile-button" (click)="logout()">
+      <button
+        mat-button
+        type="button"
+        class="profile-button"
+        (click)="logout()"
+      >
         <span class="profile-avatar">{{ userInitials }}</span>
         <span class="profile-label">Sign out</span>
         <mat-icon>logout</mat-icon>

@@ -1,32 +1,130 @@
 <div class="section-heading">
-  <div><h2>Roles</h2><p>Reusable access profiles for your team.</p></div>
-  @if (permissionService.has('Roles.Create')) {
-    <a mat-flat-button color="primary" routerLink="/administration/roles/new"><mat-icon>add</mat-icon>New role</a>
+  <div>
+    <h2>Roles</h2>
+    <p>Reusable access profiles for your team.</p>
+  </div>
+  @if (permissionService.has("Roles.Create")) {
+    <a mat-flat-button color="primary" routerLink="/administration/roles/new"
+      ><mat-icon>add</mat-icon>New role</a
+    >
   }
 </div>
 
 <mat-card>
   <mat-card-content>
     <form class="filters" [formGroup]="filterForm">
-      <mat-form-field appearance="outline" class="search-field"><mat-label>Search roles</mat-label><mat-icon matIconPrefix>search</mat-icon><input matInput formControlName="search" placeholder="Name or description" /></mat-form-field>
-      <mat-form-field appearance="outline" class="status-field"><mat-label>Status</mat-label><mat-select formControlName="status"><mat-option value="all">All roles</mat-option><mat-option value="active">Active only</mat-option><mat-option value="inactive">Inactive only</mat-option></mat-select></mat-form-field>
+      <mat-form-field appearance="outline" class="search-field"
+        ><mat-label>Search roles</mat-label
+        ><mat-icon matIconPrefix>search</mat-icon
+        ><input
+          matInput
+          formControlName="search"
+          placeholder="Name or description"
+      /></mat-form-field>
+      <mat-form-field appearance="outline" class="status-field"
+        ><mat-label>Status</mat-label
+        ><mat-select formControlName="status"
+          ><mat-option value="all">All roles</mat-option
+          ><mat-option value="active">Active only</mat-option
+          ><mat-option value="inactive">Inactive only</mat-option></mat-select
+        ></mat-form-field
+      >
     </form>
-    @if (isLoading()) { <div class="loading-state"><mat-spinner diameter="36" /><span>Loading roles…</span></div> }
-    @else if (visibleRoles().length === 0) { <div class="empty-state"><mat-icon>shield</mat-icon><h3>No roles found</h3><p>Try a different search.</p></div> }
-    @else {
-      <div class="table-wrap"><table mat-table [dataSource]="visibleRoles()">
-        <ng-container matColumnDef="name"><th mat-header-cell *matHeaderCellDef>Name</th><td mat-cell *matCellDef="let role"><strong>{{ role.name }}</strong>@if (role.isSystemRole) { <span class="system-label">System</span> }</td></ng-container>
-        <ng-container matColumnDef="description"><th mat-header-cell *matHeaderCellDef>Description</th><td mat-cell *matCellDef="let role">{{ role.description || '—' }}</td></ng-container>
-        <ng-container matColumnDef="permissions"><th mat-header-cell *matHeaderCellDef>Permissions</th><td mat-cell *matCellDef="let role">{{ role.permissions.length }}</td></ng-container>
-        <ng-container matColumnDef="status"><th mat-header-cell *matHeaderCellDef>Status</th><td mat-cell *matCellDef="let role"><span class="status-pill" [class.status-pill-inactive]="!role.isActive">{{ role.isActive ? 'Active' : 'Inactive' }}</span></td></ng-container>
-        <ng-container matColumnDef="actions"><th mat-header-cell *matHeaderCellDef><span class="visually-hidden">Actions</span></th><td mat-cell *matCellDef="let role" class="actions-cell">
-          @if (permissionService.has('Roles.Update')) { <a mat-icon-button [routerLink]="['/administration/roles', role.id, 'edit']" aria-label="Edit role" matTooltip="Edit role"><mat-icon>edit</mat-icon></a> }
-          @if (role.isActive && permissionService.has('Roles.Deactivate')) { <button mat-icon-button type="button" (click)="toggleRole(role, false)" aria-label="Deactivate role" matTooltip="Deactivate role"><mat-icon>block</mat-icon></button> }
-          @else if (!role.isActive && permissionService.has('Roles.Activate')) { <button mat-icon-button type="button" (click)="toggleRole(role, true)" aria-label="Activate role" matTooltip="Activate role"><mat-icon>check_circle</mat-icon></button> }
-        </td></ng-container>
-        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr><tr mat-row *matRowDef="let role; columns: displayedColumns"></tr>
-      </table></div>
+    @if (isLoading()) {
+      <div class="loading-state">
+        <mat-spinner diameter="36" /><span>Loading roles…</span>
+      </div>
+    } @else if (visibleRoles().length === 0) {
+      <div class="empty-state">
+        <mat-icon>shield</mat-icon>
+        <h3>No roles found</h3>
+        <p>Try a different search.</p>
+      </div>
+    } @else {
+      <div class="table-wrap">
+        <table mat-table [dataSource]="visibleRoles()">
+          <ng-container matColumnDef="name"
+            ><th mat-header-cell *matHeaderCellDef>Name</th>
+            <td mat-cell *matCellDef="let role">
+              <strong>{{ role.name }}</strong>
+              @if (role.isSystemRole) {
+                <span class="system-label">System</span>
+              }
+            </td></ng-container
+          >
+          <ng-container matColumnDef="description"
+            ><th mat-header-cell *matHeaderCellDef>Description</th>
+            <td mat-cell *matCellDef="let role">
+              {{ role.description || "—" }}
+            </td></ng-container
+          >
+          <ng-container matColumnDef="permissions"
+            ><th mat-header-cell *matHeaderCellDef>Permissions</th>
+            <td mat-cell *matCellDef="let role">
+              {{ role.permissions.length }}
+            </td></ng-container
+          >
+          <ng-container matColumnDef="status"
+            ><th mat-header-cell *matHeaderCellDef>Status</th>
+            <td mat-cell *matCellDef="let role">
+              <span
+                class="status-pill"
+                [class.status-pill-inactive]="!role.isActive"
+                >{{ role.isActive ? "Active" : "Inactive" }}</span
+              >
+            </td></ng-container
+          >
+          <ng-container matColumnDef="actions"
+            ><th mat-header-cell *matHeaderCellDef>
+              <span class="visually-hidden">Actions</span>
+            </th>
+            <td mat-cell *matCellDef="let role" class="actions-cell">
+              @if (permissionService.has("Roles.Update")) {
+                <a
+                  mat-icon-button
+                  [routerLink]="['/administration/roles', role.id, 'edit']"
+                  aria-label="Edit role"
+                  matTooltip="Edit role"
+                  ><mat-icon>edit</mat-icon></a
+                >
+              }
+              @if (role.isActive && permissionService.has("Roles.Deactivate")) {
+                <button
+                  mat-icon-button
+                  type="button"
+                  (click)="toggleRole(role, false)"
+                  aria-label="Deactivate role"
+                  matTooltip="Deactivate role"
+                >
+                  <mat-icon>block</mat-icon>
+                </button>
+              } @else if (
+                !role.isActive && permissionService.has("Roles.Activate")
+              ) {
+                <button
+                  mat-icon-button
+                  type="button"
+                  (click)="toggleRole(role, true)"
+                  aria-label="Activate role"
+                  matTooltip="Activate role"
+                >
+                  <mat-icon>check_circle</mat-icon>
+                </button>
+              }
+            </td></ng-container
+          >
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let role; columns: displayedColumns"></tr>
+        </table>
+      </div>
     }
-    <mat-paginator [length]="filteredRoles().length" [pageIndex]="pageIndex()" [pageSize]="pageSize()" [pageSizeOptions]="[5, 10, 20]" (page)="pageChanged($event)" aria-label="Role pages" />
+    <mat-paginator
+      [length]="filteredRoles().length"
+      [pageIndex]="pageIndex()"
+      [pageSize]="pageSize()"
+      [pageSizeOptions]="[5, 10, 20]"
+      (page)="pageChanged($event)"
+      aria-label="Role pages"
+    />
   </mat-card-content>
 </mat-card>

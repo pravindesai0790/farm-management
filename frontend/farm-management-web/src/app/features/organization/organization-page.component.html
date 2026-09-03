@@ -1,62 +1,219 @@
 <div class="section-heading">
   <div>
     <p class="eyebrow">Workspace administration</p>
-    <h2>{{ isCreating ? 'Create organization' : 'Organizations' }}</h2>
-    <p>{{ isCreating ? 'Set up a new workspace for your farm team.' : 'View organizations and manage the workspace connected to your account.' }}</p>
+    <h2>{{ isCreating ? "Create organization" : "Organizations" }}</h2>
+    <p>
+      {{
+        isCreating
+          ? "Set up a new workspace for your farm team."
+          : "View organizations and manage the workspace connected to your account."
+      }}
+    </p>
   </div>
-  @if (!isCreating && canCreateOrganization) { <a mat-flat-button color="primary" routerLink="/organization/new"><mat-icon>add</mat-icon>New organization</a> }
+  @if (!isCreating && canCreateOrganization) {
+    <a mat-flat-button color="primary" routerLink="/organization/new"
+      ><mat-icon>add</mat-icon>New organization</a
+    >
+  }
 </div>
 
 @if (isCreating) {
-  <mat-card class="form-card"><mat-card-content>
-    <form [formGroup]="form" (ngSubmit)="submit()">
-      <div class="form-grid">
-        <mat-form-field appearance="outline"><mat-label>Organization name</mat-label><input matInput formControlName="name" />@if (form.controls.name.hasError('required')) {<mat-error>Name is required.</mat-error>}</mat-form-field>
-        <mat-form-field appearance="outline"><mat-label>Organization code</mat-label><input matInput formControlName="code" />@if (form.controls.code.hasError('required')) {<mat-error>Code is required.</mat-error>}</mat-form-field>
-      </div>
-      @if (errorMessage()) {<p class="form-error" role="alert">{{ errorMessage() }}</p>}
-      <div class="form-actions"><a mat-button routerLink="/organization">Cancel</a><button mat-flat-button color="primary" type="submit" [disabled]="isSubmitting()">Create organization</button></div>
-    </form>
-  </mat-card-content></mat-card>
-} @else if (isLoading()) {
-  <div class="loading-state"><mat-spinner diameter="36" /><span>Loading organizations…</span></div>
-} @else {
-  @if (errorMessage()) {<p class="form-error" role="alert">{{ errorMessage() }}</p>}
-  <mat-card><mat-card-content>
-    <form class="filters" [formGroup]="filterForm">
-      <mat-form-field appearance="outline" class="search-field"><mat-label>Search organizations</mat-label><mat-icon matIconPrefix>search</mat-icon><input matInput formControlName="search" placeholder="Name or code" /></mat-form-field>
-      <mat-form-field appearance="outline" class="status-field"><mat-label>Status</mat-label><mat-select formControlName="status"><mat-option value="all">All organizations</mat-option><mat-option value="active">Active only</mat-option><mat-option value="inactive">Inactive only</mat-option></mat-select></mat-form-field>
-    </form>
-    @if (filteredOrganizations().length === 0) {
-      <div class="empty-state"><mat-icon>business</mat-icon><h3>No organizations found</h3><p>Try a different search.</p></div>
-    } @else {
-      <div class="table-wrap"><table mat-table [dataSource]="filteredOrganizations()">
-        <ng-container matColumnDef="name"><th mat-header-cell *matHeaderCellDef>Name</th><td mat-cell *matCellDef="let organization"><strong>{{ organization.name }}</strong></td></ng-container>
-        <ng-container matColumnDef="code"><th mat-header-cell *matHeaderCellDef>Code</th><td mat-cell *matCellDef="let organization">{{ organization.code }}</td></ng-container>
-        <ng-container matColumnDef="status"><th mat-header-cell *matHeaderCellDef>Status</th><td mat-cell *matCellDef="let organization"><span class="status-pill" [class.status-pill-inactive]="!organization.isActive">{{ organization.isActive ? 'Active' : 'Inactive' }}</span></td></ng-container>
-        <ng-container matColumnDef="createdAt"><th mat-header-cell *matHeaderCellDef>Created</th><td mat-cell *matCellDef="let organization">{{ organization.createdAt | date:'mediumDate' }}</td></ng-container>
-        <ng-container matColumnDef="scope"><th mat-header-cell *matHeaderCellDef>Scope</th><td mat-cell *matCellDef="let organization">@if (isCurrentOrganization(organization)) {<span class="connected-label">Connected</span>} @else {<span class="muted">—</span>}</td></ng-container>
-        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr><tr mat-row *matRowDef="let organization; columns: displayedColumns"></tr>
-      </table></div>
-    }
-  </mat-card-content></mat-card>
-
-  @if (organization(); as connectedOrganization) {
-    <mat-card class="form-card connected-card"><mat-card-content>
-      <div class="card-heading"><div><h3>Connected organization</h3><p>Update the workspace connected to your account.</p></div><span class="status-pill" [class.status-pill-inactive]="!connectedOrganization.isActive">{{ connectedOrganization.isActive ? 'Active' : 'Inactive' }}</span></div>
+  <mat-card class="form-card"
+    ><mat-card-content>
       <form [formGroup]="form" (ngSubmit)="submit()">
         <div class="form-grid">
-          <mat-form-field appearance="outline"><mat-label>Organization name</mat-label><input matInput formControlName="name" [readonly]="!permissionService.has('Organization.Update')" /></mat-form-field>
-          <mat-form-field appearance="outline"><mat-label>Organization code</mat-label><input matInput formControlName="code" [readonly]="!permissionService.has('Organization.Update')" /></mat-form-field>
+          <mat-form-field appearance="outline"
+            ><mat-label>Organization name</mat-label
+            ><input matInput formControlName="name" />
+            @if (form.controls.name.hasError("required")) {
+              <mat-error>Name is required.</mat-error>
+            }
+          </mat-form-field>
+          <mat-form-field appearance="outline"
+            ><mat-label>Organization code</mat-label
+            ><input matInput formControlName="code" />
+            @if (form.controls.code.hasError("required")) {
+              <mat-error>Code is required.</mat-error>
+            }
+          </mat-form-field>
         </div>
-        <div class="organization-meta">Created {{ connectedOrganization.createdAt | date:'mediumDate' }}</div>
-        @if (errorMessage()) {<p class="form-error" role="alert">{{ errorMessage() }}</p>}
+        @if (errorMessage()) {
+          <p class="form-error" role="alert">{{ errorMessage() }}</p>
+        }
         <div class="form-actions">
-          @if (permissionService.has('Organization.Update')) {<button mat-flat-button color="primary" type="submit" [disabled]="isSubmitting()">Save changes</button>}
-          @if (connectedOrganization.isActive && permissionService.has('Organization.Deactivate')) {<button mat-stroked-button color="warn" type="button" (click)="changeStatus(false)" [disabled]="isSubmitting()">Deactivate organization</button>}
-          @else if (!connectedOrganization.isActive && permissionService.has('Organization.Activate')) {<button mat-flat-button color="primary" type="button" (click)="changeStatus(true)" [disabled]="isSubmitting()">Activate organization</button>}
+          <a mat-button routerLink="/organization">Cancel</a
+          ><button
+            mat-flat-button
+            color="primary"
+            type="submit"
+            [disabled]="isSubmitting()"
+          >
+            Create organization
+          </button>
         </div>
       </form>
-    </mat-card-content></mat-card>
+    </mat-card-content></mat-card
+  >
+} @else if (isLoading()) {
+  <div class="loading-state">
+    <mat-spinner diameter="36" /><span>Loading organizations…</span>
+  </div>
+} @else {
+  @if (errorMessage()) {
+    <p class="form-error" role="alert">{{ errorMessage() }}</p>
+  }
+  <mat-card
+    ><mat-card-content>
+      <form class="filters" [formGroup]="filterForm">
+        <mat-form-field appearance="outline" class="search-field"
+          ><mat-label>Search organizations</mat-label
+          ><mat-icon matIconPrefix>search</mat-icon
+          ><input matInput formControlName="search" placeholder="Name or code"
+        /></mat-form-field>
+        <mat-form-field appearance="outline" class="status-field"
+          ><mat-label>Status</mat-label
+          ><mat-select formControlName="status"
+            ><mat-option value="all">All organizations</mat-option
+            ><mat-option value="active">Active only</mat-option
+            ><mat-option value="inactive">Inactive only</mat-option></mat-select
+          ></mat-form-field
+        >
+      </form>
+      @if (filteredOrganizations().length === 0) {
+        <div class="empty-state">
+          <mat-icon>business</mat-icon>
+          <h3>No organizations found</h3>
+          <p>Try a different search.</p>
+        </div>
+      } @else {
+        <div class="table-wrap">
+          <table mat-table [dataSource]="filteredOrganizations()">
+            <ng-container matColumnDef="name"
+              ><th mat-header-cell *matHeaderCellDef>Name</th>
+              <td mat-cell *matCellDef="let organization">
+                <strong>{{ organization.name }}</strong>
+              </td></ng-container
+            >
+            <ng-container matColumnDef="code"
+              ><th mat-header-cell *matHeaderCellDef>Code</th>
+              <td mat-cell *matCellDef="let organization">
+                {{ organization.code }}
+              </td></ng-container
+            >
+            <ng-container matColumnDef="status"
+              ><th mat-header-cell *matHeaderCellDef>Status</th>
+              <td mat-cell *matCellDef="let organization">
+                <span
+                  class="status-pill"
+                  [class.status-pill-inactive]="!organization.isActive"
+                  >{{ organization.isActive ? "Active" : "Inactive" }}</span
+                >
+              </td></ng-container
+            >
+            <ng-container matColumnDef="createdAt"
+              ><th mat-header-cell *matHeaderCellDef>Created</th>
+              <td mat-cell *matCellDef="let organization">
+                {{ organization.createdAt | date: "mediumDate" }}
+              </td></ng-container
+            >
+            <ng-container matColumnDef="scope"
+              ><th mat-header-cell *matHeaderCellDef>Scope</th>
+              <td mat-cell *matCellDef="let organization">
+                @if (isCurrentOrganization(organization)) {
+                  <span class="connected-label">Connected</span>
+                } @else {
+                  <span class="muted">—</span>
+                }
+              </td></ng-container
+            >
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr
+              mat-row
+              *matRowDef="let organization; columns: displayedColumns"
+            ></tr>
+          </table>
+        </div>
+      }</mat-card-content
+  ></mat-card>
+
+  @if (organization(); as connectedOrganization) {
+    <mat-card class="form-card connected-card"
+      ><mat-card-content>
+        <div class="card-heading">
+          <div>
+            <h3>Connected organization</h3>
+            <p>Update the workspace connected to your account.</p>
+          </div>
+          <span
+            class="status-pill"
+            [class.status-pill-inactive]="!connectedOrganization.isActive"
+            >{{ connectedOrganization.isActive ? "Active" : "Inactive" }}</span
+          >
+        </div>
+        <form [formGroup]="form" (ngSubmit)="submit()">
+          <div class="form-grid">
+            <mat-form-field appearance="outline"
+              ><mat-label>Organization name</mat-label
+              ><input
+                matInput
+                formControlName="name"
+                [readonly]="!permissionService.has('Organization.Update')"
+            /></mat-form-field>
+            <mat-form-field appearance="outline"
+              ><mat-label>Organization code</mat-label
+              ><input
+                matInput
+                formControlName="code"
+                [readonly]="!permissionService.has('Organization.Update')"
+            /></mat-form-field>
+          </div>
+          <div class="organization-meta">
+            Created {{ connectedOrganization.createdAt | date: "mediumDate" }}
+          </div>
+          @if (errorMessage()) {
+            <p class="form-error" role="alert">{{ errorMessage() }}</p>
+          }
+          <div class="form-actions">
+            @if (permissionService.has("Organization.Update")) {
+              <button
+                mat-flat-button
+                color="primary"
+                type="submit"
+                [disabled]="isSubmitting()"
+              >
+                Save changes
+              </button>
+            }
+            @if (
+              connectedOrganization.isActive &&
+              permissionService.has("Organization.Deactivate")
+            ) {
+              <button
+                mat-stroked-button
+                color="warn"
+                type="button"
+                (click)="changeStatus(false)"
+                [disabled]="isSubmitting()"
+              >
+                Deactivate organization
+              </button>
+            } @else if (
+              !connectedOrganization.isActive &&
+              permissionService.has("Organization.Activate")
+            ) {
+              <button
+                mat-flat-button
+                color="primary"
+                type="button"
+                (click)="changeStatus(true)"
+                [disabled]="isSubmitting()"
+              >
+                Activate organization
+              </button>
+            }
+          </div>
+        </form>
+      </mat-card-content></mat-card
+    >
   }
 }

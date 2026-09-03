@@ -1,7 +1,126 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button'; import { MatCardModule } from '@angular/material/card'; import { MatFormFieldModule } from '@angular/material/form-field'; import { MatIconModule } from '@angular/material/icon'; import { MatInputModule } from '@angular/material/input'; import { MatPaginatorModule, PageEvent } from '@angular/material/paginator'; import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'; import { MatSelectModule } from '@angular/material/select'; import { MatSnackBar } from '@angular/material/snack-bar'; import { MatTableModule } from '@angular/material/table'; import { RouterLink } from '@angular/router'; import { debounceTime, distinctUntilChanged, finalize, merge } from 'rxjs';
-import { PermissionService } from '../../core/auth/permission.service'; import { FarmManagementService } from '../../core/farm-management/farm-management.service'; import { Crop } from '../../core/farm-management/farm-management.models'; import { getApiErrorMessage } from '../../core/models/api-error.model';
-@Component({selector:'app-crops-page',standalone:true,imports:[MatButtonModule,MatCardModule,MatFormFieldModule,MatIconModule,MatInputModule,MatPaginatorModule,MatProgressSpinnerModule,MatSelectModule,MatTableModule,ReactiveFormsModule,RouterLink],changeDetection:ChangeDetectionStrategy.OnPush,template:`<div class="section-heading"><div><p class="eyebrow">Master data</p><h2>Crops</h2><p>Manage the crop catalogue and organization-specific growing options.</p></div>@if(permissionService.has('Crop.Create')){<a mat-flat-button color="primary" routerLink="/crops/new"><mat-icon>add</mat-icon>Add crop</a>}</div><mat-card><mat-card-content><form class="filters" [formGroup]="filterForm"><mat-form-field appearance="outline"><mat-label>Search crops</mat-label><input matInput formControlName="search"/></mat-form-field><mat-form-field appearance="outline"><mat-label>Status</mat-label><mat-select formControlName="status"><mat-option value="all">All</mat-option><mat-option value="active">Active</mat-option><mat-option value="inactive">Inactive</mat-option></mat-select></mat-form-field></form>@if(isLoading()){<div class="loading-state"><mat-spinner diameter="36"/></div>}@else{<div class="table-wrap"><table mat-table [dataSource]="crops()"><ng-container matColumnDef="code"><th mat-header-cell *matHeaderCellDef>Code</th><td mat-cell *matCellDef="let crop"><strong>{{crop.code}}</strong><small><span class="system-label">{{crop.isSystem?'System':'Organization'}}</span></small></td></ng-container><ng-container matColumnDef="name"><th mat-header-cell *matHeaderCellDef>Crop</th><td mat-cell *matCellDef="let crop">{{crop.name}}</td></ng-container><ng-container matColumnDef="type"><th mat-header-cell *matHeaderCellDef>Type</th><td mat-cell *matCellDef="let crop">{{crop.cropDurationType}}</td></ng-container><ng-container matColumnDef="status"><th mat-header-cell *matHeaderCellDef>Status</th><td mat-cell *matCellDef="let crop"><span class="status-pill" [class.status-pill-inactive]="!crop.isActive">{{crop.isActive?'Active':'Inactive'}}</span></td></ng-container><ng-container matColumnDef="actions"><th mat-header-cell *matHeaderCellDef>Actions</th><td mat-cell *matCellDef="let crop"><a mat-button [routerLink]="['/crops',crop.id]">View</a>@if(!crop.isSystem&&permissionService.has('Crop.Update')){<a mat-icon-button [routerLink]="['/crops',crop.id,'edit']"><mat-icon>edit</mat-icon></a>}@if(!crop.isSystem&&crop.isActive&&permissionService.has('Crop.Deactivate')){<button mat-icon-button (click)="changeStatus(crop,false)"><mat-icon>visibility_off</mat-icon></button>}@else if(!crop.isSystem&&!crop.isActive&&permissionService.has('Crop.Activate')){<button mat-icon-button (click)="changeStatus(crop,true)"><mat-icon>visibility</mat-icon></button>}</td></ng-container><tr mat-header-row *matHeaderRowDef="columns"></tr><tr mat-row *matRowDef="let row;columns:columns"></tr></table></div>}<mat-paginator [length]="totalCount()" [pageIndex]="pageIndex()" [pageSize]="pageSize()" (page)="pageChanged($event)"/></mat-card-content></mat-card>`,styles:[`:host{display:block}.section-heading{display:flex;justify-content:space-between;margin-bottom:24px}.section-heading h2{margin:4px 0}.section-heading p{color:var(--app-muted)}.filters{display:flex;gap:16px;flex-wrap:wrap}.filters mat-form-field:first-child{min-width:280px}.table-wrap{overflow:auto}table{width:100%}.system-label{display:inline-flex;align-items:center;border-radius:999px;padding:3px 8px;background:#edf4ee;color:var(--app-primary);font-size:.72rem;font-weight:600;line-height:1.2}.status-pill{display:inline-flex;align-items:center;border-radius:999px;padding:4px 9px;background:#edf4ee;color:var(--app-primary);font-size:.72rem;font-weight:600;white-space:nowrap}.status-pill-inactive{background:#f6ece8;color:#a34d36}@media(max-width:640px){.section-heading{flex-direction:column;gap:12px}}`]})
-export class CropsPageComponent implements OnInit{private readonly service=inject(FarmManagementService);private readonly fb=inject(FormBuilder);private readonly snack=inject(MatSnackBar);private readonly destroyRef=inject(DestroyRef);readonly permissionService=inject(PermissionService);readonly columns=['code','name','type','status','actions'];readonly crops=signal<readonly Crop[]>([]);readonly totalCount=signal(0);readonly pageIndex=signal(0);readonly pageSize=signal(20);readonly isLoading=signal(false);readonly filterForm=this.fb.nonNullable.group({search:[''],status:['all']});ngOnInit():void{merge(this.filterForm.controls.search.valueChanges.pipe(debounceTime(300),distinctUntilChanged()),this.filterForm.controls.status.valueChanges).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(()=>{this.pageIndex.set(0);this.load();});this.load();}load():void{const status=this.filterForm.controls.status.value;this.isLoading.set(true);this.service.listCrops(this.pageIndex()+1,this.pageSize(),this.filterForm.controls.search.value,status==='all'?null:status==='active').pipe(takeUntilDestroyed(this.destroyRef),finalize(()=>this.isLoading.set(false))).subscribe({next:r=>{this.crops.set(r.items);this.totalCount.set(r.totalCount);},error:e=>this.snack.open(getApiErrorMessage(e,'Crops could not be loaded.'),'Dismiss',{duration:5000})});}pageChanged(e:PageEvent):void{this.pageIndex.set(e.pageIndex);this.pageSize.set(e.pageSize);this.load();}changeStatus(crop:Crop,active:boolean):void{const request=active?this.service.activateCrop(crop.id):this.service.deactivateCrop(crop.id);request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({next:()=>this.load(),error:e=>this.snack.open(getApiErrorMessage(e,'Crop status could not be changed.'),'Dismiss',{duration:5000})});}}
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  OnInit,
+  inject,
+  signal,
+} from "@angular/core";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { FormBuilder, ReactiveFormsModule } from "@angular/forms";
+import { MatButtonModule } from "@angular/material/button";
+import { MatCardModule } from "@angular/material/card";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIconModule } from "@angular/material/icon";
+import { MatInputModule } from "@angular/material/input";
+import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
+import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
+import { MatSelectModule } from "@angular/material/select";
+import { MatSnackBar } from "@angular/material/snack-bar";
+import { MatTableModule } from "@angular/material/table";
+import { RouterLink } from "@angular/router";
+import { debounceTime, distinctUntilChanged, finalize, merge } from "rxjs";
+import { PermissionService } from "../../core/auth/permission.service";
+import { FarmManagementService } from "../../core/farm-management/farm-management.service";
+import { Crop } from "../../core/farm-management/farm-management.models";
+import { getApiErrorMessage } from "../../core/models/api-error.model";
+@Component({
+  selector: "app-crops-page",
+  standalone: true,
+  imports: [
+    MatButtonModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MatPaginatorModule,
+    MatProgressSpinnerModule,
+    MatSelectModule,
+    MatTableModule,
+    ReactiveFormsModule,
+    RouterLink,
+  ],
+  templateUrl: "./crops-page.component.html",
+  styleUrl: "./crops-page.component.scss",
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class CropsPageComponent implements OnInit {
+  private readonly service = inject(FarmManagementService);
+  private readonly fb = inject(FormBuilder);
+  private readonly snack = inject(MatSnackBar);
+  private readonly destroyRef = inject(DestroyRef);
+  readonly permissionService = inject(PermissionService);
+  readonly columns = ["code", "name", "type", "status", "actions"];
+  readonly crops = signal<readonly Crop[]>([]);
+  readonly totalCount = signal(0);
+  readonly pageIndex = signal(0);
+  readonly pageSize = signal(20);
+  readonly isLoading = signal(false);
+  readonly filterForm = this.fb.nonNullable.group({
+    search: [""],
+    status: ["all"],
+  });
+  ngOnInit(): void {
+    merge(
+      this.filterForm.controls.search.valueChanges.pipe(
+        debounceTime(300),
+        distinctUntilChanged(),
+      ),
+      this.filterForm.controls.status.valueChanges,
+    )
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.pageIndex.set(0);
+        this.load();
+      });
+    this.load();
+  }
+  load(): void {
+    const status = this.filterForm.controls.status.value;
+    this.isLoading.set(true);
+    this.service
+      .listCrops(
+        this.pageIndex() + 1,
+        this.pageSize(),
+        this.filterForm.controls.search.value,
+        status === "all" ? null : status === "active",
+      )
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.isLoading.set(false)),
+      )
+      .subscribe({
+        next: (r) => {
+          this.crops.set(r.items);
+          this.totalCount.set(r.totalCount);
+        },
+        error: (e) =>
+          this.snack.open(
+            getApiErrorMessage(e, "Crops could not be loaded."),
+            "Dismiss",
+            { duration: 5000 },
+          ),
+      });
+  }
+  pageChanged(e: PageEvent): void {
+    this.pageIndex.set(e.pageIndex);
+    this.pageSize.set(e.pageSize);
+    this.load();
+  }
+  changeStatus(crop: Crop, active: boolean): void {
+    const request = active
+      ? this.service.activateCrop(crop.id)
+      : this.service.deactivateCrop(crop.id);
+    request
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => this.load(),
+        error: (e) =>
+          this.snack.open(
+            getApiErrorMessage(e, "Crop status could not be changed."),
+            "Dismiss",
+            { duration: 5000 },
+          ),
+      });
+  }
+}

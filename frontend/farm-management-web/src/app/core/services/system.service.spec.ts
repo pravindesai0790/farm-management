@@ -1,17 +1,24 @@
-import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
-import { TestBed } from '@angular/core/testing';
+import { provideHttpClient } from "@angular/common/http";
+import {
+  provideHttpClientTesting,
+  HttpTestingController,
+} from "@angular/common/http/testing";
+import { TestBed } from "@angular/core/testing";
 
-import { environment } from '../../../environments/environment';
-import { SystemService } from './system.service';
+import { environment } from "../../../environments/environment";
+import { SystemService } from "./system.service";
 
-describe('SystemService', () => {
+describe("SystemService", () => {
   let service: SystemService;
   let httpTesting: HttpTestingController;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [SystemService, provideHttpClient(), provideHttpClientTesting()]
+      providers: [
+        SystemService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
     });
 
     service = TestBed.inject(SystemService);
@@ -22,10 +29,10 @@ describe('SystemService', () => {
     httpTesting.verify();
   });
 
-  it('gets the system ping from the configured API endpoint', () => {
+  it("gets the system ping from the configured API endpoint", () => {
     const response = {
-      message: 'Farm Management API is running',
-      timestamp: '2026-09-01T00:00:00Z'
+      message: "Farm Management API is running",
+      timestamp: "2026-09-01T00:00:00Z",
     };
 
     service.getPing().subscribe((ping) => {
@@ -33,7 +40,7 @@ describe('SystemService', () => {
     });
 
     const request = httpTesting.expectOne(`${environment.apiUrl}/system/ping`);
-    expect(request.request.method).toBe('GET');
+    expect(request.request.method).toBe("GET");
     request.flush(response);
   });
 });

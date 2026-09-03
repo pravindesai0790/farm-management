@@ -1,0 +1,54 @@
+@if (isLoading()) {
+  <div class="loading-state">
+    <mat-spinner diameter="36" />
+  </div>
+} @else if (area(); as item) {
+  <div class="section-heading">
+    <a mat-button [routerLink]="['/farms', item.farmId]">← Back to farm</a>
+    <p class="eyebrow">{{ item.code }}</p>
+    <h2>{{ item.name }}</h2>
+    @if (permissionService.has("FarmArea.Update")) {
+      <a mat-stroked-button [routerLink]="['/farm-areas', item.id, 'edit']"
+        >Edit area</a
+      >
+    }
+  </div>
+
+  <div class="metrics">
+    <mat-card>
+      <mat-card-content>
+        <span>Total area</span>
+        <strong>{{ item.totalArea }} {{ item.areaUnitSymbol }}</strong>
+      </mat-card-content>
+    </mat-card>
+    <mat-card>
+      <mat-card-content>
+        <span>Allocated</span>
+        <strong
+          >{{ availability()?.allocatedArea ?? "—" }}
+          {{ item.areaUnitSymbol }}</strong
+        >
+      </mat-card-content>
+    </mat-card>
+    <mat-card>
+      <mat-card-content>
+        <span>Available</span>
+        <strong
+          >{{ availability()?.availableArea ?? "—" }}
+          {{ item.areaUnitSymbol }}</strong
+        >
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <mat-card>
+    <mat-card-content>
+      <h3>Area details</h3>
+      <p>{{ item.description || "No description provided." }}</p>
+      <p class="muted">
+        {{ item.parentFarmAreaId ? "Sub-area" : "Top-level farm area" }} ·
+        {{ item.isActive ? "Active" : "Inactive" }}
+      </p>
+    </mat-card-content>
+  </mat-card>
+}

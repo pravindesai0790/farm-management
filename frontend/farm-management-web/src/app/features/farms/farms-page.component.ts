@@ -1,33 +1,146 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { MatTableModule } from '@angular/material/table';
-import { RouterLink } from '@angular/router';
-import { debounceTime, distinctUntilChanged, finalize, merge } from 'rxjs';
-import { PermissionService } from '../../core/auth/permission.service';
-import { FarmManagementService } from '../../core/farm-management/farm-management.service';
-import { Farm } from '../../core/farm-management/farm-management.models';
-import { getApiErrorMessage } from '../../core/models/api-error.model';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  OnInit,
+  inject,
+  signal,
+} from "@angular/core";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { FormBuilder, ReactiveFormsModule } from "@angular/forms";
+import { MatButtonModule } from "@angular/material/button";
+import { MatCardModule } from "@angular/material/card";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIconModule } from "@angular/material/icon";
+import { MatInputModule } from "@angular/material/input";
+import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
+import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
+import { MatSelectModule } from "@angular/material/select";
+import { MatSnackBar } from "@angular/material/snack-bar";
+import { MatTableModule } from "@angular/material/table";
+import { RouterLink } from "@angular/router";
+import { debounceTime, distinctUntilChanged, finalize, merge } from "rxjs";
+import { PermissionService } from "../../core/auth/permission.service";
+import { FarmManagementService } from "../../core/farm-management/farm-management.service";
+import { Farm } from "../../core/farm-management/farm-management.models";
+import { getApiErrorMessage } from "../../core/models/api-error.model";
 
-@Component({ selector: 'app-farms-page', standalone: true, imports: [MatButtonModule, MatCardModule, MatFormFieldModule, MatIconModule, MatInputModule, MatPaginatorModule, MatProgressSpinnerModule, MatSelectModule, MatTableModule, ReactiveFormsModule, RouterLink], changeDetection: ChangeDetectionStrategy.OnPush, template: `
-<div class="section-heading"><div><p class="eyebrow">Land portfolio</p><h2>Farms</h2><p>Keep your properties, ownership and growing capacity in one place.</p></div>@if(permissionService.has('Farm.Create')){<a mat-flat-button color="primary" routerLink="/farms/new"><mat-icon>add</mat-icon>Add farm</a>}</div>
-<mat-card><mat-card-content><form class="filters" [formGroup]="filterForm"><mat-form-field appearance="outline"><mat-label>Search farms</mat-label><input matInput formControlName="search" placeholder="Code or name"/></mat-form-field><mat-form-field appearance="outline"><mat-label>Status</mat-label><mat-select formControlName="status"><mat-option value="all">All farms</mat-option><mat-option value="active">Active</mat-option><mat-option value="inactive">Inactive</mat-option></mat-select></mat-form-field></form>
-@if(isLoading()){<div class="loading-state"><mat-spinner diameter="36"/><span>Loading farms…</span></div>}@else if(farms().length===0){<div class="empty-state"><mat-icon>landscape</mat-icon><h3>No farms found</h3><p>Create your first farm to start organizing fields and plantations.</p></div>}@else{<div class="table-wrap"><table mat-table [dataSource]="farms()"><ng-container matColumnDef="farm"><th mat-header-cell *matHeaderCellDef>Farm</th><td mat-cell *matCellDef="let farm"><strong>{{farm.name}}</strong><small>{{farm.code}}</small></td></ng-container><ng-container matColumnDef="ownership"><th mat-header-cell *matHeaderCellDef>Ownership</th><td mat-cell *matCellDef="let farm">{{farm.ownershipTypeName}}</td></ng-container><ng-container matColumnDef="location"><th mat-header-cell *matHeaderCellDef>Location</th><td mat-cell *matCellDef="let farm">{{farm.city || farm.state || '—'}}</td></ng-container><ng-container matColumnDef="area"><th mat-header-cell *matHeaderCellDef>Total area</th><td mat-cell *matCellDef="let farm">{{farm.totalArea ?? '—'}} {{farm.areaUnitSymbol || ''}}</td></ng-container><ng-container matColumnDef="status"><th mat-header-cell *matHeaderCellDef>Status</th><td mat-cell *matCellDef="let farm"><span class="status-pill" [class.status-pill-inactive]="!farm.isActive">{{farm.isActive?'Active':'Inactive'}}</span></td></ng-container><ng-container matColumnDef="actions"><th mat-header-cell *matHeaderCellDef>Actions</th><td mat-cell *matCellDef="let farm"><a mat-button [routerLink]="['/farms',farm.id]">View</a>@if(permissionService.has('Farm.Update')){<a mat-icon-button [routerLink]="['/farms',farm.id,'edit']" aria-label="Edit farm"><mat-icon>edit</mat-icon></a>}@if(farm.isActive&&permissionService.has('Farm.Deactivate')){<button mat-icon-button (click)="changeStatus(farm,false)" [disabled]="actionInProgress()" aria-label="Deactivate farm"><mat-icon>visibility_off</mat-icon></button>}@else if(!farm.isActive&&permissionService.has('Farm.Activate')){<button mat-icon-button (click)="changeStatus(farm,true)" [disabled]="actionInProgress()" aria-label="Activate farm"><mat-icon>visibility</mat-icon></button>}</td></ng-container><tr mat-header-row *matHeaderRowDef="columns"></tr><tr mat-row *matRowDef="let row; columns:columns"></tr></table></div>}
-<mat-paginator [length]="totalCount()" [pageIndex]="pageIndex()" [pageSize]="pageSize()" [pageSizeOptions]="[10,20,50]" (page)="pageChanged($event)"/></mat-card-content></mat-card>`, styles: [`:host{display:block}.section-heading{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}.section-heading h2{margin:4px 0}.section-heading p{color:var(--app-muted)}.filters{display:flex;gap:16px;flex-wrap:wrap}.filters mat-form-field:first-child{min-width:280px}.table-wrap{overflow:auto}table{width:100%}td small{display:block;color:var(--app-muted)}.actions-cell{white-space:nowrap}@media(max-width:640px){.section-heading{align-items:flex-start;gap:16px;flex-direction:column}}`] })
+@Component({
+  selector: "app-farms-page",
+  standalone: true,
+  imports: [
+    MatButtonModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MatPaginatorModule,
+    MatProgressSpinnerModule,
+    MatSelectModule,
+    MatTableModule,
+    ReactiveFormsModule,
+    RouterLink,
+  ],
+  templateUrl: "./farms-page.component.html",
+  styleUrl: "./farms-page.component.scss",
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
 export class FarmsPageComponent implements OnInit {
-  private readonly service=inject(FarmManagementService);private readonly formBuilder=inject(FormBuilder);private readonly snack=inject(MatSnackBar);private readonly destroyRef=inject(DestroyRef);readonly permissionService=inject(PermissionService);
-  readonly columns=['farm','ownership','location','area','status','actions'];readonly farms=signal<readonly Farm[]>([]);readonly totalCount=signal(0);readonly isLoading=signal(false);readonly actionInProgress=signal(false);readonly pageIndex=signal(0);readonly pageSize=signal(20);readonly filterForm=this.formBuilder.nonNullable.group({search:[''],status:['all']});
-  ngOnInit():void{merge(this.filterForm.controls.search.valueChanges.pipe(debounceTime(300),distinctUntilChanged()),this.filterForm.controls.status.valueChanges).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(()=>{this.pageIndex.set(0);this.load();});this.load();}
-  load():void{this.isLoading.set(true);const status=this.filterForm.controls.status.value;this.service.listFarms(this.pageIndex()+1,this.pageSize(),this.filterForm.controls.search.value,status==='all'?null:status==='active').pipe(takeUntilDestroyed(this.destroyRef),finalize(()=>this.isLoading.set(false))).subscribe({next:r=>{this.farms.set(r.items);this.totalCount.set(r.totalCount);},error:e=>this.snack.open(getApiErrorMessage(e,'Farms could not be loaded.'),'Dismiss',{duration:5000})});}
-  pageChanged(event:PageEvent):void{this.pageIndex.set(event.pageIndex);this.pageSize.set(event.pageSize);this.load();}
-  changeStatus(farm:Farm,active:boolean):void{this.actionInProgress.set(true);const request=active?this.service.activateFarm(farm.id):this.service.deactivateFarm(farm.id);request.pipe(takeUntilDestroyed(this.destroyRef),finalize(()=>this.actionInProgress.set(false))).subscribe({next:()=>{this.snack.open(`Farm ${active?'activated':'deactivated'}.`,'Dismiss',{duration:3000});this.load();},error:e=>this.snack.open(getApiErrorMessage(e,'Farm status could not be changed.'),'Dismiss',{duration:5000})});}
+  private readonly service = inject(FarmManagementService);
+  private readonly formBuilder = inject(FormBuilder);
+  private readonly snack = inject(MatSnackBar);
+  private readonly destroyRef = inject(DestroyRef);
+  readonly permissionService = inject(PermissionService);
+  readonly columns = [
+    "farm",
+    "ownership",
+    "location",
+    "area",
+    "status",
+    "actions",
+  ];
+  readonly farms = signal<readonly Farm[]>([]);
+  readonly totalCount = signal(0);
+  readonly isLoading = signal(false);
+  readonly actionInProgress = signal(false);
+  readonly pageIndex = signal(0);
+  readonly pageSize = signal(20);
+  readonly filterForm = this.formBuilder.nonNullable.group({
+    search: [""],
+    status: ["all"],
+  });
+  ngOnInit(): void {
+    merge(
+      this.filterForm.controls.search.valueChanges.pipe(
+        debounceTime(300),
+        distinctUntilChanged(),
+      ),
+      this.filterForm.controls.status.valueChanges,
+    )
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.pageIndex.set(0);
+        this.load();
+      });
+    this.load();
+  }
+  load(): void {
+    this.isLoading.set(true);
+    const status = this.filterForm.controls.status.value;
+    this.service
+      .listFarms(
+        this.pageIndex() + 1,
+        this.pageSize(),
+        this.filterForm.controls.search.value,
+        status === "all" ? null : status === "active",
+      )
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.isLoading.set(false)),
+      )
+      .subscribe({
+        next: (r) => {
+          this.farms.set(r.items);
+          this.totalCount.set(r.totalCount);
+        },
+        error: (e) =>
+          this.snack.open(
+            getApiErrorMessage(e, "Farms could not be loaded."),
+            "Dismiss",
+            { duration: 5000 },
+          ),
+      });
+  }
+  pageChanged(event: PageEvent): void {
+    this.pageIndex.set(event.pageIndex);
+    this.pageSize.set(event.pageSize);
+    this.load();
+  }
+  changeStatus(farm: Farm, active: boolean): void {
+    this.actionInProgress.set(true);
+    const request = active
+      ? this.service.activateFarm(farm.id)
+      : this.service.deactivateFarm(farm.id);
+    request
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.actionInProgress.set(false)),
+      )
+      .subscribe({
+        next: () => {
+          this.snack.open(
+            `Farm ${active ? "activated" : "deactivated"}.`,
+            "Dismiss",
+            { duration: 3000 },
+          );
+          this.load();
+        },
+        error: (e) =>
+          this.snack.open(
+            getApiErrorMessage(e, "Farm status could not be changed."),
+            "Dismiss",
+            { duration: 5000 },
+          ),
+      });
+  }
 }

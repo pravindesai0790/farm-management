@@ -1,0 +1,117 @@
+<div class="section-heading">
+  <a mat-button routerLink="/farms">← Back to farms</a>
+  <p class="eyebrow">Farm details</p>
+  <h2>{{ farmId ? "Edit farm" : "New farm" }}</h2>
+</div>
+
+@if (isLoading()) {
+  <div class="loading-state">
+    <mat-spinner diameter="36" />
+  </div>
+} @else {
+  <mat-card>
+    <mat-card-content>
+      <form [formGroup]="form" (ngSubmit)="submit()">
+        <div class="form-grid">
+          <mat-form-field appearance="outline">
+            <mat-label>Code</mat-label>
+            <input matInput formControlName="code" />
+            @if (form.controls.code.hasError("required")) {
+              <mat-error>Code is required.</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Name</mat-label>
+            <input matInput formControlName="name" />
+            @if (form.controls.name.hasError("required")) {
+              <mat-error>Name is required.</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Ownership</mat-label>
+            <mat-select formControlName="ownershipTypeId">
+              @for (type of ownershipTypes(); track type.id) {
+                <mat-option [value]="type.id">{{ type.name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Total area</mat-label>
+            <input matInput type="number" formControlName="totalArea" min="0" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Area unit</mat-label>
+            <mat-select formControlName="areaUnitId">
+              @for (unit of units(); track unit.id) {
+                <mat-option [value]="unit.id"
+                  >{{ unit.name }} ({{ unit.symbol }})</mat-option
+                >
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="wide">
+            <mat-label>Description</mat-label>
+            <textarea
+              matInput
+              rows="3"
+              formControlName="description"
+            ></textarea>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>City</mat-label>
+            <input matInput formControlName="city" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>State</mat-label>
+            <input matInput formControlName="state" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Latitude</mat-label>
+            <input
+              matInput
+              type="number"
+              formControlName="latitude"
+              min="-90"
+              max="90"
+            />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Longitude</mat-label>
+            <input
+              matInput
+              type="number"
+              formControlName="longitude"
+              min="-180"
+              max="180"
+            />
+          </mat-form-field>
+        </div>
+
+        @if (errorMessage()) {
+          <p class="form-error">{{ errorMessage() }}</p>
+        }
+
+        <div class="form-actions">
+          <a mat-button routerLink="/farms">Cancel</a>
+          <button
+            mat-flat-button
+            color="primary"
+            [disabled]="isSubmitting()"
+            type="submit"
+          >
+            {{ farmId ? "Save changes" : "Create farm" }}
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+}

@@ -1,16 +1,102 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button'; import { MatCardModule } from '@angular/material/card'; import { MatFormFieldModule } from '@angular/material/form-field'; import { MatInputModule } from '@angular/material/input'; import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'; import { MatSnackBar } from '@angular/material/snack-bar'; import { ActivatedRoute, RouterLink } from '@angular/router'; import { forkJoin, finalize } from 'rxjs';
-import { PermissionService } from '../../core/auth/permission.service'; import { FarmManagementService } from '../../core/farm-management/farm-management.service'; import { Crop, CropVariety } from '../../core/farm-management/farm-management.models'; import { getApiErrorMessage } from '../../core/models/api-error.model';
-@Component({selector:'app-crop-detail-page',standalone:true,imports:[MatButtonModule,MatCardModule,MatFormFieldModule,MatInputModule,MatProgressSpinnerModule,ReactiveFormsModule,RouterLink],changeDetection:ChangeDetectionStrategy.OnPush,template:`
-@if (isLoading()) { <div class="loading-state"><mat-spinner diameter="36"/></div> }
-@else if (crop(); as item) {
-<div class="section-heading"><div><a mat-button routerLink="/crops">← Back to crops</a><p class="eyebrow">{{item.code}} @if(item.isSystem){<span class="system-label">System</span>}</p><h2>{{item.name}}</h2><p>{{item.description || 'Crop catalogue details'}}</p></div>@if(!item.isSystem && permissionService.has('Crop.Update')){<a mat-stroked-button [routerLink]="['/crops',item.id,'edit']">Edit crop</a>}</div>
-<div class="summary"><mat-card><mat-card-content><span>Duration</span><strong>{{item.cropDurationType}}</strong></mat-card-content></mat-card><mat-card><mat-card-content><span>Type</span><strong>{{item.cropType}}</strong></mat-card-content></mat-card><mat-card><mat-card-content><span>Status</span><strong>{{item.isActive ? 'Active' : 'Inactive'}}</strong></mat-card-content></mat-card></div>
-<mat-card><mat-card-content><h3>Varieties</h3><p class="muted">Varieties keep plantation reporting precise.</p>
-@if(varieties().length === 0){<p class="muted">No varieties registered.</p>} @else {<div class="varieties">@for(variety of varieties(); track variety.id){<div class="variety"><span><strong>{{variety.name}}</strong><small>{{variety.code}}</small></span><span>{{variety.isActive ? 'Active' : 'Inactive'}}</span></div>}</div>}
-@if(permissionService.has('CropVariety.Create')){<form class="add-form" [formGroup]="varietyForm" (ngSubmit)="addVariety()"><mat-form-field appearance="outline"><mat-label>Variety name</mat-label><input matInput formControlName="name"/></mat-form-field><mat-form-field appearance="outline"><mat-label>Code</mat-label><input matInput formControlName="code"/></mat-form-field><button mat-flat-button color="primary" [disabled]="isSubmitting()">Add variety</button></form>}
-</mat-card-content></mat-card>}
-`,styles:[`:host{display:block}.section-heading{display:flex;justify-content:space-between;margin-bottom:24px}.section-heading h2{margin:4px 0}.section-heading p{color:var(--app-muted)}.system-label{display:inline-flex;align-items:center;margin-left:8px;border-radius:999px;padding:3px 8px;background:#edf4ee;color:var(--app-primary);font-size:.72rem;font-weight:600;line-height:1.2;vertical-align:middle}.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px}.summary span{color:var(--app-muted);display:block}.summary strong{display:block;margin-top:8px}.varieties{display:grid;gap:8px}.variety{display:flex;justify-content:space-between;border:1px solid var(--app-border);padding:12px;border-radius:8px}.variety small{display:block;color:var(--app-muted)}.add-form{display:flex;align-items:center;gap:12px;margin-top:18px}.muted{color:var(--app-muted)}@media(max-width:640px){.section-heading{flex-direction:column;gap:12px}.summary{grid-template-columns:1fr}.add-form{flex-direction:column;align-items:stretch}}`]})
-export class CropDetailPageComponent implements OnInit { private readonly service=inject(FarmManagementService); private readonly route=inject(ActivatedRoute); private readonly destroyRef=inject(DestroyRef); private readonly snack=inject(MatSnackBar); private readonly fb=inject(FormBuilder); readonly permissionService=inject(PermissionService); readonly id=this.route.snapshot.paramMap.get('id')!; readonly crop=signal<Crop|null>(null); readonly varieties=signal<readonly CropVariety[]>([]); readonly isLoading=signal(true); readonly isSubmitting=signal(false); readonly varietyForm=this.fb.nonNullable.group({code:['',[Validators.required]],name:['',[Validators.required]]}); ngOnInit():void{forkJoin({crop:this.service.getCrop(this.id),varieties:this.service.listVarieties(this.id)}).pipe(takeUntilDestroyed(this.destroyRef),finalize(()=>this.isLoading.set(false))).subscribe({next:r=>{this.crop.set(r.crop);this.varieties.set(r.varieties.items);},error:e=>this.snack.open(getApiErrorMessage(e,'Crop could not be loaded.'),'Dismiss',{duration:5000})});} addVariety():void{if(this.varietyForm.invalid)return;this.isSubmitting.set(true);this.service.createVariety({...this.varietyForm.getRawValue(),cropId:this.id}).pipe(takeUntilDestroyed(this.destroyRef),finalize(()=>this.isSubmitting.set(false))).subscribe({next:r=>{this.varieties.set([...this.varieties(),r]);this.varietyForm.reset();},error:e=>this.snack.open(getApiErrorMessage(e,'Variety could not be added.'),'Dismiss',{duration:5000})});} }
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  OnInit,
+  inject,
+  signal,
+} from "@angular/core";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
+import { MatButtonModule } from "@angular/material/button";
+import { MatCardModule } from "@angular/material/card";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatInputModule } from "@angular/material/input";
+import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
+import { MatSnackBar } from "@angular/material/snack-bar";
+import { ActivatedRoute, RouterLink } from "@angular/router";
+import { forkJoin, finalize } from "rxjs";
+import { PermissionService } from "../../core/auth/permission.service";
+import { FarmManagementService } from "../../core/farm-management/farm-management.service";
+import {
+  Crop,
+  CropVariety,
+} from "../../core/farm-management/farm-management.models";
+import { getApiErrorMessage } from "../../core/models/api-error.model";
+@Component({
+  selector: "app-crop-detail-page",
+  standalone: true,
+  imports: [
+    MatButtonModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatProgressSpinnerModule,
+    ReactiveFormsModule,
+    RouterLink,
+  ],
+  templateUrl: "./crop-detail-page.component.html",
+  styleUrl: "./crop-detail-page.component.scss",
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class CropDetailPageComponent implements OnInit {
+  private readonly service = inject(FarmManagementService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly snack = inject(MatSnackBar);
+  private readonly fb = inject(FormBuilder);
+  readonly permissionService = inject(PermissionService);
+  readonly id = this.route.snapshot.paramMap.get("id")!;
+  readonly crop = signal<Crop | null>(null);
+  readonly varieties = signal<readonly CropVariety[]>([]);
+  readonly isLoading = signal(true);
+  readonly isSubmitting = signal(false);
+  readonly varietyForm = this.fb.nonNullable.group({
+    code: ["", [Validators.required]],
+    name: ["", [Validators.required]],
+  });
+  ngOnInit(): void {
+    forkJoin({
+      crop: this.service.getCrop(this.id),
+      varieties: this.service.listVarieties(this.id),
+    })
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.isLoading.set(false)),
+      )
+      .subscribe({
+        next: (r) => {
+          this.crop.set(r.crop);
+          this.varieties.set(r.varieties.items);
+        },
+        error: (e) =>
+          this.snack.open(
+            getApiErrorMessage(e, "Crop could not be loaded."),
+            "Dismiss",
+            { duration: 5000 },
+          ),
+      });
+  }
+  addVariety(): void {
+    if (this.varietyForm.invalid) return;
+    this.isSubmitting.set(true);
+    this.service
+      .createVariety({ ...this.varietyForm.getRawValue(), cropId: this.id })
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.isSubmitting.set(false)),
+      )
+      .subscribe({
+        next: (r) => {
+          this.varieties.set([...this.varieties(), r]);
+          this.varietyForm.reset();
+        },
+        error: (e) =>
+          this.snack.open(
+            getApiErrorMessage(e, "Variety could not be added."),
+            "Dismiss",
+            { duration: 5000 },
+          ),
+      });
+  }
+}

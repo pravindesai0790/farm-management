@@ -1,13 +1,21 @@
 <div class="editor-heading">
   <div>
-    <a mat-button routerLink="/administration/users"><mat-icon>arrow_back</mat-icon>Back to users</a>
-    <p class="eyebrow">{{ isEditing ? 'Edit user' : 'New user' }}</p>
-    <h2>{{ isEditing ? 'Update user details' : 'Invite someone to the workspace' }}</h2>
+    <a mat-button routerLink="/administration/users"
+      ><mat-icon>arrow_back</mat-icon>Back to users</a
+    >
+    <p class="eyebrow">{{ isEditing ? "Edit user" : "New user" }}</p>
+    <h2>
+      {{
+        isEditing ? "Update user details" : "Invite someone to the workspace"
+      }}
+    </h2>
   </div>
 </div>
 
 @if (isLoading()) {
-  <div class="loading-state"><mat-spinner diameter="36" /><span>Loading…</span></div>
+  <div class="loading-state">
+    <mat-spinner diameter="36" /><span>Loading…</span>
+  </div>
 } @else {
   <mat-card>
     <mat-card-content>
@@ -15,40 +23,86 @@
         <div class="form-grid">
           <mat-form-field appearance="outline">
             <mat-label>First name</mat-label>
-            <input matInput formControlName="firstName" autocomplete="given-name" />
-            @if (userForm.controls.firstName.hasError('required')) { <mat-error>First name is required.</mat-error> }
-            @else if (userForm.controls.firstName.hasError('maxlength')) { <mat-error>Use 100 characters or fewer.</mat-error> }
-            @else if (apiError('firstName'); as message) { <mat-error>{{ message }}</mat-error> }
+            <input
+              matInput
+              formControlName="firstName"
+              autocomplete="given-name"
+            />
+            @if (userForm.controls.firstName.hasError("required")) {
+              <mat-error>First name is required.</mat-error>
+            } @else if (userForm.controls.firstName.hasError("maxlength")) {
+              <mat-error>Use 100 characters or fewer.</mat-error>
+            } @else if (apiError("firstName"); as message) {
+              <mat-error>{{ message }}</mat-error>
+            }
           </mat-form-field>
           <mat-form-field appearance="outline">
             <mat-label>Last name</mat-label>
-            <input matInput formControlName="lastName" autocomplete="family-name" />
-            @if (userForm.controls.lastName.hasError('required')) { <mat-error>Last name is required.</mat-error> }
-            @else if (userForm.controls.lastName.hasError('maxlength')) { <mat-error>Use 100 characters or fewer.</mat-error> }
-            @else if (apiError('lastName'); as message) { <mat-error>{{ message }}</mat-error> }
+            <input
+              matInput
+              formControlName="lastName"
+              autocomplete="family-name"
+            />
+            @if (userForm.controls.lastName.hasError("required")) {
+              <mat-error>Last name is required.</mat-error>
+            } @else if (userForm.controls.lastName.hasError("maxlength")) {
+              <mat-error>Use 100 characters or fewer.</mat-error>
+            } @else if (apiError("lastName"); as message) {
+              <mat-error>{{ message }}</mat-error>
+            }
           </mat-form-field>
           <mat-form-field appearance="outline">
             <mat-label>Email</mat-label>
-            <input matInput type="email" formControlName="email" autocomplete="email" />
-            @if (userForm.controls.email.hasError('required')) { <mat-error>Email is required.</mat-error> }
-            @else if (userForm.controls.email.hasError('email')) { <mat-error>Enter a valid email.</mat-error> }
-            @else if (apiError('email'); as message) { <mat-error>{{ message }}</mat-error> }
+            <input
+              matInput
+              type="email"
+              formControlName="email"
+              autocomplete="email"
+            />
+            @if (userForm.controls.email.hasError("required")) {
+              <mat-error>Email is required.</mat-error>
+            } @else if (userForm.controls.email.hasError("email")) {
+              <mat-error>Enter a valid email.</mat-error>
+            } @else if (apiError("email"); as message) {
+              <mat-error>{{ message }}</mat-error>
+            }
           </mat-form-field>
 
           @if (!isEditing) {
             <mat-form-field appearance="outline">
               <mat-label>Temporary password</mat-label>
-              <input matInput type="password" formControlName="password" autocomplete="new-password" />
-              @if (userForm.controls.password.hasError('required')) { <mat-error>Password is required.</mat-error> }
-              @else if (userForm.controls.password.hasError('minlength')) { <mat-error>Use at least 12 characters.</mat-error> }
-              @else if (userForm.controls.password.hasError('pattern')) { <mat-error>Use uppercase, lowercase, number, and special character.</mat-error> }
-              @else if (apiError('password'); as message) { <mat-error>{{ message }}</mat-error> }
+              <input
+                matInput
+                type="password"
+                formControlName="password"
+                autocomplete="new-password"
+              />
+              @if (userForm.controls.password.hasError("required")) {
+                <mat-error>Password is required.</mat-error>
+              } @else if (userForm.controls.password.hasError("minlength")) {
+                <mat-error>Use at least 12 characters.</mat-error>
+              } @else if (userForm.controls.password.hasError("pattern")) {
+                <mat-error
+                  >Use uppercase, lowercase, number, and special
+                  character.</mat-error
+                >
+              } @else if (apiError("password"); as message) {
+                <mat-error>{{ message }}</mat-error>
+              }
             </mat-form-field>
             <mat-form-field appearance="outline">
               <mat-label>Confirm password</mat-label>
-              <input matInput type="password" formControlName="confirmPassword" autocomplete="new-password" />
-              @if (userForm.controls.confirmPassword.hasError('required')) { <mat-error>Confirm the password.</mat-error> }
-              @else if (userForm.hasError('passwordMismatch')) { <mat-error>Passwords do not match.</mat-error> }
+              <input
+                matInput
+                type="password"
+                formControlName="confirmPassword"
+                autocomplete="new-password"
+              />
+              @if (userForm.controls.confirmPassword.hasError("required")) {
+                <mat-error>Confirm the password.</mat-error>
+              } @else if (userForm.hasError("passwordMismatch")) {
+                <mat-error>Passwords do not match.</mat-error>
+              }
             </mat-form-field>
           }
 
@@ -57,11 +111,22 @@
               <mat-label>Organization</mat-label>
               <mat-select formControlName="organizationId">
                 <mat-option value="">Select an organization</mat-option>
-                @for (organization of organizations(); track organization.id) { <mat-option [value]="organization.id">{{ organization.name }} ({{ organization.code }})</mat-option> }
+                @for (organization of organizations(); track organization.id) {
+                  <mat-option [value]="organization.id"
+                    >{{ organization.name }} ({{
+                      organization.code
+                    }})</mat-option
+                  >
+                }
               </mat-select>
-              <mat-hint>Required for a global administrator creating a user.</mat-hint>
-              @if (userForm.controls.organizationId.hasError('required')) { <mat-error>Organization ID is required.</mat-error> }
-              @else if (apiError('organizationId'); as message) { <mat-error>{{ message }}</mat-error> }
+              <mat-hint
+                >Required for a global administrator creating a user.</mat-hint
+              >
+              @if (userForm.controls.organizationId.hasError("required")) {
+                <mat-error>Organization ID is required.</mat-error>
+              } @else if (apiError("organizationId"); as message) {
+                <mat-error>{{ message }}</mat-error>
+              }
             </mat-form-field>
           }
 
@@ -73,15 +138,28 @@
               }
             </mat-select>
             <mat-hint>Assign one or more active roles.</mat-hint>
-            @if (apiError('roleIds'); as message) { <mat-error>{{ message }}</mat-error> }
+            @if (apiError("roleIds"); as message) {
+              <mat-error>{{ message }}</mat-error>
+            }
           </mat-form-field>
         </div>
 
-        @if (errorMessage(); as message) { <p class="form-error" role="alert">{{ message }}</p> }
+        @if (errorMessage(); as message) {
+          <p class="form-error" role="alert">{{ message }}</p>
+        }
         <div class="form-actions">
           <a mat-button routerLink="/administration/users">Cancel</a>
-          <button mat-flat-button color="primary" type="submit" [disabled]="isSubmitting()">
-            @if (isSubmitting()) { <mat-spinner diameter="20" /> } @else { {{ isEditing ? 'Save changes' : 'Create user' }} }
+          <button
+            mat-flat-button
+            color="primary"
+            type="submit"
+            [disabled]="isSubmitting()"
+          >
+            @if (isSubmitting()) {
+              <mat-spinner diameter="20" />
+            } @else {
+              {{ isEditing ? "Save changes" : "Create user" }}
+            }
           </button>
         </div>
       </form>

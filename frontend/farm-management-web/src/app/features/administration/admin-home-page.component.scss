@@ -1,0 +1,30 @@
+.admin-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+mat-card-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 24px !important;
+}
+
+mat-icon {
+  color: var(--app-primary);
+  font-size: 30px;
+  width: 30px;
+  height: 30px;
+}
+
+h2,
+p {
+  margin: 0;
+}
+
+p {
+  color: var(--app-muted);
+  min-height: 48px;
+}

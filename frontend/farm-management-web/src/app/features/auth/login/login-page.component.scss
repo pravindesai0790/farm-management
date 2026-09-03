@@ -81,7 +81,7 @@ form {
   gap: 12px;
 }
 
-button[type='submit'] {
+button[type="submit"] {
   min-height: 48px;
   margin-top: 6px;
 }
@@ -113,4 +113,3 @@ button mat-spinner {
     font-size: clamp(2.7rem, 12vw, 4.4rem);
   }
 }
-

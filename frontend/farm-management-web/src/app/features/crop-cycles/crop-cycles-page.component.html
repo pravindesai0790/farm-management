@@ -1,0 +1,94 @@
+<div class="section-heading">
+  <div>
+    <p class="eyebrow">Production seasons</p>
+    <h2>Crop cycles</h2>
+    <p>
+      Plan seasons and follow them from start through harvest and completion.
+    </p>
+  </div>
+  @if (permissionService.has("CropCycle.Create")) {
+    <a mat-flat-button color="primary" routerLink="/crop-cycles/new">
+      <mat-icon>add</mat-icon>Add cycle
+    </a>
+  }
+</div>
+
+<mat-card>
+  <mat-card-content>
+    <mat-form-field appearance="outline">
+      <mat-label>Status</mat-label>
+      <mat-select [value]="status()" (valueChange)="status.set($event); load()">
+        <mat-option value="">All cycles</mat-option>
+        <mat-option value="PLANNED">Planned</mat-option>
+        <mat-option value="ACTIVE">Active</mat-option>
+        <mat-option value="HARVESTED">Harvested</mat-option>
+        <mat-option value="COMPLETED">Completed</mat-option>
+        <mat-option value="CANCELLED">Cancelled</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    @if (isLoading()) {
+      <div class="loading-state">
+        <mat-spinner diameter="36" />
+      </div>
+    } @else if (cycles().length === 0) {
+      <div class="empty-state">
+        <mat-icon>calendar_month</mat-icon>
+        <h3>No crop cycles found</h3>
+      </div>
+    } @else {
+      <div class="table-wrap">
+        <table mat-table [dataSource]="cycles()">
+          <ng-container matColumnDef="cycle">
+            <th mat-header-cell *matHeaderCellDef>Cycle</th>
+            <td mat-cell *matCellDef="let c">
+              <strong>{{ c.cycleName }}</strong>
+              <small>{{ c.cycleCode }} · {{ c.seasonYear }}</small>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="plantation">
+            <th mat-header-cell *matHeaderCellDef>Plantation</th>
+            <td mat-cell *matCellDef="let c">
+              {{ c.plantationName }}
+              <small>{{ c.cropName }}</small>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="dates">
+            <th mat-header-cell *matHeaderCellDef>Planned start</th>
+            <td mat-cell *matCellDef="let c">{{ c.plannedStartDate }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Status</th>
+            <td mat-cell *matCellDef="let c">
+              <span class="status-pill">{{ c.status }}</span>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef>Actions</th>
+            <td mat-cell *matCellDef="let c">
+              <a mat-button [routerLink]="['/crop-cycles', c.id]">View</a>
+              @if (
+                c.status === "PLANNED" &&
+                permissionService.has("CropCycle.Update")
+              ) {
+                <a
+                  mat-icon-button
+                  [routerLink]="['/crop-cycles', c.id, 'edit']"
+                >
+                  <mat-icon>edit</mat-icon>
+                </a>
+              }
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="columns"></tr>
+          <tr mat-row *matRowDef="let row; columns: columns"></tr>
+        </table>
+      </div>
+    }
+  </mat-card-content>
+</mat-card>

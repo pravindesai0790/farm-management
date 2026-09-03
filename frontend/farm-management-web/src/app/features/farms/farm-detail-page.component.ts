@@ -1,3 +1,70 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject, signal } from '@angular/core'; import { takeUntilDestroyed } from '@angular/core/rxjs-interop'; import { MatButtonModule } from '@angular/material/button'; import { MatCardModule } from '@angular/material/card'; import { MatIconModule } from '@angular/material/icon'; import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'; import { MatSnackBar } from '@angular/material/snack-bar'; import { ActivatedRoute, RouterLink } from '@angular/router'; import { forkJoin } from 'rxjs'; import { PermissionService } from '../../core/auth/permission.service'; import { FarmManagementService } from '../../core/farm-management/farm-management.service'; import { Farm, FarmArea } from '../../core/farm-management/farm-management.models'; import { getApiErrorMessage } from '../../core/models/api-error.model';
-@Component({selector:'app-farm-detail-page',standalone:true,imports:[MatButtonModule,MatCardModule,MatIconModule,MatProgressSpinnerModule,RouterLink],changeDetection:ChangeDetectionStrategy.OnPush,template:`@if(isLoading()){<div class="loading-state"><mat-spinner diameter="36"/></div>}@else if(farm();as item){<div class="section-heading"><div><a mat-button routerLink="/farms">← Back to farms</a><p class="eyebrow">{{item.code}}</p><h2>{{item.name}}</h2><p>{{item.description||'Farm overview and growing areas'}}</p></div>@if(permissionService.has('Farm.Update')){<a mat-flat-button color="primary" [routerLink]="['/farms',farmId,'edit']"><mat-icon>edit</mat-icon>Edit farm</a>}</div><div class="cards"><mat-card><mat-card-content><span>Status</span><strong>{{item.isActive?'Active':'Inactive'}}</strong></mat-card-content></mat-card><mat-card><mat-card-content><span>Ownership</span><strong>{{item.ownershipTypeName}}</strong></mat-card-content></mat-card><mat-card><mat-card-content><span>Total area</span><strong>{{item.totalArea??'—'}} {{item.areaUnitSymbol||''}}</strong></mat-card-content></mat-card><mat-card><mat-card-content><span>Location</span><strong>{{item.city||item.state||'Not specified'}}</strong></mat-card-content></mat-card></div><mat-card class="areas-card"><mat-card-content><div class="subheading"><div><h3>Farm areas</h3><p>Physical areas and sub-areas available for planting.</p></div>@if(permissionService.has('FarmArea.Create')){<a mat-stroked-button color="primary" [routerLink]="['/farm-areas/new']" [queryParams]="{farmId:farmId}">Add area</a>}</div>@if(areas().length===0){<p class="muted">No areas have been added yet.</p>}@else{<div class="area-list">@for(area of areas();track area.id){<a class="area-row" [routerLink]="['/farm-areas',area.id]"><span><strong>{{area.name}}</strong><small>{{area.code}} · {{area.parentFarmAreaId?'Sub-area':'Farm area'}}</small></span><span>{{area.totalArea}} {{area.areaUnitSymbol}}</span></a>}</div>}</mat-card-content></mat-card>}`,styles:[`:host{display:block}.section-heading{display:flex;justify-content:space-between;margin-bottom:24px}.section-heading h2{margin:4px 0}.section-heading p{color:var(--app-muted)}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}.cards span{display:block;color:var(--app-muted)}.cards strong{display:block;margin-top:8px}.areas-card{margin-top:20px}.subheading{display:flex;justify-content:space-between;align-items:center}.subheading h3{margin:0}.subheading p{color:var(--app-muted)}.area-list{display:grid;gap:8px}.area-row{display:flex;justify-content:space-between;padding:14px;border:1px solid var(--app-border);border-radius:10px;color:inherit;text-decoration:none}.area-row small{display:block;color:var(--app-muted);margin-top:4px}.muted{color:var(--app-muted)}@media(max-width:800px){.cards{grid-template-columns:repeat(2,1fr)}}@media(max-width:520px){.section-heading{flex-direction:column;gap:12px}.cards{grid-template-columns:1fr}}`]})
-export class FarmDetailPageComponent implements OnInit{private readonly service=inject(FarmManagementService);private readonly route=inject(ActivatedRoute);private readonly snack=inject(MatSnackBar);private readonly destroyRef=inject(DestroyRef);readonly permissionService=inject(PermissionService);readonly farmId=this.route.snapshot.paramMap.get('id')!;readonly farm=signal<Farm|null>(null);readonly areas=signal<readonly FarmArea[]>([]);readonly isLoading=signal(true);ngOnInit():void{forkJoin({farm:this.service.getFarm(this.farmId),areas:this.service.listAreas(this.farmId)}).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({next:r=>{this.farm.set(r.farm);this.areas.set(r.areas);this.isLoading.set(false)},error:e=>{this.snack.open(getApiErrorMessage(e,'Farm could not be loaded.'),'Dismiss',{duration:5000});this.isLoading.set(false)}});}}
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  OnInit,
+  inject,
+  signal,
+} from "@angular/core";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { MatButtonModule } from "@angular/material/button";
+import { MatCardModule } from "@angular/material/card";
+import { MatIconModule } from "@angular/material/icon";
+import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
+import { MatSnackBar } from "@angular/material/snack-bar";
+import { ActivatedRoute, RouterLink } from "@angular/router";
+import { forkJoin } from "rxjs";
+import { PermissionService } from "../../core/auth/permission.service";
+import { FarmManagementService } from "../../core/farm-management/farm-management.service";
+import {
+  Farm,
+  FarmArea,
+} from "../../core/farm-management/farm-management.models";
+import { getApiErrorMessage } from "../../core/models/api-error.model";
+@Component({
+  selector: "app-farm-detail-page",
+  standalone: true,
+  imports: [
+    MatButtonModule,
+    MatCardModule,
+    MatIconModule,
+    MatProgressSpinnerModule,
+    RouterLink,
+  ],
+  templateUrl: "./farm-detail-page.component.html",
+  styleUrl: "./farm-detail-page.component.scss",
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class FarmDetailPageComponent implements OnInit {
+  private readonly service = inject(FarmManagementService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly snack = inject(MatSnackBar);
+  private readonly destroyRef = inject(DestroyRef);
+  readonly permissionService = inject(PermissionService);
+  readonly farmId = this.route.snapshot.paramMap.get("id")!;
+  readonly farm = signal<Farm | null>(null);
+  readonly areas = signal<readonly FarmArea[]>([]);
+  readonly isLoading = signal(true);
+  ngOnInit(): void {
+    forkJoin({
+      farm: this.service.getFarm(this.farmId),
+      areas: this.service.listAreas(this.farmId),
+    })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (r) => {
+          this.farm.set(r.farm);
+          this.areas.set(r.areas);
+          this.isLoading.set(false);
+        },
+        error: (e) => {
+          this.snack.open(
+            getApiErrorMessage(e, "Farm could not be loaded."),
+            "Dismiss",
+            { duration: 5000 },
+          );
+          this.isLoading.set(false);
+        },
+      });
+  }
+}

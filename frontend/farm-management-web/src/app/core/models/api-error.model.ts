@@ -8,15 +8,18 @@ export function getApiErrorMessage(error: unknown, fallback: string): string {
   return body?.message?.trim() || fallback;
 }
 
-export function getApiValidationErrors(error: unknown): Readonly<Record<string, readonly string[]>> {
+export function getApiValidationErrors(
+  error: unknown,
+): Readonly<Record<string, readonly string[]>> {
   return getApiErrorBody(error)?.errors ?? {};
 }
 
 function getApiErrorBody(error: unknown): ApiErrorResponse | null {
-  if (typeof error !== 'object' || error === null || !('error' in error)) {
+  if (typeof error !== "object" || error === null || !("error" in error)) {
     return null;
   }
   const body = error.error;
-  return typeof body === 'object' && body !== null ? body as ApiErrorResponse : null;
+  return typeof body === "object" && body !== null
+    ? (body as ApiErrorResponse)
+    : null;
 }
-

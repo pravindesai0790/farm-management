@@ -1,8 +1,8 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject } from "@angular/core";
 
-import { AuthStore } from './auth.store';
+import { AuthStore } from "./auth.store";
 
-@Injectable({ providedIn: 'root' })
+@Injectable({ providedIn: "root" })
 export class PermissionService {
   private readonly authStore = inject(AuthStore);
 

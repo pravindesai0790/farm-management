@@ -1,3 +1,119 @@
-import { ChangeDetectionStrategy,Component,DestroyRef,OnInit,inject,signal } from '@angular/core'; import { takeUntilDestroyed } from '@angular/core/rxjs-interop'; import { FormBuilder,ReactiveFormsModule,Validators } from '@angular/forms'; import { MatButtonModule } from '@angular/material/button'; import { MatCardModule } from '@angular/material/card'; import { MatFormFieldModule } from '@angular/material/form-field'; import { MatInputModule } from '@angular/material/input'; import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'; import { MatSelectModule } from '@angular/material/select'; import { MatSnackBar } from '@angular/material/snack-bar'; import { ActivatedRoute,Router,RouterLink } from '@angular/router'; import { forkJoin,of,finalize } from 'rxjs'; import { FarmManagementService } from '../../core/farm-management/farm-management.service'; import { getApiErrorMessage } from '../../core/models/api-error.model';
-@Component({selector:'app-crop-cycle-editor-page',standalone:true,imports:[MatButtonModule,MatCardModule,MatFormFieldModule,MatInputModule,MatProgressSpinnerModule,MatSelectModule,ReactiveFormsModule,RouterLink],changeDetection:ChangeDetectionStrategy.OnPush,template:`<div class="section-heading"><a mat-button routerLink="/crop-cycles">← Back to cycles</a><p class="eyebrow">Production season</p><h2>{{id?'Edit cycle':'New cycle'}}</h2></div>@if(isLoading()){<div class="loading-state"><mat-spinner diameter="36"/></div>}@else{<mat-card><mat-card-content><form [formGroup]="form" (ngSubmit)="submit()"><div class="form-grid"><mat-form-field appearance="outline"><mat-label>Plantation</mat-label><mat-select formControlName="plantationId">@for(p of plantations();track p.id){<mat-option [value]="p.id">{{p.plantationName}} · {{p.cropName}}</mat-option>}</mat-select></mat-form-field><mat-form-field appearance="outline"><mat-label>Cycle code</mat-label><input matInput formControlName="cycleCode"/></mat-form-field><mat-form-field appearance="outline"><mat-label>Cycle name</mat-label><input matInput formControlName="cycleName"/></mat-form-field><mat-form-field appearance="outline"><mat-label>Season year</mat-label><input matInput type="number" formControlName="seasonYear"/></mat-form-field><mat-form-field appearance="outline"><mat-label>Season name</mat-label><input matInput formControlName="seasonName" placeholder="Kharif"/></mat-form-field><mat-form-field appearance="outline"><mat-label>Planned start</mat-label><input matInput type="date" formControlName="plannedStartDate"/></mat-form-field><mat-form-field appearance="outline"><mat-label>Expected end</mat-label><input matInput type="date" formControlName="expectedEndDate"/></mat-form-field></div>@if(errorMessage()){<p class="form-error">{{errorMessage()}}</p>}<div class="form-actions"><a mat-button routerLink="/crop-cycles">Cancel</a><button mat-flat-button color="primary" [disabled]="isSubmitting()">{{id?'Save changes':'Create cycle'}}</button></div></form></mat-card-content></mat-card>}`,styles:[`:host{display:block}.section-heading{margin-bottom:20px}.section-heading h2{margin:4px 0}.form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}.form-actions{display:flex;justify-content:flex-end;gap:12px;margin-top:20px}.form-error{color:#b3261e}@media(max-width:640px){.form-grid{grid-template-columns:1fr}}`]})
-export class CropCycleEditorPageComponent implements OnInit{private readonly service=inject(FarmManagementService);private readonly route=inject(ActivatedRoute);private readonly router=inject(Router);private readonly snack=inject(MatSnackBar);private readonly destroyRef=inject(DestroyRef);private readonly fb=inject(FormBuilder);readonly id=this.route.snapshot.paramMap.get('id');readonly isLoading=signal(true);readonly isSubmitting=signal(false);readonly errorMessage=signal<string|null>(null);readonly plantations=signal<readonly any[]>([]);readonly form=this.fb.group({plantationId:[null as string|null,[Validators.required]],cycleCode:['',[Validators.required]],cycleName:['',[Validators.required]],seasonYear:[new Date().getFullYear(),[Validators.required]],seasonName:[''],plannedStartDate:['',[Validators.required]],expectedEndDate:['']});ngOnInit():void{forkJoin({plantations:this.service.listPlantations(),cycle:this.id?this.service.getCycle(this.id):of(null)}).pipe(takeUntilDestroyed(this.destroyRef),finalize(()=>this.isLoading.set(false))).subscribe({next:r=>{this.plantations.set(r.plantations.items);if(r.cycle)this.form.patchValue({plantationId:r.cycle.plantationId,cycleCode:r.cycle.cycleCode,cycleName:r.cycle.cycleName,seasonYear:r.cycle.seasonYear,seasonName:r.cycle.seasonName??'',plannedStartDate:r.cycle.plannedStartDate,expectedEndDate:r.cycle.expectedEndDate??''});},error:e=>this.errorMessage.set(getApiErrorMessage(e,'Cycle form data could not be loaded.'))});}submit():void{if(this.form.invalid){this.form.markAllAsTouched();return;}this.isSubmitting.set(true);const v=this.form.getRawValue();const request=this.id?this.service.updateCycle(this.id,v):this.service.createCycle(v);request.pipe(takeUntilDestroyed(this.destroyRef),finalize(()=>this.isSubmitting.set(false))).subscribe({next:()=>{this.snack.open(this.id?'Cycle updated.':'Cycle created.','Dismiss',{duration:3000});void this.router.navigateByUrl('/crop-cycles');},error:e=>this.errorMessage.set(getApiErrorMessage(e,'Cycle could not be saved.'))});}}
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  OnInit,
+  inject,
+  signal,
+} from "@angular/core";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
+import { MatButtonModule } from "@angular/material/button";
+import { MatCardModule } from "@angular/material/card";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatInputModule } from "@angular/material/input";
+import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
+import { MatSelectModule } from "@angular/material/select";
+import { MatSnackBar } from "@angular/material/snack-bar";
+import { ActivatedRoute, Router, RouterLink } from "@angular/router";
+import { forkJoin, of, finalize } from "rxjs";
+import { FarmManagementService } from "../../core/farm-management/farm-management.service";
+import { getApiErrorMessage } from "../../core/models/api-error.model";
+@Component({
+  selector: "app-crop-cycle-editor-page",
+  standalone: true,
+  imports: [
+    MatButtonModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatProgressSpinnerModule,
+    MatSelectModule,
+    ReactiveFormsModule,
+    RouterLink,
+  ],
+  templateUrl: "./crop-cycle-editor-page.component.html",
+  styleUrl: "./crop-cycle-editor-page.component.scss",
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class CropCycleEditorPageComponent implements OnInit {
+  private readonly service = inject(FarmManagementService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly snack = inject(MatSnackBar);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly fb = inject(FormBuilder);
+  readonly id = this.route.snapshot.paramMap.get("id");
+  readonly isLoading = signal(true);
+  readonly isSubmitting = signal(false);
+  readonly errorMessage = signal<string | null>(null);
+  readonly plantations = signal<readonly any[]>([]);
+  readonly form = this.fb.group({
+    plantationId: [null as string | null, [Validators.required]],
+    cycleCode: ["", [Validators.required]],
+    cycleName: ["", [Validators.required]],
+    seasonYear: [new Date().getFullYear(), [Validators.required]],
+    seasonName: [""],
+    plannedStartDate: ["", [Validators.required]],
+    expectedEndDate: [""],
+  });
+  ngOnInit(): void {
+    forkJoin({
+      plantations: this.service.listPlantations(),
+      cycle: this.id ? this.service.getCycle(this.id) : of(null),
+    })
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.isLoading.set(false)),
+      )
+      .subscribe({
+        next: (r) => {
+          this.plantations.set(r.plantations.items);
+          if (r.cycle)
+            this.form.patchValue({
+              plantationId: r.cycle.plantationId,
+              cycleCode: r.cycle.cycleCode,
+              cycleName: r.cycle.cycleName,
+              seasonYear: r.cycle.seasonYear,
+              seasonName: r.cycle.seasonName ?? "",
+              plannedStartDate: r.cycle.plannedStartDate,
+              expectedEndDate: r.cycle.expectedEndDate ?? "",
+            });
+        },
+        error: (e) =>
+          this.errorMessage.set(
+            getApiErrorMessage(e, "Cycle form data could not be loaded."),
+          ),
+      });
+  }
+  submit(): void {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+    this.isSubmitting.set(true);
+    const v = this.form.getRawValue();
+    const request = this.id
+      ? this.service.updateCycle(this.id, v)
+      : this.service.createCycle(v);
+    request
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.isSubmitting.set(false)),
+      )
+      .subscribe({
+        next: () => {
+          this.snack.open(
+            this.id ? "Cycle updated." : "Cycle created.",
+            "Dismiss",
+            { duration: 3000 },
+          );
+          void this.router.navigateByUrl("/crop-cycles");
+        },
+        error: (e) =>
+          this.errorMessage.set(
+            getApiErrorMessage(e, "Cycle could not be saved."),
+          ),
+      });
+  }
+}

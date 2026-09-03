@@ -1,3 +1,99 @@
-import { DatePipe } from '@angular/common'; import { ChangeDetectionStrategy,Component,DestroyRef,OnInit,inject,signal } from '@angular/core'; import { takeUntilDestroyed } from '@angular/core/rxjs-interop'; import { MatButtonModule } from '@angular/material/button'; import { MatCardModule } from '@angular/material/card'; import { MatIconModule } from '@angular/material/icon'; import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'; import { MatSnackBar } from '@angular/material/snack-bar'; import { ActivatedRoute,Router,RouterLink } from '@angular/router'; import { FarmManagementService } from '../../core/farm-management/farm-management.service'; import { CropCycle,Plantation } from '../../core/farm-management/farm-management.models'; import { PermissionService } from '../../core/auth/permission.service'; import { getApiErrorMessage } from '../../core/models/api-error.model';
-@Component({selector:'app-plantation-detail-page',standalone:true,imports:[DatePipe,MatButtonModule,MatCardModule,MatIconModule,MatProgressSpinnerModule,RouterLink],changeDetection:ChangeDetectionStrategy.OnPush,template:`@if(isLoading()){<div class="loading-state"><mat-spinner diameter="36"/></div>}@else if(plantation();as p){<div class="section-heading"><div><a mat-button routerLink="/plantations">← Back to plantations</a><p class="eyebrow">{{p.plantationCode}}</p><h2>{{p.plantationName}}</h2><p>{{p.cropName}} · {{p.varietyName||'No variety'}}</p></div><div class="actions">@if(permissionService.has('Plantation.Update')&&p.status!=='TERMINATED'&&p.status!=='ARCHIVED'){<a mat-stroked-button [routerLink]="['/plantations',p.id,'edit']">Edit</a>}@if(p.status==='ACTIVE'&&permissionService.has('Plantation.Terminate')){<button mat-flat-button color="warn" (click)="terminate()">Terminate</button>}</div></div><div class="summary"><mat-card><mat-card-content><span>Farm area</span><strong>{{p.farmAreaName}}</strong></mat-card-content></mat-card><mat-card><mat-card-content><span>Allocated area</span><strong>{{p.allocatedArea}} {{p.areaUnitSymbol}}</strong></mat-card-content></mat-card><mat-card><mat-card-content><span>Planted</span><strong>{{p.plantingDate | date:'mediumDate'}}</strong></mat-card-content></mat-card><mat-card><mat-card-content><span>Status</span><strong>{{p.status}}</strong></mat-card-content></mat-card></div><mat-card><mat-card-content><h3>Crop cycles</h3>@if(cycles().length===0){<p class="muted">No cycles registered for this plantation.</p>}@else{@for(cycle of cycles();track cycle.id){<div class="cycle"><span><strong>{{cycle.cycleName}}</strong><small>{{cycle.cycleCode}} · {{cycle.seasonYear}}</small></span><span>{{cycle.status}}</span></div>}}</mat-card-content></mat-card>}`,styles:[`:host{display:block}.section-heading{display:flex;justify-content:space-between;margin-bottom:24px}.section-heading h2{margin:4px 0}.section-heading p{color:var(--app-muted)}.actions{display:flex;gap:10px;align-items:center}.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}.summary span{display:block;color:var(--app-muted)}.summary strong{display:block;margin-top:8px}.cycle{display:flex;justify-content:space-between;border-bottom:1px solid var(--app-border);padding:12px 0}.cycle small{display:block;color:var(--app-muted)}.muted{color:var(--app-muted)}@media(max-width:700px){.summary{grid-template-columns:repeat(2,1fr)}.section-heading{flex-direction:column;gap:12px}}`]})
-export class PlantationDetailPageComponent implements OnInit{private readonly service=inject(FarmManagementService);private readonly route=inject(ActivatedRoute);private readonly router=inject(Router);private readonly snack=inject(MatSnackBar);private readonly destroyRef=inject(DestroyRef);readonly permissionService=inject(PermissionService);readonly id=this.route.snapshot.paramMap.get('id')!;readonly plantation=signal<Plantation|null>(null);readonly cycles=signal<readonly CropCycle[]>([]);readonly isLoading=signal(true);ngOnInit():void{this.service.getPlantation(this.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({next:p=>{this.plantation.set(p);this.service.listCycles(p.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(r=>this.cycles.set(r.items));this.isLoading.set(false);},error:e=>{this.snack.open(getApiErrorMessage(e,'Plantation could not be loaded.'),'Dismiss',{duration:5000});this.isLoading.set(false)}});}terminate():void{const reason=prompt('Enter the termination reason ID');if(!reason)return;this.service.terminatePlantation(this.id,{terminationDate:new Date().toISOString().slice(0,10),endReasonId:reason,notes:'Terminated from plantation details.',cancelActiveCycles:true}).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({next:()=>{this.snack.open('Plantation terminated.','Dismiss',{duration:3000});void this.router.navigateByUrl('/plantations');},error:e=>this.snack.open(getApiErrorMessage(e,'Plantation could not be terminated.'),'Dismiss',{duration:5000})});}}
+import { DatePipe } from "@angular/common";
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  OnInit,
+  inject,
+  signal,
+} from "@angular/core";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { MatButtonModule } from "@angular/material/button";
+import { MatCardModule } from "@angular/material/card";
+import { MatIconModule } from "@angular/material/icon";
+import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
+import { MatSnackBar } from "@angular/material/snack-bar";
+import { ActivatedRoute, Router, RouterLink } from "@angular/router";
+import { FarmManagementService } from "../../core/farm-management/farm-management.service";
+import {
+  CropCycle,
+  Plantation,
+} from "../../core/farm-management/farm-management.models";
+import { PermissionService } from "../../core/auth/permission.service";
+import { getApiErrorMessage } from "../../core/models/api-error.model";
+@Component({
+  selector: "app-plantation-detail-page",
+  standalone: true,
+  imports: [
+    DatePipe,
+    MatButtonModule,
+    MatCardModule,
+    MatIconModule,
+    MatProgressSpinnerModule,
+    RouterLink,
+  ],
+  templateUrl: "./plantation-detail-page.component.html",
+  styleUrl: "./plantation-detail-page.component.scss",
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class PlantationDetailPageComponent implements OnInit {
+  private readonly service = inject(FarmManagementService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly snack = inject(MatSnackBar);
+  private readonly destroyRef = inject(DestroyRef);
+  readonly permissionService = inject(PermissionService);
+  readonly id = this.route.snapshot.paramMap.get("id")!;
+  readonly plantation = signal<Plantation | null>(null);
+  readonly cycles = signal<readonly CropCycle[]>([]);
+  readonly isLoading = signal(true);
+  ngOnInit(): void {
+    this.service
+      .getPlantation(this.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (p) => {
+          this.plantation.set(p);
+          this.service
+            .listCycles(p.id)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((r) => this.cycles.set(r.items));
+          this.isLoading.set(false);
+        },
+        error: (e) => {
+          this.snack.open(
+            getApiErrorMessage(e, "Plantation could not be loaded."),
+            "Dismiss",
+            { duration: 5000 },
+          );
+          this.isLoading.set(false);
+        },
+      });
+  }
+  terminate(): void {
+    const reason = prompt("Enter the termination reason ID");
+    if (!reason) return;
+    this.service
+      .terminatePlantation(this.id, {
+        terminationDate: new Date().toISOString().slice(0, 10),
+        endReasonId: reason,
+        notes: "Terminated from plantation details.",
+        cancelActiveCycles: true,
+      })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.snack.open("Plantation terminated.", "Dismiss", {
+            duration: 3000,
+          });
+          void this.router.navigateByUrl("/plantations");
+        },
+        error: (e) =>
+          this.snack.open(
+            getApiErrorMessage(e, "Plantation could not be terminated."),
+            "Dismiss",
+            { duration: 5000 },
+          ),
+      });
+  }
+}

@@ -1,0 +1,78 @@
+@if (isLoading()) {
+  <div class="loading-state">
+    <mat-spinner diameter="36" />
+  </div>
+} @else if (plantation(); as p) {
+  <div class="section-heading">
+    <div>
+      <a mat-button routerLink="/plantations">← Back to plantations</a>
+      <p class="eyebrow">{{ p.plantationCode }}</p>
+      <h2>{{ p.plantationName }}</h2>
+      <p>{{ p.cropName }} · {{ p.varietyName || "No variety" }}</p>
+    </div>
+    <div class="actions">
+      @if (
+        permissionService.has("Plantation.Update") &&
+        p.status !== "TERMINATED" &&
+        p.status !== "ARCHIVED"
+      ) {
+        <a mat-stroked-button [routerLink]="['/plantations', p.id, 'edit']"
+          >Edit</a
+        >
+      }
+      @if (
+        p.status === "ACTIVE" && permissionService.has("Plantation.Terminate")
+      ) {
+        <button mat-flat-button color="warn" (click)="terminate()">
+          Terminate
+        </button>
+      }
+    </div>
+  </div>
+
+  <div class="summary">
+    <mat-card>
+      <mat-card-content>
+        <span>Farm area</span>
+        <strong>{{ p.farmAreaName }}</strong>
+      </mat-card-content>
+    </mat-card>
+    <mat-card>
+      <mat-card-content>
+        <span>Allocated area</span>
+        <strong>{{ p.allocatedArea }} {{ p.areaUnitSymbol }}</strong>
+      </mat-card-content>
+    </mat-card>
+    <mat-card>
+      <mat-card-content>
+        <span>Planted</span>
+        <strong>{{ p.plantingDate | date: "mediumDate" }}</strong>
+      </mat-card-content>
+    </mat-card>
+    <mat-card>
+      <mat-card-content>
+        <span>Status</span>
+        <strong>{{ p.status }}</strong>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <mat-card>
+    <mat-card-content>
+      <h3>Crop cycles</h3>
+      @if (cycles().length === 0) {
+        <p class="muted">No cycles registered for this plantation.</p>
+      } @else {
+        @for (cycle of cycles(); track cycle.id) {
+          <div class="cycle">
+            <span>
+              <strong>{{ cycle.cycleName }}</strong>
+              <small>{{ cycle.cycleCode }} · {{ cycle.seasonYear }}</small>
+            </span>
+            <span>{{ cycle.status }}</span>
+          </div>
+        }
+      }
+    </mat-card-content>
+  </mat-card>
+}

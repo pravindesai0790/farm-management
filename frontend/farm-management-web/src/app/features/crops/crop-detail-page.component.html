@@ -1,0 +1,87 @@
+@if (isLoading()) {
+  <div class="loading-state">
+    <mat-spinner diameter="36" />
+  </div>
+} @else if (crop(); as item) {
+  <div class="section-heading">
+    <div>
+      <a mat-button routerLink="/crops">← Back to crops</a>
+      <p class="eyebrow">
+        {{ item.code }}
+        @if (item.isSystem) {
+          <span class="system-label">System</span>
+        }
+      </p>
+      <h2>{{ item.name }}</h2>
+      <p>{{ item.description || "Crop catalogue details" }}</p>
+    </div>
+    @if (!item.isSystem && permissionService.has("Crop.Update")) {
+      <a mat-stroked-button [routerLink]="['/crops', item.id, 'edit']"
+        >Edit crop</a
+      >
+    }
+  </div>
+
+  <div class="summary">
+    <mat-card>
+      <mat-card-content>
+        <span>Duration</span>
+        <strong>{{ item.cropDurationType }}</strong>
+      </mat-card-content>
+    </mat-card>
+    <mat-card>
+      <mat-card-content>
+        <span>Type</span>
+        <strong>{{ item.cropType }}</strong>
+      </mat-card-content>
+    </mat-card>
+    <mat-card>
+      <mat-card-content>
+        <span>Status</span>
+        <strong>{{ item.isActive ? "Active" : "Inactive" }}</strong>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <mat-card>
+    <mat-card-content>
+      <h3>Varieties</h3>
+      <p class="muted">Varieties keep plantation reporting precise.</p>
+      @if (varieties().length === 0) {
+        <p class="muted">No varieties registered.</p>
+      } @else {
+        <div class="varieties">
+          @for (variety of varieties(); track variety.id) {
+            <div class="variety">
+              <span>
+                <strong>{{ variety.name }}</strong>
+                <small>{{ variety.code }}</small>
+              </span>
+              <span>{{ variety.isActive ? "Active" : "Inactive" }}</span>
+            </div>
+          }
+        </div>
+      }
+
+      @if (permissionService.has("CropVariety.Create")) {
+        <form
+          class="add-form"
+          [formGroup]="varietyForm"
+          (ngSubmit)="addVariety()"
+        >
+          <mat-form-field appearance="outline">
+            <mat-label>Variety name</mat-label>
+            <input matInput formControlName="name" />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Code</mat-label>
+            <input matInput formControlName="code" />
+          </mat-form-field>
+          <button mat-flat-button color="primary" [disabled]="isSubmitting()">
+            Add variety
+          </button>
+        </form>
+      }
+    </mat-card-content>
+  </mat-card>
+}

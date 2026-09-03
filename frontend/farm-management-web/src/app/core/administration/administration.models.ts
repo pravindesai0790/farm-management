@@ -76,4 +76,3 @@ export interface UpdateRoleRequest {
 export interface UpdateRolePermissionsRequest {
   readonly permissionIds: readonly string[];
 }
-

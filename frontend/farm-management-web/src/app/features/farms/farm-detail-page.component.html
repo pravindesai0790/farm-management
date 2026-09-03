@@ -1,0 +1,91 @@
+@if (isLoading()) {
+  <div class="loading-state">
+    <mat-spinner diameter="36" />
+  </div>
+} @else if (farm(); as item) {
+  <div class="section-heading">
+    <div>
+      <a mat-button routerLink="/farms">← Back to farms</a>
+      <p class="eyebrow">{{ item.code }}</p>
+      <h2>{{ item.name }}</h2>
+      <p>{{ item.description || "Farm overview and growing areas" }}</p>
+    </div>
+    @if (permissionService.has("Farm.Update")) {
+      <a
+        mat-flat-button
+        color="primary"
+        [routerLink]="['/farms', farmId, 'edit']"
+      >
+        <mat-icon>edit</mat-icon>Edit farm
+      </a>
+    }
+  </div>
+
+  <div class="cards">
+    <mat-card>
+      <mat-card-content>
+        <span>Status</span>
+        <strong>{{ item.isActive ? "Active" : "Inactive" }}</strong>
+      </mat-card-content>
+    </mat-card>
+    <mat-card>
+      <mat-card-content>
+        <span>Ownership</span>
+        <strong>{{ item.ownershipTypeName }}</strong>
+      </mat-card-content>
+    </mat-card>
+    <mat-card>
+      <mat-card-content>
+        <span>Total area</span>
+        <strong
+          >{{ item.totalArea ?? "—" }} {{ item.areaUnitSymbol || "" }}</strong
+        >
+      </mat-card-content>
+    </mat-card>
+    <mat-card>
+      <mat-card-content>
+        <span>Location</span>
+        <strong>{{ item.city || item.state || "Not specified" }}</strong>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <mat-card class="areas-card">
+    <mat-card-content>
+      <div class="subheading">
+        <div>
+          <h3>Farm areas</h3>
+          <p>Physical areas and sub-areas available for planting.</p>
+        </div>
+        @if (permissionService.has("FarmArea.Create")) {
+          <a
+            mat-stroked-button
+            color="primary"
+            [routerLink]="['/farm-areas/new']"
+            [queryParams]="{ farmId: farmId }"
+          >
+            Add area
+          </a>
+        }
+      </div>
+      @if (areas().length === 0) {
+        <p class="muted">No areas have been added yet.</p>
+      } @else {
+        <div class="area-list">
+          @for (area of areas(); track area.id) {
+            <a class="area-row" [routerLink]="['/farm-areas', area.id]">
+              <span>
+                <strong>{{ area.name }}</strong>
+                <small
+                  >{{ area.code }} ·
+                  {{ area.parentFarmAreaId ? "Sub-area" : "Farm area" }}</small
+                >
+              </span>
+              <span>{{ area.totalArea }} {{ area.areaUnitSymbol }}</span>
+            </a>
+          }
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+}

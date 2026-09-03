@@ -1,0 +1,106 @@
+<div class="section-heading">
+  <div>
+    <p class="eyebrow">Growing operations</p>
+    <h2>Plantations</h2>
+    <p>Track crop instances, area allocation and their lifecycle status.</p>
+  </div>
+  @if (permissionService.has("Plantation.Create")) {
+    <a mat-flat-button color="primary" routerLink="/plantations/new">
+      <mat-icon>add</mat-icon>Add plantation
+    </a>
+  }
+</div>
+
+<mat-card>
+  <mat-card-content>
+    <mat-form-field appearance="outline">
+      <mat-label>Status</mat-label>
+      <mat-select [value]="status()" (valueChange)="status.set($event); load()">
+        <mat-option value="">All plantations</mat-option>
+        <mat-option value="PLANNED">Planned</mat-option>
+        <mat-option value="ACTIVE">Active</mat-option>
+        <mat-option value="TERMINATED">Terminated</mat-option>
+        <mat-option value="ARCHIVED">Archived</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    @if (isLoading()) {
+      <div class="loading-state">
+        <mat-spinner diameter="36" />
+      </div>
+    } @else if (plantations().length === 0) {
+      <div class="empty-state">
+        <mat-icon>spa</mat-icon>
+        <h3>No plantations found</h3>
+        <p>Register a plantation to begin allocating crops to your areas.</p>
+      </div>
+    } @else {
+      <div class="table-wrap">
+        <table mat-table [dataSource]="plantations()">
+          <ng-container matColumnDef="plantation">
+            <th mat-header-cell *matHeaderCellDef>Plantation</th>
+            <td mat-cell *matCellDef="let p">
+              <strong>{{ p.plantationName }}</strong>
+              <small>{{ p.plantationCode }}</small>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="crop">
+            <th mat-header-cell *matHeaderCellDef>Crop</th>
+            <td mat-cell *matCellDef="let p">
+              {{ p.cropName }}
+              <small>{{ p.varietyName || "No variety" }}</small>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="area">
+            <th mat-header-cell *matHeaderCellDef>Area</th>
+            <td mat-cell *matCellDef="let p">
+              {{ p.farmAreaName }}
+              <small>{{ p.allocatedArea }} {{ p.areaUnitSymbol }}</small>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="date">
+            <th mat-header-cell *matHeaderCellDef>Planted</th>
+            <td mat-cell *matCellDef="let p">{{ p.plantingDate }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Status</th>
+            <td mat-cell *matCellDef="let p">
+              <span
+                class="status-pill"
+                [class.status-pill-inactive]="p.status !== 'ACTIVE'"
+              >
+                {{ p.status }}
+              </span>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef>Actions</th>
+            <td mat-cell *matCellDef="let p">
+              <a mat-button [routerLink]="['/plantations', p.id]">View</a>
+              @if (
+                permissionService.has("Plantation.Update") &&
+                p.status !== "TERMINATED" &&
+                p.status !== "ARCHIVED"
+              ) {
+                <a
+                  mat-icon-button
+                  [routerLink]="['/plantations', p.id, 'edit']"
+                >
+                  <mat-icon>edit</mat-icon>
+                </a>
+              }
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="columns"></tr>
+          <tr mat-row *matRowDef="let row; columns: columns"></tr>
+        </table>
+      </div>
+    }
+  </mat-card-content>
+</mat-card>
