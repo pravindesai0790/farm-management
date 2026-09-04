@@ -6,6 +6,7 @@ using FarmManagement.Application.Interfaces.Roles;
 using FarmManagement.Application.Interfaces.Plantations;
 using FarmManagement.Application.Interfaces.CropCycles;
 using FarmManagement.Application.Interfaces.Organizations;
+using FarmManagement.Application.Interfaces.Dashboard;
 using FarmManagement.Application.Interfaces;
 using FarmManagement.Infrastructure.Authentication;
 using FarmManagement.Infrastructure.Persistence;
@@ -49,6 +50,7 @@ public static class DependencyInjection
         services.AddScoped<ICropCycleStore, CropCycleStore>();
         services.AddScoped<IOrganizationStore, OrganizationStore>();
         services.AddScoped<IMasterDataStore, MasterDataStore>();
+        services.AddScoped<IDashboardStore, DashboardStore>();
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();
         services.AddScoped<IdentityDataSeeder>();
 

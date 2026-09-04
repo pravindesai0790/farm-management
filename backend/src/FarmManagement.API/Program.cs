@@ -10,6 +10,7 @@ using FarmManagement.Application.Interfaces.CropCycles;
 using FarmManagement.Application.Interfaces.Users;
 using FarmManagement.Application.Interfaces.Roles;
 using FarmManagement.Application.Interfaces.Organizations;
+using FarmManagement.Application.Interfaces.Dashboard;
 using FarmManagement.Application.Services;
 using FarmManagement.Infrastructure;
 using FarmManagement.Infrastructure.Authentication;
@@ -116,6 +117,7 @@ builder.Services.AddScoped<IPlantationService, PlantationService>();
 builder.Services.AddScoped<ICropCycleService, CropCycleService>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
 builder.Services.AddScoped<IMasterDataService, MasterDataService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
 
 var app = builder.Build();
 

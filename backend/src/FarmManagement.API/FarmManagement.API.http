@@ -7,3 +7,10 @@ Accept: application/json
 
 GET {{FarmManagement.API_HostAddress}}/api/system/ping
 Accept: application/json
+
+###
+
+GET {{FarmManagement.API_HostAddress}}/api/dashboard/summary
+Accept: application/json
+Authorization: Bearer {{token}}
+
