@@ -223,3 +223,75 @@ export interface CycleList {
   totalCount: number;
 }
 export interface LifecycleList extends PagedResponse<LifecycleTemplate> {}
+
+export interface KpiSummary {
+  totalFarms: number;
+  totalAreas: number;
+  totalArea: number;
+  allocatedArea: number;
+  availableArea: number;
+  utilizationPercentage: number;
+  areaUnitSymbol: string;
+  activePlantationsCount: number;
+  plannedPlantationsCount: number;
+  activeCyclesCount: number;
+}
+
+export interface VarietyAllocationSummary {
+  varietyId: string | null;
+  varietyName: string;
+  allocatedArea: number;
+  areaUnitSymbol: string;
+  percentageOfCrop: number;
+}
+
+export interface CropAllocationSummary {
+  cropId: string;
+  cropName: string;
+  cropCode: string;
+  totalAllocatedArea: number;
+  areaUnitSymbol: string;
+  percentageOfAllocated: number;
+  varieties: readonly VarietyAllocationSummary[];
+}
+
+export interface ActiveCycleSummary {
+  cycleId: string;
+  cycleCode: string;
+  cycleName: string;
+  seasonYear: number;
+  seasonName: string | null;
+  plantationId: string;
+  plantationName: string;
+  farmName: string;
+  farmAreaName: string;
+  cropName: string;
+  varietyName: string | null;
+  allocatedArea: number;
+  areaUnitSymbol: string;
+  startDate: string;
+  expectedEndDate: string | null;
+  progressPercentage: number | null;
+  status: string;
+}
+
+export interface FarmUtilizationSummary {
+  farmId: string;
+  farmCode: string;
+  farmName: string;
+  totalArea: number;
+  allocatedArea: number;
+  availableArea: number;
+  utilizationPercentage: number;
+  areaUnitSymbol: string;
+  activePlantationsCount: number;
+}
+
+export interface DashboardSummaryResponse {
+  kpi: KpiSummary;
+  cropAllocations: readonly CropAllocationSummary[];
+  activeCycles: readonly ActiveCycleSummary[];
+  farmUtilizations: readonly FarmUtilizationSummary[];
+  currentSeason: string | null;
+}
+

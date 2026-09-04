@@ -10,6 +10,7 @@ import {
   CropVariety,
   CycleCancellationReason,
   CycleList,
+  DashboardSummaryResponse,
   Farm,
   FarmArea,
   FarmAreaAvailability,
@@ -275,6 +276,17 @@ export class FarmManagementService {
     return this.http.get<LifecycleList>(
       `${this.api}/crop-lifecycle-templates`,
       { params: { page, pageSize, isActive: true } },
+    );
+  }
+
+  getDashboardSummary(farmId?: string): Observable<DashboardSummaryResponse> {
+    let params = new HttpParams();
+    if (farmId) {
+      params = params.set("farmId", farmId);
+    }
+    return this.http.get<DashboardSummaryResponse>(
+      `${this.api}/dashboard/summary`,
+      { params },
     );
   }
 
