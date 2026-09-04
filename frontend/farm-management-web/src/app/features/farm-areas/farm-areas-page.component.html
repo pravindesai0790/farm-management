@@ -11,6 +11,24 @@
 
 <mat-card>
   <mat-card-content>
+    <div class="filters-row">
+      <mat-form-field appearance="outline">
+        <mat-label>Farm</mat-label>
+        <mat-select [value]="selectedFarmId()" (valueChange)="onFarmChange($event)">
+          <mat-option value="">All farms</mat-option>
+          @for (farm of farms(); track farm.id) {
+            <mat-option [value]="farm.id">{{ farm.name }} ({{ farm.code }})</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      @if (hasActiveFilters()) {
+        <button mat-stroked-button class="clear-btn" (click)="clearFilter()">
+          <mat-icon>clear</mat-icon>Clear filter
+        </button>
+      }
+    </div>
+
     @if (isLoading()) {
       <div class="loading-state">
         <mat-spinner diameter="36" />
@@ -26,7 +44,10 @@
           <ng-container matColumnDef="farm">
             <th mat-header-cell *matHeaderCellDef>Farm</th>
             <td mat-cell *matCellDef="let area">
-              {{ farmNames()[area.farmId] || "—" }}
+              <strong>{{ area.farmName || farmNames()[area.farmId] || "—" }}</strong>
+              @if (area.farmCode) {
+                <small>{{ area.farmCode }}</small>
+              }
             </td>
           </ng-container>
 

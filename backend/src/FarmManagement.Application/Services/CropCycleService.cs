@@ -11,17 +11,21 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
 {
     public async Task<CropCycleListResponse> ListAsync(
         CropCycleActor actor,
+        Guid? farmId,
+        Guid? farmAreaId,
         Guid? plantationId,
         string? status,
         int? seasonYear,
         CancellationToken cancellationToken = default)
     {
         ValidateActor(actor);
+        if (farmId == Guid.Empty) throw Validation("farmId", "Farm must be valid.");
+        if (farmAreaId == Guid.Empty) throw Validation("farmAreaId", "Farm area must be valid.");
         if (plantationId == Guid.Empty) throw Validation("plantationId", "Plantation must be valid.");
         if (seasonYear is <= 0) throw Validation("seasonYear", "Season year must be greater than zero.");
 
         var parsedStatus = ParseStatus(status);
-        var cycles = await store.ListAsync(actor.OrganizationId, plantationId, parsedStatus, seasonYear, cancellationToken);
+        var cycles = await store.ListAsync(actor.OrganizationId, farmId, farmAreaId, plantationId, parsedStatus, seasonYear, cancellationToken);
         return new CropCycleListResponse(cycles.Select(ToResponse).ToArray(), cycles.Count);
     }
 
@@ -133,7 +137,7 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
                 }
             }, ipAddress);
             await store.SaveChangesAsync(transactionCancellationToken);
-            return ToResponse(cycle);
+            return ToResponse(cycle, plantation);
         }, cancellationToken);
     }
 
@@ -344,11 +348,19 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
     private static CropCycleResponse ToResponse(CropCycle cycle, CropPlantation plantation)
     {
         var crop = plantation.Crop ?? throw new InvalidOperationException("A crop cycle references a plantation with a missing crop.");
+        var farm = plantation.Farm;
+        var farmArea = plantation.FarmArea;
         return new CropCycleResponse(
             cycle.Id,
             cycle.PlantationId,
             plantation.PlantationCode,
             plantation.PlantationName,
+            plantation.FarmId,
+            farm?.Code ?? string.Empty,
+            farm?.Name ?? string.Empty,
+            plantation.FarmAreaId,
+            farmArea?.Code ?? string.Empty,
+            farmArea?.Name ?? string.Empty,
             plantation.CropId,
             crop.Code,
             crop.Name,

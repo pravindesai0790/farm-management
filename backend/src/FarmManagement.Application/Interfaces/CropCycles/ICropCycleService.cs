@@ -8,6 +8,8 @@ public interface ICropCycleService
 {
     Task<CropCycleListResponse> ListAsync(
         CropCycleActor actor,
+        Guid? farmId,
+        Guid? farmAreaId,
         Guid? plantationId,
         string? status,
         int? seasonYear,

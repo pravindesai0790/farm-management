@@ -93,7 +93,7 @@ export class PlantationDetailPageComponent implements OnInit {
             });
           }
           this.service
-            .listCycles(p.id)
+            .listCycles(p.farmId, p.farmAreaId, p.id)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe((r) => this.cycles.set(r.items));
           this.isLoading.set(false);

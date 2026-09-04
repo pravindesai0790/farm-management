@@ -68,6 +68,8 @@ export interface Farm {
 export interface FarmArea {
   id: string;
   farmId: string;
+  farmCode: string;
+  farmName: string;
   parentFarmAreaId: string | null;
   code: string;
   name: string;
@@ -125,6 +127,8 @@ export interface CropVariety {
 export interface Plantation {
   id: string;
   farmId: string;
+  farmCode: string;
+  farmName: string;
   farmAreaId: string;
   farmAreaCode: string;
   farmAreaName: string;
@@ -162,6 +166,12 @@ export interface CropCycle {
   plantationId: string;
   plantationCode: string;
   plantationName: string;
+  farmId: string;
+  farmCode: string;
+  farmName: string;
+  farmAreaId: string;
+  farmAreaCode: string;
+  farmAreaName: string;
   cropId: string;
   cropCode: string;
   cropName: string;

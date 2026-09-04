@@ -18,9 +18,10 @@ public sealed class PlantationsController(IPlantationService plantationService) 
         [FromQuery] Guid? farmId,
         [FromQuery] Guid? farmAreaId,
         [FromQuery] string? status,
+        [FromQuery] Guid? cropId,
         CancellationToken cancellationToken)
     {
-        return Ok(await plantationService.ListAsync(GetActor(), farmId, farmAreaId, status, cancellationToken));
+        return Ok(await plantationService.ListAsync(GetActor(), farmId, farmAreaId, status, cropId, cancellationToken));
     }
 
     [HttpGet("api/plantations/{id:guid}")]

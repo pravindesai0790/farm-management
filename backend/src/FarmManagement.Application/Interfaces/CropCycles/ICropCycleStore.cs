@@ -7,6 +7,8 @@ public interface ICropCycleStore
 {
     Task<IReadOnlyList<CropCycle>> ListAsync(
         Guid organizationId,
+        Guid? farmId,
+        Guid? farmAreaId,
         Guid? plantationId,
         CropCycleStatus? status,
         int? seasonYear,

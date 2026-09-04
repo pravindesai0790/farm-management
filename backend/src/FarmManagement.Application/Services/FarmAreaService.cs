@@ -74,7 +74,7 @@ public sealed class FarmAreaService(IFarmAreaStore store) : IFarmAreaService
         store.Add(farmArea);
         AddAudit(actor, farmArea, "FarmArea.Created", new { farmArea.Code, farmArea.Name, farmArea.ParentFarmAreaId }, ipAddress);
         await store.SaveChangesAsync(cancellationToken);
-        return ToResponse(farmArea, areaUnit);
+        return ToResponse(farmArea, farm, areaUnit);
     }
 
     public async Task<FarmAreaResponse> UpdateAsync(
@@ -126,7 +126,7 @@ public sealed class FarmAreaService(IFarmAreaStore store) : IFarmAreaService
 
         AddAudit(actor, farmArea, "FarmArea.Updated", new { previous, current = new { farmArea.Code, farmArea.Name, farmArea.ParentFarmAreaId, farmArea.TotalArea, farmArea.AreaUnitId } }, ipAddress);
         await store.SaveChangesAsync(cancellationToken);
-        return ToResponse(farmArea, areaUnit);
+        return ToResponse(farmArea, farm, areaUnit);
     }
 
     public Task<bool> ActivateAsync(FarmActor actor, Guid farmAreaId, string? ipAddress, CancellationToken cancellationToken = default) =>
@@ -317,12 +317,14 @@ public sealed class FarmAreaService(IFarmAreaStore store) : IFarmAreaService
             ipAddress: ipAddress));
 
     private static FarmAreaResponse ToResponse(FarmArea farmArea) =>
-        ToResponse(farmArea, farmArea.AreaUnit!);
+        ToResponse(farmArea, farmArea.Farm, farmArea.AreaUnit!);
 
-    private static FarmAreaResponse ToResponse(FarmArea farmArea, Unit areaUnit) =>
+    private static FarmAreaResponse ToResponse(FarmArea farmArea, Farm? farm, Unit areaUnit) =>
         new(
             farmArea.Id,
             farmArea.FarmId,
+            farm?.Code ?? farmArea.Farm?.Code ?? string.Empty,
+            farm?.Name ?? farmArea.Farm?.Name ?? string.Empty,
             farmArea.ParentFarmAreaId,
             farmArea.Code,
             farmArea.Name,

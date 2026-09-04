@@ -3,6 +3,8 @@ namespace FarmManagement.Application.DTOs.Plantations;
 public sealed record PlantationResponse(
     Guid Id,
     Guid FarmId,
+    string FarmCode,
+    string FarmName,
     Guid FarmAreaId,
     string FarmAreaCode,
     string FarmAreaName,

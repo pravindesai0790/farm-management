@@ -16,11 +16,13 @@ public sealed class CropCyclesController(ICropCycleService cycleService) : Contr
     [HttpGet]
     [Authorize(Policy = "Permission:CropCycle.View")]
     public async Task<ActionResult<CropCycleListResponse>> List(
+        [FromQuery] Guid? farmId,
+        [FromQuery] Guid? farmAreaId,
         [FromQuery] Guid? plantationId,
         [FromQuery] string? status,
         [FromQuery] int? seasonYear,
         CancellationToken cancellationToken = default) =>
-        Ok(await cycleService.ListAsync(GetActor(), plantationId, status, seasonYear, cancellationToken));
+        Ok(await cycleService.ListAsync(GetActor(), farmId, farmAreaId, plantationId, status, seasonYear, cancellationToken));
 
     [HttpGet("{id:guid}")]
     [Authorize(Policy = "Permission:CropCycle.View")]

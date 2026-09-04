@@ -22,6 +22,7 @@ public sealed class FarmAreaStore(ApplicationDbContext dbContext) : IFarmAreaSto
 
     public Task<FarmArea?> FindAsync(Guid farmAreaId, Guid organizationId, CancellationToken cancellationToken = default) =>
         dbContext.FarmAreas
+            .Include(area => area.Farm)
             .Include(area => area.AreaUnit)
             .Include(area => area.ParentFarmArea)
             .SingleOrDefaultAsync(area => area.Id == farmAreaId && area.OrganizationId == organizationId, cancellationToken);
@@ -96,6 +97,7 @@ public sealed class FarmAreaStore(ApplicationDbContext dbContext) : IFarmAreaSto
     private IQueryable<FarmArea> BuildQuery(Guid farmId, Guid organizationId, bool? isActive)
     {
         var query = dbContext.FarmAreas
+            .Include(area => area.Farm)
             .Include(area => area.AreaUnit)
             .Where(area => area.FarmId == farmId && area.OrganizationId == organizationId);
 

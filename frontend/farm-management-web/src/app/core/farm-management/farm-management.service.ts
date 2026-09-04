@@ -202,11 +202,13 @@ export class FarmManagementService {
     farmId?: string,
     farmAreaId?: string,
     status?: string,
+    cropId?: string,
   ): Observable<PlantationList> {
     let params = new HttpParams();
     if (farmId) params = params.set("farmId", farmId);
     if (farmAreaId) params = params.set("farmAreaId", farmAreaId);
     if (status) params = params.set("status", status);
+    if (cropId) params = params.set("cropId", cropId);
     return this.http.get<PlantationList>(`${this.api}/plantations`, { params });
   }
   getPlantation(id: string): Observable<Plantation> {
@@ -231,11 +233,15 @@ export class FarmManagementService {
     return this.http.post<void>(`${this.api}/plantations/${id}/archive`, null);
   }
   listCycles(
+    farmId?: string,
+    farmAreaId?: string,
     plantationId?: string,
     status?: string,
     seasonYear?: number,
   ): Observable<CycleList> {
     let params = new HttpParams();
+    if (farmId) params = params.set("farmId", farmId);
+    if (farmAreaId) params = params.set("farmAreaId", farmAreaId);
     if (plantationId) params = params.set("plantationId", plantationId);
     if (status) params = params.set("status", status);
     if (seasonYear) params = params.set("seasonYear", seasonYear);

@@ -8,7 +8,7 @@
       <a mat-button routerLink="/crop-cycles">← Back to cycles</a>
       <p class="eyebrow">{{ c.cycleCode }} · {{ c.seasonYear }}</p>
       <h2>{{ c.cycleName }}</h2>
-      <p>{{ c.plantationName }} · {{ c.cropName }}</p>
+      <p>{{ c.farmName ? c.farmName + ' › ' : '' }}{{ c.farmAreaName ? c.farmAreaName + ' › ' : '' }}{{ c.plantationName }} ({{ c.cropName }})</p>
     </div>
     @if (c.status === "PLANNED" && permissionService.has("CropCycle.Update")) {
       <a mat-stroked-button [routerLink]="['/crop-cycles', c.id, 'edit']"
@@ -20,6 +20,22 @@
   <mat-card>
     <mat-card-content>
       <div class="details">
+        <div>
+          <span>Farm</span>
+          <strong>{{ c.farmName || "—" }} @if (c.farmCode) { <small>({{ c.farmCode }})</small> }</strong>
+        </div>
+        <div>
+          <span>Farm area</span>
+          <strong>{{ c.farmAreaName || "—" }} @if (c.farmAreaCode) { <small>({{ c.farmAreaCode }})</small> }</strong>
+        </div>
+        <div>
+          <span>Plantation</span>
+          <strong>{{ c.plantationName }}</strong>
+        </div>
+        <div>
+          <span>Crop</span>
+          <strong>{{ c.cropName }}</strong>
+        </div>
         <div>
           <span>Status</span>
           <strong>{{ c.status }}</strong>

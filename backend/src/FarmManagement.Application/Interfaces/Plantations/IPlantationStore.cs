@@ -10,6 +10,7 @@ public interface IPlantationStore
         Guid? farmId,
         Guid? farmAreaId,
         PlantationStatus? status,
+        Guid? cropId = null,
         CancellationToken cancellationToken = default);
 
     Task<CropPlantation?> FindAsync(Guid plantationId, Guid organizationId, CancellationToken cancellationToken = default);

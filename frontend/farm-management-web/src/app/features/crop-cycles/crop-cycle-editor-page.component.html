@@ -17,9 +17,9 @@
             <mat-label>Plantation</mat-label>
             <mat-select formControlName="plantationId">
               @for (p of plantations(); track p.id) {
-                <mat-option [value]="p.id"
-                  >{{ p.plantationName }} · {{ p.cropName }}</mat-option
-                >
+                <mat-option [value]="p.id">
+                  {{ p.farmName ? p.farmName + ' › ' : '' }}{{ p.farmAreaName }} › {{ p.plantationName }} ({{ p.cropName }})
+                </mat-option>
               }
             </mat-select>
           </mat-form-field>

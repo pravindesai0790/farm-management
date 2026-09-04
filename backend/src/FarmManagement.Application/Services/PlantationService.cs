@@ -14,11 +14,12 @@ public sealed class PlantationService(IPlantationStore store) : IPlantationServi
         Guid? farmId,
         Guid? farmAreaId,
         string? status,
+        Guid? cropId = null,
         CancellationToken cancellationToken = default)
     {
         ValidateActor(actor);
         var parsedStatus = ParseStatus(status);
-        var plantations = await store.ListAsync(actor.OrganizationId, farmId, farmAreaId, parsedStatus, cancellationToken);
+        var plantations = await store.ListAsync(actor.OrganizationId, farmId, farmAreaId, parsedStatus, cropId, cancellationToken);
         return new PlantationListResponse(plantations.Select(ToResponse).ToArray(), plantations.Count);
     }
 
@@ -67,7 +68,7 @@ public sealed class PlantationService(IPlantationStore store) : IPlantationServi
             store.Add(plantation);
             AddAudit(actor, plantation, "Plantation.Created", new { plantation.PlantationCode, plantation.PlantationName, plantation.AllocatedArea, Status = plantation.Status.ToString().ToUpperInvariant() }, ipAddress);
             await store.SaveChangesAsync(transactionCancellationToken);
-            return ToResponse(plantation, area, references.Crop, references.Variety, references.LifecycleTemplate, references.AreaUnit, null);
+            return ToResponse(plantation, area.Farm, area, references.Crop, references.Variety, references.LifecycleTemplate, references.AreaUnit, null);
         }, cancellationToken);
     }
 
@@ -108,7 +109,7 @@ public sealed class PlantationService(IPlantationStore store) : IPlantationServi
                 values.PlantingDate, values.ExpectedEndDate, DateTimeOffset.UtcNow, actor.UserId);
             AddAudit(actor, current, "Plantation.Updated", new { previous, current = new { current.FarmAreaId, current.CropId, current.VarietyId, current.PlantationCode, current.AllocatedArea, current.AreaUnitId, current.Status } }, ipAddress);
             await store.SaveChangesAsync(transactionCancellationToken);
-            return ToResponse(current, area, references.Crop, references.Variety, references.LifecycleTemplate, references.AreaUnit, current.EndReason);
+            return ToResponse(current, current.Farm ?? area.Farm, area, references.Crop, references.Variety, references.LifecycleTemplate, references.AreaUnit, current.EndReason);
         }, cancellationToken);
     }
 
@@ -327,11 +328,11 @@ public sealed class PlantationService(IPlantationStore store) : IPlantationServi
         store.AddAuditLog(new AuditLog(action, organizationId, actor.UserId, entityType, entityId, JsonSerializer.SerializeToDocument(details), ipAddress));
 
     private static PlantationResponse ToResponse(CropPlantation plantation) =>
-        ToResponse(plantation, plantation.FarmArea!, plantation.Crop!, plantation.Variety, plantation.LifecycleTemplate, plantation.AreaUnit!, plantation.EndReason);
+        ToResponse(plantation, plantation.Farm, plantation.FarmArea!, plantation.Crop!, plantation.Variety, plantation.LifecycleTemplate, plantation.AreaUnit!, plantation.EndReason);
 
-    private static PlantationResponse ToResponse(CropPlantation plantation, FarmArea area, Crop crop, CropVariety? variety, CropLifecycleTemplate? lifecycleTemplate, Unit areaUnit, PlantationEndReason? endReason) =>
+    private static PlantationResponse ToResponse(CropPlantation plantation, Farm? farm, FarmArea area, Crop crop, CropVariety? variety, CropLifecycleTemplate? lifecycleTemplate, Unit areaUnit, PlantationEndReason? endReason) =>
         new(
-            plantation.Id, plantation.FarmId, plantation.FarmAreaId, area.Code, area.Name, plantation.CropId, crop.Code, crop.Name,
+            plantation.Id, plantation.FarmId, farm?.Code ?? area.Farm?.Code ?? string.Empty, farm?.Name ?? area.Farm?.Name ?? string.Empty, plantation.FarmAreaId, area.Code, area.Name, plantation.CropId, crop.Code, crop.Name,
             plantation.VarietyId, variety?.Code, variety?.Name, plantation.LifecycleTemplateId, lifecycleTemplate?.Name,
             plantation.PlantationCode, plantation.PlantationName, plantation.AllocatedArea, plantation.AreaUnitId,
             areaUnit.Code, areaUnit.Name, areaUnit.Symbol, plantation.PlantingDate, plantation.ExpectedEndDate,

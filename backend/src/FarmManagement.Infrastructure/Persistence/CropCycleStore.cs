@@ -10,11 +10,13 @@ public sealed class CropCycleStore(ApplicationDbContext dbContext) : ICropCycleS
 {
     public async Task<IReadOnlyList<CropCycle>> ListAsync(
         Guid organizationId,
+        Guid? farmId,
+        Guid? farmAreaId,
         Guid? plantationId,
         CropCycleStatus? status,
         int? seasonYear,
         CancellationToken cancellationToken = default) =>
-        await BuildQuery(organizationId, plantationId, status, seasonYear)
+        await BuildQuery(organizationId, farmId, farmAreaId, plantationId, status, seasonYear)
             .AsNoTracking()
             .AsSplitQuery()
             .OrderByDescending(cycle => cycle.SeasonYear)
@@ -27,7 +29,7 @@ public sealed class CropCycleStore(ApplicationDbContext dbContext) : ICropCycleS
         Guid cycleId,
         Guid organizationId,
         CancellationToken cancellationToken = default) =>
-        BuildQuery(organizationId, null, null, null)
+        BuildQuery(organizationId, null, null, null, null, null)
             .AsSplitQuery()
             .SingleOrDefaultAsync(cycle => cycle.Id == cycleId, cancellationToken);
 
@@ -39,6 +41,10 @@ public sealed class CropCycleStore(ApplicationDbContext dbContext) : ICropCycleS
             .FromSqlInterpolated($"SELECT * FROM crop_cycles WHERE id = {cycleId} AND organization_id = {organizationId} FOR UPDATE")
             .Include(cycle => cycle.Plantation)
                 .ThenInclude(plantation => plantation!.Crop)
+            .Include(cycle => cycle.Plantation)
+                .ThenInclude(plantation => plantation!.Farm)
+            .Include(cycle => cycle.Plantation)
+                .ThenInclude(plantation => plantation!.FarmArea)
             .Include(cycle => cycle.CancellationReason)
             .SingleOrDefaultAsync(cancellationToken);
 
@@ -49,6 +55,8 @@ public sealed class CropCycleStore(ApplicationDbContext dbContext) : ICropCycleS
         dbContext.CropPlantations
             .FromSqlInterpolated($"SELECT * FROM crop_plantations WHERE id = {plantationId} AND organization_id = {organizationId} FOR UPDATE")
             .Include(plantation => plantation.Crop)
+            .Include(plantation => plantation.Farm)
+            .Include(plantation => plantation.FarmArea)
             .SingleOrDefaultAsync(cancellationToken);
 
     public Task<PlantationEndReason?> FindCancellationReasonAsync(
@@ -118,6 +126,8 @@ public sealed class CropCycleStore(ApplicationDbContext dbContext) : ICropCycleS
 
     private IQueryable<CropCycle> BuildQuery(
         Guid organizationId,
+        Guid? farmId,
+        Guid? farmAreaId,
         Guid? plantationId,
         CropCycleStatus? status,
         int? seasonYear)
@@ -125,9 +135,15 @@ public sealed class CropCycleStore(ApplicationDbContext dbContext) : ICropCycleS
         var query = dbContext.CropCycles
             .Include(cycle => cycle.Plantation)
                 .ThenInclude(plantation => plantation!.Crop)
+            .Include(cycle => cycle.Plantation)
+                .ThenInclude(plantation => plantation!.Farm)
+            .Include(cycle => cycle.Plantation)
+                .ThenInclude(plantation => plantation!.FarmArea)
             .Include(cycle => cycle.CancellationReason)
             .Where(cycle => cycle.OrganizationId == organizationId);
 
+        if (farmId is not null) query = query.Where(cycle => cycle.Plantation!.FarmId == farmId.Value);
+        if (farmAreaId is not null) query = query.Where(cycle => cycle.Plantation!.FarmAreaId == farmAreaId.Value);
         if (plantationId is not null) query = query.Where(cycle => cycle.PlantationId == plantationId.Value);
         if (status is not null) query = query.Where(cycle => cycle.Status == status.Value);
         if (seasonYear is not null) query = query.Where(cycle => cycle.SeasonYear == seasonYear.Value);

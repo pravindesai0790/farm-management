@@ -13,8 +13,9 @@ public sealed class PlantationStore(ApplicationDbContext dbContext) : IPlantatio
         Guid? farmId,
         Guid? farmAreaId,
         PlantationStatus? status,
+        Guid? cropId = null,
         CancellationToken cancellationToken = default) =>
-        await BuildQuery(organizationId, farmId, farmAreaId, status)
+        await BuildQuery(organizationId, farmId, farmAreaId, status, cropId)
             .AsNoTracking()
             .OrderBy(plantation => plantation.PlantationName)
             .ThenBy(plantation => plantation.PlantationCode)
@@ -152,9 +153,10 @@ public sealed class PlantationStore(ApplicationDbContext dbContext) : IPlantatio
     public void AddAuditLog(AuditLog auditLog) => dbContext.AuditLogs.Add(auditLog);
     public Task SaveChangesAsync(CancellationToken cancellationToken = default) => dbContext.SaveChangesAsync(cancellationToken);
 
-    private IQueryable<CropPlantation> BuildQuery(Guid organizationId, Guid? farmId, Guid? farmAreaId, PlantationStatus? status)
+    private IQueryable<CropPlantation> BuildQuery(Guid organizationId, Guid? farmId, Guid? farmAreaId, PlantationStatus? status, Guid? cropId = null)
     {
         var query = dbContext.CropPlantations
+            .Include(plantation => plantation.Farm)
             .Include(plantation => plantation.FarmArea)
             .Include(plantation => plantation.Crop)
             .Include(plantation => plantation.Variety)
@@ -166,6 +168,7 @@ public sealed class PlantationStore(ApplicationDbContext dbContext) : IPlantatio
         if (farmId is not null) query = query.Where(plantation => plantation.FarmId == farmId.Value);
         if (farmAreaId is not null) query = query.Where(plantation => plantation.FarmAreaId == farmAreaId.Value);
         if (status is not null) query = query.Where(plantation => plantation.Status == status.Value);
+        if (cropId is not null) query = query.Where(plantation => plantation.CropId == cropId.Value);
         return query;
     }
 }
