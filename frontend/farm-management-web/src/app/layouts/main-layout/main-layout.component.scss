@@ -4,17 +4,20 @@
 }
 
 .navigation {
-  width: 260px;
+  width: 268px;
   border-right: 1px solid var(--app-border);
   background: #fbfcfa;
-  padding: 24px 14px 18px;
+  padding: 20px 12px 16px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .navigation-brand {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 0 12px 28px;
+  padding: 0 10px 20px;
   color: var(--app-ink);
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -30,23 +33,76 @@
   color: #fff;
 }
 
+.navigation-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 2px;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #d5e0d7;
+    border-radius: 4px;
+  }
+}
+
+.navigation-group {
+  margin-bottom: 16px;
+}
+
 .navigation-label {
-  margin: 0 12px 10px;
-  color: var(--app-muted);
-  font-size: 0.7rem;
+  margin: 0 10px 6px;
+  color: #7b8e7f;
+  font-size: 0.66rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
+.navigation-list {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
 .navigation a {
-  margin: 4px 0;
-  border-radius: 10px;
+  margin: 2px 0;
+  border-radius: 8px;
   color: var(--app-muted);
+  font-size: 0.9rem;
 }
 
 .navigation a mat-icon {
   color: #8b9b8e;
+}
+
+.navigation a.navigation-sub-item {
+  margin-left: 14px;
+  width: calc(100% - 14px);
+  position: relative;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    color: #9cb0a0;
+  }
+
+  span {
+    font-size: 0.86rem;
+  }
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: -7px;
+    top: 50%;
+    width: 6px;
+    height: 1px;
+    background: #c8d6cb;
+  }
 }
 
 .navigation a.navigation-item-active {
@@ -57,6 +113,19 @@
 
 .navigation a.navigation-item-active mat-icon {
   color: var(--app-primary);
+}
+
+.navigation a.navigation-item-active.navigation-sub-item::before {
+  background: var(--app-primary);
+}
+
+.navigation-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: #e8eee9;
+  color: #58715c;
 }
 
 .navigation-footer {

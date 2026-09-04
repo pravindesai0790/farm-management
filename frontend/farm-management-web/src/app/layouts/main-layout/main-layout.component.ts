@@ -21,11 +21,19 @@ import {
 import { AuthService } from "../../core/auth/auth.service";
 import { PermissionService } from "../../core/auth/permission.service";
 
-interface NavigationItem {
+export interface NavigationItem {
   readonly label: string;
   readonly icon: string;
   readonly route: string;
   readonly permissions?: readonly string[];
+  readonly exactMatch?: boolean;
+  readonly isSubItem?: boolean;
+  readonly badge?: string;
+}
+
+export interface NavigationGroup {
+  readonly title: string;
+  readonly items: readonly NavigationItem[];
 }
 
 @Component({
@@ -53,54 +61,106 @@ export class MainLayoutComponent {
 
   readonly currentUser = this.authService.user;
 
-  readonly navigationItems: readonly NavigationItem[] = [
-    { label: "Dashboard", icon: "space_dashboard", route: "/dashboard" },
+  readonly navigationGroups: readonly NavigationGroup[] = [
     {
-      label: "Farms",
-      icon: "landscape",
-      route: "/farms",
-      permissions: ["Farm.View"],
+      title: "Overview",
+      items: [
+        {
+          label: "Dashboard",
+          icon: "space_dashboard",
+          route: "/dashboard",
+          exactMatch: true,
+        },
+      ],
     },
     {
-      label: "Crops",
-      icon: "grass",
-      route: "/crops",
-      permissions: ["Crop.View"],
+      title: "Farm Operations",
+      items: [
+        {
+          label: "Farms",
+          icon: "landscape",
+          route: "/farms",
+          permissions: ["Farm.View"],
+        },
+        {
+          label: "Farm areas",
+          icon: "grid_view",
+          route: "/farm-areas",
+          permissions: ["FarmArea.View"],
+          isSubItem: true,
+        },
+        {
+          label: "Plantations",
+          icon: "spa",
+          route: "/plantations",
+          permissions: ["Plantation.View"],
+        },
+        {
+          label: "Crop cycles",
+          icon: "calendar_month",
+          route: "/crop-cycles",
+          permissions: ["CropCycle.View"],
+          isSubItem: true,
+        },
+        {
+          label: "Activities",
+          icon: "event_note",
+          route: "/activities",
+          isSubItem: true,
+        },
+      ],
     },
     {
-      label: "Plantations",
-      icon: "spa",
-      route: "/plantations",
-      permissions: ["Plantation.View"],
+      title: "Agronomy",
+      items: [
+        {
+          label: "Crop catalog",
+          icon: "grass",
+          route: "/crops",
+          permissions: ["Crop.View"],
+        },
+      ],
     },
     {
-      label: "Crop cycles",
-      icon: "calendar_month",
-      route: "/crop-cycles",
-      permissions: ["CropCycle.View"],
+      title: "Administration",
+      items: [
+        {
+          label: "Organization",
+          icon: "business",
+          route: "/organization",
+          permissions: ["Organization.View"],
+        },
+        {
+          label: "Access & Roles",
+          icon: "admin_panel_settings",
+          route: "/administration",
+          permissions: ["Users.View", "Roles.View", "Permissions.View"],
+        },
+      ],
     },
-    { label: "Activities", icon: "event_note", route: "/activities" },
     {
-      label: "Organization",
-      icon: "business",
-      route: "/organization",
-      permissions: ["Organization.View"],
+      title: "Account",
+      items: [
+        {
+          label: "Settings",
+          icon: "settings",
+          route: "/settings",
+        },
+      ],
     },
-    {
-      label: "Administration",
-      icon: "admin_panel_settings",
-      route: "/administration",
-      permissions: ["Users.View", "Roles.View", "Permissions.View"],
-    },
-    { label: "Settings", icon: "settings", route: "/settings" },
   ];
 
-  readonly visibleNavigationItems = computed(() =>
-    this.navigationItems.filter(
-      (item) =>
-        item.permissions === undefined ||
-        this.permissionService.hasAny(item.permissions),
-    ),
+  readonly visibleNavigationGroups = computed(() =>
+    this.navigationGroups
+      .map((group) => ({
+        ...group,
+        items: group.items.filter(
+          (item) =>
+            item.permissions === undefined ||
+            this.permissionService.hasAny(item.permissions),
+        ),
+      }))
+      .filter((group) => group.items.length > 0),
   );
 
   logout(): void {

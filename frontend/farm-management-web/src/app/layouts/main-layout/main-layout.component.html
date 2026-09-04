@@ -7,24 +7,34 @@
       <span>Farm Management</span>
     </div>
 
-    <p class="navigation-label">Workspace</p>
-    <mat-nav-list>
-      @for (item of visibleNavigationItems(); track item.route) {
-        <a
-          mat-list-item
-          [routerLink]="item.route"
-          routerLinkActive="navigation-item-active"
-          [routerLinkActiveOptions]="{ exact: true }"
-        >
-          <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
-          <span matListItemTitle>{{ item.label }}</span>
-        </a>
+    <div class="navigation-scroll">
+      @for (group of visibleNavigationGroups(); track group.title) {
+        <div class="navigation-group">
+          <p class="navigation-label">{{ group.title }}</p>
+          <mat-nav-list class="navigation-list">
+            @for (item of group.items; track item.route) {
+              <a
+                mat-list-item
+                [routerLink]="item.route"
+                routerLinkActive="navigation-item-active"
+                [routerLinkActiveOptions]="{ exact: item.exactMatch ?? false }"
+                [class.navigation-sub-item]="item.isSubItem"
+              >
+                <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+                <span matListItemTitle>{{ item.label }}</span>
+                @if (item.badge) {
+                  <span matListItemMeta class="navigation-badge">{{ item.badge }}</span>
+                }
+              </a>
+            }
+          </mat-nav-list>
+        </div>
       }
-    </mat-nav-list>
+    </div>
 
     <div class="navigation-footer">
-      <mat-icon aria-hidden="true">info_outline</mat-icon>
-      <span>Phase 0 foundation</span>
+      <mat-icon aria-hidden="true">eco</mat-icon>
+      <span>Farm Management v1.0</span>
     </div>
   </mat-sidenav>
 
