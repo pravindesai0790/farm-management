@@ -10,6 +10,7 @@ import {
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
+import { MatDialog, MatDialogModule } from "@angular/material/dialog";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { ActivatedRoute, Router, RouterLink } from "@angular/router";
@@ -17,6 +18,7 @@ import { FarmManagementService } from "../../core/farm-management/farm-managemen
 import { CropCycle } from "../../core/farm-management/farm-management.models";
 import { PermissionService } from "../../core/auth/permission.service";
 import { getApiErrorMessage } from "../../core/models/api-error.model";
+import { CropCycleCancelDialogComponent } from "./crop-cycle-cancel-dialog.component";
 @Component({
   selector: "app-crop-cycle-detail-page",
   standalone: true,
@@ -24,6 +26,7 @@ import { getApiErrorMessage } from "../../core/models/api-error.model";
     DatePipe,
     MatButtonModule,
     MatCardModule,
+    MatDialogModule,
     MatProgressSpinnerModule,
     RouterLink,
   ],
@@ -35,6 +38,7 @@ export class CropCycleDetailPageComponent implements OnInit {
   private readonly service = inject(FarmManagementService);
   private readonly route = inject(ActivatedRoute);
   private readonly snack = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
   readonly permissionService = inject(PermissionService);
   readonly id = this.route.snapshot.paramMap.get("id")!;
@@ -65,19 +69,13 @@ export class CropCycleDetailPageComponent implements OnInit {
   today(): string {
     return new Date().toISOString().slice(0, 10);
   }
-  run(action: "start" | "harvest" | "complete" | "cancel"): void {
+  run(action: "start" | "harvest" | "complete"): void {
     const request =
       action === "start"
         ? this.service.startCycle(this.id, this.today())
         : action === "harvest"
           ? this.service.harvestCycle(this.id, this.today())
-          : action === "complete"
-            ? this.service.completeCycle(this.id, this.today())
-            : this.service.cancelCycle(this.id, {
-                cancellationDate: this.today(),
-                cancellationReasonId: prompt("Enter cancellation reason ID"),
-                notes: "Cancelled from cycle details.",
-              });
+          : this.service.completeCycle(this.id, this.today());
     request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.snack.open(`Cycle ${action}ed.`, "Dismiss", { duration: 3000 });
@@ -101,6 +99,37 @@ export class CropCycleDetailPageComponent implements OnInit {
     this.run("complete");
   }
   cancel(): void {
-    this.run("cancel");
+    const cycle = this.cycle();
+    if (!cycle) return;
+    const dialogRef = this.dialog.open(CropCycleCancelDialogComponent, {
+      data: {
+        cycleId: cycle.id,
+        cycleCode: cycle.cycleCode,
+        cycleName: cycle.cycleName,
+      },
+      width: "480px",
+    });
+
+    dialogRef
+      .afterClosed()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((result) => {
+        if (!result) return;
+        this.service
+          .cancelCycle(this.id, result)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
+            next: () => {
+              this.snack.open("Cycle cancelled.", "Dismiss", { duration: 3000 });
+              this.load();
+            },
+            error: (e) =>
+              this.snack.open(
+                getApiErrorMessage(e, "Cycle could not be cancelled."),
+                "Dismiss",
+                { duration: 5000 },
+              ),
+          });
+      });
   }
 }

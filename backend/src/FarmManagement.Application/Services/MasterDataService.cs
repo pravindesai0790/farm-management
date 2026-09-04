@@ -30,6 +30,9 @@ public sealed class MasterDataService(IMasterDataStore store) : IMasterDataServi
             .ToArray();
     }
 
+    public Task<IReadOnlyList<PlantationEndReasonResponse>> ListCycleCancellationReasonsAsync(MasterDataActor actor, CancellationToken cancellationToken = default) =>
+        ListPlantationEndReasonsAsync(actor, cancellationToken);
+
     private static void ValidateActor(MasterDataActor actor)
     {
         if (actor.UserId == Guid.Empty || actor.OrganizationId == Guid.Empty)

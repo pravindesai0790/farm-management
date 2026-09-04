@@ -8,6 +8,7 @@ import {
   CropCycle,
   CropList,
   CropVariety,
+  CycleCancellationReason,
   CycleList,
   Farm,
   FarmArea,
@@ -67,6 +68,11 @@ export class FarmManagementService {
   listEndReasons(): Observable<readonly PlantationEndReason[]> {
     return this.http.get<readonly PlantationEndReason[]>(
       `${this.api}/master-data/plantation-end-reasons`,
+    );
+  }
+  listCycleCancellationReasons(): Observable<readonly CycleCancellationReason[]> {
+    return this.http.get<readonly CycleCancellationReason[]>(
+      `${this.api}/master-data/cycle-cancellation-reasons`,
     );
   }
 

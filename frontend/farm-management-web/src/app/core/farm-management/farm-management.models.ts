@@ -35,6 +35,7 @@ export interface PlantationEndReason {
   isSystem: boolean;
   isActive: boolean;
 }
+export type CycleCancellationReason = PlantationEndReason;
 
 export interface Farm {
   id: string;

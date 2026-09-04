@@ -20,11 +20,57 @@
           >Edit</a
         >
       }
+
+      <mat-form-field appearance="outline" class="status-action-field" subscriptSizing="dynamic">
+        <mat-label>Status</mat-label>
+        <mat-select
+          [value]="p.status"
+          (valueChange)="onStatusChange($event)"
+          [disabled]="isStatusActionDisabled(p)"
+        >
+          <mat-option value="PLANNED" [disabled]="p.status !== 'PLANNED'">
+            Planned
+          </mat-option>
+          <mat-option
+            value="ACTIVE"
+            [disabled]="p.status !== 'PLANNED' && p.status !== 'ACTIVE'"
+          >
+            {{ p.status === 'PLANNED' ? 'Activate' : 'Active' }}
+          </mat-option>
+          <mat-option
+            value="TERMINATED"
+            [disabled]="p.status !== 'ACTIVE' && p.status !== 'TERMINATED'"
+          >
+            {{ p.status === 'ACTIVE' ? 'Terminate' : 'Terminated' }}
+          </mat-option>
+          <mat-option
+            value="ARCHIVED"
+            [disabled]="p.status !== 'TERMINATED' && p.status !== 'ARCHIVED'"
+          >
+            {{ p.status === 'TERMINATED' ? 'Archive' : 'Archived' }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      @if (
+        p.status === "PLANNED" && permissionService.has("Plantation.Activate")
+      ) {
+        <button mat-flat-button color="primary" (click)="activate()">
+          Activate
+        </button>
+      }
       @if (
         p.status === "ACTIVE" && permissionService.has("Plantation.Terminate")
       ) {
         <button mat-flat-button color="warn" (click)="terminate()">
           Terminate
+        </button>
+      }
+      @if (
+        p.status === "TERMINATED" && permissionService.has("Plantation.Update")
+      ) {
+        <button mat-stroked-button (click)="archive()">
+          Archive
         </button>
       }
     </div>

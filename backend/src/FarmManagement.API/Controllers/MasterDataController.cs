@@ -27,6 +27,11 @@ public sealed class MasterDataController(IMasterDataService masterDataService) :
     public async Task<IActionResult> ListPlantationEndReasons(CancellationToken cancellationToken) =>
         Ok(await masterDataService.ListPlantationEndReasonsAsync(GetActor(), cancellationToken));
 
+    [HttpGet("cycle-cancellation-reasons")]
+    [Authorize(Policy = "Permission:CropCycle.View")]
+    public async Task<IActionResult> ListCycleCancellationReasons(CancellationToken cancellationToken) =>
+        Ok(await masterDataService.ListCycleCancellationReasonsAsync(GetActor(), cancellationToken));
+
     private MasterDataActor GetActor()
     {
         var userIdValue = User.FindFirstValue(JwtRegisteredClaimNames.Sub) ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
