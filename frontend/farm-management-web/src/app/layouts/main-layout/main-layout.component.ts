@@ -20,6 +20,7 @@ import {
 
 import { AuthService } from "../../core/auth/auth.service";
 import { PermissionService } from "../../core/auth/permission.service";
+import { BreadcrumbService } from "../../core/breadcrumb/breadcrumb.service";
 
 export interface NavigationItem {
   readonly label: string;
@@ -58,8 +59,10 @@ export class MainLayoutComponent {
   private readonly router = inject(Router);
   private readonly permissionService = inject(PermissionService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly breadcrumbService = inject(BreadcrumbService);
 
   readonly currentUser = this.authService.user;
+  readonly breadcrumbs = this.breadcrumbService.breadcrumbs;
 
   readonly navigationGroups: readonly NavigationGroup[] = [
     {

@@ -13,6 +13,7 @@ import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { ActivatedRoute, RouterLink } from "@angular/router";
 import { forkJoin } from "rxjs";
 import { PermissionService } from "../../core/auth/permission.service";
+import { BreadcrumbService } from "../../core/breadcrumb/breadcrumb.service";
 import { FarmManagementService } from "../../core/farm-management/farm-management.service";
 import {
   FarmArea,
@@ -35,6 +36,7 @@ export class FarmAreaDetailPageComponent implements OnInit {
   private readonly service = inject(FarmManagementService);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly breadcrumbService = inject(BreadcrumbService);
   readonly permissionService = inject(PermissionService);
   readonly id = this.route.snapshot.paramMap.get("id")!;
   readonly area = signal<FarmArea | null>(null);
@@ -50,6 +52,27 @@ export class FarmAreaDetailPageComponent implements OnInit {
         next: (r) => {
           this.area.set(r.area);
           this.availability.set(r.availability);
+          this.breadcrumbService.setEntityName(r.area.id, r.area.name);
+          const cachedFarmName = this.breadcrumbService.getEntityName(r.area.farmId);
+          this.breadcrumbService.setTrail([
+            { label: "Dashboard", route: "/dashboard", icon: "space_dashboard" },
+            { label: "Farms", route: "/farms" },
+            { label: cachedFarmName ?? "Farm", route: ["/farms", r.area.farmId] },
+            { label: r.area.name },
+          ]);
+          if (!cachedFarmName && r.area.farmId) {
+            this.service.getFarm(r.area.farmId).subscribe({
+              next: (farm) => {
+                this.breadcrumbService.setEntityName(farm.id, farm.name);
+                this.breadcrumbService.setTrail([
+                  { label: "Dashboard", route: "/dashboard", icon: "space_dashboard" },
+                  { label: "Farms", route: "/farms" },
+                  { label: farm.name, route: ["/farms", farm.id] },
+                  { label: r.area.name },
+                ]);
+              },
+            });
+          }
           this.isLoading.set(false);
         },
         error: () => this.isLoading.set(false),

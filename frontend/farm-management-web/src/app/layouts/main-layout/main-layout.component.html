@@ -65,6 +65,35 @@
       </button>
     </mat-toolbar>
 
+    @if (breadcrumbs().length > 1) {
+      <nav class="breadcrumbs-bar" aria-label="Breadcrumb">
+        <ol class="breadcrumbs-list">
+          @for (item of breadcrumbs(); track $index; let last = $last) {
+            <li class="breadcrumb-item" [class.breadcrumb-current]="last">
+              @if (!last && item.route) {
+                <a [routerLink]="item.route" class="breadcrumb-link">
+                  @if (item.icon) {
+                    <mat-icon class="breadcrumb-icon">{{ item.icon }}</mat-icon>
+                  }
+                  <span>{{ item.label }}</span>
+                </a>
+              } @else {
+                <span class="breadcrumb-text">
+                  @if (item.icon) {
+                    <mat-icon class="breadcrumb-icon">{{ item.icon }}</mat-icon>
+                  }
+                  <span>{{ item.label }}</span>
+                </span>
+              }
+              @if (!last) {
+                <mat-icon class="breadcrumb-separator" aria-hidden="true">chevron_right</mat-icon>
+              }
+            </li>
+          }
+        </ol>
+      </nav>
+    }
+
     <main class="page-shell">
       <router-outlet />
     </main>

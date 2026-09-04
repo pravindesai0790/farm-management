@@ -15,6 +15,7 @@ import { MatSnackBar } from "@angular/material/snack-bar";
 import { ActivatedRoute, RouterLink } from "@angular/router";
 import { forkJoin } from "rxjs";
 import { PermissionService } from "../../core/auth/permission.service";
+import { BreadcrumbService } from "../../core/breadcrumb/breadcrumb.service";
 import { FarmManagementService } from "../../core/farm-management/farm-management.service";
 import {
   Farm,
@@ -40,6 +41,7 @@ export class FarmDetailPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly snack = inject(MatSnackBar);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly breadcrumbService = inject(BreadcrumbService);
   readonly permissionService = inject(PermissionService);
   readonly farmId = this.route.snapshot.paramMap.get("id")!;
   readonly farm = signal<Farm | null>(null);
@@ -55,6 +57,12 @@ export class FarmDetailPageComponent implements OnInit {
         next: (r) => {
           this.farm.set(r.farm);
           this.areas.set(r.areas);
+          this.breadcrumbService.setEntityName(r.farm.id, r.farm.name);
+          this.breadcrumbService.setTrail([
+            { label: "Dashboard", route: "/dashboard", icon: "space_dashboard" },
+            { label: "Farms", route: "/farms" },
+            { label: r.farm.name },
+          ]);
           this.isLoading.set(false);
         },
         error: (e) => {

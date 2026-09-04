@@ -23,6 +23,7 @@ import {
   Plantation,
 } from "../../core/farm-management/farm-management.models";
 import { PermissionService } from "../../core/auth/permission.service";
+import { BreadcrumbService } from "../../core/breadcrumb/breadcrumb.service";
 import { getApiErrorMessage } from "../../core/models/api-error.model";
 import { PlantationTerminateDialogComponent } from "./plantation-terminate-dialog.component";
 @Component({
@@ -50,6 +51,7 @@ export class PlantationDetailPageComponent implements OnInit {
   private readonly snack = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly breadcrumbService = inject(BreadcrumbService);
   readonly permissionService = inject(PermissionService);
   readonly id = this.route.snapshot.paramMap.get("id")!;
   readonly plantation = signal<Plantation | null>(null);
@@ -67,6 +69,29 @@ export class PlantationDetailPageComponent implements OnInit {
       .subscribe({
         next: (p) => {
           this.plantation.set(p);
+          this.breadcrumbService.setEntityName(p.id, p.plantationName);
+          const cachedFarmName = this.breadcrumbService.getEntityName(p.farmId);
+          this.breadcrumbService.setTrail([
+            { label: "Dashboard", route: "/dashboard", icon: "space_dashboard" },
+            { label: "Farms", route: "/farms" },
+            { label: cachedFarmName ?? "Farm", route: ["/farms", p.farmId] },
+            { label: p.farmAreaName || "Farm Area", route: ["/farm-areas", p.farmAreaId] },
+            { label: p.plantationName },
+          ]);
+          if (!cachedFarmName && p.farmId) {
+            this.service.getFarm(p.farmId).subscribe({
+              next: (farm) => {
+                this.breadcrumbService.setEntityName(farm.id, farm.name);
+                this.breadcrumbService.setTrail([
+                  { label: "Dashboard", route: "/dashboard", icon: "space_dashboard" },
+                  { label: "Farms", route: "/farms" },
+                  { label: farm.name, route: ["/farms", farm.id] },
+                  { label: p.farmAreaName || "Farm Area", route: ["/farm-areas", p.farmAreaId] },
+                  { label: p.plantationName },
+                ]);
+              },
+            });
+          }
           this.service
             .listCycles(p.id)
             .pipe(takeUntilDestroyed(this.destroyRef))

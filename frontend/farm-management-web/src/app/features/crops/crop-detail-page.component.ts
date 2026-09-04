@@ -17,6 +17,7 @@ import { MatSnackBar } from "@angular/material/snack-bar";
 import { ActivatedRoute, RouterLink } from "@angular/router";
 import { forkJoin, finalize } from "rxjs";
 import { PermissionService } from "../../core/auth/permission.service";
+import { BreadcrumbService } from "../../core/breadcrumb/breadcrumb.service";
 import { FarmManagementService } from "../../core/farm-management/farm-management.service";
 import {
   Crop,
@@ -43,6 +44,7 @@ export class CropDetailPageComponent implements OnInit {
   private readonly service = inject(FarmManagementService);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly breadcrumbService = inject(BreadcrumbService);
   private readonly snack = inject(MatSnackBar);
   private readonly fb = inject(FormBuilder);
   readonly permissionService = inject(PermissionService);
@@ -68,6 +70,12 @@ export class CropDetailPageComponent implements OnInit {
         next: (r) => {
           this.crop.set(r.crop);
           this.varieties.set(r.varieties.items);
+          this.breadcrumbService.setEntityName(r.crop.id, r.crop.name);
+          this.breadcrumbService.setTrail([
+            { label: "Dashboard", route: "/dashboard", icon: "space_dashboard" },
+            { label: "Crop catalog", route: "/crops" },
+            { label: r.crop.name },
+          ]);
         },
         error: (e) =>
           this.snack.open(

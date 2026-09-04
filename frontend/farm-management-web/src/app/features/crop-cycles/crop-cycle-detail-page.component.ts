@@ -17,6 +17,7 @@ import { ActivatedRoute, Router, RouterLink } from "@angular/router";
 import { FarmManagementService } from "../../core/farm-management/farm-management.service";
 import { CropCycle } from "../../core/farm-management/farm-management.models";
 import { PermissionService } from "../../core/auth/permission.service";
+import { BreadcrumbService } from "../../core/breadcrumb/breadcrumb.service";
 import { getApiErrorMessage } from "../../core/models/api-error.model";
 import { CropCycleCancelDialogComponent } from "./crop-cycle-cancel-dialog.component";
 @Component({
@@ -40,6 +41,7 @@ export class CropCycleDetailPageComponent implements OnInit {
   private readonly snack = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly breadcrumbService = inject(BreadcrumbService);
   readonly permissionService = inject(PermissionService);
   readonly id = this.route.snapshot.paramMap.get("id")!;
   readonly cycle = signal<CropCycle | null>(null);
@@ -54,6 +56,44 @@ export class CropCycleDetailPageComponent implements OnInit {
       .subscribe({
         next: (r) => {
           this.cycle.set(r);
+          this.breadcrumbService.setEntityName(r.id, r.cycleName);
+          this.service.getPlantation(r.plantationId).subscribe({
+            next: (p) => {
+              const cachedFarmName = this.breadcrumbService.getEntityName(p.farmId);
+              this.breadcrumbService.setTrail([
+                { label: "Dashboard", route: "/dashboard", icon: "space_dashboard" },
+                { label: "Farms", route: "/farms" },
+                { label: cachedFarmName ?? "Farm", route: ["/farms", p.farmId] },
+                { label: p.farmAreaName || "Farm Area", route: ["/farm-areas", p.farmAreaId] },
+                { label: p.plantationName, route: ["/plantations", p.id] },
+                { label: r.cycleName },
+              ]);
+              if (!cachedFarmName && p.farmId) {
+                this.service.getFarm(p.farmId).subscribe({
+                  next: (farm) => {
+                    this.breadcrumbService.setEntityName(farm.id, farm.name);
+                    this.breadcrumbService.setTrail([
+                      { label: "Dashboard", route: "/dashboard", icon: "space_dashboard" },
+                      { label: "Farms", route: "/farms" },
+                      { label: farm.name, route: ["/farms", farm.id] },
+                      { label: p.farmAreaName || "Farm Area", route: ["/farm-areas", p.farmAreaId] },
+                      { label: p.plantationName, route: ["/plantations", p.id] },
+                      { label: r.cycleName },
+                    ]);
+                  },
+                });
+              }
+            },
+            error: () => {
+              this.breadcrumbService.setTrail([
+                { label: "Dashboard", route: "/dashboard", icon: "space_dashboard" },
+                { label: "Farms", route: "/farms" },
+                { label: "Plantations", route: "/plantations" },
+                { label: r.plantationName || "Plantation", route: ["/plantations", r.plantationId] },
+                { label: r.cycleName },
+              ]);
+            },
+          });
           this.isLoading.set(false);
         },
         error: (e) => {
