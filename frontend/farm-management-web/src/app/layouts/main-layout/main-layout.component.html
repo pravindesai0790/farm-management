@@ -40,29 +40,77 @@
 
   <mat-sidenav-content class="content-container">
     <mat-toolbar class="topbar">
-      <button
-        mat-icon-button
-        type="button"
-        aria-label="Toggle navigation"
-        (click)="sidenav.toggle()"
-      >
-        <mat-icon>menu</mat-icon>
-      </button>
-      <div class="topbar-title">
-        <span class="eyebrow">Farm Management Platform</span>
-        <span class="topbar-heading">Plan better. Grow with confidence.</span>
+      <div class="topbar-left">
+        <button
+          mat-icon-button
+          type="button"
+          aria-label="Toggle navigation"
+          (click)="sidenav.toggle()"
+        >
+          <mat-icon>menu</mat-icon>
+        </button>
+        <div class="topbar-branding">
+          <div class="org-chip" matTooltip="Current Organization">
+            <mat-icon class="org-chip-icon">business</mat-icon>
+            <div class="org-chip-details">
+              <span class="org-label">Organization</span>
+              <span class="org-name">{{ organizationName() }}</span>
+            </div>
+          </div>
+        </div>
       </div>
+
       <span class="topbar-spacer"></span>
-      <button
-        mat-button
-        type="button"
-        class="profile-button"
-        (click)="logout()"
-      >
-        <span class="profile-avatar">{{ userInitials }}</span>
-        <span class="profile-label">Sign out</span>
-        <mat-icon>logout</mat-icon>
-      </button>
+
+      <div class="topbar-right">
+        <div class="topbar-date-chip" matTooltip="Today's date">
+          <mat-icon>calendar_today</mat-icon>
+          <span>{{ todayFormatted() }}</span>
+        </div>
+
+        <button
+          type="button"
+          class="profile-trigger-button"
+          [matMenuTriggerFor]="userMenu"
+          aria-label="User account menu"
+        >
+          <span class="profile-avatar">{{ userInitials }}</span>
+          <div class="profile-meta">
+            <span class="profile-name">{{ userDisplayName() }}</span>
+            @if (userRole()) {
+              <span class="profile-role-badge">{{ userRole() }}</span>
+            }
+          </div>
+          <mat-icon class="profile-chevron">expand_more</mat-icon>
+        </button>
+
+        <mat-menu #userMenu="matMenu" xPosition="before" class="user-dropdown-menu">
+          <div class="user-menu-header" (click)="$event.stopPropagation()">
+            <div class="user-menu-avatar">{{ userInitials }}</div>
+            <div class="user-menu-text">
+              <span class="user-menu-name">{{ userDisplayName() }}</span>
+              <span class="user-menu-email">{{ currentUser()?.email }}</span>
+              <div class="user-menu-org">
+                <mat-icon>business</mat-icon>
+                <span>{{ organizationName() }}</span>
+              </div>
+              @if (userRole()) {
+                <span class="user-menu-role-tag">{{ userRole() }}</span>
+              }
+            </div>
+          </div>
+          <mat-divider></mat-divider>
+          <a mat-menu-item routerLink="/settings">
+            <mat-icon>settings</mat-icon>
+            <span>Account Settings</span>
+          </a>
+          <mat-divider></mat-divider>
+          <button mat-menu-item class="user-menu-logout" (click)="logout()">
+            <mat-icon>logout</mat-icon>
+            <span>Sign out</span>
+          </button>
+        </mat-menu>
+      </div>
     </mat-toolbar>
 
     @if (breadcrumbs().length > 1) {

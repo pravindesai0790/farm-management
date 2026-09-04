@@ -6,5 +6,6 @@ public sealed record AuthenticationUserResponse(
     string LastName,
     string Email,
     Guid OrganizationId,
+    string OrganizationName,
     IReadOnlyList<string> Roles,
     IReadOnlyList<string> Permissions);

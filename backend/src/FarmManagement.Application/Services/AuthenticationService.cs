@@ -269,6 +269,7 @@ public sealed class AuthenticationService(
             user.LastName,
             user.Email,
             user.OrganizationId,
+            user.Organization?.Name ?? string.Empty,
             rolesAndPermissions.Roles,
             rolesAndPermissions.Permissions);
 

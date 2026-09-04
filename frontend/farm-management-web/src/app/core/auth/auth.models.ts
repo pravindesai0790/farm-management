@@ -4,6 +4,7 @@ export interface CurrentUser {
   readonly lastName: string;
   readonly email: string;
   readonly organizationId: string;
+  readonly organizationName: string;
   readonly roles: readonly string[];
   readonly permissions: readonly string[];
 }

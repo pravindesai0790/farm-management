@@ -7,10 +7,13 @@ import {
 } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { MatButtonModule } from "@angular/material/button";
+import { MatDividerModule } from "@angular/material/divider";
 import { MatIconModule } from "@angular/material/icon";
 import { MatListModule } from "@angular/material/list";
+import { MatMenuModule } from "@angular/material/menu";
 import { MatSidenavModule } from "@angular/material/sidenav";
 import { MatToolbarModule } from "@angular/material/toolbar";
+import { MatTooltipModule } from "@angular/material/tooltip";
 import {
   Router,
   RouterLink,
@@ -42,10 +45,13 @@ export interface NavigationGroup {
   standalone: true,
   imports: [
     MatButtonModule,
+    MatDividerModule,
     MatIconModule,
     MatListModule,
+    MatMenuModule,
     MatSidenavModule,
     MatToolbarModule,
+    MatTooltipModule,
     RouterLink,
     RouterLinkActive,
     RouterOutlet,
@@ -63,6 +69,26 @@ export class MainLayoutComponent {
 
   readonly currentUser = this.authService.user;
   readonly breadcrumbs = this.breadcrumbService.breadcrumbs;
+
+  readonly organizationName = computed(
+    () => this.currentUser()?.organizationName || "Farm Management",
+  );
+  readonly userDisplayName = computed(() => {
+    const user = this.currentUser();
+    return user ? `${user.firstName} ${user.lastName}`.trim() : "User";
+  });
+  readonly userRole = computed(() => {
+    const roles = this.currentUser()?.roles;
+    if (!roles || roles.length === 0) return "";
+    return roles[0].replace(/([a-z])([A-Z])/g, "$1 $2");
+  });
+  readonly todayFormatted = computed(() =>
+    new Intl.DateTimeFormat("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    }).format(new Date()),
+  );
 
   readonly navigationGroups: readonly NavigationGroup[] = [
     {
