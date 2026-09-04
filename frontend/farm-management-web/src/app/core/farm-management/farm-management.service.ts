@@ -163,9 +163,16 @@ export class FarmManagementService {
     cropId: string,
     page = 1,
     pageSize = 100,
+    isActive: boolean | null = null,
   ): Observable<VarietyList> {
+    let params = new HttpParams()
+      .set("page", page)
+      .set("pageSize", pageSize);
+    if (isActive !== null) {
+      params = params.set("isActive", isActive);
+    }
     return this.http.get<VarietyList>(`${this.api}/crops/${cropId}/varieties`, {
-      params: { page, pageSize, isActive: true },
+      params,
     });
   }
   createVariety(request: object): Observable<CropVariety> {

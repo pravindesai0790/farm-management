@@ -16,8 +16,15 @@ import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { MatSelectModule } from "@angular/material/select";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { ActivatedRoute, Router, RouterLink } from "@angular/router";
-import { forkJoin, of, finalize } from "rxjs";
+import { forkJoin, of, finalize, switchMap, map } from "rxjs";
 import { FarmManagementService } from "../../core/farm-management/farm-management.service";
+import {
+  Crop,
+  CropVariety,
+  Farm,
+  FarmArea,
+  Unit,
+} from "../../core/farm-management/farm-management.models";
 import { getApiErrorMessage } from "../../core/models/api-error.model";
 @Component({
   selector: "app-plantation-editor-page",
@@ -47,11 +54,11 @@ export class PlantationEditorPageComponent implements OnInit {
   readonly isLoading = signal(true);
   readonly isSubmitting = signal(false);
   readonly errorMessage = signal<string | null>(null);
-  readonly farms = signal<readonly any[]>([]);
-  readonly areas = signal<readonly any[]>([]);
-  readonly crops = signal<readonly any[]>([]);
-  readonly varieties = signal<readonly any[]>([]);
-  readonly units = signal<readonly any[]>([]);
+  readonly farms = signal<readonly Farm[]>([]);
+  readonly areas = signal<readonly FarmArea[]>([]);
+  readonly crops = signal<readonly Crop[]>([]);
+  readonly varieties = signal<readonly CropVariety[]>([]);
+  readonly units = signal<readonly Unit[]>([]);
   readonly form = this.fb.group({
     farmId: [null as string | null, [Validators.required]],
     farmAreaId: [null as string | null, [Validators.required]],
@@ -68,22 +75,48 @@ export class PlantationEditorPageComponent implements OnInit {
     expectedEndDate: [""],
   });
   ngOnInit(): void {
-    forkJoin({
+    const base$ = forkJoin({
       farms: this.service.listFarms(1, 100, "", true),
       crops: this.service.listCrops(1, 100, "", true),
       units: this.service.listUnits(),
-      plantation: this.id ? this.service.getPlantation(this.id) : of(null),
-    })
-      .pipe(
-        takeUntilDestroyed(this.destroyRef),
-        finalize(() => this.isLoading.set(false)),
-      )
-      .subscribe({
-        next: (r) => {
-          this.farms.set(r.farms.items);
-          this.crops.set(r.crops.items);
-          this.units.set(r.units);
-          if (r.plantation) {
+    });
+
+    if (this.id) {
+      forkJoin({
+        base: base$,
+        plantation: this.service.getPlantation(this.id),
+      })
+        .pipe(
+          switchMap(({ base, plantation }) => {
+            const areas$ = plantation.farmId
+              ? this.service.listAreas(plantation.farmId)
+              : of([] as readonly FarmArea[]);
+            const varieties$ = plantation.cropId
+              ? this.service.listVarieties(plantation.cropId)
+              : of({ items: [] as readonly CropVariety[], totalCount: 0 });
+
+            return forkJoin({
+              areas: areas$,
+              varieties: varieties$,
+            }).pipe(
+              map(({ areas, varieties }) => ({
+                ...base,
+                plantation,
+                areas,
+                varieties: varieties.items,
+              })),
+            );
+          }),
+          takeUntilDestroyed(this.destroyRef),
+          finalize(() => this.isLoading.set(false)),
+        )
+        .subscribe({
+          next: (r) => {
+            this.farms.set(r.farms.items);
+            this.crops.set(r.crops.items);
+            this.units.set(r.units);
+            this.areas.set(r.areas);
+            this.varieties.set(r.varieties);
             this.form.patchValue({
               farmId: r.plantation.farmId,
               farmAreaId: r.plantation.farmAreaId,
@@ -96,32 +129,87 @@ export class PlantationEditorPageComponent implements OnInit {
               plantingDate: r.plantation.plantingDate,
               expectedEndDate: r.plantation.expectedEndDate ?? "",
             });
-            this.loadAreas(r.plantation.farmId);
-            this.loadVarieties(r.plantation.cropId);
-          } else if (r.farms.items[0]) {
-            this.form.controls.farmId.setValue(r.farms.items[0].id);
-            this.loadAreas(r.farms.items[0].id);
-          }
-        },
-        error: (e) =>
-          this.errorMessage.set(
-            getApiErrorMessage(e, "Plantation form data could not be loaded."),
-          ),
-      });
+          },
+          error: (e) =>
+            this.errorMessage.set(
+              getApiErrorMessage(e, "Plantation form data could not be loaded."),
+            ),
+        });
+    } else {
+      base$
+        .pipe(
+          switchMap((base) => {
+            const defaultFarmId = base.farms.items[0]?.id;
+            const areas$ = defaultFarmId
+              ? this.service.listAreas(defaultFarmId, true)
+              : of([] as readonly FarmArea[]);
+            return areas$.pipe(
+              map((areas) => ({
+                ...base,
+                areas,
+                defaultFarmId,
+              })),
+            );
+          }),
+          takeUntilDestroyed(this.destroyRef),
+          finalize(() => this.isLoading.set(false)),
+        )
+        .subscribe({
+          next: (r) => {
+            this.farms.set(r.farms.items);
+            this.crops.set(r.crops.items);
+            this.units.set(r.units);
+            this.areas.set(r.areas);
+            if (r.defaultFarmId) {
+              this.form.controls.farmId.setValue(r.defaultFarmId);
+            }
+          },
+          error: (e) =>
+            this.errorMessage.set(
+              getApiErrorMessage(e, "Plantation form data could not be loaded."),
+            ),
+        });
+    }
+  }
+  onFarmChange(farmId: string | null): void {
+    this.form.controls.farmAreaId.setValue(null);
+    if (!farmId) {
+      this.areas.set([]);
+      return;
+    }
+    this.loadAreas(farmId);
+  }
+  onCropChange(cropId: string | null): void {
+    this.form.controls.varietyId.setValue(null);
+    if (!cropId) {
+      this.varieties.set([]);
+      return;
+    }
+    this.loadVarieties(cropId);
   }
   loadAreas(farmId: string): void {
-    this.form.controls.farmAreaId.setValue(null);
     this.service
       .listAreas(farmId, true)
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((r) => this.areas.set(r));
+      .subscribe({
+        next: (r) => this.areas.set(r),
+        error: (e) =>
+          this.errorMessage.set(
+            getApiErrorMessage(e, "Farm areas could not be loaded."),
+          ),
+      });
   }
   loadVarieties(cropId: string): void {
-    this.form.controls.varietyId.setValue(null);
     this.service
       .listVarieties(cropId)
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((r) => this.varieties.set(r.items));
+      .subscribe({
+        next: (r) => this.varieties.set(r.items),
+        error: (e) =>
+          this.errorMessage.set(
+            getApiErrorMessage(e, "Varieties could not be loaded."),
+          ),
+      });
   }
   submit(): void {
     if (this.form.invalid) {

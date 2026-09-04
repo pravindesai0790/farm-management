@@ -17,7 +17,7 @@
             <mat-label>Farm</mat-label>
             <mat-select
               formControlName="farmId"
-              (valueChange)="loadAreas($event)"
+              (selectionChange)="onFarmChange($event.value)"
             >
               @for (farm of farms(); track farm.id) {
                 <mat-option [value]="farm.id"
@@ -43,7 +43,7 @@
             <mat-label>Crop</mat-label>
             <mat-select
               formControlName="cropId"
-              (valueChange)="loadVarieties($event)"
+              (selectionChange)="onCropChange($event.value)"
             >
               @for (crop of crops(); track crop.id) {
                 <mat-option [value]="crop.id"
