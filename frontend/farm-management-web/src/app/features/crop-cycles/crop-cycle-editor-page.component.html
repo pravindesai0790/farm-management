@@ -21,7 +21,15 @@
                   {{ p.farmName ? p.farmName + ' › ' : '' }}{{ p.farmAreaName }} › {{ p.plantationName }} ({{ p.cropName }})
                 </mat-option>
               }
+              @if (plantations().length === 0 && !isLoadingPlantations()) {
+                <mat-option [value]="null" disabled>
+                  No available plantations for this season
+                </mat-option>
+              }
             </mat-select>
+            @if (isLoadingPlantations()) {
+              <mat-hint>Loading available plantations…</mat-hint>
+            }
           </mat-form-field>
 
           <mat-form-field appearance="outline">

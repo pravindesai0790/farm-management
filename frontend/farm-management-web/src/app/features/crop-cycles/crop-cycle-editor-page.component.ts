@@ -17,10 +17,12 @@ import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { MatSelectModule } from "@angular/material/select";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { ActivatedRoute, Router, RouterLink } from "@angular/router";
-import { forkJoin, of, finalize } from "rxjs";
+import { debounceTime, distinctUntilChanged, finalize } from "rxjs";
 import { FarmManagementService } from "../../core/farm-management/farm-management.service";
+import { Plantation } from "../../core/farm-management/farm-management.models";
 import { ErrorAlertComponent } from "../../shared/components/error-alert/error-alert.component";
 import { formatDateOnly, parseDateOnly } from "../../core/utils/date.utils";
+
 @Component({
   selector: "app-crop-cycle-editor-page",
   standalone: true,
@@ -47,11 +49,16 @@ export class CropCycleEditorPageComponent implements OnInit {
   private readonly snack = inject(MatSnackBar);
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder);
+
   readonly id = this.route.snapshot.paramMap.get("id");
   readonly isLoading = signal(true);
+  readonly isLoadingPlantations = signal(false);
   readonly isSubmitting = signal(false);
   readonly errorMessage = signal<unknown>(null);
-  readonly plantations = signal<readonly any[]>([]);
+  readonly plantations = signal<readonly Plantation[]>([]);
+
+  private initialPlantationId: string | null = null;
+
   readonly form = this.fb.group({
     plantationId: [null as string | null, [Validators.required]],
     cycleCode: ["", [Validators.required]],
@@ -61,32 +68,92 @@ export class CropCycleEditorPageComponent implements OnInit {
     plannedStartDate: [null as Date | null, [Validators.required]],
     expectedEndDate: [null as Date | null],
   });
+
   ngOnInit(): void {
-    forkJoin({
-      plantations: this.service.listPlantations(1, 100),
-      cycle: this.id ? this.service.getCycle(this.id) : of(null),
-    })
+    if (this.id) {
+      this.service
+        .getCycle(this.id)
+        .pipe(
+          takeUntilDestroyed(this.destroyRef),
+          finalize(() => this.isLoading.set(false)),
+        )
+        .subscribe({
+          next: (cycle) => {
+            this.initialPlantationId = cycle.plantationId;
+            this.form.patchValue({
+              plantationId: cycle.plantationId,
+              cycleCode: cycle.cycleCode,
+              cycleName: cycle.cycleName,
+              seasonYear: cycle.seasonYear,
+              seasonName: cycle.seasonName ?? "",
+              plannedStartDate: parseDateOnly(cycle.plannedStartDate),
+              expectedEndDate: parseDateOnly(cycle.expectedEndDate),
+            });
+            this.loadPlantations(cycle.seasonYear, cycle.plantationId);
+            this.listenToSeasonYearChanges();
+          },
+          error: (e) => this.errorMessage.set(e),
+        });
+    } else {
+      this.isLoading.set(false);
+      const initialYear =
+        this.form.get("seasonYear")?.value ?? new Date().getFullYear();
+      this.loadPlantations(initialYear);
+      this.listenToSeasonYearChanges();
+    }
+  }
+
+  private listenToSeasonYearChanges(): void {
+    this.form
+      .get("seasonYear")
+      ?.valueChanges.pipe(
+        takeUntilDestroyed(this.destroyRef),
+        debounceTime(300),
+        distinctUntilChanged(),
+      )
+      .subscribe((year) => {
+        const parsedYear = Number(year);
+        if (parsedYear && parsedYear > 1900 && parsedYear < 2200) {
+          this.loadPlantations(
+            parsedYear,
+            this.id ? this.initialPlantationId : undefined,
+          );
+        }
+      });
+  }
+
+  private loadPlantations(
+    seasonYear: number,
+    currentPlantationId?: string | null,
+  ): void {
+    this.isLoadingPlantations.set(true);
+    this.service
+      .listPlantations(
+        1,
+        100,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        seasonYear,
+        currentPlantationId ?? undefined,
+      )
       .pipe(
         takeUntilDestroyed(this.destroyRef),
-        finalize(() => this.isLoading.set(false)),
+        finalize(() => this.isLoadingPlantations.set(false)),
       )
       .subscribe({
         next: (r) => {
-          this.plantations.set(r.plantations.items);
-          if (r.cycle)
-            this.form.patchValue({
-              plantationId: r.cycle.plantationId,
-              cycleCode: r.cycle.cycleCode,
-              cycleName: r.cycle.cycleName,
-              seasonYear: r.cycle.seasonYear,
-              seasonName: r.cycle.seasonName ?? "",
-              plannedStartDate: parseDateOnly(r.cycle.plannedStartDate),
-              expectedEndDate: parseDateOnly(r.cycle.expectedEndDate),
-            });
+          this.plantations.set(r.items);
+          const selected = this.form.get("plantationId")?.value;
+          if (selected && !r.items.some((p) => p.id === selected)) {
+            this.form.patchValue({ plantationId: null });
+          }
         },
         error: (e) => this.errorMessage.set(e),
       });
   }
+
   submit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -96,7 +163,11 @@ export class CropCycleEditorPageComponent implements OnInit {
     this.isSubmitting.set(true);
     const v = this.form.getRawValue();
     const payload = {
-      ...v,
+      plantationId: v.plantationId,
+      cycleCode: v.cycleCode,
+      cycleName: v.cycleName,
+      seasonYear: v.seasonYear,
+      seasonName: v.seasonName,
       plannedStartDate: formatDateOnly(v.plannedStartDate) ?? "",
       expectedEndDate: formatDateOnly(v.expectedEndDate),
     };

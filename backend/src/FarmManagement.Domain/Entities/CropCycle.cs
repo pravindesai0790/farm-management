@@ -93,6 +93,7 @@ public sealed class CropCycle
     }
 
     public void Update(
+        Guid plantationId,
         string cycleCode,
         string cycleName,
         int seasonYear,
@@ -106,8 +107,13 @@ public sealed class CropCycle
         {
             throw new InvalidOperationException("Only a planned crop cycle can be modified.");
         }
+        if (plantationId == Guid.Empty)
+        {
+            throw new ArgumentException("A plantation is required.", nameof(plantationId));
+        }
 
         ValidateValues(cycleCode, cycleName, seasonYear, plannedStartDate, expectedEndDate, updatedBy);
+        PlantationId = plantationId;
         CycleCode = cycleCode.Trim().ToUpperInvariant();
         CycleName = cycleName.Trim();
         SeasonYear = seasonYear;

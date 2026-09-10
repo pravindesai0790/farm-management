@@ -22,9 +22,12 @@ public sealed class PlantationsController(IPlantationService plantationService) 
         [FromQuery] Guid? farmAreaId = null,
         [FromQuery] string? status = null,
         [FromQuery] Guid? cropId = null,
+        [FromQuery] int? availableForSeasonYear = null,
+        [FromQuery] Guid? currentPlantationId = null,
         CancellationToken cancellationToken = default)
     {
-        return Ok(await plantationService.ListAsync(GetActor(), page, pageSize, farmId, farmAreaId, status, cropId, cancellationToken));
+        return Ok(await plantationService.ListAsync(
+            GetActor(), page, pageSize, farmId, farmAreaId, status, cropId, availableForSeasonYear, currentPlantationId, cancellationToken));
     }
 
     [HttpGet("api/plantations/{id:guid}")]

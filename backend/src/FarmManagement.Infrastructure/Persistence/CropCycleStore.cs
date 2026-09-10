@@ -126,6 +126,24 @@ public sealed class CropCycleStore(ApplicationDbContext dbContext) : ICropCycleS
         return query.AnyAsync(cancellationToken);
     }
 
+    public Task<bool> HasCycleForSeasonAsync(
+        Guid plantationId,
+        int seasonYear,
+        Guid? excludingCycleId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = dbContext.CropCycles.Where(cycle =>
+            cycle.PlantationId == plantationId &&
+            cycle.SeasonYear == seasonYear &&
+            cycle.Status != CropCycleStatus.Cancelled);
+        if (excludingCycleId is not null)
+        {
+            query = query.Where(cycle => cycle.Id != excludingCycleId.Value);
+        }
+
+        return query.AnyAsync(cancellationToken);
+    }
+
     public void Add(CropCycle cycle) => dbContext.CropCycles.Add(cycle);
 
     public void AddAuditLog(AuditLog auditLog) => dbContext.AuditLogs.Add(auditLog);

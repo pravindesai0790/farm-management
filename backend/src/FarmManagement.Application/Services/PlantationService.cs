@@ -21,6 +21,8 @@ public sealed class PlantationService(IPlantationStore store) : IPlantationServi
         Guid? farmAreaId,
         string? status,
         Guid? cropId = null,
+        int? availableForSeasonYear = null,
+        Guid? currentPlantationId = null,
         CancellationToken cancellationToken = default)
     {
         ValidateActor(actor);
@@ -37,6 +39,8 @@ public sealed class PlantationService(IPlantationStore store) : IPlantationServi
             farmAreaId,
             parsedStatus,
             cropId,
+            availableForSeasonYear,
+            currentPlantationId,
             checked((page - 1) * pageSize),
             pageSize,
             cancellationToken);

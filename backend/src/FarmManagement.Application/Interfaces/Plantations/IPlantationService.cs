@@ -15,6 +15,8 @@ public interface IPlantationService
         Guid? farmAreaId,
         string? status,
         Guid? cropId = null,
+        int? availableForSeasonYear = null,
+        Guid? currentPlantationId = null,
         CancellationToken cancellationToken = default);
 
     Task<PlantationResponse> GetAsync(

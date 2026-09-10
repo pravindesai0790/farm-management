@@ -11,6 +11,8 @@ public interface IPlantationStore
         Guid? farmAreaId,
         PlantationStatus? status,
         Guid? cropId = null,
+        int? availableForSeasonYear = null,
+        Guid? currentPlantationId = null,
         CancellationToken cancellationToken = default);
 
     Task<(IReadOnlyList<CropPlantation> Items, int TotalCount)> ListPagedAsync(
@@ -19,6 +21,8 @@ public interface IPlantationStore
         Guid? farmAreaId,
         PlantationStatus? status,
         Guid? cropId,
+        int? availableForSeasonYear,
+        Guid? currentPlantationId,
         int skip,
         int take,
         CancellationToken cancellationToken = default);

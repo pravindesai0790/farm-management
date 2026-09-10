@@ -75,6 +75,11 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
             ValidateDates(values.PlannedStartDate, values.ExpectedEndDate, plantation);
             await EnsureCodeIsAvailableAsync(actor, values.CycleCode, null, transactionCancellationToken);
 
+            if (await store.HasCycleForSeasonAsync(values.PlantationId, values.SeasonYear, null, transactionCancellationToken))
+            {
+                throw new ConflictException($"The plantation is already occupied by a crop cycle for season {values.SeasonYear}.");
+            }
+
             var cycle = new CropCycle(
                 actor.OrganizationId,
                 plantation.Id,
@@ -89,6 +94,7 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
             store.Add(cycle);
             AddAudit(actor, cycle, "CropCycle.Created", new
             {
+                cycle.PlantationId,
                 cycle.CycleCode,
                 cycle.CycleName,
                 cycle.SeasonYear,
@@ -118,14 +124,22 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
                 throw new ConflictException("Only a planned crop cycle can be modified.");
             }
 
-            var plantation = await store.LockPlantationAsync(cycle.PlantationId, actor.OrganizationId, transactionCancellationToken)
+            var targetPlantationId = values.PlantationId != Guid.Empty ? values.PlantationId : cycle.PlantationId;
+
+            var plantation = await store.LockPlantationAsync(targetPlantationId, actor.OrganizationId, transactionCancellationToken)
                 ?? throw new ResourceNotFoundException("The plantation was not found.");
             EnsureCanCreateForPlantation(plantation);
             ValidateDates(values.PlannedStartDate, values.ExpectedEndDate, plantation);
             await EnsureCodeIsAvailableAsync(actor, values.CycleCode, cycle.Id, transactionCancellationToken);
 
+            if (await store.HasCycleForSeasonAsync(targetPlantationId, values.SeasonYear, cycle.Id, transactionCancellationToken))
+            {
+                throw new ConflictException($"The plantation is already occupied by a crop cycle for season {values.SeasonYear}.");
+            }
+
             var previous = new
             {
+                cycle.PlantationId,
                 cycle.CycleCode,
                 cycle.CycleName,
                 cycle.SeasonYear,
@@ -134,6 +148,7 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
                 cycle.ExpectedEndDate
             };
             cycle.Update(
+                targetPlantationId,
                 values.CycleCode,
                 values.CycleName,
                 values.SeasonYear,
@@ -147,6 +162,7 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
                 previous,
                 current = new
                 {
+                    cycle.PlantationId,
                     cycle.CycleCode,
                     cycle.CycleName,
                     cycle.SeasonYear,
@@ -372,18 +388,12 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
         return new CropCycleResponse(
             cycle.Id,
             cycle.PlantationId,
-            plantation.PlantationCode,
             plantation.PlantationName,
-            plantation.FarmId,
-            farm?.Code ?? string.Empty,
-            farm?.Name ?? string.Empty,
-            plantation.FarmAreaId,
-            farmArea?.Code ?? string.Empty,
-            farmArea?.Name ?? string.Empty,
-            plantation.CropId,
-            crop.Code,
+            farm?.Code,
+            farm?.Name,
+            farmArea?.Code,
+            farmArea?.Name,
             crop.Name,
-            crop.CropDurationType,
             cycle.CycleCode,
             cycle.CycleName,
             cycle.SeasonYear,
@@ -391,16 +401,7 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
             cycle.PlannedStartDate,
             cycle.ActualStartDate,
             cycle.ExpectedEndDate,
-            cycle.ActualEndDate,
-            cycle.Status.ToString().ToUpperInvariant(),
-            cycle.CancellationReasonId,
-            cycle.CancellationReason?.Code,
-            cycle.CancellationReason?.Name,
-            cycle.CancellationNotes,
-            cycle.CreatedAt,
-            cycle.CreatedBy,
-            cycle.UpdatedAt,
-            cycle.UpdatedBy);
+            cycle.Status.ToString().ToUpperInvariant());
     }
 
     private static CreateValues ReadValues(CreateCropCycleRequest? request)
@@ -413,7 +414,7 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
     private static CreateValues ReadValues(UpdateCropCycleRequest? request)
     {
         if (request is null) throw Validation("request", "A request body is required.");
-        return ReadValues(null, request.CycleCode, request.CycleName, request.SeasonYear,
+        return ReadValues(request.PlantationId, request.CycleCode, request.CycleName, request.SeasonYear,
             request.SeasonName, request.PlannedStartDate, request.ExpectedEndDate);
     }
 

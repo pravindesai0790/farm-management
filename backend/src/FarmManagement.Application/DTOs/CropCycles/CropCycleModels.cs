@@ -3,18 +3,12 @@ namespace FarmManagement.Application.DTOs.CropCycles;
 public sealed record CropCycleResponse(
     Guid Id,
     Guid PlantationId,
-    string PlantationCode,
     string PlantationName,
-    Guid FarmId,
-    string FarmCode,
-    string FarmName,
-    Guid FarmAreaId,
-    string FarmAreaCode,
-    string FarmAreaName,
-    Guid CropId,
-    string CropCode,
+    string? FarmCode,
+    string? FarmName,
+    string? FarmAreaCode,
+    string? FarmAreaName,
     string CropName,
-    string CropDurationType,
     string CycleCode,
     string CycleName,
     int SeasonYear,
@@ -22,16 +16,7 @@ public sealed record CropCycleResponse(
     DateOnly PlannedStartDate,
     DateOnly? ActualStartDate,
     DateOnly? ExpectedEndDate,
-    DateOnly? ActualEndDate,
-    string Status,
-    Guid? CancellationReasonId,
-    string? CancellationReasonCode,
-    string? CancellationReasonName,
-    string? CancellationNotes,
-    DateTimeOffset CreatedAt,
-    Guid CreatedBy,
-    DateTimeOffset? UpdatedAt,
-    Guid? UpdatedBy);
+    string Status);
 
 public sealed record CreateCropCycleRequest(
     Guid? PlantationId,
@@ -43,6 +28,7 @@ public sealed record CreateCropCycleRequest(
     DateOnly? ExpectedEndDate);
 
 public sealed record UpdateCropCycleRequest(
+    Guid? PlantationId,
     string? CycleCode,
     string? CycleName,
     int? SeasonYear,

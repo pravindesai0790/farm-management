@@ -222,12 +222,16 @@ export class FarmManagementService {
     farmAreaId?: string,
     status?: string,
     cropId?: string,
+    availableForSeasonYear?: number,
+    currentPlantationId?: string,
   ): Observable<PlantationList> {
     let params = new HttpParams().set("page", page).set("pageSize", pageSize);
     if (farmId) params = params.set("farmId", farmId);
     if (farmAreaId) params = params.set("farmAreaId", farmAreaId);
     if (status) params = params.set("status", status);
     if (cropId) params = params.set("cropId", cropId);
+    if (availableForSeasonYear) params = params.set("availableForSeasonYear", availableForSeasonYear);
+    if (currentPlantationId) params = params.set("currentPlantationId", currentPlantationId);
     return this.http.get<PlantationList>(`${this.api}/plantations`, { params });
   }
   getPlantation(id: string): Observable<Plantation> {

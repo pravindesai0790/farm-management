@@ -170,18 +170,12 @@ export interface Plantation {
 export interface CropCycle {
   id: string;
   plantationId: string;
-  plantationCode: string;
   plantationName: string;
-  farmId: string;
-  farmCode: string;
-  farmName: string;
-  farmAreaId: string;
-  farmAreaCode: string;
-  farmAreaName: string;
-  cropId: string;
-  cropCode: string;
+  farmCode: string | null;
+  farmName: string | null;
+  farmAreaCode: string | null;
+  farmAreaName: string | null;
   cropName: string;
-  cropDurationType: string;
   cycleCode: string;
   cycleName: string;
   seasonYear: number;
@@ -189,16 +183,7 @@ export interface CropCycle {
   plannedStartDate: string;
   actualStartDate: string | null;
   expectedEndDate: string | null;
-  actualEndDate: string | null;
   status: string;
-  cancellationReasonId: string | null;
-  cancellationReasonCode: string | null;
-  cancellationReasonName: string | null;
-  cancellationNotes: string | null;
-  createdAt: string;
-  createdBy: string;
-  updatedAt: string | null;
-  updatedBy: string | null;
 }
 export interface LifecycleStage {
   id: string;

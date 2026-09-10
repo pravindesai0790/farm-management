@@ -14,8 +14,10 @@ public sealed class PlantationStore(ApplicationDbContext dbContext) : IPlantatio
         Guid? farmAreaId,
         PlantationStatus? status,
         Guid? cropId = null,
+        int? availableForSeasonYear = null,
+        Guid? currentPlantationId = null,
         CancellationToken cancellationToken = default) =>
-        await BuildQuery(organizationId, farmId, farmAreaId, status, cropId)
+        await BuildQuery(organizationId, farmId, farmAreaId, status, cropId, availableForSeasonYear, currentPlantationId)
             .AsNoTracking()
             .OrderBy(plantation => plantation.PlantationName)
             .ThenBy(plantation => plantation.PlantationCode)
@@ -28,11 +30,13 @@ public sealed class PlantationStore(ApplicationDbContext dbContext) : IPlantatio
         Guid? farmAreaId,
         PlantationStatus? status,
         Guid? cropId,
+        int? availableForSeasonYear,
+        Guid? currentPlantationId,
         int skip,
         int take,
         CancellationToken cancellationToken = default)
     {
-        var query = BuildQuery(organizationId, farmId, farmAreaId, status, cropId);
+        var query = BuildQuery(organizationId, farmId, farmAreaId, status, cropId, availableForSeasonYear, currentPlantationId);
         var totalCount = await query.CountAsync(cancellationToken);
         var items = await query
             .AsNoTracking()
@@ -177,7 +181,14 @@ public sealed class PlantationStore(ApplicationDbContext dbContext) : IPlantatio
     public void AddAuditLog(AuditLog auditLog) => dbContext.AuditLogs.Add(auditLog);
     public Task SaveChangesAsync(CancellationToken cancellationToken = default) => dbContext.SaveChangesAsync(cancellationToken);
 
-    private IQueryable<CropPlantation> BuildQuery(Guid organizationId, Guid? farmId, Guid? farmAreaId, PlantationStatus? status, Guid? cropId = null)
+    private IQueryable<CropPlantation> BuildQuery(
+        Guid organizationId,
+        Guid? farmId,
+        Guid? farmAreaId,
+        PlantationStatus? status,
+        Guid? cropId = null,
+        int? availableForSeasonYear = null,
+        Guid? currentPlantationId = null)
     {
         var query = dbContext.CropPlantations
             .Include(plantation => plantation.Farm)
@@ -193,6 +204,18 @@ public sealed class PlantationStore(ApplicationDbContext dbContext) : IPlantatio
         if (farmAreaId is not null) query = query.Where(plantation => plantation.FarmAreaId == farmAreaId.Value);
         if (status is not null) query = query.Where(plantation => plantation.Status == status.Value);
         if (cropId is not null) query = query.Where(plantation => plantation.CropId == cropId.Value);
+
+        if (availableForSeasonYear is not null)
+        {
+            query = query.Where(plantation =>
+                (plantation.Status != PlantationStatus.Terminated && plantation.Status != PlantationStatus.Archived) &&
+                (plantation.Id == currentPlantationId ||
+                 !dbContext.CropCycles.Any(cycle =>
+                     cycle.PlantationId == plantation.Id &&
+                     cycle.SeasonYear == availableForSeasonYear.Value &&
+                     cycle.Status != CropCycleStatus.Cancelled)));
+        }
+
         return query;
     }
 }

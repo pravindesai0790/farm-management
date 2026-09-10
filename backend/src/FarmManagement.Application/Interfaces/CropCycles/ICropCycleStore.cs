@@ -56,6 +56,12 @@ public interface ICropCycleStore
         Guid? excludingCycleId = null,
         CancellationToken cancellationToken = default);
 
+    Task<bool> HasCycleForSeasonAsync(
+        Guid plantationId,
+        int seasonYear,
+        Guid? excludingCycleId = null,
+        CancellationToken cancellationToken = default);
+
     void Add(CropCycle cycle);
     void AddAuditLog(AuditLog auditLog);
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
