@@ -10,12 +10,9 @@ public sealed record LaborActivityResponse(
     NamedReferenceResponse? Plantation,
     NamedReferenceResponse? CropCycle,
     NamedReferenceResponse ActivityType,
-    int WorkerCount,
-    decimal? TotalWorkingHours,
-    decimal? CostAmount,
-    string Currency,
     string Status,
     string? Description,
+    string? CancellationReason,
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt);
 

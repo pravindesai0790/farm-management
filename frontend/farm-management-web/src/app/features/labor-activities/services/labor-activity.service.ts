@@ -4,10 +4,12 @@ import { Observable } from "rxjs";
 import { environment } from "../../../../environments/environment";
 import {
   CancelLaborActivityRequest,
+  CreateLaborActivityRequest,
   LaborActivity,
   LaborActivityFilter,
   LaborActivityList,
   NamedReference,
+  UpdateLaborActivityRequest,
 } from "../models/labor-activity.models";
 
 @Injectable({ providedIn: "root" })
@@ -54,6 +56,14 @@ export class LaborActivityService {
 
   get(id: string): Observable<LaborActivity> {
     return this.http.get<LaborActivity>(`${this.api}/labor-activities/${id}`);
+  }
+
+  create(request: CreateLaborActivityRequest): Observable<LaborActivity> {
+    return this.http.post<LaborActivity>(`${this.api}/labor-activities`, request);
+  }
+
+  update(id: string, request: UpdateLaborActivityRequest): Observable<LaborActivity> {
+    return this.http.put<LaborActivity>(`${this.api}/labor-activities/${id}`, request);
   }
 
   cancel(id: string, reason: string): Observable<void> {

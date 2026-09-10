@@ -15,12 +15,9 @@ export interface LaborActivity {
   readonly plantation: NamedReference | null;
   readonly cropCycle: NamedReference | null;
   readonly activityType: NamedReference;
-  readonly workerCount: number;
-  readonly totalWorkingHours: number | null;
-  readonly costAmount: number | null;
-  readonly currency: string;
   readonly status: LaborActivityStatus;
   readonly description: string | null;
+  readonly cancellationReason?: string | null;
   readonly createdAt: string;
   readonly updatedAt: string | null;
 }
@@ -42,4 +39,32 @@ export interface LaborActivityFilter {
 
 export interface CancelLaborActivityRequest {
   readonly reason: string;
+}
+
+export interface CreateLaborActivityRequest {
+  readonly activityDate: string;
+  readonly farmId: string;
+  readonly farmAreaId: string;
+  readonly plantationId: string;
+  readonly cropCycleId?: string | null;
+  readonly laborActivityTypeId: string;
+  readonly description?: string | null;
+  readonly workerCount: number;
+  readonly totalWorkingHours?: number | null;
+  readonly costAmount?: number | null;
+  readonly status: LaborActivityStatus;
+}
+
+export interface UpdateLaborActivityRequest {
+  readonly activityDate: string;
+  readonly farmId: string;
+  readonly farmAreaId: string;
+  readonly plantationId: string;
+  readonly cropCycleId?: string | null;
+  readonly laborActivityTypeId: string;
+  readonly description?: string | null;
+  readonly workerCount: number;
+  readonly totalWorkingHours?: number | null;
+  readonly costAmount?: number | null;
+  readonly status: LaborActivityStatus;
 }

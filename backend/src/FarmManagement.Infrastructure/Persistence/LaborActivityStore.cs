@@ -129,6 +129,29 @@ public sealed class LaborActivityStore(ApplicationDbContext dbContext) : ILaborA
         return string.IsNullOrWhiteSpace(setting?.Value) ? "INR" : setting.Value.Trim();
     }
 
+    public async Task<string?> GetCancellationReasonAsync(
+        Guid activityId,
+        Guid organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var audit = await dbContext.AuditLogs
+            .AsNoTracking()
+            .Where(a => a.OrganizationId == organizationId &&
+                        a.EntityId == activityId &&
+                        a.Action == "LaborActivity.Cancelled")
+            .OrderByDescending(a => a.CreatedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (audit?.Details is null) return null;
+
+        if (audit.Details.RootElement.TryGetProperty("CancellationReason", out var reasonProp))
+        {
+            return reasonProp.GetString();
+        }
+
+        return null;
+    }
+
     public void Add(LaborActivity activity) => dbContext.LaborActivities.Add(activity);
 
     public void AddAuditLog(AuditLog auditLog) => dbContext.AuditLogs.Add(auditLog);

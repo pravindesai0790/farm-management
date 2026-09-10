@@ -1,0 +1,161 @@
+@if (isLoading()) {
+  <div class="loading-state">
+    <mat-spinner diameter="36" />
+  </div>
+} @else if (activity(); as item) {
+  <div class="section-heading">
+    <div class="heading-content">
+      <a mat-button routerLink="/activities/labor-activities" class="back-link">
+        <mat-icon>arrow_back</mat-icon>
+        Back to labor activities
+      </a>
+      <p class="eyebrow">Labor Activity</p>
+      <h2>{{ item.activityType.name }}</h2>
+      <p class="subtitle">{{ item.activityDate | date:'fullDate' }} &bull; {{ item.farm.name }}</p>
+    </div>
+
+    <div class="heading-actions">
+      <span
+        class="status-pill"
+        [class.status-completed]="item.status === 'COMPLETED'"
+        [class.status-draft]="item.status === 'DRAFT'"
+        [class.status-cancelled]="item.status === 'CANCELLED'"
+      >
+        {{ item.status }}
+      </span>
+
+      @if (item.status !== 'CANCELLED' && hasPermission('LaborActivity.Update')) {
+        <a
+          mat-flat-button
+          color="primary"
+          [routerLink]="['/activities/labor-activities', item.id, 'edit']"
+        >
+          <mat-icon>edit</mat-icon>
+          Edit activity
+        </a>
+      }
+
+      @if (item.status !== 'CANCELLED' && hasPermission('LaborActivity.Cancel')) {
+        <button
+          mat-stroked-button
+          color="warn"
+          (click)="openCancelDialog()"
+          [disabled]="isCancelling()"
+        >
+          <mat-icon>cancel</mat-icon>
+          Cancel activity
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (item.status === 'CANCELLED') {
+    <div class="cancelled-banner">
+      <mat-icon class="cancelled-icon">warning</mat-icon>
+      <div class="cancelled-content">
+        <h4>This labor activity has been cancelled</h4>
+        <p class="cancellation-reason">
+          <strong>Cancellation Reason:</strong>
+          {{ item.cancellationReason || 'No cancellation reason recorded.' }}
+        </p>
+        <p class="cancellation-note">
+          Cancelled activities are preserved in the system for audit and history records. They cannot be modified or reopened.
+        </p>
+      </div>
+    </div>
+  }
+
+  <div class="cards">
+    <mat-card>
+      <mat-card-content>
+        <span>Farm</span>
+        <strong>
+          <a [routerLink]="['/farms', item.farm.id]">{{ item.farm.name }}</a>
+        </strong>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card>
+      <mat-card-content>
+        <span>Farm Area</span>
+        <strong>
+          @if (item.farmArea) {
+            <a [routerLink]="['/farm-areas', item.farmArea.id]">{{ item.farmArea.name }}</a>
+          } @else {
+            &mdash;
+          }
+        </strong>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card>
+      <mat-card-content>
+        <span>Plantation</span>
+        <strong>
+          @if (item.plantation) {
+            <a [routerLink]="['/plantations', item.plantation.id]">{{ item.plantation.name }}</a>
+          } @else {
+            &mdash;
+          }
+        </strong>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card>
+      <mat-card-content>
+        <span>Crop Cycle</span>
+        <strong>
+          @if (item.cropCycle) {
+            <a [routerLink]="['/crop-cycles', item.cropCycle.id]">{{ item.cropCycle.name }}</a>
+          } @else {
+            &mdash;
+          }
+        </strong>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <mat-card class="detail-card">
+    <mat-card-content>
+      <h3 class="card-title">Activity Information</h3>
+      <div class="info-grid">
+        <div class="info-item">
+          <label>Activity Type</label>
+          <span>{{ item.activityType.name }}</span>
+        </div>
+
+        <div class="info-item">
+          <label>Activity Date</label>
+          <span>{{ item.activityDate | date:'mediumDate' }}</span>
+        </div>
+
+        <div class="info-item">
+          <label>Status</label>
+          <span>{{ item.status }}</span>
+        </div>
+
+        <div class="info-item full-span">
+          <label>Description / Notes</label>
+          <p class="description-text">{{ item.description || 'No description provided.' }}</p>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="detail-card">
+    <mat-card-content>
+      <h3 class="card-title">Audit Information</h3>
+      <div class="info-grid">
+        <div class="info-item">
+          <label>Created On</label>
+          <span>{{ item.createdAt | date:'medium' }}</span>
+        </div>
+
+        <div class="info-item">
+          <label>Last Updated On</label>
+          <span>{{ item.updatedAt ? (item.updatedAt | date:'medium') : '&mdash;' }}</span>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+}

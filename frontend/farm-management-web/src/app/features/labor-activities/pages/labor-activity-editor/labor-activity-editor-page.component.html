@@ -1,0 +1,275 @@
+<div class="section-heading">
+  <a mat-button routerLink="/activities/labor-activities" class="back-link">
+    <mat-icon>arrow_back</mat-icon>Back to labor activities
+  </a>
+  <p class="eyebrow">Farm Operations</p>
+  <h2>{{ isEditMode() ? "Edit labor activity" : "Record labor activity" }}</h2>
+  <p class="subtitle">
+    {{ isEditMode()
+      ? "Update operational metrics, working hours, and costs for this activity."
+      : "Log work performed by farm workers and assign to respective farm areas and plantations." }}
+  </p>
+</div>
+
+@if (isCancelled()) {
+  <div class="cancelled-banner" role="alert">
+    <mat-icon>cancel</mat-icon>
+    <div class="banner-text">
+      <strong>This labor activity is cancelled</strong>
+      <p>Cancelled activities are preserved for audit purposes and cannot be modified.</p>
+    </div>
+  </div>
+}
+
+@if (isLoading()) {
+  <div class="loading-state">
+    <mat-spinner diameter="36" />
+    <p>Loading activity details…</p>
+  </div>
+} @else {
+  <mat-card class="editor-card">
+    <mat-card-content>
+      <form [formGroup]="form" (ngSubmit)="submit()">
+        <!-- Section 1: Basic Information -->
+        <h3 class="form-section-title">
+          <mat-icon>event_note</mat-icon>Activity Details
+        </h3>
+        <div class="form-grid">
+          <!-- Activity Date -->
+          <mat-form-field appearance="outline">
+            <mat-label>Activity date *</mat-label>
+            <input
+              matInput
+              [matDatepicker]="activityDatePicker"
+              formControlName="activityDate"
+              placeholder="Choose a date"
+              required
+            />
+            <mat-datepicker-toggle matIconSuffix [for]="activityDatePicker"></mat-datepicker-toggle>
+            <mat-datepicker #activityDatePicker></mat-datepicker>
+            @if (form.get('activityDate')?.hasError('required') && form.get('activityDate')?.touched) {
+              <mat-error>Activity date is required</mat-error>
+            }
+          </mat-form-field>
+
+          <!-- Labor Activity Type -->
+          <mat-form-field appearance="outline">
+            <mat-label>Activity type *</mat-label>
+            <mat-select formControlName="laborActivityTypeId" required>
+              @for (type of activityTypes(); track type.id) {
+                <mat-option [value]="type.id">{{ type.name }}</mat-option>
+              }
+            </mat-select>
+            @if (form.get('laborActivityTypeId')?.hasError('required') && form.get('laborActivityTypeId')?.touched) {
+              <mat-error>Labor activity type is required</mat-error>
+            }
+          </mat-form-field>
+        </div>
+
+        <!-- Section 2: Location Hierarchy -->
+        <h3 class="form-section-title">
+          <mat-icon>alt_route</mat-icon>Farm & Location Hierarchy
+        </h3>
+        <p class="section-hint">
+          Select Farm &rarr; Farm Area &rarr; Plantation &rarr; Crop Cycle.
+        </p>
+        <div class="form-grid">
+          <!-- Farm -->
+          <mat-form-field appearance="outline">
+            <mat-label>Farm *</mat-label>
+            <mat-select
+              formControlName="farmId"
+              (valueChange)="onFarmChange($event)"
+              required
+            >
+              @for (farm of farms(); track farm.id) {
+                <mat-option [value]="farm.id">
+                  {{ farm.name }} ({{ farm.code }})
+                </mat-option>
+              }
+            </mat-select>
+            @if (form.get('farmId')?.hasError('required') && form.get('farmId')?.touched) {
+              <mat-error>Farm is required</mat-error>
+            }
+          </mat-form-field>
+
+          <!-- Farm Area -->
+          <mat-form-field appearance="outline">
+            <mat-label>Farm area *</mat-label>
+            <mat-select
+              formControlName="farmAreaId"
+              (valueChange)="onAreaChange($event)"
+              [disabled]="!form.get('farmId')?.value"
+              required
+            >
+              @for (area of areas(); track area.id) {
+                <mat-option [value]="area.id">
+                  {{ area.name }} ({{ area.code }})
+                </mat-option>
+              }
+            </mat-select>
+            @if (isLoadingAreas()) {
+              <mat-hint>Loading areas…</mat-hint>
+            }
+            @if (form.get('farmAreaId')?.hasError('required') && form.get('farmAreaId')?.touched) {
+              <mat-error>Farm area is required</mat-error>
+            }
+          </mat-form-field>
+
+          <!-- Plantation -->
+          <mat-form-field appearance="outline">
+            <mat-label>Plantation *</mat-label>
+            <mat-select
+              formControlName="plantationId"
+              (valueChange)="onPlantationChange($event)"
+              [disabled]="!form.get('farmAreaId')?.value"
+              required
+            >
+              @for (p of plantations(); track p.id) {
+                <mat-option [value]="p.id">
+                  {{ p.plantationName }} ({{ p.cropName }})
+                </mat-option>
+              }
+            </mat-select>
+            @if (isLoadingPlantations()) {
+              <mat-hint>Loading plantations…</mat-hint>
+            }
+            @if (form.get('plantationId')?.hasError('required') && form.get('plantationId')?.touched) {
+              <mat-error>Plantation is required</mat-error>
+            }
+          </mat-form-field>
+
+          <!-- Crop Cycle -->
+          <mat-form-field appearance="outline">
+            <mat-label>Crop cycle (Optional)</mat-label>
+            <mat-select
+              formControlName="cropCycleId"
+              [disabled]="!form.get('plantationId')?.value"
+            >
+              <mat-option [value]="null">None / General plantation work</mat-option>
+              @for (c of cropCycles(); track c.id) {
+                <mat-option [value]="c.id">
+                  {{ c.cycleName }} ({{ c.seasonYear }})
+                </mat-option>
+              }
+            </mat-select>
+            @if (isLoadingCycles()) {
+              <mat-hint>Loading cycles…</mat-hint>
+            }
+          </mat-form-field>
+        </div>
+
+        <!-- Section 3: Work & Cost Metrics -->
+        <h3 class="form-section-title">
+          <mat-icon>groups</mat-icon>Labor & Operational Metrics
+        </h3>
+        <div class="form-grid">
+          <!-- Number of Workers -->
+          <mat-form-field appearance="outline">
+            <mat-label>Number of workers *</mat-label>
+            <input
+              matInput
+              type="number"
+              min="1"
+              step="1"
+              formControlName="workerCount"
+              required
+            />
+            <mat-icon matPrefix>people</mat-icon>
+            @if (form.get('workerCount')?.hasError('required') && form.get('workerCount')?.touched) {
+              <mat-error>Worker count is required</mat-error>
+            }
+            @if (form.get('workerCount')?.hasError('min')) {
+              <mat-error>Must have at least 1 worker</mat-error>
+            }
+          </mat-form-field>
+
+          <!-- Total Working Hours -->
+          <mat-form-field appearance="outline">
+            <mat-label>Total working hours</mat-label>
+            <input
+              matInput
+              type="number"
+              min="0.1"
+              step="0.5"
+              formControlName="totalWorkingHours"
+              placeholder="e.g. 40"
+            />
+            <span matTextSuffix>hours</span>
+            @if (form.get('totalWorkingHours')?.hasError('min')) {
+              <mat-error>Hours must be greater than 0</mat-error>
+            }
+          </mat-form-field>
+
+          <!-- Labor Cost -->
+          <mat-form-field appearance="outline">
+            <mat-label>Labor cost</mat-label>
+            <input
+              matInput
+              type="number"
+              min="0"
+              step="0.01"
+              formControlName="costAmount"
+              placeholder="0.00"
+            />
+            <span matTextSuffix>{{ activityCurrency() }}</span>
+            @if (form.get('costAmount')?.hasError('min')) {
+              <mat-error>Cost cannot be negative</mat-error>
+            }
+          </mat-form-field>
+
+          <!-- Status -->
+          <mat-form-field appearance="outline">
+            <mat-label>Status *</mat-label>
+            <mat-select formControlName="status" required>
+              <mat-option value="COMPLETED">Completed</mat-option>
+              <mat-option value="DRAFT">Draft</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <!-- Section 4: Notes / Description -->
+        <h3 class="form-section-title">
+          <mat-icon>notes</mat-icon>Notes & Remarks
+        </h3>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Description</mat-label>
+          <textarea
+            matInput
+            rows="3"
+            formControlName="description"
+            placeholder="Operational details, field conditions, specific rows or canopy notes…"
+            maxlength="1000"
+          ></textarea>
+          <mat-hint align="end">
+            {{ form.get('description')?.value?.length || 0 }}/1000
+          </mat-hint>
+        </mat-form-field>
+
+        <!-- Server-side Error Alert -->
+        @if (errorMessage()) {
+          <app-error-alert
+            [error]="errorMessage()"
+            fallback="Labor activity could not be saved."
+          />
+        }
+
+        <!-- Actions -->
+        <div class="form-actions">
+          <a mat-button routerLink="/activities/labor-activities">Cancel</a>
+          <button
+            mat-flat-button
+            color="primary"
+            type="submit"
+            [disabled]="isSubmitting() || isCancelled()"
+          >
+            @if (isSubmitting()) {
+              <mat-spinner diameter="18" class="inline-spinner" />
+            }
+            {{ isEditMode() ? "Save changes" : "Record activity" }}
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+}

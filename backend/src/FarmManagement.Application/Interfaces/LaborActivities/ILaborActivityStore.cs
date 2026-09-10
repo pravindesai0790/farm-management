@@ -62,6 +62,11 @@ public interface ILaborActivityStore
         Guid organizationId,
         CancellationToken cancellationToken = default);
 
+    Task<string?> GetCancellationReasonAsync(
+        Guid activityId,
+        Guid organizationId,
+        CancellationToken cancellationToken = default);
+
     void Add(LaborActivity activity);
 
     void AddAuditLog(AuditLog auditLog);

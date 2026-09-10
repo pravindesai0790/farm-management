@@ -42,7 +42,6 @@ public sealed class LaborActivityService(ILaborActivityStore store) : ILaborActi
         }
 
         var parsedStatus = ParseStatus(status);
-        var currency = await store.ResolveOrganizationCurrencyAsync(actor.OrganizationId, cancellationToken);
 
         var (items, totalCount) = await store.ListPagedAsync(
             actor.OrganizationId,
@@ -58,7 +57,7 @@ public sealed class LaborActivityService(ILaborActivityStore store) : ILaborActi
             pageSize,
             cancellationToken);
 
-        var responses = items.Select(item => ToResponse(item, currency)).ToArray();
+        var responses = items.Select(item => ToResponse(item)).ToArray();
         return new PagedResponse<LaborActivityResponse>(responses, page, pageSize, totalCount);
     }
 
@@ -71,8 +70,13 @@ public sealed class LaborActivityService(ILaborActivityStore store) : ILaborActi
         var activity = await store.FindAsync(activityId, actor.OrganizationId, cancellationToken)
             ?? throw new ResourceNotFoundException("The labor activity was not found.");
 
-        var currency = await store.ResolveOrganizationCurrencyAsync(actor.OrganizationId, cancellationToken);
-        return ToResponse(activity, currency);
+        string? cancellationReason = null;
+        if (activity.Status == LaborActivityStatus.Cancelled)
+        {
+            cancellationReason = await store.GetCancellationReasonAsync(activity.Id, actor.OrganizationId, cancellationToken);
+        }
+
+        return ToResponse(activity, cancellationReason);
     }
 
     public async Task<LaborActivityResponse> CreateAsync(
@@ -94,8 +98,6 @@ public sealed class LaborActivityService(ILaborActivityStore store) : ILaborActi
                 values.CropCycleId,
                 values.LaborActivityTypeId,
                 transactionCancellationToken);
-
-            var currency = await store.ResolveOrganizationCurrencyAsync(actor.OrganizationId, transactionCancellationToken);
 
             var activity = new LaborActivity(
                 actor.OrganizationId,
@@ -136,7 +138,7 @@ public sealed class LaborActivityService(ILaborActivityStore store) : ILaborActi
             var created = await store.FindAsync(activity.Id, actor.OrganizationId, transactionCancellationToken)
                 ?? activity;
 
-            return ToResponse(created, currency);
+            return ToResponse(created);
         }, cancellationToken);
     }
 
@@ -224,8 +226,7 @@ public sealed class LaborActivityService(ILaborActivityStore store) : ILaborActi
             var updated = await store.FindAsync(activity.Id, actor.OrganizationId, transactionCancellationToken)
                 ?? activity;
 
-            var currency = await store.ResolveOrganizationCurrencyAsync(actor.OrganizationId, transactionCancellationToken);
-            return ToResponse(updated, currency);
+            return ToResponse(updated);
         }, cancellationToken);
     }
 
@@ -359,7 +360,7 @@ public sealed class LaborActivityService(ILaborActivityStore store) : ILaborActi
         return (farm, effectiveAreaId, activityType);
     }
 
-    private static LaborActivityResponse ToResponse(LaborActivity activity, string currency)
+    private static LaborActivityResponse ToResponse(LaborActivity activity, string? cancellationReason = null)
     {
         var farm = activity.Farm != null
             ? new NamedReferenceResponse(activity.Farm.Id, activity.Farm.Name)
@@ -395,12 +396,9 @@ public sealed class LaborActivityService(ILaborActivityStore store) : ILaborActi
             plantation,
             cropCycle,
             activityType,
-            activity.WorkerCount,
-            activity.TotalWorkingHours,
-            activity.CostAmount,
-            currency,
             activity.Status.ToString().ToUpperInvariant(),
             activity.Description,
+            cancellationReason,
             activity.CreatedAt,
             activity.UpdatedAt);
     }
