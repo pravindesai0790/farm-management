@@ -189,7 +189,39 @@ export class BreadcrumbService {
         break;
 
       case "activities":
-        items.push({ label: "Activities" });
+        items.push({ label: "Activities", route: "/activities" });
+        if (segments[1] === "labor-activities") {
+          items.push({ label: "Labor activities", route: "/activities/labor-activities" });
+          if (segments[2] === "new") {
+            items.push({ label: "Record activity" });
+          } else if (segments[2]) {
+            const actId = segments[2];
+            const actName = this.labelCache.get(actId) ?? "Activity details";
+            if (segments[3] === "edit") {
+              items.push({ label: actName, route: ["/activities/labor-activities", actId] });
+              items.push({ label: "Edit" });
+            } else {
+              items.push({ label: actName });
+            }
+          }
+        }
+        break;
+
+      case "labor-activities":
+        items.push({ label: "Activities", route: "/activities" });
+        items.push({ label: "Labor activities", route: "/activities/labor-activities" });
+        if (segments[1] === "new") {
+          items.push({ label: "Record activity" });
+        } else if (segments[1]) {
+          const actId = segments[1];
+          const actName = this.labelCache.get(actId) ?? "Activity details";
+          if (segments[2] === "edit") {
+            items.push({ label: actName, route: ["/activities/labor-activities", actId] });
+            items.push({ label: "Edit" });
+          } else {
+            items.push({ label: actName });
+          }
+        }
         break;
 
       default: {

@@ -1,0 +1,264 @@
+<div class="section-heading">
+  <div>
+    <p class="eyebrow">Farm Operations</p>
+    <h2>Labor activities</h2>
+    <p>
+      Track daily labor operations, working hours, and operational expenses across your farms and plantations.
+    </p>
+  </div>
+  @if (permissionService.has("LaborActivity.Create")) {
+    <a mat-flat-button color="primary" routerLink="/activities/labor-activities/new">
+      <mat-icon>add</mat-icon>Record labor activity
+    </a>
+  }
+</div>
+
+<mat-card class="filters-card">
+  <mat-card-content>
+    <div class="filters-grid">
+      <!-- Date Range Filter -->
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Date range</mat-label>
+        <mat-date-range-input [rangePicker]="rangePicker">
+          <input
+            matStartDate
+            placeholder="From date"
+            [ngModel]="fromDate()"
+            (ngModelChange)="onFromDateChange($event)"
+          />
+          <input
+            matEndDate
+            placeholder="To date"
+            [ngModel]="toDate()"
+            (ngModelChange)="onToDateChange($event)"
+          />
+        </mat-date-range-input>
+        <mat-datepicker-toggle matIconSuffix [for]="rangePicker"></mat-datepicker-toggle>
+        <mat-date-range-picker #rangePicker></mat-date-range-picker>
+      </mat-form-field>
+
+      <!-- Farm Filter -->
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Farm</mat-label>
+        <mat-select [value]="farmId()" (valueChange)="onFarmChange($event)">
+          <mat-option value="">All farms</mat-option>
+          @for (farm of farms(); track farm.id) {
+            <mat-option [value]="farm.id">{{ farm.name }} ({{ farm.code }})</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <!-- Farm Area Filter -->
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Farm area</mat-label>
+        <mat-select [value]="farmAreaId()" (valueChange)="onAreaChange($event)" [disabled]="!farmId()">
+          <mat-option value="">All areas</mat-option>
+          @for (area of areas(); track area.id) {
+            <mat-option [value]="area.id">{{ area.name }} ({{ area.code }})</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <!-- Plantation Filter -->
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Plantation</mat-label>
+        <mat-select [value]="plantationId()" (valueChange)="onPlantationChange($event)">
+          <mat-option value="">All plantations</mat-option>
+          @for (p of plantations(); track p.id) {
+            <mat-option [value]="p.id">{{ p.plantationName }} ({{ p.cropName }})</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <!-- Activity Type Filter -->
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Activity type</mat-label>
+        <mat-select [value]="activityTypeId()" (valueChange)="onActivityTypeChange($event)">
+          <mat-option value="">All activity types</mat-option>
+          @for (type of activityTypes(); track type.id) {
+            <mat-option [value]="type.id">{{ type.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <!-- Status Filter -->
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Status</mat-label>
+        <mat-select [value]="status()" (valueChange)="onStatusChange($event)">
+          <mat-option value="">All statuses</mat-option>
+          <mat-option value="COMPLETED">Completed</mat-option>
+          <mat-option value="DRAFT">Draft</mat-option>
+          <mat-option value="CANCELLED">Cancelled</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      @if (hasActiveFilters()) {
+        <div class="clear-btn-wrapper">
+          <button mat-stroked-button color="warn" class="clear-btn" (click)="clearFilters()">
+            <mat-icon>clear</mat-icon>Clear filters
+          </button>
+        </div>
+      }
+    </div>
+
+    <!-- Table or Loading / Empty States -->
+    @if (isLoading()) {
+      <div class="loading-state">
+        <mat-spinner diameter="36" />
+        <p>Loading labor activities…</p>
+      </div>
+    } @else if (activities().length === 0) {
+      <div class="empty-state">
+        <mat-icon>assignment</mat-icon>
+        <h3>No labor activities found</h3>
+        <p>Try adjusting your search filters or record a new labor activity.</p>
+        @if (permissionService.has("LaborActivity.Create")) {
+          <a mat-stroked-button color="primary" routerLink="/activities/labor-activities/new">
+            <mat-icon>add</mat-icon>Record labor activity
+          </a>
+        }
+      </div>
+    } @else {
+      <div class="table-wrap">
+        <table mat-table [dataSource]="activities()" class="labor-activities-table">
+          <!-- Date Column -->
+          <ng-container matColumnDef="date">
+            <th mat-header-cell *matHeaderCellDef>Date</th>
+            <td mat-cell *matCellDef="let a">
+              <span class="activity-date">{{ a.activityDate | date:'mediumDate' }}</span>
+            </td>
+          </ng-container>
+
+          <!-- Farm Column -->
+          <ng-container matColumnDef="farm">
+            <th mat-header-cell *matHeaderCellDef>Farm</th>
+            <td mat-cell *matCellDef="let a">
+              <strong>{{ a.farm.name }}</strong>
+            </td>
+          </ng-container>
+
+          <!-- Area Column -->
+          <ng-container matColumnDef="area">
+            <th mat-header-cell *matHeaderCellDef>Farm Area</th>
+            <td mat-cell *matCellDef="let a">
+              <span>{{ a.farmArea?.name || '—' }}</span>
+            </td>
+          </ng-container>
+
+          <!-- Plantation Column -->
+          <ng-container matColumnDef="plantation">
+            <th mat-header-cell *matHeaderCellDef>Plantation</th>
+            <td mat-cell *matCellDef="let a">
+              <span>{{ a.plantation?.name || '—' }}</span>
+              @if (a.cropCycle) {
+                <small class="cycle-text">{{ a.cropCycle.name }}</small>
+              }
+            </td>
+          </ng-container>
+
+          <!-- Activity Type Column -->
+          <ng-container matColumnDef="activityType">
+            <th mat-header-cell *matHeaderCellDef>Activity Type</th>
+            <td mat-cell *matCellDef="let a">
+              <span class="activity-type-badge">{{ a.activityType.name }}</span>
+            </td>
+          </ng-container>
+
+          <!-- Workers Column -->
+          <ng-container matColumnDef="workers">
+            <th mat-header-cell *matHeaderCellDef class="number-header">Workers</th>
+            <td mat-cell *matCellDef="let a" class="number-cell">
+              {{ a.workerCount }}
+            </td>
+          </ng-container>
+
+          <!-- Hours Column -->
+          <ng-container matColumnDef="hours">
+            <th mat-header-cell *matHeaderCellDef class="number-header">Hours</th>
+            <td mat-cell *matCellDef="let a" class="number-cell">
+              {{ a.totalWorkingHours !== null ? (a.totalWorkingHours + ' h') : '—' }}
+            </td>
+          </ng-container>
+
+          <!-- Cost Column -->
+          <ng-container matColumnDef="cost">
+            <th mat-header-cell *matHeaderCellDef class="number-header">Cost</th>
+            <td mat-cell *matCellDef="let a" class="number-cell">
+              <strong *ngIf="a.costAmount !== null; else noCost">
+                {{ a.costAmount | currency:a.currency:'symbol':'1.2-2' }}
+              </strong>
+              <ng-template #noCost>—</ng-template>
+            </td>
+          </ng-container>
+
+          <!-- Status Column -->
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Status</th>
+            <td mat-cell *matCellDef="let a">
+              <span
+                class="status-pill"
+                [class.status-completed]="a.status === 'COMPLETED'"
+                [class.status-draft]="a.status === 'DRAFT'"
+                [class.status-cancelled]="a.status === 'CANCELLED'"
+              >
+                {{ a.status }}
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Actions Column -->
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef class="actions-header">Actions</th>
+            <td mat-cell *matCellDef="let a" class="actions-cell">
+              @if (permissionService.has("LaborActivity.View")) {
+                <a
+                  mat-icon-button
+                  [routerLink]="['/activities/labor-activities', a.id]"
+                  matTooltip="View details"
+                  aria-label="View activity details"
+                >
+                  <mat-icon>visibility</mat-icon>
+                </a>
+              }
+
+              @if (a.status !== "CANCELLED" && permissionService.has("LaborActivity.Update")) {
+                <a
+                  mat-icon-button
+                  [routerLink]="['/activities/labor-activities', a.id, 'edit']"
+                  matTooltip="Edit activity"
+                  aria-label="Edit activity"
+                >
+                  <mat-icon>edit</mat-icon>
+                </a>
+              }
+
+              @if (a.status !== "CANCELLED" && permissionService.has("LaborActivity.Cancel")) {
+                <button
+                  mat-icon-button
+                  color="warn"
+                  (click)="openCancelDialog(a)"
+                  matTooltip="Cancel activity"
+                  aria-label="Cancel activity"
+                >
+                  <mat-icon>cancel</mat-icon>
+                </button>
+              }
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+        </table>
+      </div>
+    }
+
+    <mat-paginator
+      [length]="totalCount()"
+      [pageIndex]="pageIndex()"
+      [pageSize]="pageSize()"
+      [pageSizeOptions]="[10, 20, 50]"
+      (page)="pageChanged($event)"
+      aria-label="Labor activities pagination"
+    />
+  </mat-card-content>
+</mat-card>

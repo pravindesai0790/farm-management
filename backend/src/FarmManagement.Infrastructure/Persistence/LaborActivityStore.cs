@@ -108,6 +108,16 @@ public sealed class LaborActivityStore(ApplicationDbContext dbContext) : ILaborA
                     ((type.IsSystem && type.OrganizationId == null) || type.OrganizationId == organizationId),
             cancellationToken);
 
+    public async Task<IReadOnlyList<LaborActivityType>> ListLaborActivityTypesAsync(
+        Guid organizationId,
+        CancellationToken cancellationToken = default) =>
+        await dbContext.LaborActivityTypes
+            .AsNoTracking()
+            .Where(type => type.IsActive && ((type.IsSystem && type.OrganizationId == null) || type.OrganizationId == organizationId))
+            .OrderBy(type => type.DisplayOrder)
+            .ThenBy(type => type.Name)
+            .ToListAsync(cancellationToken);
+
     public async Task<string> ResolveOrganizationCurrencyAsync(
         Guid organizationId,
         CancellationToken cancellationToken = default)

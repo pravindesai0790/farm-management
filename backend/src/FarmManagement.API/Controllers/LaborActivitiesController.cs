@@ -42,6 +42,12 @@ public sealed class LaborActivitiesController(ILaborActivityService activityServ
             status,
             cancellationToken));
 
+    [HttpGet("types")]
+    [Authorize(Policy = "Permission:LaborActivity.View")]
+    public async Task<ActionResult<IReadOnlyList<NamedReferenceResponse>>> ListTypes(
+        CancellationToken cancellationToken = default) =>
+        Ok(await activityService.ListTypesAsync(GetActor(), cancellationToken));
+
     [HttpGet("{id:guid}")]
     [Authorize(Policy = "Permission:LaborActivity.View")]
     public async Task<ActionResult<LaborActivityResponse>> Get(

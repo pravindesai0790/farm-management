@@ -1,5 +1,68 @@
-<app-page-placeholder
-  title="Activities"
-  description="Planned and completed farm work will be tracked here."
-  icon="event_note"
-/>
+<div class="section-heading">
+  <div>
+    <p class="eyebrow">Operational Tracking</p>
+    <h2>Farm activities</h2>
+    <p>
+      Manage, track, and record all field operations, agronomy treatments, and daily farm workflows.
+    </p>
+  </div>
+</div>
+
+<div class="activities-grid">
+  @for (card of activityCards; track card.id) {
+    <mat-card
+      class="activity-card"
+      [class.activity-card-available]="card.status === 'AVAILABLE'"
+      [class.activity-card-upcoming]="card.status === 'UPCOMING'"
+    >
+      <mat-card-header>
+        <div mat-card-avatar class="activity-avatar" [class.avatar-active]="card.status === 'AVAILABLE'">
+          <mat-icon>{{ card.icon }}</mat-icon>
+        </div>
+        <div class="header-titles">
+          <p class="activity-category">{{ card.category }}</p>
+          <mat-card-title>{{ card.title }}</mat-card-title>
+        </div>
+        <span
+          class="activity-status-chip"
+          [class.status-chip-active]="card.status === 'AVAILABLE'"
+          [class.status-chip-upcoming]="card.status === 'UPCOMING'"
+        >
+          {{ card.status === 'AVAILABLE' ? 'Active' : 'Planned' }}
+        </span>
+      </mat-card-header>
+
+      <mat-card-content>
+        <p class="activity-description">{{ card.description }}</p>
+
+        <div class="highlights-container">
+          @for (tag of card.highlights; track tag) {
+            <span class="highlight-tag">{{ tag }}</span>
+          }
+        </div>
+      </mat-card-content>
+
+      <mat-card-actions class="card-actions">
+        @if (card.status === 'AVAILABLE') {
+          <div class="action-buttons">
+            @if (card.route && canAccess(card)) {
+              <a mat-flat-button color="primary" [routerLink]="card.route">
+                <mat-icon>launch</mat-icon>Open {{ card.title }}
+              </a>
+            }
+            @if (card.createRoute && card.createPermission && permissionService.has(card.createPermission)) {
+              <a mat-stroked-button color="primary" [routerLink]="card.createRoute">
+                <mat-icon>add</mat-icon>Record
+              </a>
+            }
+          </div>
+        } @else {
+          <div class="upcoming-indicator">
+            <mat-icon>hourglass_empty</mat-icon>
+            <span>In development · Phase 3</span>
+          </div>
+        }
+      </mat-card-actions>
+    </mat-card>
+  }
+</div>

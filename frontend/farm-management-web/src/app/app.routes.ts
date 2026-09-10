@@ -346,11 +346,31 @@ export const routes: Routes = [
       },
       {
         path: "activities",
-        title: "Activities",
-        loadComponent: () =>
-          import("./features/activities/activities-page.component").then(
-            (module) => module.ActivitiesPageComponent,
-          ),
+        children: [
+          {
+            path: "",
+            title: "Activities",
+            loadComponent: () =>
+              import("./features/activities/activities-page.component").then(
+                (module) => module.ActivitiesPageComponent,
+              ),
+          },
+          {
+            path: "labor-activities",
+            title: "Labor activities",
+            canActivate: [permissionGuard],
+            data: { permission: "LaborActivity.View" },
+            loadChildren: () =>
+              import(
+                "./features/labor-activities/labor-activity.routes"
+              ).then((m) => m.LABOR_ACTIVITY_ROUTES),
+          },
+        ],
+      },
+      {
+        path: "labor-activities",
+        redirectTo: "activities/labor-activities",
+        pathMatch: "full",
       },
       {
         path: "settings",

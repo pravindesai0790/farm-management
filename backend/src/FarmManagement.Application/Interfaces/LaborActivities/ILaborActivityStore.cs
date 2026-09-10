@@ -54,6 +54,10 @@ public interface ILaborActivityStore
         Guid organizationId,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<LaborActivityType>> ListLaborActivityTypesAsync(
+        Guid organizationId,
+        CancellationToken cancellationToken = default);
+
     Task<string> ResolveOrganizationCurrencyAsync(
         Guid organizationId,
         CancellationToken cancellationToken = default);

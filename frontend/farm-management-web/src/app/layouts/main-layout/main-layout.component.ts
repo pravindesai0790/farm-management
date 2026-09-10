@@ -135,6 +135,13 @@ export class MainLayoutComponent {
           label: "Activities",
           icon: "event_note",
           route: "/activities",
+          exactMatch: true,
+        },
+        {
+          label: "Labor activities",
+          icon: "assignment",
+          route: "/activities/labor-activities",
+          permissions: ["LaborActivity.View"],
           isSubItem: true,
         },
       ],

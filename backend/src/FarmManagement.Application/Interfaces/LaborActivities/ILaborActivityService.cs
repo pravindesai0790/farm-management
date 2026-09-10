@@ -43,4 +43,8 @@ public interface ILaborActivityService
         CancelLaborActivityRequest request,
         string? ipAddress,
         CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<NamedReferenceResponse>> ListTypesAsync(
+        LaborActivityActor actor,
+        CancellationToken cancellationToken = default);
 }

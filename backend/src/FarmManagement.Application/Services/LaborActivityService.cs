@@ -270,6 +270,15 @@ public sealed class LaborActivityService(ILaborActivityStore store) : ILaborActi
         }, cancellationToken);
     }
 
+    public async Task<IReadOnlyList<NamedReferenceResponse>> ListTypesAsync(
+        LaborActivityActor actor,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        var types = await store.ListLaborActivityTypesAsync(actor.OrganizationId, cancellationToken);
+        return types.Select(t => new NamedReferenceResponse(t.Id, t.Name)).ToList();
+    }
+
     private async Task<(Farm Farm, Guid? EffectiveAreaId, LaborActivityType ActivityType)> ValidateHierarchyAsync(
         Guid organizationId,
         Guid farmId,
