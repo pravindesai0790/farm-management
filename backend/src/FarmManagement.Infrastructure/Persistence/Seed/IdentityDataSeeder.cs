@@ -90,7 +90,16 @@ public sealed class IdentityDataSeeder(
         new("PlantationEndReason.Create", "Create plantation end reasons.", "Plantation End Reasons"),
         new("PlantationEndReason.Update", "Update plantation end reasons.", "Plantation End Reasons"),
         new("PlantationEndReason.Activate", "Activate plantation end reasons.", "Plantation End Reasons"),
-        new("PlantationEndReason.Deactivate", "Deactivate plantation end reasons.", "Plantation End Reasons")
+        new("PlantationEndReason.Deactivate", "Deactivate plantation end reasons.", "Plantation End Reasons"),
+        new("LaborActivity.View", "View labor activities.", "Labor Activities"),
+        new("LaborActivity.Create", "Create labor activities.", "Labor Activities"),
+        new("LaborActivity.Update", "Update labor activities.", "Labor Activities"),
+        new("LaborActivity.Cancel", "Cancel labor activities.", "Labor Activities"),
+        new("LaborActivityType.View", "View labor activity types.", "Labor Activity Types"),
+        new("LaborActivityType.Create", "Create labor activity types.", "Labor Activity Types"),
+        new("LaborActivityType.Update", "Update labor activity types.", "Labor Activity Types"),
+        new("LaborActivityType.Activate", "Activate labor activity types.", "Labor Activity Types"),
+        new("LaborActivityType.Deactivate", "Deactivate labor activity types.", "Labor Activity Types")
     ];
 
     private static readonly IReadOnlySet<string> OrganizationAdminPermissions =
@@ -154,7 +163,16 @@ public sealed class IdentityDataSeeder(
             "PlantationEndReason.Create",
             "PlantationEndReason.Update",
             "PlantationEndReason.Activate",
-            "PlantationEndReason.Deactivate"
+            "PlantationEndReason.Deactivate",
+            "LaborActivity.View",
+            "LaborActivity.Create",
+            "LaborActivity.Update",
+            "LaborActivity.Cancel",
+            "LaborActivityType.View",
+            "LaborActivityType.Create",
+            "LaborActivityType.Update",
+            "LaborActivityType.Activate",
+            "LaborActivityType.Deactivate"
         };
 
     private static readonly IReadOnlyList<SeedFarmOwnershipType> SeedFarmOwnershipTypes =
