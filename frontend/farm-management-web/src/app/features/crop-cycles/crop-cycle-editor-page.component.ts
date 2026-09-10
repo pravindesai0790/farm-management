@@ -10,6 +10,7 @@ import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
+import { MatDatepickerModule } from "@angular/material/datepicker";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
@@ -19,12 +20,14 @@ import { ActivatedRoute, Router, RouterLink } from "@angular/router";
 import { forkJoin, of, finalize } from "rxjs";
 import { FarmManagementService } from "../../core/farm-management/farm-management.service";
 import { getApiErrorMessage } from "../../core/models/api-error.model";
+import { formatDateOnly, parseDateOnly } from "../../core/utils/date.utils";
 @Component({
   selector: "app-crop-cycle-editor-page",
   standalone: true,
   imports: [
     MatButtonModule,
     MatCardModule,
+    MatDatepickerModule,
     MatFormFieldModule,
     MatInputModule,
     MatProgressSpinnerModule,
@@ -54,8 +57,8 @@ export class CropCycleEditorPageComponent implements OnInit {
     cycleName: ["", [Validators.required]],
     seasonYear: [new Date().getFullYear(), [Validators.required]],
     seasonName: [""],
-    plannedStartDate: ["", [Validators.required]],
-    expectedEndDate: [""],
+    plannedStartDate: [null as Date | null, [Validators.required]],
+    expectedEndDate: [null as Date | null],
   });
   ngOnInit(): void {
     forkJoin({
@@ -76,8 +79,8 @@ export class CropCycleEditorPageComponent implements OnInit {
               cycleName: r.cycle.cycleName,
               seasonYear: r.cycle.seasonYear,
               seasonName: r.cycle.seasonName ?? "",
-              plannedStartDate: r.cycle.plannedStartDate,
-              expectedEndDate: r.cycle.expectedEndDate ?? "",
+              plannedStartDate: parseDateOnly(r.cycle.plannedStartDate),
+              expectedEndDate: parseDateOnly(r.cycle.expectedEndDate),
             });
         },
         error: (e) =>
@@ -93,9 +96,14 @@ export class CropCycleEditorPageComponent implements OnInit {
     }
     this.isSubmitting.set(true);
     const v = this.form.getRawValue();
+    const payload = {
+      ...v,
+      plannedStartDate: formatDateOnly(v.plannedStartDate) ?? "",
+      expectedEndDate: formatDateOnly(v.expectedEndDate),
+    };
     const request = this.id
-      ? this.service.updateCycle(this.id, v)
-      : this.service.createCycle(v);
+      ? this.service.updateCycle(this.id, payload)
+      : this.service.createCycle(payload);
     request
       .pipe(
         takeUntilDestroyed(this.destroyRef),

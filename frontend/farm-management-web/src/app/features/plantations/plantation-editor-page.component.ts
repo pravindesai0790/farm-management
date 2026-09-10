@@ -10,6 +10,7 @@ import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
+import { MatDatepickerModule } from "@angular/material/datepicker";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
@@ -26,12 +27,17 @@ import {
   Unit,
 } from "../../core/farm-management/farm-management.models";
 import { getApiErrorMessage } from "../../core/models/api-error.model";
+import {
+  formatDateOnly,
+  parseDateOnly,
+} from "../../core/utils/date.utils";
 @Component({
   selector: "app-plantation-editor-page",
   standalone: true,
   imports: [
     MatButtonModule,
     MatCardModule,
+    MatDatepickerModule,
     MatFormFieldModule,
     MatInputModule,
     MatProgressSpinnerModule,
@@ -71,8 +77,8 @@ export class PlantationEditorPageComponent implements OnInit {
       [Validators.required, Validators.min(0.01)],
     ],
     areaUnitId: [null as string | null, [Validators.required]],
-    plantingDate: ["", [Validators.required]],
-    expectedEndDate: [""],
+    plantingDate: [null as Date | null, [Validators.required]],
+    expectedEndDate: [null as Date | null],
   });
   ngOnInit(): void {
     const base$ = forkJoin({
@@ -126,8 +132,8 @@ export class PlantationEditorPageComponent implements OnInit {
               plantationName: r.plantation.plantationName,
               allocatedArea: r.plantation.allocatedArea,
               areaUnitId: r.plantation.areaUnitId,
-              plantingDate: r.plantation.plantingDate,
-              expectedEndDate: r.plantation.expectedEndDate ?? "",
+              plantingDate: parseDateOnly(r.plantation.plantingDate),
+              expectedEndDate: parseDateOnly(r.plantation.expectedEndDate),
             });
           },
           error: (e) =>
@@ -218,9 +224,14 @@ export class PlantationEditorPageComponent implements OnInit {
     }
     this.isSubmitting.set(true);
     const value = this.form.getRawValue();
+    const payload = {
+      ...value,
+      plantingDate: formatDateOnly(value.plantingDate) ?? "",
+      expectedEndDate: formatDateOnly(value.expectedEndDate),
+    };
     const request = this.id
-      ? this.service.updatePlantation(this.id, value)
-      : this.service.createPlantation(value);
+      ? this.service.updatePlantation(this.id, payload)
+      : this.service.createPlantation(payload);
     request
       .pipe(
         takeUntilDestroyed(this.destroyRef),

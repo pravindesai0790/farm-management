@@ -12,6 +12,7 @@ import {
   Validators,
 } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
+import { MatDatepickerModule } from "@angular/material/datepicker";
 import {
   MAT_DIALOG_DATA,
   MatDialogModule,
@@ -23,6 +24,7 @@ import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { MatSelectModule } from "@angular/material/select";
 import { FarmManagementService } from "../../core/farm-management/farm-management.service";
 import { CycleCancellationReason } from "../../core/farm-management/farm-management.models";
+import { formatDateOnly } from "../../core/utils/date.utils";
 
 export interface CropCycleCancelDialogData {
   cycleId: string;
@@ -43,6 +45,7 @@ export interface CropCycleCancelDialogResult {
     ReactiveFormsModule,
     MatDialogModule,
     MatButtonModule,
+    MatDatepickerModule,
     MatFormFieldModule,
     MatSelectModule,
     MatInputModule,
@@ -79,7 +82,15 @@ export interface CropCycleCancelDialogResult {
 
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Cancellation Date</mat-label>
-            <input matInput type="date" formControlName="cancellationDate" required />
+            <input
+              matInput
+              [matDatepicker]="cancellationDatePicker"
+              formControlName="cancellationDate"
+              required
+              placeholder="Choose a date"
+            />
+            <mat-datepicker-toggle matIconSuffix [for]="cancellationDatePicker" />
+            <mat-datepicker #cancellationDatePicker />
             @if (form.get('cancellationDate')?.hasError('required')) {
               <mat-error>Cancellation date is required</mat-error>
             }
@@ -154,10 +165,7 @@ export class CropCycleCancelDialogComponent implements OnInit {
 
   readonly form: FormGroup = this.fb.group({
     cancellationReasonId: ["", Validators.required],
-    cancellationDate: [
-      new Date().toISOString().slice(0, 10),
-      Validators.required,
-    ],
+    cancellationDate: [new Date(), Validators.required],
     notes: ["Cancelled from cycle details."],
   });
 
@@ -179,6 +187,10 @@ export class CropCycleCancelDialogComponent implements OnInit {
 
   onSubmit(): void {
     if (this.form.invalid) return;
-    this.dialogRef.close(this.form.value as CropCycleCancelDialogResult);
+    const value = this.form.value;
+    this.dialogRef.close({
+      ...value,
+      cancellationDate: formatDateOnly(value.cancellationDate) ?? "",
+    } as CropCycleCancelDialogResult);
   }
 }

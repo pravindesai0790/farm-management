@@ -96,12 +96,26 @@
 
           <mat-form-field appearance="outline">
             <mat-label>Planting date</mat-label>
-            <input matInput type="date" formControlName="plantingDate" />
+            <input
+              matInput
+              [matDatepicker]="plantingDatePicker"
+              formControlName="plantingDate"
+              placeholder="Choose a date"
+            />
+            <mat-datepicker-toggle matIconSuffix [for]="plantingDatePicker" />
+            <mat-datepicker #plantingDatePicker />
           </mat-form-field>
 
           <mat-form-field appearance="outline">
             <mat-label>Expected end date</mat-label>
-            <input matInput type="date" formControlName="expectedEndDate" />
+            <input
+              matInput
+              [matDatepicker]="expectedEndDatePicker"
+              formControlName="expectedEndDate"
+              placeholder="Choose a date"
+            />
+            <mat-datepicker-toggle matIconSuffix [for]="expectedEndDatePicker" />
+            <mat-datepicker #expectedEndDatePicker />
           </mat-form-field>
         </div>
 

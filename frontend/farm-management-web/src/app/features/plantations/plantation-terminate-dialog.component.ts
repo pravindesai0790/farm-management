@@ -13,17 +13,15 @@ import {
 } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
-import {
-  MAT_DIALOG_DATA,
-  MatDialogModule,
-  MatDialogRef,
-} from "@angular/material/dialog";
+import { MatDatepickerModule } from "@angular/material/datepicker";
+import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { MatSelectModule } from "@angular/material/select";
 import { FarmManagementService } from "../../core/farm-management/farm-management.service";
 import { PlantationEndReason } from "../../core/farm-management/farm-management.models";
+import { formatDateOnly } from "../../core/utils/date.utils";
 
 export interface PlantationTerminateDialogData {
   plantationId: string;
@@ -45,6 +43,7 @@ export interface PlantationTerminateDialogResult {
     ReactiveFormsModule,
     MatDialogModule,
     MatButtonModule,
+    MatDatepickerModule,
     MatFormFieldModule,
     MatSelectModule,
     MatInputModule,
@@ -82,7 +81,15 @@ export interface PlantationTerminateDialogResult {
 
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Termination Date</mat-label>
-            <input matInput type="date" formControlName="terminationDate" required />
+            <input
+              matInput
+              [matDatepicker]="terminationDatePicker"
+              formControlName="terminationDate"
+              required
+              placeholder="Choose a date"
+            />
+            <mat-datepicker-toggle matIconSuffix [for]="terminationDatePicker" />
+            <mat-datepicker #terminationDatePicker />
             @if (form.get('terminationDate')?.hasError('required')) {
               <mat-error>Termination date is required</mat-error>
             }
@@ -167,10 +174,7 @@ export class PlantationTerminateDialogComponent implements OnInit {
 
   readonly form: FormGroup = this.fb.group({
     endReasonId: ["", Validators.required],
-    terminationDate: [
-      new Date().toISOString().slice(0, 10),
-      Validators.required,
-    ],
+    terminationDate: [new Date(), Validators.required],
     notes: ["Terminated from plantation details."],
     cancelActiveCycles: [true],
   });
@@ -193,6 +197,10 @@ export class PlantationTerminateDialogComponent implements OnInit {
 
   onSubmit(): void {
     if (this.form.invalid) return;
-    this.dialogRef.close(this.form.value as PlantationTerminateDialogResult);
+    const value = this.form.value;
+    this.dialogRef.close({
+      ...value,
+      terminationDate: formatDateOnly(value.terminationDate) ?? "",
+    } as PlantationTerminateDialogResult);
   }
 }
