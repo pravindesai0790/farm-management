@@ -30,9 +30,9 @@ import { AuthService } from "../../../core/auth/auth.service";
 import { AdministrationService } from "../../../core/administration/administration.service";
 import { Role, User } from "../../../core/administration/administration.models";
 import {
-  getApiErrorMessage,
   getApiValidationErrors,
 } from "../../../core/models/api-error.model";
+import { ErrorAlertComponent } from "../../../shared/components/error-alert/error-alert.component";
 import { FarmManagementService } from "../../../core/farm-management/farm-management.service";
 import { Organization } from "../../../core/farm-management/farm-management.models";
 
@@ -47,6 +47,7 @@ function passwordsMatch(control: AbstractControl): ValidationErrors | null {
   selector: "app-user-editor-page",
   standalone: true,
   imports: [
+    ErrorAlertComponent,
     MatButtonModule,
     MatCardModule,
     MatFormFieldModule,
@@ -107,7 +108,7 @@ export class UserEditorPageComponent implements OnInit {
   readonly organizations = signal<readonly Organization[]>([]);
   readonly isLoading = signal(true);
   readonly isSubmitting = signal(false);
-  readonly errorMessage = signal<string | null>(null);
+  readonly errorMessage = signal<unknown>(null);
   readonly apiErrors = signal<Readonly<Record<string, readonly string[]>>>({});
   readonly userId = this.activatedRoute.snapshot.paramMap.get("id");
   readonly isEditing = this.userId !== null;
@@ -145,9 +146,7 @@ export class UserEditorPageComponent implements OnInit {
           }
         },
         error: (error: unknown) => {
-          this.errorMessage.set(
-            getApiErrorMessage(error, "The user could not be loaded."),
-          );
+          this.errorMessage.set(error);
         },
       });
   }
@@ -205,9 +204,7 @@ export class UserEditorPageComponent implements OnInit {
           void this.router.navigateByUrl("/administration/users");
         },
         error: (error: unknown) => {
-          this.errorMessage.set(
-            getApiErrorMessage(error, "The user could not be saved."),
-          );
+          this.errorMessage.set(error);
           this.apiErrors.set(getApiValidationErrors(error));
         },
       });

@@ -25,9 +25,9 @@ import { finalize } from "rxjs";
 
 import { AuthService } from "../../../core/auth/auth.service";
 import {
-  getApiErrorMessage,
   getApiValidationErrors,
 } from "../../../core/models/api-error.model";
+import { ErrorAlertComponent } from "../../../shared/components/error-alert/error-alert.component";
 
 function passwordsMatch(control: AbstractControl): ValidationErrors | null {
   return control.get("newPassword")?.value ===
@@ -40,6 +40,7 @@ function passwordsMatch(control: AbstractControl): ValidationErrors | null {
   selector: "app-change-password-page",
   standalone: true,
   imports: [
+    ErrorAlertComponent,
     MatButtonModule,
     MatCardModule,
     MatFormFieldModule,
@@ -60,7 +61,7 @@ export class ChangePasswordPageComponent {
   private readonly snackBar = inject(MatSnackBar);
   private readonly destroyRef = inject(DestroyRef);
   readonly isSubmitting = signal(false);
-  readonly errorMessage = signal<string | null>(null);
+  readonly errorMessage = signal<unknown>(null);
   readonly apiErrors = signal<Readonly<Record<string, readonly string[]>>>({});
   readonly passwordForm = this.formBuilder.nonNullable.group(
     {
@@ -110,9 +111,7 @@ export class ChangePasswordPageComponent {
           void this.router.navigateByUrl("/login");
         },
         error: (error: unknown) => {
-          this.errorMessage.set(
-            getApiErrorMessage(error, "The password could not be changed."),
-          );
+          this.errorMessage.set(error);
           this.apiErrors.set(getApiValidationErrors(error));
         },
       });

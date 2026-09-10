@@ -55,8 +55,8 @@
             }
           </mat-form-field>
         }
-        @if (errorMessage(); as message) {
-          <p class="form-error" role="alert">{{ message }}</p>
+        @if (errorMessage()) {
+          <app-error-alert [error]="errorMessage()" fallback="The role could not be saved." />
         }
         <div class="form-actions">
           <a mat-button routerLink="/administration/roles">Cancel</a

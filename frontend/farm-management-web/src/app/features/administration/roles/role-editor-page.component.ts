@@ -26,14 +26,15 @@ import {
   Role,
 } from "../../../core/administration/administration.models";
 import {
-  getApiErrorMessage,
   getApiValidationErrors,
 } from "../../../core/models/api-error.model";
+import { ErrorAlertComponent } from "../../../shared/components/error-alert/error-alert.component";
 
 @Component({
   selector: "app-role-editor-page",
   standalone: true,
   imports: [
+    ErrorAlertComponent,
     MatButtonModule,
     MatCardModule,
     MatFormFieldModule,
@@ -66,7 +67,7 @@ export class RoleEditorPageComponent implements OnInit {
   readonly permissions = signal<readonly Permission[]>([]);
   readonly isLoading = signal(true);
   readonly isSubmitting = signal(false);
-  readonly errorMessage = signal<string | null>(null);
+  readonly errorMessage = signal<unknown>(null);
   readonly apiErrors = signal<Readonly<Record<string, readonly string[]>>>({});
   private initialPermissionIds: readonly string[] = [];
 
@@ -80,6 +81,7 @@ export class RoleEditorPageComponent implements OnInit {
       this.roleId === null
         ? of(null)
         : this.administrationService.getRole(this.roleId);
+
     forkJoin({ permissions: permissionRequest$, role: roleRequest$ })
       .pipe(
         takeUntilDestroyed(this.destroyRef),
@@ -90,10 +92,7 @@ export class RoleEditorPageComponent implements OnInit {
           this.permissions.set(permissions);
           if (role !== null) this.populateForm(role);
         },
-        error: (error: unknown) =>
-          this.errorMessage.set(
-            getApiErrorMessage(error, "The role could not be loaded."),
-          ),
+        error: (error: unknown) => this.errorMessage.set(error),
       });
   }
 
@@ -149,20 +148,11 @@ export class RoleEditorPageComponent implements OnInit {
               );
               void this.router.navigateByUrl("/administration/roles");
             },
-            error: (error: unknown) => {
-              this.errorMessage.set(
-                getApiErrorMessage(
-                  error,
-                  "The role was saved, but permissions could not be updated.",
-                ),
-              );
-            },
+            error: (error: unknown) => this.errorMessage.set(error),
           });
         },
         error: (error: unknown) => {
-          this.errorMessage.set(
-            getApiErrorMessage(error, "The role could not be saved."),
-          );
+          this.errorMessage.set(error);
           this.apiErrors.set(getApiValidationErrors(error));
         },
       });

@@ -19,12 +19,13 @@ import { MatSnackBar } from "@angular/material/snack-bar";
 import { ActivatedRoute, Router, RouterLink } from "@angular/router";
 import { forkJoin, of, finalize } from "rxjs";
 import { FarmManagementService } from "../../core/farm-management/farm-management.service";
-import { getApiErrorMessage } from "../../core/models/api-error.model";
+import { ErrorAlertComponent } from "../../shared/components/error-alert/error-alert.component";
 import { formatDateOnly, parseDateOnly } from "../../core/utils/date.utils";
 @Component({
   selector: "app-crop-cycle-editor-page",
   standalone: true,
   imports: [
+    ErrorAlertComponent,
     MatButtonModule,
     MatCardModule,
     MatDatepickerModule,
@@ -49,7 +50,7 @@ export class CropCycleEditorPageComponent implements OnInit {
   readonly id = this.route.snapshot.paramMap.get("id");
   readonly isLoading = signal(true);
   readonly isSubmitting = signal(false);
-  readonly errorMessage = signal<string | null>(null);
+  readonly errorMessage = signal<unknown>(null);
   readonly plantations = signal<readonly any[]>([]);
   readonly form = this.fb.group({
     plantationId: [null as string | null, [Validators.required]],
@@ -83,10 +84,7 @@ export class CropCycleEditorPageComponent implements OnInit {
               expectedEndDate: parseDateOnly(r.cycle.expectedEndDate),
             });
         },
-        error: (e) =>
-          this.errorMessage.set(
-            getApiErrorMessage(e, "Cycle form data could not be loaded."),
-          ),
+        error: (e) => this.errorMessage.set(e),
       });
   }
   submit(): void {
@@ -94,6 +92,7 @@ export class CropCycleEditorPageComponent implements OnInit {
       this.form.markAllAsTouched();
       return;
     }
+    this.errorMessage.set(null);
     this.isSubmitting.set(true);
     const v = this.form.getRawValue();
     const payload = {
@@ -118,10 +117,7 @@ export class CropCycleEditorPageComponent implements OnInit {
           );
           void this.router.navigateByUrl("/crop-cycles");
         },
-        error: (e) =>
-          this.errorMessage.set(
-            getApiErrorMessage(e, "Cycle could not be saved."),
-          ),
+        error: (e) => this.errorMessage.set(e),
       });
   }
 }

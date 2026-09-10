@@ -18,12 +18,13 @@ import { MatSnackBar } from "@angular/material/snack-bar";
 import { ActivatedRoute, Router, RouterLink } from "@angular/router";
 import { forkJoin, finalize, of } from "rxjs";
 import { FarmManagementService } from "../../core/farm-management/farm-management.service";
-import { getApiErrorMessage } from "../../core/models/api-error.model";
+import { ErrorAlertComponent } from "../../shared/components/error-alert/error-alert.component";
 
 @Component({
   selector: "app-farm-editor-page",
   standalone: true,
   imports: [
+    ErrorAlertComponent,
     MatButtonModule,
     MatCardModule,
     MatFormFieldModule,
@@ -47,7 +48,7 @@ export class FarmEditorPageComponent implements OnInit {
   readonly farmId = this.route.snapshot.paramMap.get("id");
   readonly isLoading = signal(true);
   readonly isSubmitting = signal(false);
-  readonly errorMessage = signal<string | null>(null);
+  readonly errorMessage = signal<unknown>(null);
   readonly units = signal<readonly any[]>([]);
   readonly ownershipTypes = signal<readonly any[]>([]);
   readonly form = this.fb.group({
@@ -90,10 +91,7 @@ export class FarmEditorPageComponent implements OnInit {
               longitude: r.farm.longitude,
             });
         },
-        error: (e) =>
-          this.errorMessage.set(
-            getApiErrorMessage(e, "Farm form data could not be loaded."),
-          ),
+        error: (e) => this.errorMessage.set(e),
       });
   }
   submit(): void {
@@ -101,6 +99,7 @@ export class FarmEditorPageComponent implements OnInit {
       this.form.markAllAsTouched();
       return;
     }
+    this.errorMessage.set(null);
     this.isSubmitting.set(true);
     const request = this.farmId
       ? this.service.updateFarm(this.farmId, this.form.getRawValue())
@@ -119,10 +118,7 @@ export class FarmEditorPageComponent implements OnInit {
           );
           void this.router.navigateByUrl("/farms");
         },
-        error: (e) =>
-          this.errorMessage.set(
-            getApiErrorMessage(e, "Farm could not be saved."),
-          ),
+        error: (e) => this.errorMessage.set(e),
       });
   }
 }

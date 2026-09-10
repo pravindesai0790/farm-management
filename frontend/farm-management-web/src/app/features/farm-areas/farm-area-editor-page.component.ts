@@ -18,11 +18,12 @@ import { MatSnackBar } from "@angular/material/snack-bar";
 import { ActivatedRoute, Router, RouterLink } from "@angular/router";
 import { forkJoin, finalize, of } from "rxjs";
 import { FarmManagementService } from "../../core/farm-management/farm-management.service";
-import { getApiErrorMessage } from "../../core/models/api-error.model";
+import { ErrorAlertComponent } from "../../shared/components/error-alert/error-alert.component";
 @Component({
   selector: "app-farm-area-editor-page",
   standalone: true,
   imports: [
+    ErrorAlertComponent,
     MatButtonModule,
     MatCardModule,
     MatFormFieldModule,
@@ -47,7 +48,7 @@ export class FarmAreaEditorPageComponent implements OnInit {
   readonly farmId = this.route.snapshot.queryParamMap.get("farmId");
   readonly isLoading = signal(true);
   readonly isSubmitting = signal(false);
-  readonly errorMessage = signal<string | null>(null);
+  readonly errorMessage = signal<unknown>(null);
   readonly farms = signal<readonly any[]>([]);
   readonly parentAreas = signal<readonly any[]>([]);
   readonly units = signal<readonly any[]>([]);
@@ -91,10 +92,7 @@ export class FarmAreaEditorPageComponent implements OnInit {
               areaUnitId: r.area.areaUnitId,
             });
         },
-        error: (e) =>
-          this.errorMessage.set(
-            getApiErrorMessage(e, "Area form data could not be loaded."),
-          ),
+        error: (e) => this.errorMessage.set(e),
       });
   }
   loadParents(farmId: string): void {
@@ -114,6 +112,7 @@ export class FarmAreaEditorPageComponent implements OnInit {
       this.form.markAllAsTouched();
       return;
     }
+    this.errorMessage.set(null);
     this.isSubmitting.set(true);
     const value = this.form.getRawValue();
     const request = this.areaId
@@ -133,10 +132,7 @@ export class FarmAreaEditorPageComponent implements OnInit {
           );
           void this.router.navigate(["/farms", r.farmId]);
         },
-        error: (e) =>
-          this.errorMessage.set(
-            getApiErrorMessage(e, "Area could not be saved."),
-          ),
+        error: (e) => this.errorMessage.set(e),
       });
   }
 }

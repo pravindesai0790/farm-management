@@ -70,7 +70,7 @@
         </div>
 
         @if (errorMessage()) {
-          <p class="form-error">{{ errorMessage() }}</p>
+          <app-error-alert [error]="errorMessage()" fallback="Cycle could not be saved." />
         }
 
         <div class="form-actions">

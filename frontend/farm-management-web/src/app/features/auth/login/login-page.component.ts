@@ -15,11 +15,13 @@ import { MatInputModule } from "@angular/material/input";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 
 import { AuthService } from "../../../core/auth/auth.service";
+import { ErrorAlertComponent } from "../../../shared/components/error-alert/error-alert.component";
 
 @Component({
   selector: "app-login-page",
   standalone: true,
   imports: [
+    ErrorAlertComponent,
     MatButtonModule,
     MatCardModule,
     MatFormFieldModule,
@@ -39,7 +41,7 @@ export class LoginPageComponent {
   private readonly activatedRoute = inject(ActivatedRoute);
 
   readonly isSubmitting = signal(false);
-  readonly errorMessage = signal<string | null>(null);
+  readonly errorMessage = signal<unknown>(null);
   readonly loginForm = this.formBuilder.nonNullable.group({
     email: ["", [Validators.required, Validators.email]],
     password: ["", Validators.required],
@@ -60,7 +62,11 @@ export class LoginPageComponent {
       },
       error: (error: unknown) => {
         this.isSubmitting.set(false);
-        this.errorMessage.set(this.getErrorMessage(error));
+        if (error instanceof HttpErrorResponse && error.status === 401) {
+          this.errorMessage.set("The email or password is incorrect.");
+          return;
+        }
+        this.errorMessage.set(error);
       },
     });
   }
@@ -73,31 +79,5 @@ export class LoginPageComponent {
       !returnUrl.startsWith("//")
       ? returnUrl
       : "/dashboard";
-  }
-
-  private getErrorMessage(error: unknown): string {
-    if (error instanceof HttpErrorResponse && error.status === 400) {
-      const apiMessage = this.getApiMessage(error.error);
-      return apiMessage ?? "Enter a valid email and password.";
-    }
-
-    if (error instanceof HttpErrorResponse && error.status === 401) {
-      return "The email or password is incorrect.";
-    }
-
-    return "Unable to sign in right now. Please try again.";
-  }
-
-  private getApiMessage(errorBody: unknown): string | null {
-    if (
-      typeof errorBody !== "object" ||
-      errorBody === null ||
-      !("message" in errorBody)
-    ) {
-      return null;
-    }
-
-    const message = errorBody.message;
-    return typeof message === "string" && message.length > 0 ? message : null;
   }
 }

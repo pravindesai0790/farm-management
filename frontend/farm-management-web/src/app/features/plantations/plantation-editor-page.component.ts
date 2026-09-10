@@ -37,7 +37,7 @@ import {
   Plantation,
   Unit,
 } from "../../core/farm-management/farm-management.models";
-import { getApiErrorMessage } from "../../core/models/api-error.model";
+import { ErrorAlertComponent } from "../../shared/components/error-alert/error-alert.component";
 import {
   formatDateOnly,
   parseDateOnly,
@@ -46,6 +46,7 @@ import {
   selector: "app-plantation-editor-page",
   standalone: true,
   imports: [
+    ErrorAlertComponent,
     MatButtonModule,
     MatCardModule,
     MatDatepickerModule,
@@ -70,7 +71,7 @@ export class PlantationEditorPageComponent implements OnInit {
   readonly id = this.route.snapshot.paramMap.get("id");
   readonly isLoading = signal(true);
   readonly isSubmitting = signal(false);
-  readonly errorMessage = signal<string | null>(null);
+  readonly errorMessage = signal<unknown>(null);
   readonly currentPlantation = signal<Plantation | null>(null);
   readonly isLoadingAreas = signal(false);
   readonly farms = signal<readonly Farm[]>([]);
@@ -152,10 +153,7 @@ export class PlantationEditorPageComponent implements OnInit {
               expectedEndDate: parseDateOnly(r.plantation.expectedEndDate),
             });
           },
-          error: (e) =>
-            this.errorMessage.set(
-              getApiErrorMessage(e, "Plantation form data could not be loaded."),
-            ),
+          error: (e) => this.errorMessage.set(e),
         });
     } else {
       base$
@@ -185,10 +183,7 @@ export class PlantationEditorPageComponent implements OnInit {
               this.form.controls.farmId.setValue(r.defaultFarmId);
             }
           },
-          error: (e) =>
-            this.errorMessage.set(
-              getApiErrorMessage(e, "Plantation form data could not be loaded."),
-            ),
+          error: (e) => this.errorMessage.set(e),
         });
     }
   }
@@ -262,9 +257,7 @@ export class PlantationEditorPageComponent implements OnInit {
       }),
       catchError((e) => {
         this.isLoadingAreas.set(false);
-        this.errorMessage.set(
-          getApiErrorMessage(e, "Farm areas could not be loaded."),
-        );
+        this.errorMessage.set(e);
         return of([] as readonly FarmAreaOption[]);
       }),
     );
@@ -275,10 +268,7 @@ export class PlantationEditorPageComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (r) => this.varieties.set(r.items),
-        error: (e) =>
-          this.errorMessage.set(
-            getApiErrorMessage(e, "Varieties could not be loaded."),
-          ),
+        error: (e) => this.errorMessage.set(e),
       });
   }
   submit(): void {
@@ -286,6 +276,7 @@ export class PlantationEditorPageComponent implements OnInit {
       this.form.markAllAsTouched();
       return;
     }
+    this.errorMessage.set(null);
     this.isSubmitting.set(true);
     const value = this.form.getRawValue();
     const payload = {
@@ -310,10 +301,7 @@ export class PlantationEditorPageComponent implements OnInit {
           );
           void this.router.navigateByUrl("/plantations");
         },
-        error: (e) =>
-          this.errorMessage.set(
-            getApiErrorMessage(e, "Plantation could not be saved."),
-          ),
+        error: (e) => this.errorMessage.set(e),
       });
   }
 }

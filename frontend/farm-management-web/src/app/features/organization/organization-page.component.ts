@@ -31,7 +31,7 @@ import {
 import { PermissionService } from "../../core/auth/permission.service";
 import { FarmManagementService } from "../../core/farm-management/farm-management.service";
 import { Organization } from "../../core/farm-management/farm-management.models";
-import { getApiErrorMessage } from "../../core/models/api-error.model";
+import { ErrorAlertComponent } from "../../shared/components/error-alert/error-alert.component";
 
 type StatusFilter = "all" | "active" | "inactive";
 
@@ -40,6 +40,7 @@ type StatusFilter = "all" | "active" | "inactive";
   standalone: true,
   imports: [
     DatePipe,
+    ErrorAlertComponent,
     MatButtonModule,
     MatCardModule,
     MatFormFieldModule,
@@ -74,7 +75,7 @@ export class OrganizationPageComponent implements OnInit {
   readonly organization = signal<Organization | null>(null);
   readonly isLoading = signal(false);
   readonly isSubmitting = signal(false);
-  readonly errorMessage = signal<string | null>(null);
+  readonly errorMessage = signal<unknown>(null);
   readonly searchTerm = signal("");
   readonly status = signal<StatusFilter>("all");
   readonly filteredOrganizations = computed(() => {
@@ -130,10 +131,7 @@ export class OrganizationPageComponent implements OnInit {
           this.organizations.set(result.organizations.items);
           this.setCurrentOrganization(result.currentOrganization);
         },
-        error: (error) =>
-          this.errorMessage.set(
-            getApiErrorMessage(error, "Organizations could not be loaded."),
-          ),
+        error: (error) => this.errorMessage.set(error),
       });
   }
 
@@ -143,6 +141,7 @@ export class OrganizationPageComponent implements OnInit {
       return;
     }
 
+    this.errorMessage.set(null);
     this.isSubmitting.set(true);
     const value = this.form.getRawValue();
     const request = this.isCreating
@@ -163,14 +162,12 @@ export class OrganizationPageComponent implements OnInit {
           );
           void this.router.navigateByUrl("/organization");
         },
-        error: (error) =>
-          this.errorMessage.set(
-            getApiErrorMessage(error, "Organization could not be saved."),
-          ),
+        error: (error) => this.errorMessage.set(error),
       });
   }
 
   changeStatus(active: boolean): void {
+    this.errorMessage.set(null);
     this.isSubmitting.set(true);
     const request = active
       ? this.service.activateOrganization()
@@ -199,13 +196,7 @@ export class OrganizationPageComponent implements OnInit {
             { duration: 3000 },
           );
         },
-        error: (error) =>
-          this.errorMessage.set(
-            getApiErrorMessage(
-              error,
-              "Organization status could not be changed.",
-            ),
-          ),
+        error: (error) => this.errorMessage.set(error),
       });
   }
 

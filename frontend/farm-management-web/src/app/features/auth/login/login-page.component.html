@@ -46,8 +46,11 @@
           }
         </mat-form-field>
 
-        @if (errorMessage(); as message) {
-          <p class="form-error" role="alert">{{ message }}</p>
+        @if (errorMessage()) {
+          <app-error-alert
+            [error]="errorMessage()"
+            fallback="Unable to sign in right now. Please try again."
+          />
         }
 
         <button
