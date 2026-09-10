@@ -220,6 +220,23 @@ public sealed class IdentityDataSeeder(
         new("OTHER", "Other")
     ];
 
+    private static readonly IReadOnlyList<SeedLaborActivityType> SeedLaborActivityTypes =
+    [
+        new("PLANTING", "Planting", 1, "Planting crops or saplings."),
+        new("TRANSPLANTING", "Transplanting", 2, "Transplanting seedlings."),
+        new("PRUNING", "Pruning", 3, "Pruning plants or trees."),
+        new("WEEDING", "Weeding", 4, "Weeding and weed removal."),
+        new("SPRAYING_ASSISTANCE", "Spraying Assistance", 5, "Assisting in spraying operations."),
+        new("FERTILIZER_APPLICATION", "Fertilizer Application", 6, "Applying fertilizers to crops."),
+        new("IRRIGATION_WORK", "Irrigation Work", 7, "Irrigation operations and maintenance."),
+        new("CLEANING", "Cleaning", 8, "Cleaning and clearing plots."),
+        new("SOIL_PREPARATION", "Soil Preparation", 9, "Preparing soil and beds."),
+        new("GENERAL_MAINTENANCE", "General Maintenance", 10, "General farm and field maintenance."),
+        new("TYING", "Tying", 11, "Tying and supporting vines or plants."),
+        new("HARVESTING", "Harvesting", 12, "Harvesting produce."),
+        new("OTHER", "Other", 13, "Other labor activities.")
+    ];
+
     public async Task SeedAsync(CancellationToken cancellationToken = default)
     {
         var initialAdmin = ReadInitialAdminConfiguration();
@@ -236,6 +253,7 @@ public sealed class IdentityDataSeeder(
         await SeedCropsAsync(cancellationToken);
         await SeedCropVarietiesAsync(cancellationToken);
         await SeedPlantationEndReasonsAsync(cancellationToken);
+        await SeedLaborActivityTypesAsync(cancellationToken);
         await SeedInitialSuperAdminAsync(organization, roles["SuperAdmin"], initialAdmin, cancellationToken);
 
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -349,6 +367,29 @@ public sealed class IdentityDataSeeder(
                     code: seedReason.Code,
                     name: seedReason.Name,
                     isSystem: true));
+            }
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task SeedLaborActivityTypesAsync(CancellationToken cancellationToken)
+    {
+        foreach (var seedType in SeedLaborActivityTypes)
+        {
+            var exists = await dbContext.LaborActivityTypes.AnyAsync(
+                type => type.IsSystem && type.OrganizationId == null && type.Code == seedType.Code,
+                cancellationToken);
+
+            if (!exists)
+            {
+                dbContext.LaborActivityTypes.Add(new LaborActivityType(
+                    organizationId: null,
+                    code: seedType.Code,
+                    name: seedType.Name,
+                    isSystem: true,
+                    description: seedType.Description,
+                    displayOrder: seedType.DisplayOrder));
             }
         }
 
@@ -580,6 +621,12 @@ public sealed class IdentityDataSeeder(
     private sealed record SeedCropVariety(string CropCode, string Code, string Name);
 
     private sealed record SeedPlantationEndReason(string Code, string Name);
+
+    private sealed record SeedLaborActivityType(
+        string Code,
+        string Name,
+        int DisplayOrder = 0,
+        string? Description = null);
 
     private sealed record InitialAdminConfiguration(string Email, string Password);
 }

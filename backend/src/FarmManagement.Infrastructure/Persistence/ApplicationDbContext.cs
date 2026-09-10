@@ -45,6 +45,10 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
 
     public DbSet<CropCycle> CropCycles => Set<CropCycle>();
 
+    public DbSet<LaborActivityType> LaborActivityTypes => Set<LaborActivityType>();
+
+    public DbSet<LaborActivity> LaborActivities => Set<LaborActivity>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);

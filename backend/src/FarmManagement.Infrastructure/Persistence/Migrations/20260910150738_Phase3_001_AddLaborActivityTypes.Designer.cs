@@ -4,6 +4,7 @@ using System.Text.Json;
 using FarmManagement.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FarmManagement.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260910150738_Phase3_001_AddLaborActivityTypes")]
+    partial class Phase3_001_AddLaborActivityTypes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -820,125 +823,6 @@ namespace FarmManagement.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ux_farm_ownership_types_code");
 
                     b.ToTable("farm_ownership_types", (string)null);
-                });
-
-            modelBuilder.Entity("FarmManagement.Domain.Entities.LaborActivity", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateOnly>("ActivityDate")
-                        .HasColumnType("date")
-                        .HasColumnName("activity_date");
-
-                    b.Property<decimal?>("CostAmount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)")
-                        .HasColumnName("cost_amount");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid>("CreatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by");
-
-                    b.Property<Guid?>("CropCycleId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("crop_cycle_id");
-
-                    b.Property<Guid?>("CurrencyId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("currency_id");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("text")
-                        .HasColumnName("description");
-
-                    b.Property<Guid?>("FarmAreaId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("farm_area_id");
-
-                    b.Property<Guid>("FarmId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("farm_id");
-
-                    b.Property<Guid>("LaborActivityTypeId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("labor_activity_type_id");
-
-                    b.Property<Guid>("OrganizationId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("organization_id");
-
-                    b.Property<Guid?>("PlantationId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("plantation_id");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)")
-                        .HasDefaultValue("COMPLETED")
-                        .HasColumnName("status");
-
-                    b.Property<decimal?>("TotalWorkingHours")
-                        .HasPrecision(10, 2)
-                        .HasColumnType("numeric(10,2)")
-                        .HasColumnName("total_working_hours");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by");
-
-                    b.Property<int>("WorkerCount")
-                        .HasColumnType("integer")
-                        .HasColumnName("worker_count");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ActivityDate")
-                        .HasDatabaseName("ix_labor_activities_activity_date");
-
-                    b.HasIndex("CropCycleId")
-                        .HasDatabaseName("ix_labor_activities_crop_cycle");
-
-                    b.HasIndex("FarmAreaId")
-                        .HasDatabaseName("ix_labor_activities_farm_area");
-
-                    b.HasIndex("FarmId")
-                        .HasDatabaseName("ix_labor_activities_farm");
-
-                    b.HasIndex("LaborActivityTypeId")
-                        .HasDatabaseName("ix_labor_activities_type");
-
-                    b.HasIndex("OrganizationId")
-                        .HasDatabaseName("ix_labor_activities_organization");
-
-                    b.HasIndex("PlantationId")
-                        .HasDatabaseName("ix_labor_activities_plantation");
-
-                    b.HasIndex("Status")
-                        .HasDatabaseName("ix_labor_activities_status");
-
-                    b.ToTable("labor_activities", null, t =>
-                        {
-                            t.HasCheckConstraint("ck_labor_activities_cost_amount", "cost_amount IS NULL OR cost_amount >= 0");
-
-                            t.HasCheckConstraint("ck_labor_activities_status", "status IN ('DRAFT', 'COMPLETED', 'CANCELLED')");
-
-                            t.HasCheckConstraint("ck_labor_activities_worker_count", "worker_count > 0");
-
-                            t.HasCheckConstraint("ck_labor_activities_working_hours", "total_working_hours IS NULL OR total_working_hours > 0");
-                        });
                 });
 
             modelBuilder.Entity("FarmManagement.Domain.Entities.LaborActivityType", b =>
@@ -1769,60 +1653,6 @@ namespace FarmManagement.Infrastructure.Persistence.Migrations
                     b.Navigation("Organization");
 
                     b.Navigation("ParentFarmArea");
-                });
-
-            modelBuilder.Entity("FarmManagement.Domain.Entities.LaborActivity", b =>
-                {
-                    b.HasOne("FarmManagement.Domain.Entities.CropCycle", "CropCycle")
-                        .WithMany()
-                        .HasForeignKey("CropCycleId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_labor_activity_cycle");
-
-                    b.HasOne("FarmManagement.Domain.Entities.FarmArea", "FarmArea")
-                        .WithMany()
-                        .HasForeignKey("FarmAreaId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_labor_activity_area");
-
-                    b.HasOne("FarmManagement.Domain.Entities.Farm", "Farm")
-                        .WithMany()
-                        .HasForeignKey("FarmId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_labor_activity_farm");
-
-                    b.HasOne("FarmManagement.Domain.Entities.LaborActivityType", "LaborActivityType")
-                        .WithMany()
-                        .HasForeignKey("LaborActivityTypeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_labor_activity_type");
-
-                    b.HasOne("FarmManagement.Domain.Entities.Organization", "Organization")
-                        .WithMany()
-                        .HasForeignKey("OrganizationId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_labor_activity_organization");
-
-                    b.HasOne("FarmManagement.Domain.Entities.CropPlantation", "Plantation")
-                        .WithMany()
-                        .HasForeignKey("PlantationId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_labor_activity_plantation");
-
-                    b.Navigation("CropCycle");
-
-                    b.Navigation("Farm");
-
-                    b.Navigation("FarmArea");
-
-                    b.Navigation("LaborActivityType");
-
-                    b.Navigation("Organization");
-
-                    b.Navigation("Plantation");
                 });
 
             modelBuilder.Entity("FarmManagement.Domain.Entities.LaborActivityType", b =>
