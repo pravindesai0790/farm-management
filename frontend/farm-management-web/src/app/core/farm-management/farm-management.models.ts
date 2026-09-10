@@ -92,6 +92,11 @@ export interface FarmAreaAvailability {
   availableArea: number;
   unit: string;
 }
+export interface FarmAreaOption extends FarmArea {
+  allocatedArea?: number;
+  availableArea?: number;
+  isFullyUtilized: boolean;
+}
 export interface Crop {
   id: string;
   organizationId: string | null;

@@ -29,14 +29,30 @@
 
           <mat-form-field appearance="outline">
             <mat-label>Farm area</mat-label>
-            <mat-select formControlName="farmAreaId">
+            <mat-select
+              formControlName="farmAreaId"
+              (selectionChange)="onAreaChange($event.value)"
+            >
               @for (area of areas(); track area.id) {
-                <mat-option [value]="area.id"
-                  >{{ area.name }} ({{ area.totalArea }}
-                  {{ area.areaUnitSymbol }})</mat-option
-                >
+                <mat-option [value]="area.id" [disabled]="area.isFullyUtilized">
+                  {{ area.name }}
+                  @if (area.isFullyUtilized) {
+                    ({{ area.totalArea }} {{ area.areaUnitSymbol }} — Fully utilized)
+                  } @else if (area.availableArea !== undefined && area.availableArea < area.totalArea) {
+                    ({{ area.availableArea }} {{ area.areaUnitSymbol }} available / {{ area.totalArea }} {{ area.areaUnitSymbol }})
+                  } @else {
+                    ({{ area.totalArea }} {{ area.areaUnitSymbol }} available)
+                  }
+                </mat-option>
               }
             </mat-select>
+            @if (isLoadingAreas()) {
+              <mat-hint>Loading area availability…</mat-hint>
+            } @else if (form.controls.farmAreaId.value && selectedArea()) {
+              <mat-hint>
+                Available: {{ selectedArea()?.availableArea }} {{ selectedArea()?.areaUnitSymbol }} of {{ selectedArea()?.totalArea }} {{ selectedArea()?.areaUnitSymbol }}
+              </mat-hint>
+            }
           </mat-form-field>
 
           <mat-form-field appearance="outline">
@@ -81,6 +97,11 @@
               min="0.01"
               formControlName="allocatedArea"
             />
+            @if (selectedArea()?.availableArea !== undefined) {
+              <mat-hint>
+                Max available: {{ selectedArea()?.availableArea }} {{ selectedArea()?.areaUnitSymbol }}
+              </mat-hint>
+            }
           </mat-form-field>
 
           <mat-form-field appearance="outline">
