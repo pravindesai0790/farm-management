@@ -1,5 +1,6 @@
 using System.Text.Json;
 using FarmManagement.Application.Common.Exceptions;
+using FarmManagement.Application.Common.Models;
 using FarmManagement.Application.DTOs.Farms;
 using FarmManagement.Application.Interfaces.Farms;
 using FarmManagement.Domain.Entities;
@@ -8,26 +9,56 @@ namespace FarmManagement.Application.Services;
 
 public sealed class FarmAreaService(IFarmAreaStore store) : IFarmAreaService
 {
-    public async Task<IReadOnlyList<FarmAreaResponse>> ListAsync(
+    private const int DefaultPageSize = 20;
+    private const int MaximumPageSize = 100;
+
+    public async Task<PagedResponse<FarmAreaResponse>> ListPagedAsync(
         FarmActor actor,
-        Guid farmId,
+        int page,
+        int pageSize,
+        Guid? farmId,
         bool? isActive,
+        string? search = null,
         CancellationToken cancellationToken = default)
     {
         ValidateActor(actor);
-        if (farmId == Guid.Empty)
+        if (page < 1)
         {
-            throw new ResourceNotFoundException("The farm was not found.");
+            throw Validation("page", "Page must be at least 1.");
         }
 
-        if (await store.FindFarmAsync(farmId, actor.OrganizationId, cancellationToken) is null)
+        pageSize = NormalizePageSize(pageSize);
+
+        if (farmId.HasValue && farmId.Value != Guid.Empty)
         {
-            throw new ResourceNotFoundException("The farm was not found.");
+            if (await store.FindFarmAsync(farmId.Value, actor.OrganizationId, cancellationToken) is null)
+            {
+                throw new ResourceNotFoundException("The farm was not found.");
+            }
         }
 
-        var areas = await store.ListAsync(farmId, actor.OrganizationId, isActive, cancellationToken);
-        return areas.Select(ToResponse).ToArray();
+        var normalizedSearch = string.IsNullOrWhiteSpace(search) ? null : search.Trim();
+        var (areas, totalCount) = await store.ListPagedAsync(
+            actor.OrganizationId,
+            farmId,
+            isActive,
+            normalizedSearch,
+            checked((page - 1) * pageSize),
+            pageSize,
+            cancellationToken);
+
+        return new PagedResponse<FarmAreaResponse>(areas.Select(ToResponse).ToArray(), page, pageSize, totalCount);
     }
+
+    public Task<PagedResponse<FarmAreaResponse>> ListAsync(
+        FarmActor actor,
+        Guid farmId,
+        int page,
+        int pageSize,
+        bool? isActive,
+        string? search = null,
+        CancellationToken cancellationToken = default) =>
+        ListPagedAsync(actor, page, pageSize, farmId, isActive, search, cancellationToken);
 
     public async Task<FarmAreaResponse> GetAsync(
         FarmActor actor,
@@ -397,6 +428,11 @@ public sealed class FarmAreaService(IFarmAreaStore store) : IFarmAreaService
 
     private static ValidationException Validation(string fieldName, string message) =>
         new("Validation failed", new Dictionary<string, string[]> { [fieldName] = [message] });
+
+    private static int NormalizePageSize(int pageSize) =>
+        pageSize == 0 ? DefaultPageSize : pageSize is < 1 or > MaximumPageSize
+            ? throw Validation("pageSize", $"Page size must be between 1 and {MaximumPageSize}.")
+            : pageSize;
 
     private sealed record FarmAreaValues(
         Guid? ParentFarmAreaId,

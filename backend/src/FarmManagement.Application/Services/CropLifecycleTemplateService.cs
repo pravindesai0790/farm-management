@@ -1,5 +1,6 @@
 using System.Text.Json;
 using FarmManagement.Application.Common.Exceptions;
+using FarmManagement.Application.Common.Models;
 using FarmManagement.Application.DTOs.Crops;
 using FarmManagement.Application.Interfaces.Crops;
 using FarmManagement.Domain.Entities;
@@ -11,7 +12,7 @@ public sealed class CropLifecycleTemplateService(ICropLifecycleTemplateStore sto
     private const int DefaultPageSize = 20;
     private const int MaximumPageSize = 100;
 
-    public async Task<CropLifecycleTemplateListResponse> ListAsync(
+    public async Task<PagedResponse<CropLifecycleTemplateResponse>> ListAsync(
         CropLifecycleTemplateActor actor,
         int page,
         int pageSize,
@@ -38,7 +39,7 @@ public sealed class CropLifecycleTemplateService(ICropLifecycleTemplateStore sto
             isActive,
             cancellationToken);
 
-        return new CropLifecycleTemplateListResponse(
+        return new PagedResponse<CropLifecycleTemplateResponse>(
             templates.Select(ToResponse).ToArray(), page, pageSize, totalCount);
     }
 

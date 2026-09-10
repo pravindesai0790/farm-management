@@ -32,12 +32,6 @@ public sealed record UpdateCropRequest(
     string? CropDurationType,
     string? Description);
 
-public sealed record CropListResponse(
-    IReadOnlyList<CropResponse> Items,
-    int Page,
-    int PageSize,
-    int TotalCount);
-
 public sealed record CropVarietyResponse(
     Guid Id,
     Guid? OrganizationId,
@@ -66,8 +60,3 @@ public sealed record UpdateCropVarietyRequest(
     string? Name,
     string? Description);
 
-public sealed record CropVarietyListResponse(
-    IReadOnlyList<CropVarietyResponse> Items,
-    int Page,
-    int PageSize,
-    int TotalCount);

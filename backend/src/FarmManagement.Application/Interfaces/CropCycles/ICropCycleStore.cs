@@ -14,6 +14,17 @@ public interface ICropCycleStore
         int? seasonYear,
         CancellationToken cancellationToken = default);
 
+    Task<(IReadOnlyList<CropCycle> Items, int TotalCount)> ListPagedAsync(
+        Guid organizationId,
+        Guid? farmId,
+        Guid? farmAreaId,
+        Guid? plantationId,
+        CropCycleStatus? status,
+        int? seasonYear,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default);
+
     Task<CropCycle?> FindAsync(
         Guid cycleId,
         Guid organizationId,

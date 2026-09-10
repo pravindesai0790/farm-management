@@ -63,7 +63,7 @@ export class CropCycleEditorPageComponent implements OnInit {
   });
   ngOnInit(): void {
     forkJoin({
-      plantations: this.service.listPlantations(),
+      plantations: this.service.listPlantations(1, 100),
       cycle: this.id ? this.service.getCycle(this.id) : of(null),
     })
       .pipe(

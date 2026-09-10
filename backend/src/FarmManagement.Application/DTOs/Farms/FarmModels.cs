@@ -62,8 +62,3 @@ public sealed record UpdateFarmRequest(
     decimal? Latitude,
     decimal? Longitude);
 
-public sealed record FarmListResponse(
-    IReadOnlyList<FarmResponse> Items,
-    int Page,
-    int PageSize,
-    int TotalCount);

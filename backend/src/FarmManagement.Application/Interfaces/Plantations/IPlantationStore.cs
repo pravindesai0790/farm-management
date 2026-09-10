@@ -13,6 +13,16 @@ public interface IPlantationStore
         Guid? cropId = null,
         CancellationToken cancellationToken = default);
 
+    Task<(IReadOnlyList<CropPlantation> Items, int TotalCount)> ListPagedAsync(
+        Guid organizationId,
+        Guid? farmId,
+        Guid? farmAreaId,
+        PlantationStatus? status,
+        Guid? cropId,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default);
+
     Task<CropPlantation?> FindAsync(Guid plantationId, Guid organizationId, CancellationToken cancellationToken = default);
     Task<FarmArea?> FindFarmAreaAsync(Guid farmAreaId, Guid organizationId, CancellationToken cancellationToken = default);
     Task<FarmArea?> LockFarmAreaAsync(Guid farmAreaId, Guid organizationId, CancellationToken cancellationToken = default);

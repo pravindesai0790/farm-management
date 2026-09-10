@@ -25,6 +25,33 @@ public sealed class CropCycleStore(ApplicationDbContext dbContext) : ICropCycleS
             .ThenBy(cycle => cycle.Id)
             .ToListAsync(cancellationToken);
 
+    public async Task<(IReadOnlyList<CropCycle> Items, int TotalCount)> ListPagedAsync(
+        Guid organizationId,
+        Guid? farmId,
+        Guid? farmAreaId,
+        Guid? plantationId,
+        CropCycleStatus? status,
+        int? seasonYear,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        var query = BuildQuery(organizationId, farmId, farmAreaId, plantationId, status, seasonYear);
+        var totalCount = await query.CountAsync(cancellationToken);
+        var items = await query
+            .AsNoTracking()
+            .AsSplitQuery()
+            .OrderByDescending(cycle => cycle.SeasonYear)
+            .ThenByDescending(cycle => cycle.PlannedStartDate)
+            .ThenBy(cycle => cycle.CycleName)
+            .ThenBy(cycle => cycle.Id)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync(cancellationToken);
+
+        return (items, totalCount);
+    }
+
     public Task<CropCycle?> FindAsync(
         Guid cycleId,
         Guid organizationId,

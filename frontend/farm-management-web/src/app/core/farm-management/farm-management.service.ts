@@ -1,8 +1,8 @@
 import { HttpClient, HttpParams } from "@angular/common/http";
 import { Injectable, inject } from "@angular/core";
-import { Observable } from "rxjs";
+import { Observable, map } from "rxjs";
 import { environment } from "../../../environments/environment";
-import { PagedResponse } from "../administration/administration.models";
+import { PagedResponse } from "../models/paged-response.model";
 import {
   Crop,
   CropCycle,
@@ -14,6 +14,7 @@ import {
   Farm,
   FarmArea,
   FarmAreaAvailability,
+  FarmAreaList,
   FarmList,
   FarmOwnershipType,
   LifecycleList,
@@ -106,10 +107,26 @@ export class FarmManagementService {
     farmId: string,
     isActive: boolean | null = null,
   ): Observable<readonly FarmArea[]> {
-    return this.http.get<readonly FarmArea[]>(
-      `${this.api}/farms/${farmId}/areas`,
-      { params: isActive === null ? {} : { isActive } },
-    );
+    let params = new HttpParams().set("page", 1).set("pageSize", 100);
+    if (isActive !== null) {
+      params = params.set("isActive", isActive);
+    }
+    return this.http
+      .get<FarmAreaList>(`${this.api}/farms/${farmId}/areas`, { params })
+      .pipe(map((res) => res.items));
+  }
+  listFarmAreas(
+    page: number = 1,
+    pageSize: number = 20,
+    farmId?: string,
+    isActive: boolean | null = null,
+    search?: string,
+  ): Observable<FarmAreaList> {
+    let params = new HttpParams().set("page", page).set("pageSize", pageSize);
+    if (farmId) params = params.set("farmId", farmId);
+    if (isActive !== null && isActive !== undefined) params = params.set("isActive", isActive);
+    if (search) params = params.set("search", search);
+    return this.http.get<FarmAreaList>(`${this.api}/farm-areas`, { params });
   }
   getArea(id: string): Observable<FarmArea> {
     return this.http.get<FarmArea>(`${this.api}/farm-areas/${id}`);
@@ -199,12 +216,14 @@ export class FarmManagementService {
   }
 
   listPlantations(
+    page: number = 1,
+    pageSize: number = 20,
     farmId?: string,
     farmAreaId?: string,
     status?: string,
     cropId?: string,
   ): Observable<PlantationList> {
-    let params = new HttpParams();
+    let params = new HttpParams().set("page", page).set("pageSize", pageSize);
     if (farmId) params = params.set("farmId", farmId);
     if (farmAreaId) params = params.set("farmAreaId", farmAreaId);
     if (status) params = params.set("status", status);
@@ -233,13 +252,15 @@ export class FarmManagementService {
     return this.http.post<void>(`${this.api}/plantations/${id}/archive`, null);
   }
   listCycles(
+    page: number = 1,
+    pageSize: number = 20,
     farmId?: string,
     farmAreaId?: string,
     plantationId?: string,
     status?: string,
     seasonYear?: number,
   ): Observable<CycleList> {
-    let params = new HttpParams();
+    let params = new HttpParams().set("page", page).set("pageSize", pageSize);
     if (farmId) params = params.set("farmId", farmId);
     if (farmAreaId) params = params.set("farmAreaId", farmAreaId);
     if (plantationId) params = params.set("plantationId", plantationId);

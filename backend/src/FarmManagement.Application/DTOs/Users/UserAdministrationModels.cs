@@ -16,11 +16,6 @@ public sealed record UserResponse(
     DateTimeOffset? UpdatedAt,
     IReadOnlyList<UserRoleResponse> Roles);
 
-public sealed record PagedResponse<T>(
-    IReadOnlyList<T> Items,
-    int Page,
-    int PageSize,
-    int TotalCount);
 
 public sealed record CreateUserRequest(
     string? FirstName,

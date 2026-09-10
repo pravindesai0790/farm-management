@@ -1,3 +1,4 @@
+using FarmManagement.Application.Common.Models;
 using FarmManagement.Application.DTOs.CropCycles;
 
 namespace FarmManagement.Application.Interfaces.CropCycles;
@@ -6,8 +7,10 @@ public sealed record CropCycleActor(Guid UserId, Guid OrganizationId);
 
 public interface ICropCycleService
 {
-    Task<CropCycleListResponse> ListAsync(
+    Task<PagedResponse<CropCycleResponse>> ListAsync(
         CropCycleActor actor,
+        int page,
+        int pageSize,
         Guid? farmId,
         Guid? farmAreaId,
         Guid? plantationId,

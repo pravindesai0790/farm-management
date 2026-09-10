@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using FarmManagement.Application.Common.Constants;
+using FarmManagement.Application.Common.Models;
 using FarmManagement.Application.DTOs.Farms;
 using FarmManagement.Application.Interfaces.Farms;
 using Microsoft.AspNetCore.Authorization;
@@ -15,7 +16,7 @@ public sealed class FarmsController(IFarmService farmService) : ControllerBase
 {
     [HttpGet]
     [Authorize(Policy = "Permission:Farm.View")]
-    public async Task<ActionResult<FarmListResponse>> List(
+    public async Task<ActionResult<PagedResponse<FarmResponse>>> List(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         [FromQuery] string? search = null,

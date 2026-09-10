@@ -144,5 +144,14 @@
         </table>
       </div>
     }
+
+    <mat-paginator
+      [length]="totalCount()"
+      [pageIndex]="pageIndex()"
+      [pageSize]="pageSize()"
+      [pageSizeOptions]="[10, 20, 50]"
+      (page)="pageChanged($event)"
+      aria-label="Crop cycles pages"
+    />
   </mat-card-content>
 </mat-card>

@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using FarmManagement.Application.Common.Constants;
+using FarmManagement.Application.Common.Models;
 using FarmManagement.Application.DTOs.CropCycles;
 using FarmManagement.Application.Interfaces.CropCycles;
 using Microsoft.AspNetCore.Authorization;
@@ -15,14 +16,16 @@ public sealed class CropCyclesController(ICropCycleService cycleService) : Contr
 {
     [HttpGet]
     [Authorize(Policy = "Permission:CropCycle.View")]
-    public async Task<ActionResult<CropCycleListResponse>> List(
-        [FromQuery] Guid? farmId,
-        [FromQuery] Guid? farmAreaId,
-        [FromQuery] Guid? plantationId,
-        [FromQuery] string? status,
-        [FromQuery] int? seasonYear,
+    public async Task<ActionResult<PagedResponse<CropCycleResponse>>> List(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] Guid? farmId = null,
+        [FromQuery] Guid? farmAreaId = null,
+        [FromQuery] Guid? plantationId = null,
+        [FromQuery] string? status = null,
+        [FromQuery] int? seasonYear = null,
         CancellationToken cancellationToken = default) =>
-        Ok(await cycleService.ListAsync(GetActor(), farmId, farmAreaId, plantationId, status, seasonYear, cancellationToken));
+        Ok(await cycleService.ListAsync(GetActor(), page, pageSize, farmId, farmAreaId, plantationId, status, seasonYear, cancellationToken));
 
     [HttpGet("{id:guid}")]
     [Authorize(Policy = "Permission:CropCycle.View")]

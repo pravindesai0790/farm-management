@@ -1,3 +1,4 @@
+using FarmManagement.Application.Common.Models;
 using FarmManagement.Application.DTOs.Users;
 
 namespace FarmManagement.Application.Interfaces.Users;

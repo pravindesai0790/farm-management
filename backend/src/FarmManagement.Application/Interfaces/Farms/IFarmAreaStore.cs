@@ -10,6 +10,15 @@ public interface IFarmAreaStore
         bool? isActive,
         CancellationToken cancellationToken = default);
 
+    Task<(IReadOnlyList<FarmArea> Items, int TotalCount)> ListPagedAsync(
+        Guid organizationId,
+        Guid? farmId,
+        bool? isActive,
+        string? search,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default);
+
     Task<FarmArea?> FindAsync(
         Guid farmAreaId,
         Guid organizationId,

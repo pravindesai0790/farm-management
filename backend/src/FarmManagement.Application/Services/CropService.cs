@@ -1,5 +1,6 @@
 using System.Text.Json;
 using FarmManagement.Application.Common.Exceptions;
+using FarmManagement.Application.Common.Models;
 using FarmManagement.Application.DTOs.Crops;
 using FarmManagement.Application.Interfaces.Crops;
 using FarmManagement.Domain.Entities;
@@ -13,7 +14,7 @@ public sealed class CropService(ICropStore store) : ICropService
     private static readonly IReadOnlySet<string> CropDurationTypes =
         new HashSet<string>(StringComparer.Ordinal) { "ANNUAL", "PERENNIAL", "SEASONAL", "OTHER" };
 
-    public async Task<CropListResponse> ListCropsAsync(
+    public async Task<PagedResponse<CropResponse>> ListCropsAsync(
         CropActor actor, int page, int pageSize, string? search, bool? isActive,
         CancellationToken cancellationToken = default)
     {
@@ -26,7 +27,7 @@ public sealed class CropService(ICropStore store) : ICropService
         var crops = await store.ListCropsAsync(
             actor.OrganizationId, checked((page - 1) * pageSize), pageSize, normalizedSearch, isActive, cancellationToken);
 
-        return new CropListResponse(crops.Select(ToResponse).ToArray(), page, pageSize, totalCount);
+        return new PagedResponse<CropResponse>(crops.Select(ToResponse).ToArray(), page, pageSize, totalCount);
     }
 
     public async Task<CropResponse> GetCropAsync(CropActor actor, Guid cropId, CancellationToken cancellationToken = default)
@@ -75,7 +76,7 @@ public sealed class CropService(ICropStore store) : ICropService
     public Task<bool> DeactivateCropAsync(CropActor actor, Guid cropId, string? ipAddress, CancellationToken cancellationToken = default) =>
         SetCropActiveAsync(actor, cropId, false, ipAddress, cancellationToken);
 
-    public async Task<CropVarietyListResponse> ListVarietiesAsync(
+    public async Task<PagedResponse<CropVarietyResponse>> ListVarietiesAsync(
         CropActor actor, Guid cropId, int page, int pageSize, bool? isActive,
         CancellationToken cancellationToken = default)
     {
@@ -87,7 +88,7 @@ public sealed class CropService(ICropStore store) : ICropService
         var totalCount = await store.CountVarietiesAsync(actor.OrganizationId, cropId, isActive, cancellationToken);
         var varieties = await store.ListVarietiesAsync(
             actor.OrganizationId, cropId, checked((page - 1) * pageSize), pageSize, isActive, cancellationToken);
-        return new CropVarietyListResponse(varieties.Select(variety => ToResponse(variety)).ToArray(), page, pageSize, totalCount);
+        return new PagedResponse<CropVarietyResponse>(varieties.Select(variety => ToResponse(variety)).ToArray(), page, pageSize, totalCount);
     }
 
     public async Task<CropVarietyResponse> GetVarietyAsync(CropActor actor, Guid varietyId, CancellationToken cancellationToken = default)

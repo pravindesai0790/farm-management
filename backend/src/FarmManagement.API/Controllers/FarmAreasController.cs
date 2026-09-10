@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using FarmManagement.Application.Common.Constants;
+using FarmManagement.Application.Common.Models;
 using FarmManagement.Application.DTOs.Farms;
 using FarmManagement.Application.Interfaces.Farms;
 using Microsoft.AspNetCore.Authorization;
@@ -12,14 +13,30 @@ namespace FarmManagement.API.Controllers;
 [Authorize]
 public sealed class FarmAreasController(IFarmAreaService farmAreaService) : ControllerBase
 {
-    [HttpGet("api/farms/{farmId:guid}/areas")]
+    [HttpGet("api/farm-areas")]
     [Authorize(Policy = "Permission:FarmArea.View")]
-    public async Task<ActionResult<IReadOnlyList<FarmAreaResponse>>> List(
-        Guid farmId,
+    public async Task<ActionResult<PagedResponse<FarmAreaResponse>>> ListAll(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] Guid? farmId = null,
         [FromQuery] bool? isActive = null,
+        [FromQuery] string? search = null,
         CancellationToken cancellationToken = default)
     {
-        return Ok(await farmAreaService.ListAsync(GetActor(), farmId, isActive, cancellationToken));
+        return Ok(await farmAreaService.ListPagedAsync(GetActor(), page, pageSize, farmId, isActive, search, cancellationToken));
+    }
+
+    [HttpGet("api/farms/{farmId:guid}/areas")]
+    [Authorize(Policy = "Permission:FarmArea.View")]
+    public async Task<ActionResult<PagedResponse<FarmAreaResponse>>> List(
+        Guid farmId,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] bool? isActive = null,
+        [FromQuery] string? search = null,
+        CancellationToken cancellationToken = default)
+    {
+        return Ok(await farmAreaService.ListAsync(GetActor(), farmId, page, pageSize, isActive, search, cancellationToken));
     }
 
     [HttpGet("api/farm-areas/{id:guid}")]

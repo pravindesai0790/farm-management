@@ -61,6 +61,3 @@ public sealed record CancelCropCycleRequest(
     Guid? CancellationReasonId,
     string? Notes);
 
-public sealed record CropCycleListResponse(
-    IReadOnlyList<CropCycleResponse> Items,
-    int TotalCount);

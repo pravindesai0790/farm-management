@@ -1,4 +1,5 @@
-import { PagedResponse } from "../administration/administration.models";
+import { PagedResponse } from "../models/paged-response.model";
+export { PagedResponse };
 
 export interface Organization {
   id: string;
@@ -227,17 +228,12 @@ export interface LifecycleTemplate {
 }
 
 export type FarmList = PagedResponse<Farm>;
+export type FarmAreaList = PagedResponse<FarmArea>;
 export type CropList = PagedResponse<Crop>;
 export type VarietyList = PagedResponse<CropVariety>;
-export interface PlantationList {
-  items: readonly Plantation[];
-  totalCount: number;
-}
-export interface CycleList {
-  items: readonly CropCycle[];
-  totalCount: number;
-}
-export interface LifecycleList extends PagedResponse<LifecycleTemplate> {}
+export type PlantationList = PagedResponse<Plantation>;
+export type CycleList = PagedResponse<CropCycle>;
+export type LifecycleList = PagedResponse<LifecycleTemplate>;
 
 export interface KpiSummary {
   totalFarms: number;

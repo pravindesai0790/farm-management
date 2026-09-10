@@ -20,6 +20,31 @@ public sealed class FarmAreaStore(ApplicationDbContext dbContext) : IFarmAreaSto
             .ThenBy(area => area.Id)
             .ToListAsync(cancellationToken);
 
+    public async Task<(IReadOnlyList<FarmArea> Items, int TotalCount)> ListPagedAsync(
+        Guid organizationId,
+        Guid? farmId,
+        bool? isActive,
+        string? search,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        var query = BuildPagedQuery(organizationId, farmId, isActive, search);
+        var totalCount = await query.CountAsync(cancellationToken);
+        var items = await query
+            .AsNoTracking()
+            .OrderBy(area => area.Farm != null ? area.Farm.Name : string.Empty)
+            .ThenBy(area => area.ParentFarmAreaId)
+            .ThenBy(area => area.Name)
+            .ThenBy(area => area.Code)
+            .ThenBy(area => area.Id)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync(cancellationToken);
+
+        return (items, totalCount);
+    }
+
     public Task<FarmArea?> FindAsync(Guid farmAreaId, Guid organizationId, CancellationToken cancellationToken = default) =>
         dbContext.FarmAreas
             .Include(area => area.Farm)
@@ -102,5 +127,34 @@ public sealed class FarmAreaStore(ApplicationDbContext dbContext) : IFarmAreaSto
             .Where(area => area.FarmId == farmId && area.OrganizationId == organizationId);
 
         return isActive is null ? query : query.Where(area => area.IsActive == isActive.Value);
+    }
+
+    private IQueryable<FarmArea> BuildPagedQuery(Guid organizationId, Guid? farmId, bool? isActive, string? search)
+    {
+        var query = dbContext.FarmAreas
+            .Include(area => area.Farm)
+            .Include(area => area.AreaUnit)
+            .Where(area => area.OrganizationId == organizationId);
+
+        if (farmId.HasValue)
+        {
+            query = query.Where(area => area.FarmId == farmId.Value);
+        }
+
+        if (isActive.HasValue)
+        {
+            query = query.Where(area => area.IsActive == isActive.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var pattern = $"%{search.Trim()}%";
+            query = query.Where(area =>
+                EF.Functions.ILike(area.Name, pattern) ||
+                EF.Functions.ILike(area.Code, pattern) ||
+                (area.Farm != null && EF.Functions.ILike(area.Farm.Name, pattern)));
+        }
+
+        return query;
     }
 }

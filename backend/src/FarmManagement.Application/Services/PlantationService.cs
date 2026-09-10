@@ -1,5 +1,6 @@
 using System.Text.Json;
 using FarmManagement.Application.Common.Exceptions;
+using FarmManagement.Application.Common.Models;
 using FarmManagement.Application.DTOs.Plantations;
 using FarmManagement.Application.Interfaces.Plantations;
 using FarmManagement.Domain.Entities;
@@ -9,8 +10,13 @@ namespace FarmManagement.Application.Services;
 
 public sealed class PlantationService(IPlantationStore store) : IPlantationService
 {
-    public async Task<PlantationListResponse> ListAsync(
+    private const int DefaultPageSize = 20;
+    private const int MaximumPageSize = 100;
+
+    public async Task<PagedResponse<PlantationResponse>> ListAsync(
         PlantationActor actor,
+        int page,
+        int pageSize,
         Guid? farmId,
         Guid? farmAreaId,
         string? status,
@@ -18,9 +24,24 @@ public sealed class PlantationService(IPlantationStore store) : IPlantationServi
         CancellationToken cancellationToken = default)
     {
         ValidateActor(actor);
+        if (page < 1)
+        {
+            throw Validation("page", "Page must be at least 1.");
+        }
+
+        pageSize = NormalizePageSize(pageSize);
         var parsedStatus = ParseStatus(status);
-        var plantations = await store.ListAsync(actor.OrganizationId, farmId, farmAreaId, parsedStatus, cropId, cancellationToken);
-        return new PlantationListResponse(plantations.Select(ToResponse).ToArray(), plantations.Count);
+        var (plantations, totalCount) = await store.ListPagedAsync(
+            actor.OrganizationId,
+            farmId,
+            farmAreaId,
+            parsedStatus,
+            cropId,
+            checked((page - 1) * pageSize),
+            pageSize,
+            cancellationToken);
+
+        return new PagedResponse<PlantationResponse>(plantations.Select(ToResponse).ToArray(), page, pageSize, totalCount);
     }
 
     public async Task<PlantationResponse> GetAsync(
@@ -370,6 +391,11 @@ public sealed class PlantationService(IPlantationStore store) : IPlantationServi
         if (actor.UserId == Guid.Empty || actor.OrganizationId == Guid.Empty) throw new UnauthorizedAccessException("The access token does not contain a valid user scope.");
     }
     private static ValidationException Validation(string fieldName, string message) => new("Validation failed", new Dictionary<string, string[]> { [fieldName] = [message] });
+
+    private static int NormalizePageSize(int pageSize) =>
+        pageSize == 0 ? DefaultPageSize : pageSize is < 1 or > MaximumPageSize
+            ? throw Validation("pageSize", $"Page size must be between 1 and {MaximumPageSize}.")
+            : pageSize;
 
     private sealed record PlantationValues(Guid FarmAreaId, Guid CropId, Guid? VarietyId, Guid? LifecycleTemplateId, string PlantationCode, string PlantationName, decimal AllocatedArea, Guid AreaUnitId, DateOnly PlantingDate, DateOnly? ExpectedEndDate);
     private sealed record PlantationReferences(Crop Crop, CropVariety? Variety, CropLifecycleTemplate? LifecycleTemplate, Unit AreaUnit);

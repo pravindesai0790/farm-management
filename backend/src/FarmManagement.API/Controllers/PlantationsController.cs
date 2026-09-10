@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using FarmManagement.Application.Common.Constants;
+using FarmManagement.Application.Common.Models;
 using FarmManagement.Application.DTOs.Plantations;
 using FarmManagement.Application.Interfaces.Plantations;
 using Microsoft.AspNetCore.Authorization;
@@ -14,14 +15,16 @@ public sealed class PlantationsController(IPlantationService plantationService) 
 {
     [HttpGet("api/plantations")]
     [Authorize(Policy = "Permission:Plantation.View")]
-    public async Task<ActionResult<PlantationListResponse>> List(
-        [FromQuery] Guid? farmId,
-        [FromQuery] Guid? farmAreaId,
-        [FromQuery] string? status,
-        [FromQuery] Guid? cropId,
-        CancellationToken cancellationToken)
+    public async Task<ActionResult<PagedResponse<PlantationResponse>>> List(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] Guid? farmId = null,
+        [FromQuery] Guid? farmAreaId = null,
+        [FromQuery] string? status = null,
+        [FromQuery] Guid? cropId = null,
+        CancellationToken cancellationToken = default)
     {
-        return Ok(await plantationService.ListAsync(GetActor(), farmId, farmAreaId, status, cropId, cancellationToken));
+        return Ok(await plantationService.ListAsync(GetActor(), page, pageSize, farmId, farmAreaId, status, cropId, cancellationToken));
     }
 
     [HttpGet("api/plantations/{id:guid}")]

@@ -22,6 +22,30 @@ public sealed class PlantationStore(ApplicationDbContext dbContext) : IPlantatio
             .ThenBy(plantation => plantation.Id)
             .ToListAsync(cancellationToken);
 
+    public async Task<(IReadOnlyList<CropPlantation> Items, int TotalCount)> ListPagedAsync(
+        Guid organizationId,
+        Guid? farmId,
+        Guid? farmAreaId,
+        PlantationStatus? status,
+        Guid? cropId,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        var query = BuildQuery(organizationId, farmId, farmAreaId, status, cropId);
+        var totalCount = await query.CountAsync(cancellationToken);
+        var items = await query
+            .AsNoTracking()
+            .OrderBy(plantation => plantation.PlantationName)
+            .ThenBy(plantation => plantation.PlantationCode)
+            .ThenBy(plantation => plantation.Id)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync(cancellationToken);
+
+        return (items, totalCount);
+    }
+
     public Task<CropPlantation?> FindAsync(Guid plantationId, Guid organizationId, CancellationToken cancellationToken = default) =>
         BuildQuery(organizationId, null, null, null)
             .SingleOrDefaultAsync(plantation => plantation.Id == plantationId, cancellationToken);

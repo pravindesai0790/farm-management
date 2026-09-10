@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using FarmManagement.Application.Common.Constants;
+using FarmManagement.Application.Common.Models;
 using FarmManagement.Application.DTOs.Users;
 using FarmManagement.Application.Interfaces.Users;
 using Microsoft.AspNetCore.Authorization;

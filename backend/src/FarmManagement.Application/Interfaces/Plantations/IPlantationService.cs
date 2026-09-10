@@ -1,3 +1,4 @@
+using FarmManagement.Application.Common.Models;
 using FarmManagement.Application.DTOs.Plantations;
 
 namespace FarmManagement.Application.Interfaces.Plantations;
@@ -6,8 +7,10 @@ public sealed record PlantationActor(Guid UserId, Guid OrganizationId);
 
 public interface IPlantationService
 {
-    Task<PlantationListResponse> ListAsync(
+    Task<PagedResponse<PlantationResponse>> ListAsync(
         PlantationActor actor,
+        int page,
+        int pageSize,
         Guid? farmId,
         Guid? farmAreaId,
         string? status,

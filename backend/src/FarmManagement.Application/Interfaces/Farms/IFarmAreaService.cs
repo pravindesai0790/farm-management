@@ -1,13 +1,26 @@
+using FarmManagement.Application.Common.Models;
 using FarmManagement.Application.DTOs.Farms;
 
 namespace FarmManagement.Application.Interfaces.Farms;
 
 public interface IFarmAreaService
 {
-    Task<IReadOnlyList<FarmAreaResponse>> ListAsync(
+    Task<PagedResponse<FarmAreaResponse>> ListPagedAsync(
+        FarmActor actor,
+        int page,
+        int pageSize,
+        Guid? farmId,
+        bool? isActive,
+        string? search = null,
+        CancellationToken cancellationToken = default);
+
+    Task<PagedResponse<FarmAreaResponse>> ListAsync(
         FarmActor actor,
         Guid farmId,
+        int page,
+        int pageSize,
         bool? isActive,
+        string? search = null,
         CancellationToken cancellationToken = default);
 
     Task<FarmAreaResponse> GetAsync(

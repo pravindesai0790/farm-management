@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using FarmManagement.Application.Common.Constants;
+using FarmManagement.Application.Common.Models;
 using FarmManagement.Application.DTOs.Crops;
 using FarmManagement.Application.Interfaces.Crops;
 using Microsoft.AspNetCore.Authorization;
@@ -15,7 +16,7 @@ public sealed class CropsController(ICropService cropService) : ControllerBase
 {
     [HttpGet("crops")]
     [Authorize(Policy = "Permission:Crop.View")]
-    public async Task<ActionResult<CropListResponse>> ListCrops(
+    public async Task<ActionResult<PagedResponse<CropResponse>>> ListCrops(
         [FromQuery] int page = 1, [FromQuery] int pageSize = 20, [FromQuery] string? search = null,
         [FromQuery] bool? isActive = null, CancellationToken cancellationToken = default) =>
         Ok(await cropService.ListCropsAsync(GetActor(), page, pageSize, search, isActive, cancellationToken));
@@ -56,7 +57,7 @@ public sealed class CropsController(ICropService cropService) : ControllerBase
 
     [HttpGet("crops/{cropId:guid}/varieties")]
     [Authorize(Policy = "Permission:CropVariety.View")]
-    public async Task<ActionResult<CropVarietyListResponse>> ListVarieties(
+    public async Task<ActionResult<PagedResponse<CropVarietyResponse>>> ListVarieties(
         Guid cropId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, [FromQuery] bool? isActive = null,
         CancellationToken cancellationToken = default) =>
         Ok(await cropService.ListVarietiesAsync(GetActor(), cropId, page, pageSize, isActive, cancellationToken));

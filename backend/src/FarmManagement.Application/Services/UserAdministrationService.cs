@@ -2,6 +2,7 @@ using System.Text.Json;
 using FarmManagement.Application.Common;
 using FarmManagement.Application.Common.Constants;
 using FarmManagement.Application.Common.Exceptions;
+using FarmManagement.Application.Common.Models;
 using FarmManagement.Application.DTOs.Users;
 using FarmManagement.Application.Interfaces.Authentication;
 using FarmManagement.Application.Interfaces.Users;

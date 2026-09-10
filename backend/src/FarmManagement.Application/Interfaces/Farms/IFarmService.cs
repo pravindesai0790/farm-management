@@ -1,3 +1,4 @@
+using FarmManagement.Application.Common.Models;
 using FarmManagement.Application.DTOs.Farms;
 
 namespace FarmManagement.Application.Interfaces.Farms;
@@ -6,7 +7,7 @@ public sealed record FarmActor(Guid UserId, Guid OrganizationId);
 
 public interface IFarmService
 {
-    Task<FarmListResponse> ListAsync(
+    Task<PagedResponse<FarmResponse>> ListAsync(
         FarmActor actor,
         int page,
         int pageSize,

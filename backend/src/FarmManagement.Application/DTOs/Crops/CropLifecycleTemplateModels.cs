@@ -38,12 +38,6 @@ public sealed record UpdateCropLifecycleTemplateRequest(
     string? Description,
     bool IsDefault = false);
 
-public sealed record CropLifecycleTemplateListResponse(
-    IReadOnlyList<CropLifecycleTemplateResponse> Items,
-    int Page,
-    int PageSize,
-    int TotalCount);
-
 public sealed record CreateCropLifecycleStageRequest(
     string? StageCode,
     string? StageName,

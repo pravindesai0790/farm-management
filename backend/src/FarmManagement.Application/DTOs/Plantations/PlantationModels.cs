@@ -67,6 +67,3 @@ public sealed record TerminatePlantationRequest(
     string? Notes,
     bool CancelActiveCycles = false);
 
-public sealed record PlantationListResponse(
-    IReadOnlyList<PlantationResponse> Items,
-    int TotalCount);

@@ -1,3 +1,4 @@
+using FarmManagement.Application.Common.Models;
 using FarmManagement.Application.DTOs.Crops;
 
 namespace FarmManagement.Application.Interfaces.Crops;
@@ -6,7 +7,7 @@ public sealed record CropLifecycleTemplateActor(Guid UserId, Guid OrganizationId
 
 public interface ICropLifecycleTemplateService
 {
-    Task<CropLifecycleTemplateListResponse> ListAsync(
+    Task<PagedResponse<CropLifecycleTemplateResponse>> ListAsync(
         CropLifecycleTemplateActor actor,
         int page,
         int pageSize,

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using FarmManagement.Application.Common.Exceptions;
+using FarmManagement.Application.Common.Models;
 using FarmManagement.Application.DTOs.Farms;
 using FarmManagement.Application.Interfaces.Farms;
 using FarmManagement.Domain.Entities;
@@ -12,7 +13,7 @@ public sealed class FarmService(IFarmStore store) : IFarmService
     private const int DefaultPageSize = 20;
     private const int MaximumPageSize = 100;
 
-    public async Task<FarmListResponse> ListAsync(
+    public async Task<PagedResponse<FarmResponse>> ListAsync(
         FarmActor actor,
         int page,
         int pageSize,
@@ -37,7 +38,7 @@ public sealed class FarmService(IFarmStore store) : IFarmService
             isActive,
             cancellationToken);
 
-        return new FarmListResponse(farms.Select(ToResponse).ToArray(), page, pageSize, totalCount);
+        return new PagedResponse<FarmResponse>(farms.Select(ToResponse).ToArray(), page, pageSize, totalCount);
     }
 
     public async Task<FarmResponse> GetAsync(

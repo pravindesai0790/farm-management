@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using FarmManagement.Application.Common.Constants;
+using FarmManagement.Application.Common.Models;
 using FarmManagement.Application.DTOs.Crops;
 using FarmManagement.Application.Interfaces.Crops;
 using Microsoft.AspNetCore.Authorization;
@@ -15,7 +16,7 @@ public sealed class CropLifecycleTemplatesController(ICropLifecycleTemplateServi
 {
     [HttpGet]
     [Authorize(Policy = "Permission:CropLifecycleTemplate.View")]
-    public async Task<ActionResult<CropLifecycleTemplateListResponse>> List(
+    public async Task<ActionResult<PagedResponse<CropLifecycleTemplateResponse>>> List(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         [FromQuery] Guid? cropId = null,

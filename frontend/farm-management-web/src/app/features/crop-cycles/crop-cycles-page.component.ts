@@ -12,11 +12,13 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
+import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { MatSelectModule } from "@angular/material/select";
 import { MatTableModule } from "@angular/material/table";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { RouterLink } from "@angular/router";
+import { finalize } from "rxjs";
 import { FarmManagementService } from "../../core/farm-management/farm-management.service";
 import {
   CropCycle,
@@ -35,6 +37,7 @@ import { getApiErrorMessage } from "../../core/models/api-error.model";
     MatCardModule,
     MatFormFieldModule,
     MatIconModule,
+    MatPaginatorModule,
     MatProgressSpinnerModule,
     MatSelectModule,
     MatTableModule,
@@ -61,6 +64,9 @@ export class CropCyclesPageComponent implements OnInit {
   ];
 
   readonly cycles = signal<readonly CropCycle[]>([]);
+  readonly totalCount = signal(0);
+  readonly pageIndex = signal(0);
+  readonly pageSize = signal(20);
   readonly farms = signal<readonly Farm[]>([]);
   readonly areas = signal<readonly FarmArea[]>([]);
   readonly plantations = signal<readonly Plantation[]>([]);
@@ -96,10 +102,10 @@ export class CropCyclesPageComponent implements OnInit {
   loadFilterPlantations(): void {
     this.service
       .listPlantations(
+        1,
+        100,
         this.farmId() || undefined,
         this.farmAreaId() || undefined,
-        undefined,
-        undefined,
       )
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
@@ -111,6 +117,7 @@ export class CropCyclesPageComponent implements OnInit {
     this.farmId.set(newFarmId);
     this.farmAreaId.set("");
     this.plantationId.set("");
+    this.pageIndex.set(0);
     if (newFarmId) {
       this.service
         .listAreas(newFarmId, true)
@@ -128,22 +135,26 @@ export class CropCyclesPageComponent implements OnInit {
   onAreaChange(newAreaId: string): void {
     this.farmAreaId.set(newAreaId);
     this.plantationId.set("");
+    this.pageIndex.set(0);
     this.loadFilterPlantations();
     this.load();
   }
 
   onPlantationChange(newPlantationId: string): void {
     this.plantationId.set(newPlantationId);
+    this.pageIndex.set(0);
     this.load();
   }
 
   onStatusChange(newStatus: string): void {
     this.status.set(newStatus);
+    this.pageIndex.set(0);
     this.load();
   }
 
   onSeasonYearChange(newYear: number | null): void {
     this.seasonYear.set(newYear);
+    this.pageIndex.set(0);
     this.load();
   }
 
@@ -154,7 +165,14 @@ export class CropCyclesPageComponent implements OnInit {
     this.status.set("");
     this.seasonYear.set(null);
     this.areas.set([]);
+    this.pageIndex.set(0);
     this.loadFilterPlantations();
+    this.load();
+  }
+
+  pageChanged(event: PageEvent): void {
+    this.pageIndex.set(event.pageIndex);
+    this.pageSize.set(event.pageSize);
     this.load();
   }
 
@@ -162,20 +180,24 @@ export class CropCyclesPageComponent implements OnInit {
     this.isLoading.set(true);
     this.service
       .listCycles(
+        this.pageIndex() + 1,
+        this.pageSize(),
         this.farmId() || undefined,
         this.farmAreaId() || undefined,
         this.plantationId() || undefined,
         this.status() || undefined,
         this.seasonYear() ?? undefined,
       )
-      .pipe(takeUntilDestroyed(this.destroyRef))
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.isLoading.set(false)),
+      )
       .subscribe({
         next: (r) => {
           this.cycles.set(r.items);
-          this.isLoading.set(false);
+          this.totalCount.set(r.totalCount);
         },
         error: (e) => {
-          this.isLoading.set(false);
           this.snack.open(
             getApiErrorMessage(e, "Crop cycles could not be loaded."),
             "Dismiss",

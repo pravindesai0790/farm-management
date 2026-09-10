@@ -1,5 +1,6 @@
 using System.Text.Json;
 using FarmManagement.Application.Common.Exceptions;
+using FarmManagement.Application.Common.Models;
 using FarmManagement.Application.DTOs.CropCycles;
 using FarmManagement.Application.Interfaces.CropCycles;
 using FarmManagement.Domain.Entities;
@@ -9,8 +10,13 @@ namespace FarmManagement.Application.Services;
 
 public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
 {
-    public async Task<CropCycleListResponse> ListAsync(
+    private const int DefaultPageSize = 20;
+    private const int MaximumPageSize = 100;
+
+    public async Task<PagedResponse<CropCycleResponse>> ListAsync(
         CropCycleActor actor,
+        int page,
+        int pageSize,
         Guid? farmId,
         Guid? farmAreaId,
         Guid? plantationId,
@@ -19,14 +25,27 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
         CancellationToken cancellationToken = default)
     {
         ValidateActor(actor);
+        if (page < 1) throw Validation("page", "Page must be at least 1.");
+        pageSize = NormalizePageSize(pageSize);
+
         if (farmId == Guid.Empty) throw Validation("farmId", "Farm must be valid.");
         if (farmAreaId == Guid.Empty) throw Validation("farmAreaId", "Farm area must be valid.");
         if (plantationId == Guid.Empty) throw Validation("plantationId", "Plantation must be valid.");
         if (seasonYear is <= 0) throw Validation("seasonYear", "Season year must be greater than zero.");
 
         var parsedStatus = ParseStatus(status);
-        var cycles = await store.ListAsync(actor.OrganizationId, farmId, farmAreaId, plantationId, parsedStatus, seasonYear, cancellationToken);
-        return new CropCycleListResponse(cycles.Select(ToResponse).ToArray(), cycles.Count);
+        var (cycles, totalCount) = await store.ListPagedAsync(
+            actor.OrganizationId,
+            farmId,
+            farmAreaId,
+            plantationId,
+            parsedStatus,
+            seasonYear,
+            checked((page - 1) * pageSize),
+            pageSize,
+            cancellationToken);
+
+        return new PagedResponse<CropCycleResponse>(cycles.Select(ToResponse).ToArray(), page, pageSize, totalCount);
     }
 
     public async Task<CropCycleResponse> GetAsync(
@@ -439,6 +458,11 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
 
     private static ValidationException Validation(string fieldName, string message) =>
         new("Validation failed", new Dictionary<string, string[]> { [fieldName] = [message] });
+
+    private static int NormalizePageSize(int pageSize) =>
+        pageSize == 0 ? DefaultPageSize : pageSize is < 1 or > MaximumPageSize
+            ? throw Validation("pageSize", $"Page size must be between 1 and {MaximumPageSize}.")
+            : pageSize;
 
     private sealed record CreateValues(
         Guid PlantationId,
