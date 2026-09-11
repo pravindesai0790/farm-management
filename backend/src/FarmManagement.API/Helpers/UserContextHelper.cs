@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using FarmManagement.Application.Common.Constants;
 using FarmManagement.Application.DTOs.Dashboard;
+using FarmManagement.Application.DTOs.Labor;
 using FarmManagement.Application.DTOs.LaborActivities;
 using FarmManagement.Application.Interfaces;
 using FarmManagement.Application.Interfaces.CropCycles;
@@ -99,6 +100,21 @@ public static class UserContextHelper
         if (typeof(TActor) == typeof(LaborActivityActor))
         {
             return (TActor)(object)new LaborActivityActor(userId, organizationId);
+        }
+
+        if (typeof(TActor) == typeof(WorkerActor))
+        {
+            return (TActor)(object)new WorkerActor(userId, organizationId);
+        }
+
+        if (typeof(TActor) == typeof(ContractorActor))
+        {
+            return (TActor)(object)new ContractorActor(userId, organizationId);
+        }
+
+        if (typeof(TActor) == typeof(LaborCategoryActor))
+        {
+            return (TActor)(object)new LaborCategoryActor(userId, organizationId);
         }
 
         if (typeof(TActor) == typeof(DashboardActor))

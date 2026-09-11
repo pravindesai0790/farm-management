@@ -14,3 +14,62 @@ GET {{FarmManagement.API_HostAddress}}/api/dashboard/summary
 Accept: application/json
 Authorization: Bearer {{token}}
 
+###
+# Labor Categories
+GET {{FarmManagement.API_HostAddress}}/api/labor/categories
+Accept: application/json
+Authorization: Bearer {{token}}
+
+###
+POST {{FarmManagement.API_HostAddress}}/api/labor/categories
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Pruning Specialist",
+  "description": "Experienced pruning labor"
+}
+
+###
+# Contractors
+GET {{FarmManagement.API_HostAddress}}/api/labor/contractors
+Accept: application/json
+Authorization: Bearer {{token}}
+
+###
+POST {{FarmManagement.API_HostAddress}}/api/labor/contractors
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Apex Labor Supply",
+  "contactPerson": "Ravi Kumar",
+  "phoneNumber": "+919876543210",
+  "email": "ravi@apexsupply.com",
+  "address": "Sector 4, Agri Hub",
+  "notes": "Primary contract labor provider"
+}
+
+###
+# Workers
+GET {{FarmManagement.API_HostAddress}}/api/labor/workers?page=1&pageSize=20
+Accept: application/json
+Authorization: Bearer {{token}}
+
+###
+POST {{FarmManagement.API_HostAddress}}/api/labor/workers
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "firstName": "Ramesh",
+  "lastName": "Patil",
+  "displayName": "Ramesh Patil",
+  "gender": "MALE",
+  "employmentType": "PERMANENT",
+  "mobileNumber": "+919876543211",
+  "joiningDate": "2026-06-01",
+  "notes": "Permanent farm hand"
+}
+
+

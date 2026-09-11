@@ -3,6 +3,7 @@ using System.Security.Claims;
 using FarmManagement.API.Helpers;
 using FarmManagement.Application.Common.Constants;
 using FarmManagement.Application.DTOs.Dashboard;
+using FarmManagement.Application.DTOs.Labor;
 using FarmManagement.Application.DTOs.LaborActivities;
 using FarmManagement.Application.Interfaces;
 using FarmManagement.Application.Interfaces.CropCycles;
@@ -223,6 +224,39 @@ public class UserContextHelperTests
         var principal = CreatePrincipal(TestUserId.ToString(), TestOrganizationId.ToString());
 
         var actor = UserContextHelper.GetUserContext<LaborActivityActor>(principal);
+
+        Assert.Equal(TestUserId, actor.UserId);
+        Assert.Equal(TestOrganizationId, actor.OrganizationId);
+    }
+
+    [Fact]
+    public void GetUserContext_ForWorkerActor_ReturnsExpectedValues()
+    {
+        var principal = CreatePrincipal(TestUserId.ToString(), TestOrganizationId.ToString());
+
+        var actor = UserContextHelper.GetUserContext<WorkerActor>(principal);
+
+        Assert.Equal(TestUserId, actor.UserId);
+        Assert.Equal(TestOrganizationId, actor.OrganizationId);
+    }
+
+    [Fact]
+    public void GetUserContext_ForContractorActor_ReturnsExpectedValues()
+    {
+        var principal = CreatePrincipal(TestUserId.ToString(), TestOrganizationId.ToString());
+
+        var actor = UserContextHelper.GetUserContext<ContractorActor>(principal);
+
+        Assert.Equal(TestUserId, actor.UserId);
+        Assert.Equal(TestOrganizationId, actor.OrganizationId);
+    }
+
+    [Fact]
+    public void GetUserContext_ForLaborCategoryActor_ReturnsExpectedValues()
+    {
+        var principal = CreatePrincipal(TestUserId.ToString(), TestOrganizationId.ToString());
+
+        var actor = UserContextHelper.GetUserContext<LaborCategoryActor>(principal);
 
         Assert.Equal(TestUserId, actor.UserId);
         Assert.Equal(TestOrganizationId, actor.OrganizationId);

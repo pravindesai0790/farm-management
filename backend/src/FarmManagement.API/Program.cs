@@ -12,6 +12,7 @@ using FarmManagement.Application.Interfaces.Roles;
 using FarmManagement.Application.Interfaces.Organizations;
 using FarmManagement.Application.Interfaces.Dashboard;
 using FarmManagement.Application.Interfaces.LaborActivities;
+using FarmManagement.Application.Interfaces.Labor;
 using FarmManagement.Application.Services;
 using FarmManagement.Infrastructure;
 using FarmManagement.Infrastructure.Authentication;
@@ -117,6 +118,9 @@ builder.Services.AddScoped<ICropLifecycleTemplateService, CropLifecycleTemplateS
 builder.Services.AddScoped<IPlantationService, PlantationService>();
 builder.Services.AddScoped<ICropCycleService, CropCycleService>();
 builder.Services.AddScoped<ILaborActivityService, LaborActivityService>();
+builder.Services.AddScoped<IWorkerService, WorkerService>();
+builder.Services.AddScoped<IContractorService, ContractorService>();
+builder.Services.AddScoped<ILaborCategoryService, LaborCategoryService>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
 builder.Services.AddScoped<IMasterDataService, MasterDataService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
