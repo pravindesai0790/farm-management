@@ -72,4 +72,31 @@ Authorization: Bearer {{token}}
   "notes": "Permanent farm hand"
 }
 
+###
+# Worker Farm Assignments
+@workerId = 00000000-0000-0000-0000-000000000000
+@farmId = 00000000-0000-0000-0000-000000000000
+
+GET {{FarmManagement.API_HostAddress}}/api/labor/workers/{{workerId}}/farms
+Accept: application/json
+Authorization: Bearer {{token}}
+
+###
+POST {{FarmManagement.API_HostAddress}}/api/labor/workers/{{workerId}}/farms
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "farmId": "{{farmId}}",
+  "assignedFrom": "2026-06-01",
+  "notes": "Main vineyard assignment"
+}
+
+###
+# Farm Workers
+GET {{FarmManagement.API_HostAddress}}/api/labor/farms/{{farmId}}/workers
+Accept: application/json
+Authorization: Bearer {{token}}
+
+
 

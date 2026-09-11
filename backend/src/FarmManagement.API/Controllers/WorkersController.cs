@@ -10,7 +10,9 @@ namespace FarmManagement.API.Controllers;
 [ApiController]
 [Route("api/labor/workers")]
 [Authorize]
-public sealed class WorkersController(IWorkerService workerService) : ControllerBase
+public sealed class WorkersController(
+    IWorkerService workerService,
+    IWorkerFarmAssignmentService farmAssignmentService) : ControllerBase
 {
     [HttpGet]
     [Authorize(Policy = "Permission:Worker.View")]
@@ -78,6 +80,84 @@ public sealed class WorkersController(IWorkerService workerService) : Controller
         await workerService.DeactivateAsync(GetUserContext(), id, GetIpAddress(), cancellationToken);
         return NoContent();
     }
+
+    [HttpGet("{workerId:guid}/farms")]
+    [Authorize(Policy = "Permission:Worker.View")]
+    public async Task<ActionResult<IReadOnlyList<WorkerFarmAssignmentResponse>>> ListFarmAssignments(
+        Guid workerId,
+        [FromQuery] bool? isActive = null,
+        CancellationToken cancellationToken = default) =>
+        Ok(await farmAssignmentService.ListByWorkerAsync(GetUserContext(), workerId, isActive, cancellationToken));
+
+    [HttpGet("{workerId:guid}/farms/{assignmentId:guid}")]
+    [Authorize(Policy = "Permission:Worker.View")]
+    public async Task<ActionResult<WorkerFarmAssignmentResponse>> GetFarmAssignment(
+        Guid workerId,
+        Guid assignmentId,
+        CancellationToken cancellationToken = default) =>
+        Ok(await farmAssignmentService.GetAsync(GetUserContext(), workerId, assignmentId, cancellationToken));
+
+    [HttpPost("{workerId:guid}/farms")]
+    [Authorize(Policy = "Permission:Worker.Update")]
+    public async Task<ActionResult<WorkerFarmAssignmentResponse>> CreateFarmAssignment(
+        Guid workerId,
+        [FromBody] CreateWorkerFarmAssignmentRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await farmAssignmentService.CreateAsync(GetUserContext(), workerId, request, GetIpAddress(), cancellationToken);
+        return CreatedAtAction(nameof(GetFarmAssignment), new { workerId, assignmentId = result.Id }, result);
+    }
+
+    [HttpPut("{workerId:guid}/farms/{assignmentId:guid}")]
+    [Authorize(Policy = "Permission:Worker.Update")]
+    public async Task<ActionResult<WorkerFarmAssignmentResponse>> UpdateFarmAssignment(
+        Guid workerId,
+        Guid assignmentId,
+        [FromBody] UpdateWorkerFarmAssignmentRequest request,
+        CancellationToken cancellationToken = default) =>
+        Ok(await farmAssignmentService.UpdateAsync(GetUserContext(), workerId, assignmentId, request, GetIpAddress(), cancellationToken));
+
+    [HttpPost("{workerId:guid}/farms/{assignmentId:guid}/deactivate")]
+    [HttpPatch("{workerId:guid}/farms/{assignmentId:guid}/deactivate")]
+    [Authorize(Policy = "Permission:Worker.Update")]
+    public async Task<IActionResult> DeactivateFarmAssignment(
+        Guid workerId,
+        Guid assignmentId,
+        CancellationToken cancellationToken = default)
+    {
+        await farmAssignmentService.DeactivateAsync(GetUserContext(), workerId, assignmentId, GetIpAddress(), cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("{workerId:guid}/farms/{assignmentId:guid}/activate")]
+    [HttpPatch("{workerId:guid}/farms/{assignmentId:guid}/activate")]
+    [Authorize(Policy = "Permission:Worker.Update")]
+    public async Task<IActionResult> ActivateFarmAssignment(
+        Guid workerId,
+        Guid assignmentId,
+        CancellationToken cancellationToken = default)
+    {
+        await farmAssignmentService.ActivateAsync(GetUserContext(), workerId, assignmentId, GetIpAddress(), cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("{workerId:guid}/farms/{assignmentId:guid}/end")]
+    [Authorize(Policy = "Permission:Worker.Update")]
+    public async Task<ActionResult<WorkerFarmAssignmentResponse>> EndFarmAssignment(
+        Guid workerId,
+        Guid assignmentId,
+        [FromBody] EndWorkerFarmAssignmentRequest request,
+        CancellationToken cancellationToken = default) =>
+        Ok(await farmAssignmentService.EndAssignmentAsync(GetUserContext(), workerId, assignmentId, request, GetIpAddress(), cancellationToken));
+
+    [HttpGet("/api/labor/farms/{farmId:guid}/workers")]
+    [HttpGet("/api/farms/{farmId:guid}/workers")]
+    [Authorize(Policy = "Permission:Worker.View")]
+    public async Task<ActionResult<IReadOnlyList<WorkerFarmAssignmentResponse>>> ListFarmWorkers(
+        Guid farmId,
+        [FromQuery] bool? isActive = null,
+        CancellationToken cancellationToken = default) =>
+        Ok(await farmAssignmentService.ListByFarmAsync(GetUserContext(), farmId, isActive, cancellationToken));
 
     private WorkerActor GetUserContext() => UserContextHelper.GetUserContext<WorkerActor>(User);
 

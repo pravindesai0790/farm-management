@@ -6,6 +6,7 @@ public sealed class Farm
     {
         Code = string.Empty;
         Name = string.Empty;
+        WorkerAssignments = [];
     }
 
     public Farm(
@@ -62,6 +63,7 @@ public sealed class Farm
         IsActive = true;
         CreatedAt = DateTimeOffset.UtcNow;
         CreatedBy = createdBy;
+        WorkerAssignments = [];
     }
 
     public Guid Id { get; private set; }
@@ -113,6 +115,8 @@ public sealed class Farm
     public FarmOwnershipType? OwnershipType { get; private set; }
 
     public Unit? AreaUnit { get; private set; }
+
+    public ICollection<WorkerFarmAssignment> WorkerAssignments { get; private set; }
 
     public void Update(
         string code,

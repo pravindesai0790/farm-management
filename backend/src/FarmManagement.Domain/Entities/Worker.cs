@@ -8,6 +8,7 @@ public sealed class Worker
     {
         FirstName = string.Empty;
         DisplayName = string.Empty;
+        FarmAssignments = [];
     }
 
     public Worker(
@@ -72,6 +73,7 @@ public sealed class Worker
         IsActive = true;
         CreatedAt = DateTimeOffset.UtcNow;
         CreatedBy = createdBy;
+        FarmAssignments = [];
     }
 
     public Guid Id { get; private set; }
@@ -97,6 +99,7 @@ public sealed class Worker
     public Organization? Organization { get; private set; }
     public Contractor? Contractor { get; private set; }
     public LaborCategory? LaborCategory { get; private set; }
+    public ICollection<WorkerFarmAssignment> FarmAssignments { get; private set; }
 
     public void Update(
         string firstName,
