@@ -49,6 +49,12 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
 
     public DbSet<LaborActivity> LaborActivities => Set<LaborActivity>();
 
+    public DbSet<LaborCategory> LaborCategories => Set<LaborCategory>();
+
+    public DbSet<Contractor> Contractors => Set<Contractor>();
+
+    public DbSet<Worker> Workers => Set<Worker>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);

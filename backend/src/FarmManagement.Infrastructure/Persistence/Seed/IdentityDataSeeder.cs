@@ -255,6 +255,16 @@ public sealed class IdentityDataSeeder(
         new("OTHER", "Other", 13, "Other labor activities.")
     ];
 
+    private static readonly IReadOnlyList<SeedLaborCategory> SeedLaborCategories =
+    [
+        new("Skilled", "Skilled labor"),
+        new("Semi-Skilled", "Semi-skilled labor"),
+        new("Unskilled", "General and unskilled labor"),
+        new("Supervisor", "Field or crew supervisor"),
+        new("Operator", "Equipment or machinery operator"),
+        new("Specialized", "Specialized farming or technical labor")
+    ];
+
     public async Task SeedAsync(CancellationToken cancellationToken = default)
     {
         var initialAdmin = ReadInitialAdminConfiguration();
@@ -272,6 +282,7 @@ public sealed class IdentityDataSeeder(
         await SeedCropVarietiesAsync(cancellationToken);
         await SeedPlantationEndReasonsAsync(cancellationToken);
         await SeedLaborActivityTypesAsync(cancellationToken);
+        await SeedLaborCategoriesAsync(cancellationToken);
         await SeedInitialSuperAdminAsync(organization, roles["SuperAdmin"], initialAdmin, cancellationToken);
 
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -408,6 +419,27 @@ public sealed class IdentityDataSeeder(
                     isSystem: true,
                     description: seedType.Description,
                     displayOrder: seedType.DisplayOrder));
+            }
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task SeedLaborCategoriesAsync(CancellationToken cancellationToken)
+    {
+        foreach (var seedCategory in SeedLaborCategories)
+        {
+            var exists = await dbContext.LaborCategories.AnyAsync(
+                category => category.IsSystem && category.OrganizationId == null && category.Name == seedCategory.Name,
+                cancellationToken);
+
+            if (!exists)
+            {
+                dbContext.LaborCategories.Add(new LaborCategory(
+                    organizationId: null,
+                    name: seedCategory.Name,
+                    isSystem: true,
+                    description: seedCategory.Description));
             }
         }
 
@@ -645,6 +677,8 @@ public sealed class IdentityDataSeeder(
         string Name,
         int DisplayOrder = 0,
         string? Description = null);
+
+    private sealed record SeedLaborCategory(string Name, string? Description = null);
 
     private sealed record InitialAdminConfiguration(string Email, string Password);
 }
