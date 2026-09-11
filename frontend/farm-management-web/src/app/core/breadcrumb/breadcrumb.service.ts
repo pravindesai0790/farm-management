@@ -224,6 +224,27 @@ export class BreadcrumbService {
         }
         break;
 
+      case "labor":
+        items.push({ label: "Labor", route: "/labor" });
+        if (segments[1] === "workers") {
+          items.push({ label: "Workers", route: "/labor/workers" });
+          if (segments[2] === "new") {
+            items.push({ label: "Add worker" });
+          } else if (segments[2]) {
+            const workerId = segments[2];
+            const workerName = this.labelCache.get(workerId) ?? "Worker details";
+            if (segments[3] === "edit") {
+              items.push({ label: workerName, route: ["/labor/workers", workerId] });
+              items.push({ label: "Edit" });
+            } else {
+              items.push({ label: workerName });
+            }
+          }
+        } else if (segments[1] === "contractors") {
+          items.push({ label: "Contractors", route: "/labor/contractors" });
+        }
+        break;
+
       default: {
         const readable = section.charAt(0).toUpperCase() + section.slice(1).replace(/-/g, " ");
         items.push({ label: readable });

@@ -147,6 +147,31 @@ export class MainLayoutComponent {
       ],
     },
     {
+      title: "Labor",
+      items: [
+        {
+          label: "Labor",
+          icon: "engineering",
+          route: "/labor",
+          exactMatch: true,
+        },
+        {
+          label: "Workers",
+          icon: "badge",
+          route: "/labor/workers",
+          permissions: ["Worker.View"],
+          isSubItem: true,
+        },
+        {
+          label: "Contractors",
+          icon: "business_center",
+          route: "/labor/contractors",
+          permissions: ["Contractor.View"],
+          isSubItem: true,
+        },
+      ],
+    },
+    {
       title: "Agronomy",
       items: [
         {

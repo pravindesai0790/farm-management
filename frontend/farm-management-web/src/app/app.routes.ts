@@ -373,6 +373,39 @@ export const routes: Routes = [
         pathMatch: "full",
       },
       {
+        path: "labor",
+        children: [
+          {
+            path: "",
+            title: "Labor",
+            loadComponent: () =>
+              import("./features/labor/labor-page.component").then(
+                (module) => module.LaborPageComponent,
+              ),
+          },
+          {
+            path: "workers",
+            title: "Workers",
+            canActivate: [permissionGuard],
+            data: { permission: "Worker.View" },
+            loadComponent: () =>
+              import(
+                "./features/labor/workers/workers-page.component"
+              ).then((module) => module.WorkersPageComponent),
+          },
+          {
+            path: "contractors",
+            title: "Contractors",
+            canActivate: [permissionGuard],
+            data: { permission: "Contractor.View" },
+            loadComponent: () =>
+              import(
+                "./features/labor/contractors/contractors-page.component"
+              ).then((module) => module.ContractorsPageComponent),
+          },
+        ],
+      },
+      {
         path: "settings",
         title: "Settings",
         loadComponent: () =>
