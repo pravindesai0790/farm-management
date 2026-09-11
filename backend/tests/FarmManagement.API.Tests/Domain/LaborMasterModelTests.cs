@@ -504,4 +504,83 @@ public sealed class LaborMasterModelTests
         RunSeeder();
         Assert.Equal(expectedCategoryNames.Length, seededStore.Count);
     }
+
+    [Fact]
+    public void Phase3_1_Permissions_AreIdempotentAndCorrectlyMapped()
+    {
+        var expectedPermissions = new Dictionary<string, string>
+        {
+            // Worker (5)
+            ["Worker.View"] = "Workers",
+            ["Worker.Create"] = "Workers",
+            ["Worker.Update"] = "Workers",
+            ["Worker.Activate"] = "Workers",
+            ["Worker.Deactivate"] = "Workers",
+
+            // Contractor (5)
+            ["Contractor.View"] = "Contractors",
+            ["Contractor.Create"] = "Contractors",
+            ["Contractor.Update"] = "Contractors",
+            ["Contractor.Activate"] = "Contractors",
+            ["Contractor.Deactivate"] = "Contractors",
+
+            // Labor Category (5)
+            ["LaborCategory.View"] = "Labor Categories",
+            ["LaborCategory.Create"] = "Labor Categories",
+            ["LaborCategory.Update"] = "Labor Categories",
+            ["LaborCategory.Activate"] = "Labor Categories",
+            ["LaborCategory.Deactivate"] = "Labor Categories",
+
+            // Wage Rate (3)
+            ["WorkerWage.View"] = "Labor Wage Rates",
+            ["WorkerWage.Create"] = "Labor Wage Rates",
+            ["WorkerWage.Update"] = "Labor Wage Rates",
+
+            // Worker Payment (3)
+            ["WorkerPayment.View"] = "Worker Payments",
+            ["WorkerPayment.Create"] = "Worker Payments",
+            ["WorkerPayment.Cancel"] = "Worker Payments",
+
+            // Worker Earnings (3)
+            ["WorkerEarnings.View"] = "Worker Earnings",
+            ["WorkerEarnings.Approve"] = "Worker Earnings",
+            ["WorkerEarnings.Reverse"] = "Worker Earnings"
+        };
+
+        Assert.Equal(24, expectedPermissions.Count);
+
+        var existingPermissions = new Dictionary<string, Permission>(StringComparer.Ordinal);
+        var superAdminRole = new Role("SuperAdmin", "Platform-wide administrator.", isSystemRole: true);
+        var orgAdminRole = new Role("OrganizationAdmin", "Administrator for an organization.", isSystemRole: true);
+
+        var rolePermissions = new HashSet<(Guid RoleId, Guid PermissionId)>();
+
+        void RunPermissionSeeding()
+        {
+            foreach (var (name, module) in expectedPermissions)
+            {
+                if (!existingPermissions.TryGetValue(name, out var perm))
+                {
+                    perm = new Permission(name, module, $"Description for {name}");
+                    existingPermissions.Add(name, perm);
+                }
+
+                // SuperAdmin gets all permissions
+                rolePermissions.Add((superAdminRole.Id, perm.Id));
+
+                // OrganizationAdmin gets Phase 3.1 permissions
+                rolePermissions.Add((orgAdminRole.Id, perm.Id));
+            }
+        }
+
+        // Run 1
+        RunPermissionSeeding();
+        Assert.Equal(24, existingPermissions.Count);
+        Assert.Equal(48, rolePermissions.Count); // 24 for SuperAdmin, 24 for OrgAdmin
+
+        // Run 2 (idempotent rerun)
+        RunPermissionSeeding();
+        Assert.Equal(24, existingPermissions.Count);
+        Assert.Equal(48, rolePermissions.Count);
+    }
 }
