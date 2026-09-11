@@ -1,6 +1,4 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using FarmManagement.Application.Common.Constants;
+using FarmManagement.API.Helpers;
 using FarmManagement.Application.DTOs.Organizations;
 using FarmManagement.Application.Interfaces.Organizations;
 using Microsoft.AspNetCore.Authorization;
@@ -18,7 +16,7 @@ public sealed class OrganizationController(IOrganizationService organizationServ
     [ProducesResponseType(typeof(OrganizationListResponse), StatusCodes.Status200OK)]
     public async Task<ActionResult<OrganizationListResponse>> List(CancellationToken cancellationToken)
     {
-        return Ok(await organizationService.ListAsync(GetActor(), cancellationToken));
+        return Ok(await organizationService.ListAsync(GetUserContext(), cancellationToken));
     }
 
     [HttpPost("organizations")]
@@ -29,7 +27,7 @@ public sealed class OrganizationController(IOrganizationService organizationServ
         CancellationToken cancellationToken)
     {
         var result = await organizationService.CreateAsync(
-            GetActor(),
+            GetUserContext(),
             request,
             GetIpAddress(),
             cancellationToken);
@@ -41,7 +39,7 @@ public sealed class OrganizationController(IOrganizationService organizationServ
     [ProducesResponseType(typeof(OrganizationResponse), StatusCodes.Status200OK)]
     public async Task<ActionResult<OrganizationResponse>> Get(CancellationToken cancellationToken)
     {
-        return Ok(await organizationService.GetAsync(GetActor(), cancellationToken));
+        return Ok(await organizationService.GetAsync(GetUserContext(), cancellationToken));
     }
 
     [HttpPut("organization")]
@@ -52,7 +50,7 @@ public sealed class OrganizationController(IOrganizationService organizationServ
         CancellationToken cancellationToken)
     {
         return Ok(await organizationService.UpdateAsync(
-            GetActor(),
+            GetUserContext(),
             request,
             GetIpAddress(),
             cancellationToken));
@@ -62,7 +60,7 @@ public sealed class OrganizationController(IOrganizationService organizationServ
     [Authorize(Policy = "Permission:Organization.Activate")]
     public async Task<IActionResult> Activate(CancellationToken cancellationToken)
     {
-        await organizationService.ActivateAsync(GetActor(), GetIpAddress(), cancellationToken);
+        await organizationService.ActivateAsync(GetUserContext(), GetIpAddress(), cancellationToken);
         return NoContent();
     }
 
@@ -70,30 +68,11 @@ public sealed class OrganizationController(IOrganizationService organizationServ
     [Authorize(Policy = "Permission:Organization.Deactivate")]
     public async Task<IActionResult> Deactivate(CancellationToken cancellationToken)
     {
-        await organizationService.DeactivateAsync(GetActor(), GetIpAddress(), cancellationToken);
+        await organizationService.DeactivateAsync(GetUserContext(), GetIpAddress(), cancellationToken);
         return NoContent();
     }
 
-    private OrganizationActor GetActor()
-    {
-        var userIdValue = User.FindFirstValue(JwtRegisteredClaimNames.Sub)
-            ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
-        var organizationIdValue = User.FindFirstValue(AuthorizationConstants.OrganizationIdClaimType);
-        if (!Guid.TryParse(userIdValue, out var userId) ||
-            !Guid.TryParse(organizationIdValue, out var organizationId))
-        {
-            throw new UnauthorizedAccessException("The access token is invalid.");
-        }
-
-        var canManageAllOrganizations = User.Claims.Any(claim =>
-            claim.Type == AuthorizationConstants.OrganizationScopeClaimType &&
-            string.Equals(
-                claim.Value,
-                AuthorizationConstants.AllOrganizationsScope,
-                StringComparison.Ordinal));
-
-        return new OrganizationActor(userId, organizationId, canManageAllOrganizations);
-    }
+    private OrganizationActor GetUserContext() => UserContextHelper.GetUserContext<OrganizationActor>(User);
 
     private string? GetIpAddress() => HttpContext.Connection.RemoteIpAddress?.ToString();
 }

@@ -1,6 +1,4 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using FarmManagement.Application.Common.Constants;
+using FarmManagement.API.Helpers;
 using FarmManagement.Application.Common.Models;
 using FarmManagement.Application.DTOs.Plantations;
 using FarmManagement.Application.Interfaces.Plantations;
@@ -27,14 +25,14 @@ public sealed class PlantationsController(IPlantationService plantationService) 
         CancellationToken cancellationToken = default)
     {
         return Ok(await plantationService.ListAsync(
-            GetActor(), page, pageSize, farmId, farmAreaId, status, cropId, availableForSeasonYear, currentPlantationId, cancellationToken));
+            GetUserContext(), page, pageSize, farmId, farmAreaId, status, cropId, availableForSeasonYear, currentPlantationId, cancellationToken));
     }
 
     [HttpGet("api/plantations/{id:guid}")]
     [Authorize(Policy = "Permission:Plantation.View")]
     public async Task<ActionResult<PlantationResponse>> Get(Guid id, CancellationToken cancellationToken)
     {
-        return Ok(await plantationService.GetAsync(GetActor(), id, cancellationToken));
+        return Ok(await plantationService.GetAsync(GetUserContext(), id, cancellationToken));
     }
 
     [HttpPost("api/plantations")]
@@ -43,7 +41,7 @@ public sealed class PlantationsController(IPlantationService plantationService) 
         [FromBody] CreatePlantationRequest request,
         CancellationToken cancellationToken)
     {
-        var result = await plantationService.CreateAsync(GetActor(), request, GetIpAddress(), cancellationToken);
+        var result = await plantationService.CreateAsync(GetUserContext(), request, GetIpAddress(), cancellationToken);
         return CreatedAtAction(nameof(Get), new { id = result.Id }, result);
     }
 
@@ -54,14 +52,14 @@ public sealed class PlantationsController(IPlantationService plantationService) 
         [FromBody] UpdatePlantationRequest request,
         CancellationToken cancellationToken)
     {
-        return Ok(await plantationService.UpdateAsync(GetActor(), id, request, GetIpAddress(), cancellationToken));
+        return Ok(await plantationService.UpdateAsync(GetUserContext(), id, request, GetIpAddress(), cancellationToken));
     }
 
     [HttpPost("api/plantations/{id:guid}/activate")]
     [Authorize(Policy = "Permission:Plantation.Activate")]
     public async Task<IActionResult> Activate(Guid id, CancellationToken cancellationToken)
     {
-        await plantationService.ActivateAsync(GetActor(), id, GetIpAddress(), cancellationToken);
+        await plantationService.ActivateAsync(GetUserContext(), id, GetIpAddress(), cancellationToken);
         return NoContent();
     }
 
@@ -72,7 +70,7 @@ public sealed class PlantationsController(IPlantationService plantationService) 
         [FromBody] TerminatePlantationRequest request,
         CancellationToken cancellationToken)
     {
-        await plantationService.TerminateAsync(GetActor(), id, request, GetIpAddress(), cancellationToken);
+        await plantationService.TerminateAsync(GetUserContext(), id, request, GetIpAddress(), cancellationToken);
         return NoContent();
     }
 
@@ -80,22 +78,11 @@ public sealed class PlantationsController(IPlantationService plantationService) 
     [Authorize(Policy = "Permission:Plantation.Update")]
     public async Task<IActionResult> Archive(Guid id, CancellationToken cancellationToken)
     {
-        await plantationService.ArchiveAsync(GetActor(), id, GetIpAddress(), cancellationToken);
+        await plantationService.ArchiveAsync(GetUserContext(), id, GetIpAddress(), cancellationToken);
         return NoContent();
     }
 
-    private PlantationActor GetActor()
-    {
-        var userIdValue = User.FindFirstValue(JwtRegisteredClaimNames.Sub)
-            ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
-        var organizationIdValue = User.FindFirstValue(AuthorizationConstants.OrganizationIdClaimType);
-        if (!Guid.TryParse(userIdValue, out var userId) || !Guid.TryParse(organizationIdValue, out var organizationId))
-        {
-            throw new UnauthorizedAccessException("The access token is invalid.");
-        }
-
-        return new PlantationActor(userId, organizationId);
-    }
+    private PlantationActor GetUserContext() => UserContextHelper.GetUserContext<PlantationActor>(User);
 
     private string? GetIpAddress() => HttpContext.Connection.RemoteIpAddress?.ToString();
 }

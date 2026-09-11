@@ -1,6 +1,4 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using FarmManagement.Application.Common.Constants;
+using FarmManagement.API.Helpers;
 using FarmManagement.Application.Common.Models;
 using FarmManagement.Application.DTOs.Users;
 using FarmManagement.Application.Interfaces.Users;
@@ -24,7 +22,7 @@ public sealed class UsersController(IUserAdministrationService userAdministratio
         CancellationToken cancellationToken = default)
     {
         var result = await userAdministrationService.ListAsync(
-            GetActor(),
+            GetUserContext(),
             page,
             pageSize,
             search,
@@ -39,7 +37,7 @@ public sealed class UsersController(IUserAdministrationService userAdministratio
         Guid id,
         CancellationToken cancellationToken)
     {
-        var result = await userAdministrationService.GetAsync(GetActor(), id, cancellationToken);
+        var result = await userAdministrationService.GetAsync(GetUserContext(), id, cancellationToken);
         return Ok(result);
     }
 
@@ -50,7 +48,7 @@ public sealed class UsersController(IUserAdministrationService userAdministratio
         CancellationToken cancellationToken)
     {
         var result = await userAdministrationService.CreateAsync(
-            GetActor(),
+            GetUserContext(),
             request,
             GetIpAddress(),
             cancellationToken);
@@ -65,7 +63,7 @@ public sealed class UsersController(IUserAdministrationService userAdministratio
         CancellationToken cancellationToken)
     {
         var result = await userAdministrationService.UpdateAsync(
-            GetActor(),
+            GetUserContext(),
             id,
             request,
             GetIpAddress(),
@@ -78,7 +76,7 @@ public sealed class UsersController(IUserAdministrationService userAdministratio
     public async Task<IActionResult> Activate(Guid id, CancellationToken cancellationToken)
     {
         await userAdministrationService.ActivateAsync(
-            GetActor(),
+            GetUserContext(),
             id,
             GetIpAddress(),
             cancellationToken);
@@ -90,7 +88,7 @@ public sealed class UsersController(IUserAdministrationService userAdministratio
     public async Task<IActionResult> Deactivate(Guid id, CancellationToken cancellationToken)
     {
         await userAdministrationService.DeactivateAsync(
-            GetActor(),
+            GetUserContext(),
             id,
             GetIpAddress(),
             cancellationToken);
@@ -102,7 +100,7 @@ public sealed class UsersController(IUserAdministrationService userAdministratio
     public async Task<IActionResult> Unlock(Guid id, CancellationToken cancellationToken)
     {
         await userAdministrationService.UnlockAsync(
-            GetActor(),
+            GetUserContext(),
             id,
             GetIpAddress(),
             cancellationToken);
@@ -117,7 +115,7 @@ public sealed class UsersController(IUserAdministrationService userAdministratio
         CancellationToken cancellationToken)
     {
         var result = await userAdministrationService.AssignRolesAsync(
-            GetActor(),
+            GetUserContext(),
             id,
             request,
             GetIpAddress(),
@@ -125,25 +123,7 @@ public sealed class UsersController(IUserAdministrationService userAdministratio
         return Ok(result);
     }
 
-    private UserAdministrationActor GetActor()
-    {
-        var userIdValue = User.FindFirstValue(JwtRegisteredClaimNames.Sub)
-            ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
-        var organizationIdValue = User.FindFirstValue(AuthorizationConstants.OrganizationIdClaimType);
-        if (!Guid.TryParse(userIdValue, out var userId) ||
-            !Guid.TryParse(organizationIdValue, out var organizationId))
-        {
-            throw new UnauthorizedAccessException("The access token is invalid.");
-        }
-
-        var canManageAllOrganizations = User.Claims.Any(claim =>
-            claim.Type == AuthorizationConstants.OrganizationScopeClaimType &&
-            string.Equals(
-                claim.Value,
-                AuthorizationConstants.AllOrganizationsScope,
-                StringComparison.Ordinal));
-        return new UserAdministrationActor(userId, organizationId, canManageAllOrganizations);
-    }
+    private UserAdministrationActor GetUserContext() => UserContextHelper.GetUserContext<UserAdministrationActor>(User);
 
     private string? GetIpAddress() => HttpContext.Connection.RemoteIpAddress?.ToString();
 }

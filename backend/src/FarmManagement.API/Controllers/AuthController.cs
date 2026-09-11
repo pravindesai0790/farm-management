@@ -1,6 +1,5 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using FarmManagement.API.Configuration;
+using FarmManagement.API.Helpers;
 using FarmManagement.Application.DTOs.Authentication;
 using FarmManagement.Application.Interfaces.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -113,15 +112,7 @@ public sealed class AuthController(
 
     private string? GetIpAddress() => HttpContext.Connection.RemoteIpAddress?.ToString();
 
-    private Guid GetAuthenticatedUserId()
-    {
-        var value = User.FindFirstValue(JwtRegisteredClaimNames.Sub)
-            ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        return Guid.TryParse(value, out var userId)
-            ? userId
-            : throw new UnauthorizedAccessException("The access token is invalid.");
-    }
+    private Guid GetAuthenticatedUserId() => UserContextHelper.GetAuthenticatedUserId(User);
 
     private static SameSiteMode ParseSameSite(string? value) =>
         Enum.TryParse<SameSiteMode>(value, ignoreCase: true, out var sameSite)

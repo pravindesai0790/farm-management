@@ -1,6 +1,4 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using FarmManagement.Application.Common.Constants;
+using FarmManagement.API.Helpers;
 using FarmManagement.Application.Common.Models;
 using FarmManagement.Application.DTOs.Farms;
 using FarmManagement.Application.Interfaces.Farms;
@@ -23,14 +21,14 @@ public sealed class FarmsController(IFarmService farmService) : ControllerBase
         [FromQuery] bool? isActive = null,
         CancellationToken cancellationToken = default)
     {
-        return Ok(await farmService.ListAsync(GetActor(), page, pageSize, search, isActive, cancellationToken));
+        return Ok(await farmService.ListAsync(GetUserContext(), page, pageSize, search, isActive, cancellationToken));
     }
 
     [HttpGet("{id:guid}")]
     [Authorize(Policy = "Permission:Farm.View")]
     public async Task<ActionResult<FarmResponse>> Get(Guid id, CancellationToken cancellationToken)
     {
-        return Ok(await farmService.GetAsync(GetActor(), id, cancellationToken));
+        return Ok(await farmService.GetAsync(GetUserContext(), id, cancellationToken));
     }
 
     [HttpPost]
@@ -39,7 +37,7 @@ public sealed class FarmsController(IFarmService farmService) : ControllerBase
         [FromBody] CreateFarmRequest request,
         CancellationToken cancellationToken)
     {
-        var result = await farmService.CreateAsync(GetActor(), request, GetIpAddress(), cancellationToken);
+        var result = await farmService.CreateAsync(GetUserContext(), request, GetIpAddress(), cancellationToken);
         return CreatedAtAction(nameof(Get), new { id = result.Id }, result);
     }
 
@@ -50,14 +48,14 @@ public sealed class FarmsController(IFarmService farmService) : ControllerBase
         [FromBody] UpdateFarmRequest request,
         CancellationToken cancellationToken)
     {
-        return Ok(await farmService.UpdateAsync(GetActor(), id, request, GetIpAddress(), cancellationToken));
+        return Ok(await farmService.UpdateAsync(GetUserContext(), id, request, GetIpAddress(), cancellationToken));
     }
 
     [HttpPatch("{id:guid}/activate")]
     [Authorize(Policy = "Permission:Farm.Activate")]
     public async Task<IActionResult> Activate(Guid id, CancellationToken cancellationToken)
     {
-        await farmService.ActivateAsync(GetActor(), id, GetIpAddress(), cancellationToken);
+        await farmService.ActivateAsync(GetUserContext(), id, GetIpAddress(), cancellationToken);
         return NoContent();
     }
 
@@ -65,23 +63,11 @@ public sealed class FarmsController(IFarmService farmService) : ControllerBase
     [Authorize(Policy = "Permission:Farm.Deactivate")]
     public async Task<IActionResult> Deactivate(Guid id, CancellationToken cancellationToken)
     {
-        await farmService.DeactivateAsync(GetActor(), id, GetIpAddress(), cancellationToken);
+        await farmService.DeactivateAsync(GetUserContext(), id, GetIpAddress(), cancellationToken);
         return NoContent();
     }
 
-    private FarmActor GetActor()
-    {
-        var userIdValue = User.FindFirstValue(JwtRegisteredClaimNames.Sub)
-            ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
-        var organizationIdValue = User.FindFirstValue(AuthorizationConstants.OrganizationIdClaimType);
-        if (!Guid.TryParse(userIdValue, out var userId) ||
-            !Guid.TryParse(organizationIdValue, out var organizationId))
-        {
-            throw new UnauthorizedAccessException("The access token is invalid.");
-        }
-
-        return new FarmActor(userId, organizationId);
-    }
+    private FarmActor GetUserContext() => UserContextHelper.GetUserContext<FarmActor>(User);
 
     private string? GetIpAddress() => HttpContext.Connection.RemoteIpAddress?.ToString();
 }

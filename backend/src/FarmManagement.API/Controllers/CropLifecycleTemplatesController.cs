@@ -1,6 +1,4 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using FarmManagement.Application.Common.Constants;
+using FarmManagement.API.Helpers;
 using FarmManagement.Application.Common.Models;
 using FarmManagement.Application.DTOs.Crops;
 using FarmManagement.Application.Interfaces.Crops;
@@ -22,12 +20,12 @@ public sealed class CropLifecycleTemplatesController(ICropLifecycleTemplateServi
         [FromQuery] Guid? cropId = null,
         [FromQuery] bool? isActive = null,
         CancellationToken cancellationToken = default) =>
-        Ok(await lifecycleService.ListAsync(GetActor(), page, pageSize, cropId, isActive, cancellationToken));
+        Ok(await lifecycleService.ListAsync(GetUserContext(), page, pageSize, cropId, isActive, cancellationToken));
 
     [HttpGet("{id:guid}")]
     [Authorize(Policy = "Permission:CropLifecycleTemplate.View")]
     public async Task<ActionResult<CropLifecycleTemplateResponse>> Get(Guid id, CancellationToken cancellationToken) =>
-        Ok(await lifecycleService.GetAsync(GetActor(), id, cancellationToken));
+        Ok(await lifecycleService.GetAsync(GetUserContext(), id, cancellationToken));
 
     [HttpGet("{templateId:guid}/stages/{stageId:guid}")]
     [Authorize(Policy = "Permission:CropLifecycleTemplate.View")]
@@ -35,7 +33,7 @@ public sealed class CropLifecycleTemplatesController(ICropLifecycleTemplateServi
         Guid templateId,
         Guid stageId,
         CancellationToken cancellationToken) =>
-        Ok(await lifecycleService.GetStageAsync(GetActor(), templateId, stageId, cancellationToken));
+        Ok(await lifecycleService.GetStageAsync(GetUserContext(), templateId, stageId, cancellationToken));
 
     [HttpPost]
     [Authorize(Policy = "Permission:CropLifecycleTemplate.Create")]
@@ -43,7 +41,7 @@ public sealed class CropLifecycleTemplatesController(ICropLifecycleTemplateServi
         [FromBody] CreateCropLifecycleTemplateRequest request,
         CancellationToken cancellationToken)
     {
-        var result = await lifecycleService.CreateAsync(GetActor(), request, GetIpAddress(), cancellationToken);
+        var result = await lifecycleService.CreateAsync(GetUserContext(), request, GetIpAddress(), cancellationToken);
         return CreatedAtAction(nameof(Get), new { id = result.Id }, result);
     }
 
@@ -53,13 +51,13 @@ public sealed class CropLifecycleTemplatesController(ICropLifecycleTemplateServi
         Guid id,
         [FromBody] UpdateCropLifecycleTemplateRequest request,
         CancellationToken cancellationToken) =>
-        Ok(await lifecycleService.UpdateAsync(GetActor(), id, request, GetIpAddress(), cancellationToken));
+        Ok(await lifecycleService.UpdateAsync(GetUserContext(), id, request, GetIpAddress(), cancellationToken));
 
     [HttpPatch("{id:guid}/activate")]
     [Authorize(Policy = "Permission:CropLifecycleTemplate.Activate")]
     public async Task<IActionResult> Activate(Guid id, CancellationToken cancellationToken)
     {
-        await lifecycleService.ActivateAsync(GetActor(), id, GetIpAddress(), cancellationToken);
+        await lifecycleService.ActivateAsync(GetUserContext(), id, GetIpAddress(), cancellationToken);
         return NoContent();
     }
 
@@ -67,7 +65,7 @@ public sealed class CropLifecycleTemplatesController(ICropLifecycleTemplateServi
     [Authorize(Policy = "Permission:CropLifecycleTemplate.Deactivate")]
     public async Task<IActionResult> Deactivate(Guid id, CancellationToken cancellationToken)
     {
-        await lifecycleService.DeactivateAsync(GetActor(), id, GetIpAddress(), cancellationToken);
+        await lifecycleService.DeactivateAsync(GetUserContext(), id, GetIpAddress(), cancellationToken);
         return NoContent();
     }
 
@@ -78,7 +76,7 @@ public sealed class CropLifecycleTemplatesController(ICropLifecycleTemplateServi
         [FromBody] CreateCropLifecycleStageRequest request,
         CancellationToken cancellationToken)
     {
-        var result = await lifecycleService.CreateStageAsync(GetActor(), templateId, request, GetIpAddress(), cancellationToken);
+        var result = await lifecycleService.CreateStageAsync(GetUserContext(), templateId, request, GetIpAddress(), cancellationToken);
         return CreatedAtAction(nameof(GetStage), new { templateId, stageId = result.Id }, result);
     }
 
@@ -89,13 +87,13 @@ public sealed class CropLifecycleTemplatesController(ICropLifecycleTemplateServi
         Guid stageId,
         [FromBody] UpdateCropLifecycleStageRequest request,
         CancellationToken cancellationToken) =>
-        Ok(await lifecycleService.UpdateStageAsync(GetActor(), templateId, stageId, request, GetIpAddress(), cancellationToken));
+        Ok(await lifecycleService.UpdateStageAsync(GetUserContext(), templateId, stageId, request, GetIpAddress(), cancellationToken));
 
     [HttpPatch("{templateId:guid}/stages/{stageId:guid}/activate")]
     [Authorize(Policy = "Permission:CropLifecycleTemplate.Activate")]
     public async Task<IActionResult> ActivateStage(Guid templateId, Guid stageId, CancellationToken cancellationToken)
     {
-        await lifecycleService.ActivateStageAsync(GetActor(), templateId, stageId, GetIpAddress(), cancellationToken);
+        await lifecycleService.ActivateStageAsync(GetUserContext(), templateId, stageId, GetIpAddress(), cancellationToken);
         return NoContent();
     }
 
@@ -103,25 +101,11 @@ public sealed class CropLifecycleTemplatesController(ICropLifecycleTemplateServi
     [Authorize(Policy = "Permission:CropLifecycleTemplate.Deactivate")]
     public async Task<IActionResult> DeactivateStage(Guid templateId, Guid stageId, CancellationToken cancellationToken)
     {
-        await lifecycleService.DeactivateStageAsync(GetActor(), templateId, stageId, GetIpAddress(), cancellationToken);
+        await lifecycleService.DeactivateStageAsync(GetUserContext(), templateId, stageId, GetIpAddress(), cancellationToken);
         return NoContent();
     }
 
-    private CropLifecycleTemplateActor GetActor()
-    {
-        var userIdValue = User.FindFirstValue(JwtRegisteredClaimNames.Sub) ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
-        var organizationIdValue = User.FindFirstValue(AuthorizationConstants.OrganizationIdClaimType);
-        if (!Guid.TryParse(userIdValue, out var userId) || !Guid.TryParse(organizationIdValue, out var organizationId))
-        {
-            throw new UnauthorizedAccessException("The access token is invalid.");
-        }
-
-        return new CropLifecycleTemplateActor(
-            userId,
-            organizationId,
-            User.Claims.Any(claim => claim.Type == AuthorizationConstants.RoleClaimType &&
-                claim.Value == AuthorizationConstants.SuperAdminRoleName));
-    }
+    private CropLifecycleTemplateActor GetUserContext() => UserContextHelper.GetUserContext<CropLifecycleTemplateActor>(User);
 
     private string? GetIpAddress() => HttpContext.Connection.RemoteIpAddress?.ToString();
 }

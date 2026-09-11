@@ -1,6 +1,4 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using FarmManagement.Application.Common.Constants;
+using FarmManagement.API.Helpers;
 using FarmManagement.Application.DTOs.Roles;
 using FarmManagement.Application.Interfaces.Roles;
 using Microsoft.AspNetCore.Authorization;
@@ -40,7 +38,7 @@ public sealed class RolesController(IRoleAdministrationService roleAdministratio
         CancellationToken cancellationToken)
     {
         var result = await roleAdministrationService.CreateRoleAsync(
-            GetActor(),
+            GetUserContext(),
             request,
             GetIpAddress(),
             cancellationToken);
@@ -55,7 +53,7 @@ public sealed class RolesController(IRoleAdministrationService roleAdministratio
         CancellationToken cancellationToken)
     {
         var result = await roleAdministrationService.UpdateRoleAsync(
-            GetActor(),
+            GetUserContext(),
             id,
             request,
             GetIpAddress(),
@@ -68,7 +66,7 @@ public sealed class RolesController(IRoleAdministrationService roleAdministratio
     public async Task<IActionResult> Activate(Guid id, CancellationToken cancellationToken)
     {
         await roleAdministrationService.ActivateRoleAsync(
-            GetActor(),
+            GetUserContext(),
             id,
             GetIpAddress(),
             cancellationToken);
@@ -80,7 +78,7 @@ public sealed class RolesController(IRoleAdministrationService roleAdministratio
     public async Task<IActionResult> Deactivate(Guid id, CancellationToken cancellationToken)
     {
         await roleAdministrationService.DeactivateRoleAsync(
-            GetActor(),
+            GetUserContext(),
             id,
             GetIpAddress(),
             cancellationToken);
@@ -95,7 +93,7 @@ public sealed class RolesController(IRoleAdministrationService roleAdministratio
         CancellationToken cancellationToken)
     {
         var result = await roleAdministrationService.UpdateRolePermissionsAsync(
-            GetActor(),
+            GetUserContext(),
             id,
             request,
             GetIpAddress(),
@@ -103,19 +101,7 @@ public sealed class RolesController(IRoleAdministrationService roleAdministratio
         return Ok(result);
     }
 
-    private RoleAdministrationActor GetActor()
-    {
-        var userIdValue = User.FindFirstValue(JwtRegisteredClaimNames.Sub)
-            ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
-        var organizationIdValue = User.FindFirstValue(AuthorizationConstants.OrganizationIdClaimType);
-        if (!Guid.TryParse(userIdValue, out var userId) ||
-            !Guid.TryParse(organizationIdValue, out var organizationId))
-        {
-            throw new UnauthorizedAccessException("The access token is invalid.");
-        }
-
-        return new RoleAdministrationActor(userId, organizationId);
-    }
+    private RoleAdministrationActor GetUserContext() => UserContextHelper.GetUserContext<RoleAdministrationActor>(User);
 
     private string? GetIpAddress() => HttpContext.Connection.RemoteIpAddress?.ToString();
 }
