@@ -11,23 +11,76 @@
       @for (group of visibleNavigationGroups(); track group.title) {
         <div class="navigation-group">
           <p class="navigation-label">{{ group.title }}</p>
-          <mat-nav-list class="navigation-list">
-            @for (item of group.items; track item.route) {
-              <a
-                mat-list-item
-                [routerLink]="item.route"
-                routerLinkActive="navigation-item-active"
-                [routerLinkActiveOptions]="{ exact: item.exactMatch ?? false }"
-                [class.navigation-sub-item]="item.isSubItem"
-              >
-                <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
-                <span matListItemTitle>{{ item.label }}</span>
-                @if (item.badge) {
-                  <span matListItemMeta class="navigation-badge">{{ item.badge }}</span>
+          <div class="navigation-list">
+            @for (item of group.items; track item.id) {
+              <div class="nav-item-wrapper" [class.nav-group-expanded]="isMenuExpanded(item.id)">
+                <!-- Parent Row -->
+                <div class="nav-parent-row" [class.parent-active]="isParentActive(item)">
+                  @if (item.route) {
+                    <a
+                      [routerLink]="item.route"
+                      routerLinkActive="nav-item-active"
+                      [routerLinkActiveOptions]="{ exact: item.exactMatch ?? false }"
+                      class="nav-link nav-parent-link"
+                      (click)="onParentClick(item, $event)"
+                    >
+                      <mat-icon class="nav-icon">{{ item.icon }}</mat-icon>
+                      <span class="nav-label">{{ item.label }}</span>
+                      @if (item.badge) {
+                        <span class="navigation-badge">{{ item.badge }}</span>
+                      }
+                    </a>
+                  } @else {
+                    <button
+                      type="button"
+                      class="nav-link nav-parent-link"
+                      (click)="toggleMenu(item.id)"
+                    >
+                      <mat-icon class="nav-icon">{{ item.icon }}</mat-icon>
+                      <span class="nav-label">{{ item.label }}</span>
+                      @if (item.badge) {
+                        <span class="navigation-badge">{{ item.badge }}</span>
+                      }
+                    </button>
+                  }
+
+                  @if (item.children && item.children.length > 0) {
+                    <button
+                      type="button"
+                      class="nav-chevron-btn"
+                      (click)="toggleChevron(item, $event)"
+                      [attr.aria-expanded]="isMenuExpanded(item.id)"
+                      [attr.aria-label]="(isMenuExpanded(item.id) ? 'Collapse ' : 'Expand ') + item.label"
+                    >
+                      <mat-icon class="nav-chevron" [class.chevron-open]="isMenuExpanded(item.id)">
+                        expand_more
+                      </mat-icon>
+                    </button>
+                  }
+                </div>
+
+                <!-- Child Sub-tree -->
+                @if (item.children && item.children.length > 0 && isMenuExpanded(item.id)) {
+                  <div class="nav-sub-tree">
+                    @for (child of item.children; track child.route) {
+                      <a
+                        [routerLink]="child.route"
+                        routerLinkActive="nav-child-active"
+                        [routerLinkActiveOptions]="{ exact: child.exactMatch ?? false }"
+                        class="nav-child-link"
+                      >
+                        <span class="nav-child-dot" aria-hidden="true"></span>
+                        <span class="nav-child-label">{{ child.label }}</span>
+                        @if (child.badge) {
+                          <span class="navigation-badge child-badge">{{ child.badge }}</span>
+                        }
+                      </a>
+                    }
+                  </div>
                 }
-              </a>
+              </div>
             }
-          </mat-nav-list>
+          </div>
         </div>
       }
     </div>

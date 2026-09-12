@@ -332,6 +332,14 @@ export interface RecordWorkerPaymentRequest {
   readonly paymentPeriodTo?: string | null;
   readonly status?: string;
   readonly notes?: string | null;
+  readonly autoAllocate?: boolean;
+}
+
+export interface AutoAllocatePaymentRequest {
+  readonly workerPaymentId: string;
+  readonly allocationDate?: string | null;
+  readonly allocationType?: string | null;
+  readonly notes?: string | null;
 }
 
 export interface CancelWorkerPaymentRequest {

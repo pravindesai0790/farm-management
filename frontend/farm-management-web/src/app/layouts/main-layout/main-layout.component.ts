@@ -4,6 +4,7 @@ import {
   computed,
   DestroyRef,
   inject,
+  signal,
 } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { MatButtonModule } from "@angular/material/button";
@@ -15,24 +16,35 @@ import { MatSidenavModule } from "@angular/material/sidenav";
 import { MatToolbarModule } from "@angular/material/toolbar";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import {
+  NavigationEnd,
   Router,
   RouterLink,
   RouterLinkActive,
   RouterOutlet,
 } from "@angular/router";
+import { filter } from "rxjs";
 
 import { AuthService } from "../../core/auth/auth.service";
 import { PermissionService } from "../../core/auth/permission.service";
 import { BreadcrumbService } from "../../core/breadcrumb/breadcrumb.service";
 
-export interface NavigationItem {
+export interface NavigationChildItem {
   readonly label: string;
-  readonly icon: string;
   readonly route: string;
   readonly permissions?: readonly string[];
   readonly exactMatch?: boolean;
-  readonly isSubItem?: boolean;
   readonly badge?: string;
+}
+
+export interface NavigationItem {
+  readonly id: string;
+  readonly label: string;
+  readonly icon: string;
+  readonly route?: string;
+  readonly permissions?: readonly string[];
+  readonly exactMatch?: boolean;
+  readonly badge?: string;
+  readonly children?: readonly NavigationChildItem[];
 }
 
 export interface NavigationGroup {
@@ -70,6 +82,11 @@ export class MainLayoutComponent {
   readonly currentUser = this.authService.user;
   readonly breadcrumbs = this.breadcrumbService.breadcrumbs;
 
+  readonly currentUrl = signal<string>(this.router.url);
+  readonly expandedMenus = signal<ReadonlySet<string>>(
+    new Set<string>(["farms", "plantations", "activities", "labor"]),
+  );
+
   readonly organizationName = computed(
     () => this.currentUser()?.organizationName || "Farm Management",
   );
@@ -95,6 +112,7 @@ export class MainLayoutComponent {
       title: "Overview",
       items: [
         {
+          id: "dashboard",
           label: "Dashboard",
           icon: "space_dashboard",
           route: "/dashboard",
@@ -106,43 +124,46 @@ export class MainLayoutComponent {
       title: "Farm Operations",
       items: [
         {
+          id: "farms",
           label: "Farms",
           icon: "landscape",
           route: "/farms",
           permissions: ["Farm.View"],
+          children: [
+            {
+              label: "Farm areas",
+              route: "/farm-areas",
+              permissions: ["FarmArea.View"],
+            },
+          ],
         },
         {
-          label: "Farm areas",
-          icon: "grid_view",
-          route: "/farm-areas",
-          permissions: ["FarmArea.View"],
-          isSubItem: true,
-        },
-        {
+          id: "plantations",
           label: "Plantations",
           icon: "spa",
           route: "/plantations",
           permissions: ["Plantation.View"],
+          children: [
+            {
+              label: "Crop cycles",
+              route: "/crop-cycles",
+              permissions: ["CropCycle.View"],
+            },
+          ],
         },
         {
-          label: "Crop cycles",
-          icon: "calendar_month",
-          route: "/crop-cycles",
-          permissions: ["CropCycle.View"],
-          isSubItem: true,
-        },
-        {
+          id: "activities",
           label: "Activities",
           icon: "event_note",
           route: "/activities",
           exactMatch: true,
-        },
-        {
-          label: "Labor activities",
-          icon: "assignment",
-          route: "/activities/labor-activities",
-          permissions: ["LaborActivity.View"],
-          isSubItem: true,
+          children: [
+            {
+              label: "Labor activities",
+              route: "/activities/labor-activities",
+              permissions: ["LaborActivity.View"],
+            },
+          ],
         },
       ],
     },
@@ -150,38 +171,33 @@ export class MainLayoutComponent {
       title: "Labor",
       items: [
         {
+          id: "labor",
           label: "Labor",
           icon: "engineering",
           route: "/labor",
           exactMatch: true,
-        },
-        {
-          label: "Attendance",
-          icon: "fact_check",
-          route: "/labor/attendance",
-          permissions: ["Attendance.View"],
-          isSubItem: true,
-        },
-        {
-          label: "Workers",
-          icon: "badge",
-          route: "/labor/workers",
-          permissions: ["Worker.View"],
-          isSubItem: true,
-        },
-        {
-          label: "Contractors",
-          icon: "business_center",
-          route: "/labor/contractors",
-          permissions: ["Contractor.View"],
-          isSubItem: true,
-        },
-        {
-          label: "Wage rates",
-          icon: "payments",
-          route: "/labor/wage-rates",
-          permissions: ["WorkerWage.View"],
-          isSubItem: true,
+          children: [
+            {
+              label: "Attendance",
+              route: "/labor/attendance",
+              permissions: ["Attendance.View"],
+            },
+            {
+              label: "Workers",
+              route: "/labor/workers",
+              permissions: ["Worker.View"],
+            },
+            {
+              label: "Contractors",
+              route: "/labor/contractors",
+              permissions: ["Contractor.View"],
+            },
+            {
+              label: "Wage rates",
+              route: "/labor/wage-rates",
+              permissions: ["WorkerWage.View"],
+            },
+          ],
         },
       ],
     },
@@ -189,6 +205,7 @@ export class MainLayoutComponent {
       title: "Agronomy",
       items: [
         {
+          id: "crops",
           label: "Crop catalog",
           icon: "grass",
           route: "/crops",
@@ -200,12 +217,14 @@ export class MainLayoutComponent {
       title: "Administration",
       items: [
         {
+          id: "organization",
           label: "Organization",
           icon: "business",
           route: "/organization",
           permissions: ["Organization.View"],
         },
         {
+          id: "administration",
           label: "Access & Roles",
           icon: "admin_panel_settings",
           route: "/administration",
@@ -217,6 +236,7 @@ export class MainLayoutComponent {
       title: "Account",
       items: [
         {
+          id: "settings",
           label: "Settings",
           icon: "settings",
           route: "/settings",
@@ -229,14 +249,119 @@ export class MainLayoutComponent {
     this.navigationGroups
       .map((group) => ({
         ...group,
-        items: group.items.filter(
-          (item) =>
-            item.permissions === undefined ||
-            this.permissionService.hasAny(item.permissions),
-        ),
+        items: group.items
+          .map((item) => {
+            const visibleChildren = item.children?.filter(
+              (c) =>
+                c.permissions === undefined ||
+                this.permissionService.hasAny(c.permissions),
+            );
+            return {
+              ...item,
+              children: visibleChildren,
+            };
+          })
+          .filter(
+            (item) =>
+              (item.permissions === undefined ||
+                this.permissionService.hasAny(item.permissions)) &&
+              (item.route !== undefined || (item.children && item.children.length > 0)),
+          ),
       }))
       .filter((group) => group.items.length > 0),
   );
+
+  constructor() {
+    this.autoExpandActiveGroup(this.router.url);
+
+    this.router.events
+      .pipe(
+        filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((e) => {
+        const url = e.urlAfterRedirects || e.url;
+        this.currentUrl.set(url);
+        this.autoExpandActiveGroup(url);
+      });
+  }
+
+  isMenuExpanded(id: string): boolean {
+    return this.expandedMenus().has(id);
+  }
+
+  toggleMenu(id: string): void {
+    const current = new Set(this.expandedMenus());
+    if (current.has(id)) {
+      current.delete(id);
+    } else {
+      current.add(id);
+    }
+    this.expandedMenus.set(current);
+  }
+
+  toggleChevron(item: NavigationItem, event: MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.toggleMenu(item.id);
+  }
+
+  onParentClick(item: NavigationItem, event: MouseEvent): void {
+    if (item.children && item.children.length > 0) {
+      const current = new Set(this.expandedMenus());
+      if (!current.has(item.id)) {
+        current.add(item.id);
+        this.expandedMenus.set(current);
+      }
+      if (!item.route) {
+        event.preventDefault();
+        this.toggleMenu(item.id);
+      }
+    }
+  }
+
+  isParentActive(item: NavigationItem): boolean {
+    const url = this.currentUrl();
+    if (item.route && (item.exactMatch ? url === item.route : url.startsWith(item.route))) {
+      return true;
+    }
+    if (item.children) {
+      return item.children.some((c) =>
+        c.exactMatch ? url === c.route : url.startsWith(c.route),
+      );
+    }
+    return false;
+  }
+
+  private autoExpandActiveGroup(url: string): void {
+    const toExpand: string[] = [];
+    for (const group of this.navigationGroups) {
+      for (const item of group.items) {
+        if (item.children && item.children.length > 0) {
+          const matchesParent = item.route && (item.exactMatch ? url === item.route : url.startsWith(item.route));
+          const matchesChild = item.children.some((c) =>
+            c.exactMatch ? url === c.route : url.startsWith(c.route),
+          );
+          if (matchesParent || matchesChild) {
+            toExpand.push(item.id);
+          }
+        }
+      }
+    }
+    if (toExpand.length > 0) {
+      const current = new Set(this.expandedMenus());
+      let changed = false;
+      for (const id of toExpand) {
+        if (!current.has(id)) {
+          current.add(id);
+          changed = true;
+        }
+      }
+      if (changed) {
+        this.expandedMenus.set(current);
+      }
+    }
+  }
 
   logout(): void {
     this.authService

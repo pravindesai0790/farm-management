@@ -11,7 +11,8 @@ namespace FarmManagement.Application.Services;
 public sealed class WorkerPaymentService(
     IWorkerPaymentStore store,
     IWorkerEarningsLedgerStore earningsStore,
-    IWorkerPaymentAllocationStore? allocationStore = null) : IWorkerPaymentService
+    IWorkerPaymentAllocationStore? allocationStore = null,
+    IWorkerPaymentAllocationService? allocationService = null) : IWorkerPaymentService
 {
     public async Task<WorkerPaymentResponse> RecordPaymentAsync(
         PaymentActor actor,
@@ -99,6 +100,26 @@ public sealed class WorkerPaymentService(
             ipAddress);
 
         await store.SaveChangesAsync(cancellationToken);
+
+        if (payment.Status == PaymentStatus.Completed &&
+            payment.PaymentType == PaymentType.Payout &&
+            request.AutoAllocate &&
+            allocationService is not null)
+        {
+            try
+            {
+                await allocationService.AutoAllocatePaymentAsync(
+                    actor,
+                    new AutoAllocatePaymentRequest(payment.Id),
+                    ipAddress,
+                    cancellationToken);
+            }
+            catch (ValidationException)
+            {
+                // Auto-allocation is best-effort when recording payout;
+                // if no eligible unsettled earnings exist at this moment, payment creation remains successful.
+            }
+        }
 
         return MapToResponse(payment, worker.DisplayName, currency.Code, currency.Symbol);
     }

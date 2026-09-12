@@ -13,7 +13,8 @@ public sealed record RecordWorkerPaymentRequest(
     DateOnly? PaymentPeriodFrom = null,
     DateOnly? PaymentPeriodTo = null,
     string Status = "COMPLETED",
-    string? Notes = null);
+    string? Notes = null,
+    bool AutoAllocate = true);
 
 public sealed record CancelWorkerPaymentRequest(
     string? Reason = null);

@@ -133,6 +133,20 @@ export class WorkerDetailPageComponent implements OnInit {
     return payouts.length > 0 ? payouts[0].paymentDate : null;
   });
 
+  readonly unallocatedPaymentsCount = computed(() => {
+    const list = this.payments();
+    const allocationsList = this.allocations();
+    const hasUnsettled = (this.settlement()?.unsettledEarningCount ?? 0) > 0;
+    if (!hasUnsettled) return 0;
+
+    return list.filter((p) => {
+      if (p.status !== "COMPLETED") return false;
+      const pAllocations = allocationsList.filter((a) => a.workerPaymentId === p.id);
+      const totalAllocated = pAllocations.reduce((acc, curr) => acc + curr.allocatedAmount, 0);
+      return p.amount - totalAllocated > 0;
+    }).length;
+  });
+
   // Unified financial transaction stream combining payments and earnings
   readonly transactions = computed<readonly WorkerFinancialTransaction[]>(() => {
     const paymentsList = this.payments();
@@ -155,8 +169,13 @@ export class WorkerDetailPageComponent implements OnInit {
         relatedText = dates
           ? `Applied ${symbol}${totalAllocated.toFixed(2)} to earnings of ${dates}`
           : `Applied ${symbol}${totalAllocated.toFixed(2)} to wage settlement`;
+        if (p.amount > totalAllocated) {
+          relatedText += ` (${symbol}${(p.amount - totalAllocated).toFixed(2)} unallocated)`;
+        }
       } else if (p.paymentType === "ADVANCE" && p.status === "COMPLETED") {
         relatedText = "Unapplied advance balance";
+      } else if (p.paymentType === "PAYOUT" && p.status === "COMPLETED") {
+        relatedText = "Unallocated payout balance";
       }
 
       let txType: FinancialTransactionType = "ADVANCE";
@@ -496,6 +515,72 @@ export class WorkerDetailPageComponent implements OnInit {
         this.loadFinancials();
       }
     });
+  }
+
+  canAllocatePayment(p?: WorkerPayment): boolean {
+    if (!p || p.status !== "COMPLETED") {
+      return false;
+    }
+    const pAllocations = this.allocations().filter((a) => a.workerPaymentId === p.id);
+    const totalAllocated = pAllocations.reduce((acc, curr) => acc + curr.allocatedAmount, 0);
+    const remaining = p.amount - totalAllocated;
+    const hasUnsettled = (this.settlement()?.unsettledEarningCount ?? 0) > 0;
+    return remaining > 0 && hasUnsettled;
+  }
+
+  autoAllocatePayment(payment: WorkerPayment): void {
+    this.actionInProgress.set(true);
+    this.laborService
+      .autoAllocatePayment(this.workerId, payment.id)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.actionInProgress.set(false)),
+      )
+      .subscribe({
+        next: (allocations) => {
+          const total = allocations.reduce((acc, a) => acc + a.allocatedAmount, 0);
+          this.snack.open(
+            `Successfully allocated ${this.currencySymbol()}${total.toFixed(2)} to settle pending earnings.`,
+            "Dismiss",
+            { duration: 4000 },
+          );
+          this.loadFinancials();
+        },
+        error: (err) => {
+          this.snack.open(
+            getApiErrorMessage(err, "Failed to allocate payment to earnings."),
+            "Dismiss",
+            { duration: 4000 },
+          );
+        },
+      });
+  }
+
+  autoAllocateAll(): void {
+    const unallocated = this.payments().filter((p) => this.canAllocatePayment(p));
+    if (unallocated.length === 0) {
+      return;
+    }
+
+    this.actionInProgress.set(true);
+    const requests = unallocated.map((p) =>
+      this.laborService.autoAllocatePayment(this.workerId, p.id).pipe(catchError(() => of([]))),
+    );
+
+    forkJoin(requests)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.actionInProgress.set(false)),
+      )
+      .subscribe({
+        next: () => {
+          this.snack.open("Successfully settled eligible pending earnings.", "Dismiss", { duration: 4000 });
+          this.loadFinancials();
+        },
+        error: (err) => {
+          this.snack.open(getApiErrorMessage(err, "Failed to settle earnings."), "Dismiss", { duration: 4000 });
+        },
+      });
   }
 
   toggleWorkerStatus(): void {

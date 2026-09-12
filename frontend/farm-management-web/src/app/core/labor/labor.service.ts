@@ -4,6 +4,7 @@ import { Observable, catchError, map, of } from "rxjs";
 import { environment } from "../../../environments/environment";
 import { PagedResponse } from "../models/paged-response.model";
 import {
+  AutoAllocatePaymentRequest,
   CancelWorkerPaymentRequest,
   ContractorItem,
   CurrencyItem,
@@ -527,6 +528,17 @@ export class LaborService {
         `${this.api}/labor/workers/${workerId}/allocations`,
       )
       .pipe(catchError(() => of([] as readonly WorkerPaymentAllocationItem[])));
+  }
+
+  autoAllocatePayment(
+    workerId: string,
+    paymentId: string,
+    request: AutoAllocatePaymentRequest = { workerPaymentId: paymentId },
+  ): Observable<readonly WorkerPaymentAllocationItem[]> {
+    return this.http.post<readonly WorkerPaymentAllocationItem[]>(
+      `${this.api}/labor/workers/${workerId}/payments/${paymentId}/allocations/auto`,
+      request,
+    );
   }
 }
 

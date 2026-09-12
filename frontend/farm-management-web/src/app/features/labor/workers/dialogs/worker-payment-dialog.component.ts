@@ -308,6 +308,15 @@ export class WorkerPaymentDialogComponent implements OnInit {
     this.errorMessage.set(null);
     this.validationErrors.set({});
 
+    let finalNotes = raw.notes?.trim() || null;
+    if (this.data.mode === "FINAL_PAYOUT") {
+      if (!finalNotes) {
+        finalNotes = "Final Payout";
+      } else if (!finalNotes.toLowerCase().includes("final")) {
+        finalNotes = `${finalNotes} (Final Payout)`;
+      }
+    }
+
     const request: RecordWorkerPaymentRequest = {
       workerId: this.data.workerId,
       paymentDate: paymentDateStr,
@@ -318,8 +327,9 @@ export class WorkerPaymentDialogComponent implements OnInit {
       referenceNumber: raw.referenceNumber?.trim() || null,
       paymentPeriodFrom: raw.paymentPeriodFrom ? formatDateOnly(raw.paymentPeriodFrom) : null,
       paymentPeriodTo: raw.paymentPeriodTo ? formatDateOnly(raw.paymentPeriodTo) : null,
-      notes: raw.notes?.trim() || null,
+      notes: finalNotes,
       status: "COMPLETED",
+      autoAllocate: true,
     };
 
     this.laborService
@@ -330,8 +340,9 @@ export class WorkerPaymentDialogComponent implements OnInit {
       )
       .subscribe({
         next: (created) => {
+          const modeLabel = this.data.mode === "FINAL_PAYOUT" ? "Final payout" : `${raw.paymentType} payment`;
           this.snack.open(
-            `${raw.paymentType} payment of ${this.currencySymbol()}${request.amount.toFixed(2)} recorded successfully.`,
+            `${modeLabel} of ${this.currencySymbol()}${request.amount.toFixed(2)} recorded successfully.`,
             "Dismiss",
             { duration: 4000 },
           );
