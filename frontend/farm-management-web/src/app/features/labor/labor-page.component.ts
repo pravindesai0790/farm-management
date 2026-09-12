@@ -43,6 +43,24 @@ export class LaborPageComponent {
 
   readonly cards: readonly LaborCard[] = [
     {
+      id: "attendance",
+      title: "Daily Attendance",
+      category: "Operations",
+      description:
+        "Record daily farm workforce attendance, review provisional wage calculations, and finalize daily farm payroll.",
+      icon: "fact_check",
+      route: "/labor/attendance",
+      status: "AVAILABLE",
+      requiredPermission: "Attendance.View",
+      createPermission: "Attendance.Create",
+      highlights: [
+        "Daily farm roster",
+        "Full/Half/Hourly shifts",
+        "Provisional wage preview",
+        "Ledger finalization",
+      ],
+    },
+    {
       id: "workers",
       title: "Workers",
       category: "Workforce",

@@ -384,6 +384,16 @@ export const routes: Routes = [
               ),
           },
           {
+            path: "attendance",
+            title: "Daily Attendance",
+            canActivate: [permissionGuard],
+            data: { permission: "Attendance.View" },
+            loadComponent: () =>
+              import(
+                "./features/labor/attendance/attendance-daily-page.component"
+              ).then((module) => module.AttendanceDailyPageComponent),
+          },
+          {
             path: "workers",
             title: "Workers",
             canActivate: [permissionGuard],

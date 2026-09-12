@@ -156,6 +156,13 @@ export class MainLayoutComponent {
           exactMatch: true,
         },
         {
+          label: "Attendance",
+          icon: "fact_check",
+          route: "/labor/attendance",
+          permissions: ["Attendance.View"],
+          isSubItem: true,
+        },
+        {
           label: "Workers",
           icon: "badge",
           route: "/labor/workers",
