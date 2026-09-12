@@ -200,6 +200,7 @@ export interface AttendanceGridRow {
   status: AttendanceStatus;
   notes?: string | null;
   isModified?: boolean;
+  hoursError?: string | null;
 }
 
 export const ATTENDANCE_TYPE_OPTIONS: readonly {

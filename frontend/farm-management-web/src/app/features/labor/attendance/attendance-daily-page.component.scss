@@ -97,9 +97,10 @@
   align-items: center;
   gap: 14px;
 
-  .date-field { width: 170px; margin-bottom: -1.25em; }
-  .farm-field { min-width: 200px; flex: 1; margin-bottom: -1.25em; }
-  .search-field { min-width: 220px; flex: 1.2; margin-bottom: -1.25em; }
+  .date-field { width: 170px; }
+  .farm-field { min-width: 200px; flex: 1; }
+  .search-field { min-width: 220px; flex: 1.2; }
+  .date-field, .farm-field, .search-field { margin-bottom: -1.25em; }
 
   .roster-actions {
     display: flex;
@@ -246,9 +247,21 @@
 
 .worker-meta {
   display: flex;
-  gap: 6px;
+  gap: 8px;
+  align-items: center;
   font-size: 0.78rem;
   color: #757575;
+  .mobile, .contractor {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .meta-icon {
+    font-size: 13px;
+    width: 13px;
+    height: 13px;
+    color: #888;
+  }
   .contractor { font-style: italic; }
 }
 
@@ -272,10 +285,28 @@
 }
 
 .table-select-field { width: 135px; margin-bottom: -1.25em; }
+
+.hours-cell-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
 .table-hours-field {
   width: 75px;
   margin-bottom: -1.25em;
   input { text-align: center; font-weight: 600; }
+  &.field-invalid input {
+    color: #d32f2f;
+  }
+}
+
+.hours-error-text {
+  font-size: 0.68rem;
+  color: #d32f2f;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .table-notes-input {
@@ -290,12 +321,15 @@
   &:disabled { background: transparent; color: #666; }
 }
 
-.type-pill {
+.type-pill, .row-status-pill {
   display: inline-block;
   padding: 2px 8px;
+  font-weight: 600;
+}
+
+.type-pill {
   border-radius: 12px;
   font-size: 0.75rem;
-  font-weight: 600;
   &.type-badge-full-day { background: #e8f5e9; color: #2e7d32; }
   &.type-badge-half-day { background: #f3e5f5; color: #7b1fa2; }
   &.type-badge-hourly { background: #e1f5fe; color: #0277bd; }
@@ -303,13 +337,17 @@
 }
 
 .row-status-pill {
-  display: inline-block;
-  padding: 2px 8px;
   border-radius: 10px;
   font-size: 0.72rem;
-  font-weight: 600;
   &.status-draft { background: #fff3e0; color: #e65100; }
+  &.status-unsaved { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+  &.status-not-worked { background: #f5f5f5; color: #616161; }
   &.status-finalized { background: #e8f5e9; color: #1b7a36; }
+}
+
+.rate-preview {
+  font-weight: 500;
+  .rate-unit { font-size: 0.72rem; color: #777; margin-left: 1px; }
 }
 
 .earnings-cell-amount { color: #1b7a36; font-size: 0.95rem; }
@@ -327,24 +365,24 @@
   padding: 48px 24px;
   text-align: center;
   color: #666;
-
-  .empty-icon-wrap {
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    background: rgba(30, 142, 62, 0.08);
-    color: #1b7a36;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 12px;
-    mat-icon { font-size: 28px; width: 28px; height: 28px; }
-  }
-
   h3, h4 { margin: 0 0 6px; font-weight: 600; color: #212121; }
   p { margin: 0 0 20px; max-width: 500px; font-size: 0.88rem; line-height: 1.45; }
-  .empty-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 }
+
+.empty-icon-wrap {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(30, 142, 62, 0.08);
+  color: #1b7a36;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  mat-icon { font-size: 28px; width: 28px; height: 28px; }
+}
+
+.empty-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 
 .loading-state { gap: 12px; }
 

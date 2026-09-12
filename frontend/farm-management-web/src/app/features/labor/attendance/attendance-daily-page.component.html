@@ -34,8 +34,9 @@
         <button
           mat-stroked-button
           color="primary"
-          [disabled]="isSaving() || isFinalizing() || (!hasUnsavedChanges() && rows().length === 0)"
+          [disabled]="!canSaveDraft()"
           (click)="saveDraft()"
+          [matTooltip]="hasInvalidHourlyRows() ? 'Fix invalid working hours before saving' : 'Save draft attendance'"
         >
           @if (isSaving()) {
             <mat-spinner diameter="18" />
@@ -50,9 +51,9 @@
         <button
           mat-flat-button
           color="primary"
-          [disabled]="!canFinalize() || isSaving() || isFinalizing()"
+          [disabled]="!canFinalize()"
           (click)="openFinalizeDialog()"
-          matTooltip="Lock attendance and post earnings to the financial ledger"
+          [matTooltip]="hasInvalidHourlyRows() ? 'Fix invalid working hours before finalizing' : 'Lock attendance and post earnings to the financial ledger'"
         >
           @if (isFinalizing()) {
             <mat-spinner diameter="18" />
@@ -367,10 +368,10 @@
                   </a>
                   <div class="worker-meta">
                     @if (row.mobileNumber) {
-                      <span class="mobile">{{ row.mobileNumber }}</span>
+                      <span class="mobile"><mat-icon class="meta-icon">phone</mat-icon>{{ row.mobileNumber }}</span>
                     }
                     @if (row.contractorName) {
-                      <span class="contractor">Via {{ row.contractorName }}</span>
+                      <span class="contractor"><mat-icon class="meta-icon">handshake</mat-icon>Via {{ row.contractorName }}</span>
                     }
                   </div>
                 </div>
@@ -389,7 +390,7 @@
 
             <!-- 3. Category & Employment Type -->
             <ng-container matColumnDef="category">
-              <th mat-header-cell *matHeaderCellDef>Category / Type</th>
+              <th mat-header-cell *matHeaderCellDef>Labor Category</th>
               <td mat-cell *matCellDef="let row">
                 <div class="category-cell">
                   <span class="category-badge">{{ row.laborCategoryName || "General" }}</span>
@@ -433,18 +434,29 @@
                   @if (isFinalized()) {
                     <strong>{{ row.workingHours }} hrs</strong>
                   } @else {
-                    <mat-form-field appearance="outline" class="table-hours-field">
-                      <input
-                        matInput
-                        type="number"
-                        step="0.25"
-                        min="0.25"
-                        max="24"
-                        [value]="row.workingHours || 8"
-                        (change)="onHoursChange(row, $event)"
-                        [disabled]="!canEdit()"
-                      />
-                    </mat-form-field>
+                    <div class="hours-cell-wrap">
+                      <mat-form-field
+                        appearance="outline"
+                        class="table-hours-field"
+                        [class.field-invalid]="!!row.hoursError"
+                      >
+                        <input
+                          matInput
+                          type="number"
+                          step="0.25"
+                          min="0.25"
+                          max="24"
+                          [value]="row.workingHours !== null && row.workingHours !== undefined ? row.workingHours : ''"
+                          (input)="onHoursInput(row, $event)"
+                          (change)="onHoursChange(row, $event)"
+                          [disabled]="!canEdit()"
+                          placeholder="Hrs"
+                        />
+                      </mat-form-field>
+                      @if (row.hoursError) {
+                        <span class="hours-error-text">{{ row.hoursError }}</span>
+                      }
+                    </div>
                   }
                 } @else {
                   <span class="dash">—</span>
@@ -454,12 +466,23 @@
 
             <!-- 6. Resolved Wage Rate -->
             <ng-container matColumnDef="wageRate">
-              <th mat-header-cell *matHeaderCellDef>Wage Rate</th>
+              <th mat-header-cell *matHeaderCellDef>Rate Preview</th>
               <td mat-cell *matCellDef="let row">
                 @if (row.attendanceType === 'NOT_WORKED') {
                   <span class="dash">—</span>
+                } @else if (row.attendanceType === 'HOURLY' && row.hoursError) {
+                  <span class="dash muted">—</span>
                 } @else if (row.calculatedRate !== null && row.calculatedRate !== undefined) {
-                  <span>{{ row.currencySymbol || currencySymbol() }}{{ row.calculatedRate | number: "1.2-2" }}</span>
+                  <span class="rate-preview">
+                    {{ row.currencySymbol || currencySymbol() }}{{ row.calculatedRate | number: "1.2-2" }}
+                    @if (row.attendanceType === 'HOURLY') {
+                      <small class="rate-unit">/hr</small>
+                    } @else if (row.attendanceType === 'HALF_DAY') {
+                      <small class="rate-unit">/half-day</small>
+                    } @else {
+                      <small class="rate-unit">/day</small>
+                    }
+                  </span>
                 } @else {
                   <span class="dash muted">Previewing…</span>
                 }
@@ -468,10 +491,12 @@
 
             <!-- 7. Calculated Earnings -->
             <ng-container matColumnDef="earnings">
-              <th mat-header-cell *matHeaderCellDef>Earnings</th>
+              <th mat-header-cell *matHeaderCellDef>Earnings Preview</th>
               <td mat-cell *matCellDef="let row">
                 @if (row.attendanceType === 'NOT_WORKED') {
                   <span class="zero-amount">{{ row.currencySymbol || currencySymbol() }}0.00</span>
+                } @else if (row.attendanceType === 'HOURLY' && row.hoursError) {
+                  <span class="dash muted">—</span>
                 } @else if (row.calculatedAmount !== null && row.calculatedAmount !== undefined) {
                   <strong class="earnings-cell-amount">
                     {{ row.currencySymbol || currencySymbol() }}{{ row.calculatedAmount | number: "1.2-2" }}
@@ -486,13 +511,15 @@
             <ng-container matColumnDef="status">
               <th mat-header-cell *matHeaderCellDef>Status</th>
               <td mat-cell *matCellDef="let row">
-                <span
-                  class="row-status-pill"
-                  [class.status-finalized]="row.status === 'FINALIZED'"
-                  [class.status-draft]="row.status !== 'FINALIZED'"
-                >
-                  {{ formatStatus(row.status) }}
-                </span>
+                @if (isFinalized() || row.status === 'FINALIZED') {
+                  <span class="row-status-pill status-finalized">Finalized</span>
+                } @else if (row.isModified) {
+                  <span class="row-status-pill status-unsaved">Unsaved</span>
+                } @else if (row.attendanceType === 'NOT_WORKED') {
+                  <span class="row-status-pill status-not-worked">Not Worked</span>
+                } @else {
+                  <span class="row-status-pill status-draft">Draft</span>
+                }
               </td>
             </ng-container>
 
@@ -561,8 +588,9 @@
             <button
               mat-stroked-button
               color="primary"
-              [disabled]="isSaving() || isFinalizing()"
+              [disabled]="!canSaveDraft()"
               (click)="saveDraft()"
+              [matTooltip]="hasInvalidHourlyRows() ? 'Fix invalid working hours before saving' : 'Save draft attendance'"
             >
               @if (isSaving()) {
                 <mat-spinner diameter="16" />
@@ -577,8 +605,9 @@
             <button
               mat-flat-button
               color="primary"
-              [disabled]="!canFinalize() || isSaving() || isFinalizing()"
+              [disabled]="!canFinalize()"
               (click)="openFinalizeDialog()"
+              [matTooltip]="hasInvalidHourlyRows() ? 'Fix invalid working hours before finalizing' : 'Finalize attendance and post to ledger'"
             >
               @if (isFinalizing()) {
                 <mat-spinner diameter="16" />

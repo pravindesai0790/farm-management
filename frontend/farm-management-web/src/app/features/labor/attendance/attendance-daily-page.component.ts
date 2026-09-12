@@ -209,17 +209,35 @@ export class AttendanceDailyPageComponent implements OnInit {
     return this.permissionService.has("Attendance.Create");
   });
 
+  readonly hasInvalidHourlyRows = computed(() => {
+    return this.rows().some(
+      (r) =>
+        r.attendanceType === "HOURLY" &&
+        (!r.workingHours || r.workingHours <= 0 || r.workingHours > 24 || !!r.hoursError),
+    );
+  });
+
+  readonly canSaveDraft = computed(() => {
+    if (this.isFinalized()) return false;
+    if (this.rows().length === 0) return false;
+    if (
+      !this.permissionService.has("Attendance.Create") &&
+      !this.permissionService.has("Attendance.Update")
+    ) {
+      return false;
+    }
+    if (this.isSaving() || this.isFinalizing()) return false;
+    if (this.hasInvalidHourlyRows()) return false;
+    return true;
+  });
+
   readonly canFinalize = computed(() => {
     if (this.isFinalized()) return false;
     if (this.rows().length === 0) return false;
     if (!this.permissionService.has("Attendance.Finalize")) return false;
-    // Check if hourly rows have valid hours
-    const invalidHourly = this.rows().some(
-      (r) =>
-        r.attendanceType === "HOURLY" &&
-        (!r.workingHours || r.workingHours <= 0),
-    );
-    return !invalidHourly;
+    if (this.isSaving() || this.isFinalizing()) return false;
+    if (this.hasInvalidHourlyRows()) return false;
+    return true;
   });
 
   readonly alreadyAddedWorkerIds = computed(() => {
@@ -364,15 +382,75 @@ export class AttendanceDailyPageComponent implements OnInit {
       });
   }
 
-  // Live Wage Preview logic
+  // Live Wage Preview & Grid Editing logic
   onAttendanceTypeChange(row: AttendanceGridRow, newType: AttendanceType): void {
     if (this.isFinalized()) return;
     row.attendanceType = newType;
-    if (newType === "HOURLY" && (!row.workingHours || row.workingHours <= 0)) {
-      row.workingHours = 8;
-    } else if (newType !== "HOURLY") {
+    row.isModified = true;
+    this.hasUnsavedChanges.set(true);
+
+    if (newType === "NOT_WORKED") {
       row.workingHours = null;
+      row.hoursError = null;
+      row.calculatedRate = null;
+      row.calculatedAmount = 0;
+      this.recalculateLocalCounts();
+      // No wage preview required for NOT_WORKED
+    } else if (newType === "HOURLY") {
+      if (!row.workingHours || row.workingHours <= 0) {
+        row.workingHours = 8;
+      }
+      row.hoursError = null;
+      this.recalculateLocalCounts();
+      this.previewTrigger$.next();
+    } else {
+      // FULL_DAY or HALF_DAY
+      row.workingHours = null;
+      row.hoursError = null;
+      this.recalculateLocalCounts();
+      this.previewTrigger$.next();
     }
+  }
+
+  onHoursInput(row: AttendanceGridRow, event: Event): void {
+    if (this.isFinalized()) return;
+    const input = event.target as HTMLInputElement;
+    const rawVal = input.value?.trim();
+
+    if (!rawVal) {
+      row.workingHours = null;
+      row.hoursError = "Hours required";
+      row.calculatedAmount = null;
+      row.isModified = true;
+      this.hasUnsavedChanges.set(true);
+      this.recalculateLocalCounts();
+      return;
+    }
+
+    const val = parseFloat(rawVal);
+    if (isNaN(val) || val <= 0) {
+      row.workingHours = isNaN(val) ? null : val;
+      row.hoursError = "Hours must be > 0";
+      row.calculatedAmount = null;
+      row.isModified = true;
+      this.hasUnsavedChanges.set(true);
+      this.recalculateLocalCounts();
+      return;
+    }
+
+    if (val > 24) {
+      row.workingHours = val;
+      row.hoursError = "Max 24 hrs";
+      row.calculatedAmount = null;
+      row.isModified = true;
+      this.hasUnsavedChanges.set(true);
+      this.recalculateLocalCounts();
+      return;
+    }
+
+    // Valid working hours: 0.25 <= val <= 24
+    row.workingHours = val;
+    row.hoursError = null;
     row.isModified = true;
     this.hasUnsavedChanges.set(true);
     this.recalculateLocalCounts();
@@ -380,13 +458,7 @@ export class AttendanceDailyPageComponent implements OnInit {
   }
 
   onHoursChange(row: AttendanceGridRow, event: Event): void {
-    if (this.isFinalized()) return;
-    const input = event.target as HTMLInputElement;
-    const val = parseFloat(input.value);
-    row.workingHours = isNaN(val) ? null : val;
-    row.isModified = true;
-    this.hasUnsavedChanges.set(true);
-    this.previewTrigger$.next();
+    this.onHoursInput(row, event);
   }
 
   onNotesChange(row: AttendanceGridRow, event: Event): void {
@@ -426,17 +498,21 @@ export class AttendanceDailyPageComponent implements OnInit {
     let half = 0;
     let hourly = 0;
     let notWorked = 0;
+    let totalEarnings = 0;
 
     for (const r of list) {
       switch (r.attendanceType) {
         case "FULL_DAY":
           full++;
+          if (r.calculatedAmount) totalEarnings += r.calculatedAmount;
           break;
         case "HALF_DAY":
           half++;
+          if (r.calculatedAmount) totalEarnings += r.calculatedAmount;
           break;
         case "HOURLY":
           hourly++;
+          if (r.calculatedAmount && !r.hoursError) totalEarnings += r.calculatedAmount;
           break;
         case "NOT_WORKED":
           notWorked++;
@@ -454,6 +530,7 @@ export class AttendanceDailyPageComponent implements OnInit {
       halfDayCount: half,
       hourlyCount: hourly,
       notWorkedCount: notWorked,
+      estimatedEarnings: totalEarnings,
     }));
   }
 
@@ -464,12 +541,32 @@ export class AttendanceDailyPageComponent implements OnInit {
 
     if (list.length === 0 || !date) return;
 
+    // Filter out NOT_WORKED (no wage preview required) and invalid HOURLY rows
+    const previewableRows = list.filter((r) => {
+      if (r.attendanceType === "NOT_WORKED") return false;
+      if (r.attendanceType === "HOURLY") {
+        return (
+          r.workingHours !== null &&
+          r.workingHours !== undefined &&
+          r.workingHours > 0 &&
+          r.workingHours <= 24 &&
+          !r.hoursError
+        );
+      }
+      return true;
+    });
+
+    if (previewableRows.length === 0) {
+      this.recalculateLocalCounts();
+      return;
+    }
+
     this.isPreviewing.set(true);
 
-    const items = list.map((r) => ({
+    const items = previewableRows.map((r) => ({
       workerId: r.workerId,
       attendanceType: r.attendanceType,
-      workingHours: r.workingHours,
+      workingHours: r.attendanceType === "HOURLY" ? r.workingHours : null,
     }));
 
     this.attendanceService
@@ -490,30 +587,27 @@ export class AttendanceDailyPageComponent implements OnInit {
           );
 
           const updatedRows = this.rows().map((r) => {
+            if (r.attendanceType === "NOT_WORKED") {
+              return {
+                ...r,
+                calculatedRate: null,
+                calculatedAmount: 0,
+              };
+            }
             const preview = previewMap.get(r.workerId);
             if (preview) {
               return {
                 ...r,
                 calculatedRate: preview.rate,
                 calculatedAmount: preview.calculatedAmount,
-                currencySymbol: preview.currencySymbol || "₹",
+                currencySymbol: preview.currencySymbol || this.currencySymbol(),
               };
             }
             return r;
           });
 
           this.rows.set(updatedRows);
-
-          this.summary.update((s) => ({
-            ...s,
-            totalCount: previewRes.totalCount,
-            workedCount: previewRes.workedCount,
-            fullDayCount: previewRes.fullDayCount,
-            halfDayCount: previewRes.halfDayCount,
-            hourlyCount: previewRes.hourlyCount,
-            notWorkedCount: previewRes.notWorkedCount,
-            estimatedEarnings: previewRes.totalEstimatedEarnings,
-          }));
+          this.recalculateLocalCounts();
 
           if (previewRes.items.length > 0 && previewRes.items[0].currencySymbol) {
             this.currencySymbol.set(previewRes.items[0].currencySymbol);
@@ -763,6 +857,15 @@ export class AttendanceDailyPageComponent implements OnInit {
     if (!farmId || !date) return;
     if (this.isFinalized()) return;
 
+    if (this.hasInvalidHourlyRows()) {
+      this.snack.open(
+        "Please enter valid working hours (0.25 - 24) for all hourly workers before saving.",
+        "Close",
+        { duration: 4000 },
+      );
+      return;
+    }
+
     this.isSaving.set(true);
     this.errorMessage.set(null);
 
@@ -774,7 +877,7 @@ export class AttendanceDailyPageComponent implements OnInit {
         id: r.id || null,
         workerId: r.workerId,
         attendanceType: r.attendanceType,
-        workingHours: r.workingHours,
+        workingHours: r.attendanceType === "HOURLY" ? r.workingHours : null,
         notes: r.notes,
       })),
     };
@@ -802,6 +905,7 @@ export class AttendanceDailyPageComponent implements OnInit {
                 calculatedAmount: saved.calculatedAmount,
                 status: saved.status as any,
                 isModified: false,
+                hoursError: null,
               };
             }
             return r;
@@ -825,6 +929,15 @@ export class AttendanceDailyPageComponent implements OnInit {
   openFinalizeDialog(): void {
     const farm = this.selectedFarm();
     if (!farm || this.rows().length === 0 || this.isFinalized()) return;
+
+    if (this.hasInvalidHourlyRows()) {
+      this.snack.open(
+        "Please enter valid working hours (0.25 - 24) for all hourly workers before finalizing.",
+        "Close",
+        { duration: 4000 },
+      );
+      return;
+    }
 
     const dialogRef = this.dialog.open(AttendanceFinalizeDialogComponent, {
       width: "520px",
@@ -850,6 +963,15 @@ export class AttendanceDailyPageComponent implements OnInit {
     const date = this.formattedDate();
     if (!farmId || !date) return;
 
+    if (this.hasInvalidHourlyRows()) {
+      this.snack.open(
+        "Please enter valid working hours (0.25 - 24) for all hourly workers before finalizing.",
+        "Close",
+        { duration: 4000 },
+      );
+      return;
+    }
+
     this.isFinalizing.set(true);
     this.errorMessage.set(null);
 
@@ -863,7 +985,7 @@ export class AttendanceDailyPageComponent implements OnInit {
             id: r.id || null,
             workerId: r.workerId,
             attendanceType: r.attendanceType,
-            workingHours: r.workingHours,
+            workingHours: r.attendanceType === "HOURLY" ? r.workingHours : null,
             notes: r.notes,
           })),
         })
