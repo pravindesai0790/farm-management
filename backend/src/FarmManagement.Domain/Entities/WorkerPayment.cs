@@ -6,6 +6,7 @@ public sealed class WorkerPayment
 {
     private WorkerPayment()
     {
+        Allocations = [];
     }
 
     public Guid Id { get; private set; }
@@ -32,6 +33,7 @@ public sealed class WorkerPayment
     public Organization? Organization { get; private set; }
     public Worker? Worker { get; private set; }
     public Currency? Currency { get; private set; }
+    public ICollection<WorkerPaymentAllocation> Allocations { get; private set; }
 
     public static WorkerPayment Create(
         Guid organizationId,

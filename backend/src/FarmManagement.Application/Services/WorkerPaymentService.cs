@@ -10,7 +10,8 @@ namespace FarmManagement.Application.Services;
 
 public sealed class WorkerPaymentService(
     IWorkerPaymentStore store,
-    IWorkerEarningsLedgerStore earningsStore) : IWorkerPaymentService
+    IWorkerEarningsLedgerStore earningsStore,
+    IWorkerPaymentAllocationStore? allocationStore = null) : IWorkerPaymentService
 {
     public async Task<WorkerPaymentResponse> RecordPaymentAsync(
         PaymentActor actor,
@@ -124,6 +125,15 @@ public sealed class WorkerPaymentService(
 
         var now = DateTimeOffset.UtcNow;
         payment.Cancel(now, actor.UserId, request.Reason);
+
+        if (allocationStore is not null)
+        {
+            var allocations = await allocationStore.ListByPaymentAsync(payment.Id, actor.OrganizationId, cancellationToken);
+            if (allocations.Count > 0)
+            {
+                allocationStore.RemoveRange(allocations);
+            }
+        }
 
         AddAudit(
             actor,

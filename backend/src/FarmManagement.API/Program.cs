@@ -126,6 +126,7 @@ builder.Services.AddScoped<ILaborWageRateService, LaborWageRateService>();
 builder.Services.AddScoped<IWorkerEarningsLedgerService, WorkerEarningsLedgerService>();
 builder.Services.AddScoped<IAttendanceEarningsIntegration, WorkerEarningsLedgerService>();
 builder.Services.AddScoped<IWorkerPaymentService, WorkerPaymentService>();
+builder.Services.AddScoped<IWorkerPaymentAllocationService, WorkerPaymentAllocationService>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
 builder.Services.AddScoped<IMasterDataService, MasterDataService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();

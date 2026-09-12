@@ -6,6 +6,7 @@ public sealed class WorkerEarningsLedger
 {
     private WorkerEarningsLedger()
     {
+        PaymentAllocations = [];
     }
 
     public Guid Id { get; private set; }
@@ -33,6 +34,7 @@ public sealed class WorkerEarningsLedger
     public Worker? Worker { get; private set; }
     public Currency? Currency { get; private set; }
     public WorkerEarningsLedger? ReferenceLedger { get; private set; }
+    public ICollection<WorkerPaymentAllocation> PaymentAllocations { get; private set; }
 
     public static WorkerEarningsLedger CreateEarning(
         Guid organizationId,
