@@ -127,6 +127,11 @@ public static class UserContextHelper
             return (TActor)(object)new EarningsActor(userId, organizationId);
         }
 
+        if (typeof(TActor) == typeof(PaymentActor))
+        {
+            return (TActor)(object)new PaymentActor(userId, organizationId);
+        }
+
         if (typeof(TActor) == typeof(DashboardActor))
         {
             return (TActor)(object)new DashboardActor(userId, organizationId);

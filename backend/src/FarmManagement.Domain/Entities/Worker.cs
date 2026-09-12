@@ -10,6 +10,7 @@ public sealed class Worker
         DisplayName = string.Empty;
         FarmAssignments = [];
         EarningsLedgerEntries = [];
+        Payments = [];
     }
 
     public Worker(
@@ -76,6 +77,7 @@ public sealed class Worker
         CreatedBy = createdBy;
         FarmAssignments = [];
         EarningsLedgerEntries = [];
+        Payments = [];
     }
 
     public Guid Id { get; private set; }
@@ -103,6 +105,7 @@ public sealed class Worker
     public LaborCategory? LaborCategory { get; private set; }
     public ICollection<WorkerFarmAssignment> FarmAssignments { get; private set; }
     public ICollection<WorkerEarningsLedger> EarningsLedgerEntries { get; private set; }
+    public ICollection<WorkerPayment> Payments { get; private set; }
 
     public void Update(
         string firstName,

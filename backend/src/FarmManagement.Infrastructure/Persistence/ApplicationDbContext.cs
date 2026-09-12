@@ -63,6 +63,8 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
 
     public DbSet<WorkerEarningsLedger> WorkerEarningsLedgers => Set<WorkerEarningsLedger>();
 
+    public DbSet<WorkerPayment> WorkerPayments => Set<WorkerPayment>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
