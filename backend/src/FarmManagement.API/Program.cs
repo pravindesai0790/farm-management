@@ -123,6 +123,8 @@ builder.Services.AddScoped<IContractorService, ContractorService>();
 builder.Services.AddScoped<ILaborCategoryService, LaborCategoryService>();
 builder.Services.AddScoped<IWorkerFarmAssignmentService, WorkerFarmAssignmentService>();
 builder.Services.AddScoped<ILaborWageRateService, LaborWageRateService>();
+builder.Services.AddScoped<IWorkerEarningsLedgerService, WorkerEarningsLedgerService>();
+builder.Services.AddScoped<IAttendanceEarningsIntegration, WorkerEarningsLedgerService>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
 builder.Services.AddScoped<IMasterDataService, MasterDataService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
