@@ -67,7 +67,7 @@ export interface AttendanceLoadWorkersDialogData {
         <div class="header-title">
           <h2 mat-dialog-title>Load Eligible Workers</h2>
           <p class="subtitle">
-            {{ data.farmName }} &bull; {{ data.attendanceDate }}
+            {{ data.farmName }} &bull; Attendance Date: {{ data.attendanceDate }}
           </p>
         </div>
       </div>
@@ -77,6 +77,14 @@ export interface AttendanceLoadWorkersDialogData {
           <app-error-alert [error]="errorMessage()!" />
         }
 
+        <!-- Informational banner -->
+        <div class="eligibility-info-banner">
+          <mat-icon>verified_user</mat-icon>
+          <span>
+            Backend-verified: Showing active workers assigned to <strong>{{ data.farmName }}</strong> on <strong>{{ data.attendanceDate }}</strong>.
+          </span>
+        </div>
+
         <!-- Filter bar -->
         <form class="filters-bar" [formGroup]="filterForm">
           <mat-form-field appearance="outline" class="search-field">
@@ -84,17 +92,40 @@ export interface AttendanceLoadWorkersDialogData {
             <input
               matInput
               formControlName="search"
-              placeholder="Name or mobile number"
+              placeholder="Name, mobile, or contractor"
+              autocomplete="off"
             />
-            <mat-icon matSuffix>search</mat-icon>
+            @if (searchQuery()) {
+              <button
+                mat-icon-button
+                matSuffix
+                type="button"
+                aria-label="Clear search"
+                (click)="clearSearch()"
+              >
+                <mat-icon>close</mat-icon>
+              </button>
+            } @else {
+              <mat-icon matSuffix>search</mat-icon>
+            }
           </mat-form-field>
 
-          <mat-form-field appearance="outline" class="category-field">
-            <mat-label>Labor Category</mat-label>
+          <mat-form-field appearance="outline" class="filter-dropdown">
+            <mat-label>Category</mat-label>
             <mat-select formControlName="category">
-              <mat-option value="all">All categories</mat-option>
+              <mat-option value="all">All Categories</mat-option>
               @for (cat of uniqueCategories(); track cat) {
                 <mat-option [value]="cat">{{ cat }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="filter-dropdown">
+            <mat-label>Employment Type</mat-label>
+            <mat-select formControlName="employmentType">
+              <mat-option value="all">All Types</mat-option>
+              @for (type of uniqueEmploymentTypes(); track type) {
+                <mat-option [value]="type">{{ formatEmploymentType(type) }}</mat-option>
               }
             </mat-select>
           </mat-form-field>
@@ -108,15 +139,31 @@ export interface AttendanceLoadWorkersDialogData {
         } @else if (filteredWorkers().length === 0) {
           <div class="empty-state">
             <mat-icon>person_off</mat-icon>
-            <h4>No eligible workers found</h4>
-            <p>
-              No active farm assignments covering {{ data.attendanceDate }} match your filter.
-            </p>
+            @if (hasActiveFilters()) {
+              <h4>No workers match your filters</h4>
+              <p>
+                Try clearing your search query or changing the category / employment type filter.
+              </p>
+              <button
+                mat-stroked-button
+                color="primary"
+                type="button"
+                (click)="resetFilters()"
+              >
+                <mat-icon>filter_alt_off</mat-icon>
+                Reset Filters
+              </button>
+            } @else {
+              <h4>No eligible workers found</h4>
+              <p>
+                No active farm assignments covering {{ data.attendanceDate }} exist for this farm.
+              </p>
+            }
           </div>
         } @else {
           <div class="table-container">
             <table mat-table [dataSource]="filteredWorkers()" class="workers-table">
-              <!-- Selection Column -->
+              <!-- 1. Selection Checkbox Column -->
               <ng-container matColumnDef="select">
                 <th mat-header-cell *matHeaderCellDef class="checkbox-col">
                   <mat-checkbox
@@ -125,16 +172,17 @@ export interface AttendanceLoadWorkersDialogData {
                     [disabled]="selectableWorkers().length === 0"
                     (change)="toggleSelectAll($event.checked)"
                     aria-label="Select all available workers"
+                    matTooltip="Select all eligible workers"
                   />
                 </th>
                 <td mat-cell *matCellDef="let worker" class="checkbox-col">
                   @if (isAlreadyAdded(worker.workerId)) {
-                    <span
-                      class="already-added-pill"
+                    <mat-checkbox
+                      [checked]="false"
+                      [disabled]="true"
                       matTooltip="Already added to today's attendance"
-                    >
-                      Added
-                    </span>
+                      aria-label="Worker already added"
+                    />
                   } @else {
                     <mat-checkbox
                       [checked]="selectedIds().has(worker.workerId)"
@@ -145,45 +193,90 @@ export interface AttendanceLoadWorkersDialogData {
                 </td>
               </ng-container>
 
-              <!-- Worker Info -->
-              <ng-container matColumnDef="displayName">
-                <th mat-header-cell *matHeaderCellDef>Worker Name</th>
+              <!-- 2. Worker Identity: Display Name, Full Name, Mobile -->
+              <ng-container matColumnDef="worker">
+                <th mat-header-cell *matHeaderCellDef>Worker Identity</th>
                 <td mat-cell *matCellDef="let worker">
-                  <div class="worker-name-cell">
-                    <strong>{{ worker.displayName }}</strong>
+                  <div class="worker-identity-cell">
+                    <div class="worker-name-line">
+                      <strong class="display-name">{{ worker.displayName }}</strong>
+                      @if (
+                        worker.firstName &&
+                        worker.lastName &&
+                        worker.displayName !== worker.firstName + ' ' + worker.lastName
+                      ) {
+                        <span class="full-name">({{ worker.firstName }} {{ worker.lastName }})</span>
+                      }
+                    </div>
                     @if (worker.mobileNumber) {
-                      <small class="muted-text">{{ worker.mobileNumber }}</small>
+                      <div class="mobile-line">
+                        <mat-icon class="inline-icon">phone</mat-icon>
+                        <span>{{ worker.mobileNumber }}</span>
+                      </div>
                     }
                   </div>
                 </td>
               </ng-container>
 
-              <!-- Gender -->
+              <!-- 3. Gender -->
               <ng-container matColumnDef="gender">
-                <th mat-header-cell *matHeaderCellDef>Gender</th>
-                <td mat-cell *matCellDef="let worker">
+                <th mat-header-cell *matHeaderCellDef class="gender-col">Gender</th>
+                <td mat-cell *matCellDef="let worker" class="gender-col">
                   <span class="gender-pill" [attr.data-gender]="worker.gender">
                     {{ worker.gender }}
                   </span>
                 </td>
               </ng-container>
 
-              <!-- Category -->
+              <!-- 4. Labor Category, Employment Type & Contractor -->
               <ng-container matColumnDef="category">
-                <th mat-header-cell *matHeaderCellDef>Category</th>
+                <th mat-header-cell *matHeaderCellDef>Category &amp; Employment</th>
                 <td mat-cell *matCellDef="let worker">
-                  {{ worker.laborCategoryName || "General" }}
-                  @if (worker.contractorName) {
-                    <br /><small class="muted-text">Via {{ worker.contractorName }}</small>
-                  }
+                  <div class="category-meta-cell">
+                    <div class="tags-row">
+                      <span class="badge category-badge">
+                        {{ worker.laborCategoryName || "General" }}
+                      </span>
+                      <span class="badge type-badge">
+                        {{ formatEmploymentType(worker.employmentType) }}
+                      </span>
+                    </div>
+                    @if (worker.contractorName) {
+                      <div class="contractor-line">
+                        <mat-icon class="inline-icon">business</mat-icon>
+                        <span>Contractor: {{ worker.contractorName }}</span>
+                      </div>
+                    }
+                  </div>
                 </td>
               </ng-container>
 
-              <!-- Assignment Period -->
+              <!-- 5. Farm Assignment Period -->
               <ng-container matColumnDef="assignment">
-                <th mat-header-cell *matHeaderCellDef>Assigned Period</th>
+                <th mat-header-cell *matHeaderCellDef>Farm Assignment</th>
                 <td mat-cell *matCellDef="let worker">
-                  <small>{{ worker.assignedFrom }} to {{ worker.assignedTo || "Present" }}</small>
+                  <div class="assignment-cell">
+                    <span class="dates-range">
+                      {{ worker.assignedFrom }} &rarr; {{ worker.assignedTo || "Ongoing" }}
+                    </span>
+                  </div>
+                </td>
+              </ng-container>
+
+              <!-- 6. Eligibility Status Pill -->
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef class="status-col">Eligibility</th>
+                <td mat-cell *matCellDef="let worker" class="status-col">
+                  @if (isAlreadyAdded(worker.workerId)) {
+                    <span class="already-added-pill" matTooltip="Already present in today's attendance grid">
+                      Already Added
+                    </span>
+                  } @else {
+                    <span class="eligible-badge" matTooltip="Verified active assignment on {{ data.attendanceDate }}">
+                      <mat-icon class="inline-icon">check_circle</mat-icon>
+                      Eligible
+                    </span>
+                  }
                 </td>
               </ng-container>
 
@@ -202,7 +295,12 @@ export interface AttendanceLoadWorkersDialogData {
       <mat-dialog-actions class="dialog-actions">
         <div class="selection-count">
           @if (selectedIds().size > 0) {
-            <span>{{ selectedIds().size }} worker(s) selected</span>
+            <span class="count-badge">
+              <mat-icon>check</mat-icon>
+              {{ selectedIds().size }} worker(s) selected
+            </span>
+          } @else {
+            <span class="helper-text">Select one or more workers to add to attendance</span>
           }
         </div>
         <div class="button-group">
@@ -228,14 +326,13 @@ export interface AttendanceLoadWorkersDialogData {
         flex-direction: column;
         max-height: 85vh;
         width: 100%;
-        max-width: 820px;
       }
 
       .dialog-header {
         display: flex;
         align-items: center;
         gap: 16px;
-        padding: 20px 24px 12px;
+        padding: 20px 24px 14px;
         border-bottom: 1px solid var(--mat-sys-outline-variant, #e0e0e0);
 
         .header-icon {
@@ -274,19 +371,43 @@ export interface AttendanceLoadWorkersDialogData {
         padding: 16px 24px;
         overflow-y: auto;
         flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .eligibility-info-banner {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: #f1f8e9;
+        border: 1px solid #c5e1a5;
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-size: 0.82rem;
+        color: #2e7d32;
+
+        mat-icon {
+          font-size: 18px;
+          width: 18px;
+          height: 18px;
+          flex-shrink: 0;
+        }
       }
 
       .filters-bar {
         display: flex;
         gap: 12px;
-        margin-bottom: 12px;
+        flex-wrap: wrap;
 
         .search-field {
           flex: 2;
+          min-width: 200px;
         }
 
-        .category-field {
+        .filter-dropdown {
           flex: 1;
+          min-width: 150px;
         }
       }
 
@@ -319,7 +440,7 @@ export interface AttendanceLoadWorkersDialogData {
       }
 
       .table-container {
-        max-height: 400px;
+        max-height: 380px;
         overflow-y: auto;
         border: 1px solid var(--mat-sys-outline-variant, #e0e0e0);
         border-radius: 8px;
@@ -329,18 +450,56 @@ export interface AttendanceLoadWorkersDialogData {
         width: 100%;
 
         .checkbox-col {
-          width: 52px;
+          width: 48px;
           text-align: center;
           padding: 0 8px;
         }
 
-        .worker-name-cell {
+        .gender-col {
+          width: 80px;
+          text-align: center;
+        }
+
+        .status-col {
+          width: 110px;
+          text-align: center;
+        }
+
+        .worker-identity-cell {
           display: flex;
           flex-direction: column;
+          gap: 2px;
+          padding: 4px 0;
 
-          .muted-text {
-            font-size: 0.8rem;
-            color: var(--mat-sys-on-surface-variant, #757575);
+          .worker-name-line {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+
+            .display-name {
+              font-size: 0.9rem;
+              color: #212121;
+            }
+
+            .full-name {
+              font-size: 0.8rem;
+              color: #666;
+            }
+          }
+
+          .mobile-line {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.78rem;
+            color: #757575;
+
+            .inline-icon {
+              font-size: 12px;
+              width: 12px;
+              height: 12px;
+            }
           }
         }
 
@@ -364,18 +523,85 @@ export interface AttendanceLoadWorkersDialogData {
           }
         }
 
-        .already-added-pill {
-          display: inline-block;
-          padding: 2px 6px;
-          border-radius: 4px;
-          font-size: 0.7rem;
+        .category-meta-cell {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+
+          .tags-row {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+
+            .badge {
+              font-size: 0.72rem;
+              padding: 2px 6px;
+              border-radius: 4px;
+              font-weight: 500;
+            }
+
+            .category-badge {
+              background: #e8f5e9;
+              color: #2e7d32;
+            }
+
+            .type-badge {
+              background: #e3f2fd;
+              color: #1565c0;
+            }
+          }
+
+          .contractor-line {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.75rem;
+            color: #7b1fa2;
+
+            .inline-icon {
+              font-size: 12px;
+              width: 12px;
+              height: 12px;
+            }
+          }
+        }
+
+        .assignment-cell {
+          font-size: 0.8rem;
+          color: #555;
+        }
+
+        .eligible-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 3px;
+          padding: 2px 8px;
+          border-radius: 10px;
+          font-size: 0.72rem;
           font-weight: 600;
           background: #e8f5e9;
-          color: #2e7d32;
+          color: #1b7a36;
+
+          .inline-icon {
+            font-size: 13px;
+            width: 13px;
+            height: 13px;
+          }
+        }
+
+        .already-added-pill {
+          display: inline-block;
+          padding: 2px 8px;
+          border-radius: 10px;
+          font-size: 0.72rem;
+          font-weight: 600;
+          background: #f5f5f5;
+          color: #9e9e9e;
+          border: 1px solid #e0e0e0;
         }
 
         .row-already-added {
-          opacity: 0.65;
+          opacity: 0.6;
           background: rgba(0, 0, 0, 0.02);
         }
 
@@ -392,9 +618,25 @@ export interface AttendanceLoadWorkersDialogData {
         border-top: 1px solid var(--mat-sys-outline-variant, #e0e0e0);
 
         .selection-count {
-          font-size: 0.9rem;
-          font-weight: 500;
-          color: #1b7a36;
+          font-size: 0.88rem;
+
+          .count-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 600;
+            color: #1b7a36;
+
+            mat-icon {
+              font-size: 16px;
+              width: 16px;
+              height: 16px;
+            }
+          }
+
+          .helper-text {
+            color: var(--mat-sys-on-surface-variant, #757575);
+          }
         }
 
         .button-group {
@@ -415,10 +657,11 @@ export class AttendanceLoadWorkersDialogComponent implements OnInit {
 
   readonly displayedColumns: readonly string[] = [
     "select",
-    "displayName",
+    "worker",
     "gender",
     "category",
     "assignment",
+    "status",
   ];
 
   readonly allEligibleWorkers = signal<readonly AttendanceEligibleWorker[]>([]);
@@ -430,16 +673,37 @@ export class AttendanceLoadWorkersDialogComponent implements OnInit {
     () => new Set(this.data.alreadyAddedWorkerIds || []),
   );
 
+  readonly searchQuery = signal<string>("");
+  readonly selectedCategory = signal<string>("all");
+  readonly selectedEmploymentType = signal<string>("all");
+
   readonly filterForm = this.formBuilder.nonNullable.group({
     search: [""],
     category: ["all"],
+    employmentType: ["all"],
+  });
+
+  readonly hasActiveFilters = computed(() => {
+    return (
+      this.searchQuery().length > 0 ||
+      this.selectedCategory() !== "all" ||
+      this.selectedEmploymentType() !== "all"
+    );
   });
 
   readonly uniqueCategories = computed(() => {
     const set = new Set<string>();
     for (const w of this.allEligibleWorkers()) {
-      if (w.laborCategoryName) {
-        set.add(w.laborCategoryName);
+      set.add(w.laborCategoryName || "General");
+    }
+    return Array.from(set).sort();
+  });
+
+  readonly uniqueEmploymentTypes = computed(() => {
+    const set = new Set<string>();
+    for (const w of this.allEligibleWorkers()) {
+      if (w.employmentType) {
+        set.add(w.employmentType);
       }
     }
     return Array.from(set).sort();
@@ -447,18 +711,51 @@ export class AttendanceLoadWorkersDialogComponent implements OnInit {
 
   readonly filteredWorkers = computed(() => {
     const list = this.allEligibleWorkers();
-    const search = this.filterForm.controls.search.value.toLowerCase().trim();
-    const cat = this.filterForm.controls.category.value;
+    const search = this.searchQuery().toLowerCase().trim();
+    const cat = this.selectedCategory();
+    const empType = this.selectedEmploymentType();
 
     return list.filter((w) => {
-      if (cat !== "all" && w.laborCategoryName !== cat) {
-        return false;
+      // Labor category filter
+      if (cat !== "all") {
+        const workerCategory = (w.laborCategoryName || "General").trim();
+        if (workerCategory.toLowerCase() !== cat.toLowerCase()) {
+          return false;
+        }
       }
+
+      // Employment type filter
+      if (empType !== "all") {
+        const workerEmpType = (w.employmentType || "").trim();
+        if (workerEmpType.toUpperCase() !== empType.toUpperCase()) {
+          return false;
+        }
+      }
+
+      // Text search filter (matches display name, first/last name, mobile, contractor, category, employment type)
       if (search) {
-        const nameMatch = w.displayName.toLowerCase().includes(search);
-        const mobileMatch = w.mobileNumber ? w.mobileNumber.includes(search) : false;
-        return nameMatch || mobileMatch;
+        const nameMatch = (w.displayName || "").toLowerCase().includes(search);
+        const firstNameMatch = (w.firstName || "").toLowerCase().includes(search);
+        const lastNameMatch = (w.lastName || "").toLowerCase().includes(search);
+        const fullName = `${w.firstName || ""} ${w.lastName || ""}`.toLowerCase();
+        const fullNameMatch = fullName.includes(search);
+        const mobileMatch = w.mobileNumber ? w.mobileNumber.toLowerCase().includes(search) : false;
+        const contractorMatch = w.contractorName ? w.contractorName.toLowerCase().includes(search) : false;
+        const categoryMatch = (w.laborCategoryName || "General").toLowerCase().includes(search);
+        const typeMatch = (w.employmentType || "").toLowerCase().includes(search);
+
+        return (
+          nameMatch ||
+          firstNameMatch ||
+          lastNameMatch ||
+          fullNameMatch ||
+          mobileMatch ||
+          contractorMatch ||
+          categoryMatch ||
+          typeMatch
+        );
       }
+
       return true;
     });
   });
@@ -487,11 +784,60 @@ export class AttendanceLoadWorkersDialogComponent implements OnInit {
   ngOnInit(): void {
     this.loadWorkers();
 
-    this.filterForm.valueChanges
-      .pipe(debounceTime(200), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
-        // Trigger computed refresh automatically
+    this.filterForm.controls.search.valueChanges
+      .pipe(
+        debounceTime(150),
+        distinctUntilChanged(),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((term) => {
+        this.searchQuery.set(term?.trim() || "");
       });
+
+    this.filterForm.controls.category.valueChanges
+      .pipe(
+        distinctUntilChanged(),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((category) => {
+        this.selectedCategory.set(category || "all");
+      });
+
+    this.filterForm.controls.employmentType.valueChanges
+      .pipe(
+        distinctUntilChanged(),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((empType) => {
+        this.selectedEmploymentType.set(empType || "all");
+      });
+  }
+
+  clearSearch(): void {
+    this.filterForm.controls.search.setValue("");
+  }
+
+  resetFilters(): void {
+    this.filterForm.setValue({
+      search: "",
+      category: "all",
+      employmentType: "all",
+    });
+  }
+
+  formatEmploymentType(type: string): string {
+    switch (type?.toUpperCase()) {
+      case "PERMANENT":
+        return "Permanent";
+      case "DAILY_WAGE":
+        return "Daily Wage";
+      case "SEASONAL":
+        return "Seasonal";
+      case "CONTRACT":
+        return "Contract";
+      default:
+        return type || "Unknown";
+    }
   }
 
   loadWorkers(): void {

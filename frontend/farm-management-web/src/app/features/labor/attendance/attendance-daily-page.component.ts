@@ -23,7 +23,7 @@ import { MatSnackBar } from "@angular/material/snack-bar";
 import { MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
-import { Subject, debounceTime, finalize } from "rxjs";
+import { Subject, debounceTime, distinctUntilChanged, finalize } from "rxjs";
 
 import { PermissionService } from "../../../core/auth/permission.service";
 import { BreadcrumbService } from "../../../core/breadcrumb/breadcrumb.service";
@@ -142,7 +142,7 @@ export class AttendanceDailyPageComponent implements OnInit {
   readonly hasUnsavedChanges = signal<boolean>(false);
 
   // Filter Form for Top Bar
-  readonly topControlsForm = this.formBuilder.group({
+  readonly topControlsForm = this.formBuilder.nonNullable.group({
     attendanceDate: [new Date()],
     farmId: [""],
     searchWorker: [""],
@@ -168,20 +168,32 @@ export class AttendanceDailyPageComponent implements OnInit {
     );
   });
 
+  readonly searchWorkerQuery = signal<string>("");
+
   readonly filteredRows = computed(() => {
-    const search = this.topControlsForm.controls.searchWorker.value
-      ?.toLowerCase()
-      .trim();
+    const search = this.searchWorkerQuery().toLowerCase();
     const all = this.rows();
     if (!search) return all;
 
     return all.filter((r) => {
-      const nameMatch = r.workerDisplayName.toLowerCase().includes(search);
-      const mobileMatch = r.mobileNumber ? r.mobileNumber.includes(search) : false;
+      const nameMatch = (r.workerDisplayName || "").toLowerCase().includes(search);
+      const firstNameMatch = (r.workerFirstName || "").toLowerCase().includes(search);
+      const lastNameMatch = (r.workerLastName || "").toLowerCase().includes(search);
+      const mobileMatch = r.mobileNumber ? r.mobileNumber.toLowerCase().includes(search) : false;
       const catMatch = r.laborCategoryName
         ? r.laborCategoryName.toLowerCase().includes(search)
         : false;
-      return nameMatch || mobileMatch || catMatch;
+      const contractorMatch = r.contractorName
+        ? r.contractorName.toLowerCase().includes(search)
+        : false;
+      return (
+        nameMatch ||
+        firstNameMatch ||
+        lastNameMatch ||
+        mobileMatch ||
+        catMatch ||
+        contractorMatch
+      );
     });
   });
 
@@ -191,6 +203,10 @@ export class AttendanceDailyPageComponent implements OnInit {
       this.permissionService.has("Attendance.Create") ||
       this.permissionService.has("Attendance.Update")
     );
+  });
+
+  readonly canCreate = computed(() => {
+    return this.permissionService.has("Attendance.Create");
   });
 
   readonly canFinalize = computed(() => {
@@ -246,6 +262,17 @@ export class AttendanceDailyPageComponent implements OnInit {
           this.selectedFarmId.set(newFarmId);
           this.loadDailyAttendance();
         }
+      });
+
+    // In-grid search worker change handler
+    this.topControlsForm.controls.searchWorker.valueChanges
+      .pipe(
+        debounceTime(150),
+        distinctUntilChanged(),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((query) => {
+        this.searchWorkerQuery.set(query?.trim() || "");
       });
   }
 
@@ -504,7 +531,8 @@ export class AttendanceDailyPageComponent implements OnInit {
     if (!farm) return;
 
     const dialogRef = this.dialog.open(AttendanceLoadWorkersDialogComponent, {
-      width: "820px",
+      width: "880px",
+      maxWidth: "95vw",
       data: {
         farmId: farm.id,
         farmName: farm.name,
@@ -560,17 +588,24 @@ export class AttendanceDailyPageComponent implements OnInit {
   }
 
   // Top Action: Add Single Worker
-  openAddWorkerDialog(): void {
+  openAddWorkerDialog(initialSearchQuery?: string | null): void {
     const farm = this.selectedFarm();
     if (!farm) return;
 
+    const initialSearch =
+      initialSearchQuery?.trim() ||
+      this.topControlsForm.controls.searchWorker.value?.trim() ||
+      null;
+
     const dialogRef = this.dialog.open(AttendanceAddWorkerDialogComponent, {
-      width: "540px",
+      width: "880px",
+      maxWidth: "95vw",
       data: {
         farmId: farm.id,
         farmName: farm.name,
         attendanceDate: this.formattedDate(),
         alreadyAddedWorkerIds: this.alreadyAddedWorkerIds(),
+        initialSearch,
       } as AttendanceAddWorkerDialogData,
     });
 
@@ -582,6 +617,16 @@ export class AttendanceDailyPageComponent implements OnInit {
 
         const w = result.worker;
         const currentRows = [...this.rows()];
+
+        // Prevent adding worker twice
+        if (currentRows.some((r) => r.workerId === w.workerId)) {
+          this.snack.open(
+            `${w.displayName} is already in today's attendance roster.`,
+            "Close",
+            { duration: 3000 },
+          );
+          return;
+        }
 
         currentRows.push({
           workerId: w.workerId,

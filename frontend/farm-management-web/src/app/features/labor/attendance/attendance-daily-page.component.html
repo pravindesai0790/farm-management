@@ -337,6 +337,18 @@
           <mat-icon>search_off</mat-icon>
           <h4>No workers match the search filter</h4>
           <p>Try searching with another worker name or mobile number.</p>
+          @if (!isFinalized() && canCreate() && topControlsForm.controls.searchWorker.value) {
+            <button
+              mat-stroked-button
+              color="primary"
+              type="button"
+              (click)="openAddWorkerDialog(topControlsForm.controls.searchWorker.value)"
+              matTooltip="Search and add worker to daily attendance"
+            >
+              <mat-icon>person_search</mat-icon>
+              Search &amp; Add "{{ topControlsForm.controls.searchWorker.value }}"
+            </button>
+          }
         </div>
       } @else {
         <div class="table-wrap">
