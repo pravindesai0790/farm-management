@@ -23,3 +23,12 @@ public sealed record PlantationEndReasonResponse(
     string? Description,
     bool IsSystem,
     bool IsActive);
+
+public sealed record CurrencyResponse(
+    Guid Id,
+    string Code,
+    string Name,
+    string Symbol,
+    bool IsSystem,
+    bool IsActive,
+    int DisplayOrder);

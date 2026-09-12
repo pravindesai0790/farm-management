@@ -10,4 +10,5 @@ public interface IMasterDataService
     Task<IReadOnlyList<FarmOwnershipTypeResponse>> ListFarmOwnershipTypesAsync(MasterDataActor actor, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<PlantationEndReasonResponse>> ListPlantationEndReasonsAsync(MasterDataActor actor, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<PlantationEndReasonResponse>> ListCycleCancellationReasonsAsync(MasterDataActor actor, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<CurrencyResponse>> ListCurrenciesAsync(MasterDataActor actor, CancellationToken cancellationToken = default);
 }

@@ -33,6 +33,14 @@ public sealed class MasterDataService(IMasterDataStore store) : IMasterDataServi
     public Task<IReadOnlyList<PlantationEndReasonResponse>> ListCycleCancellationReasonsAsync(MasterDataActor actor, CancellationToken cancellationToken = default) =>
         ListPlantationEndReasonsAsync(actor, cancellationToken);
 
+    public async Task<IReadOnlyList<CurrencyResponse>> ListCurrenciesAsync(MasterDataActor actor, CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        return (await store.ListCurrenciesAsync(cancellationToken))
+            .Select(c => new CurrencyResponse(c.Id, c.Code, c.Name, c.Symbol, c.IsSystem, c.IsActive, c.DisplayOrder))
+            .ToArray();
+    }
+
     private static void ValidateActor(MasterDataActor actor)
     {
         if (actor.UserId == Guid.Empty || actor.OrganizationId == Guid.Empty)

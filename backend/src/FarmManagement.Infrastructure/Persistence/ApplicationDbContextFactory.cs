@@ -11,8 +11,7 @@ public sealed class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Ap
 
         if (string.IsNullOrWhiteSpace(connectionString))
         {
-            throw new InvalidOperationException(
-                "ConnectionStrings__DefaultConnection must be set when creating or applying EF Core migrations.");
+            connectionString = "Host=localhost;Database=farm_management;Username=postgres;Password=postgres";
         }
 
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()

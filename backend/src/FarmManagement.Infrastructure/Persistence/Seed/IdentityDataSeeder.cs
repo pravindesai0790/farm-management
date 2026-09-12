@@ -252,6 +252,14 @@ public sealed class IdentityDataSeeder(
         new("PLANT", "Plant", "plant", UnitCategory.Count, "NUMBER", 1m, 30)
     ];
 
+    private static readonly IReadOnlyList<SeedCurrency> SeedCurrencies =
+    [
+        new("INR", "Indian Rupee", "₹", 1, Guid.Parse("10000000-0000-0000-0000-000000000001")),
+        new("USD", "US Dollar", "$", 2, Guid.Parse("10000000-0000-0000-0000-000000000002")),
+        new("EUR", "Euro", "€", 3, Guid.Parse("10000000-0000-0000-0000-000000000003")),
+        new("GBP", "British Pound", "£", 4, Guid.Parse("10000000-0000-0000-0000-000000000004"))
+    ];
+
     private static readonly IReadOnlyList<SeedCrop> SeedCrops =
     [
         new("GRAPES", "Grapes", "FRUIT", "PERENNIAL"),
@@ -324,6 +332,7 @@ public sealed class IdentityDataSeeder(
         var permissions = await SeedPermissionsAsync(cancellationToken);
 
         await SeedRolePermissionsAsync(roles, permissions, cancellationToken);
+        await SeedCurrenciesAsync(cancellationToken);
         await SeedUnitsAsync(cancellationToken);
         await SeedFarmOwnershipTypesAsync(cancellationToken);
         await SeedCropsAsync(cancellationToken);
@@ -337,6 +346,30 @@ public sealed class IdentityDataSeeder(
         await transaction.CommitAsync(cancellationToken);
 
         logger.LogInformation("Identity data seeding completed.");
+    }
+
+    private async Task SeedCurrenciesAsync(CancellationToken cancellationToken)
+    {
+        foreach (var seedCurrency in SeedCurrencies)
+        {
+            var exists = await dbContext.Currencies
+                .AnyAsync(currency => currency.Code == seedCurrency.Code, cancellationToken);
+
+            if (exists)
+            {
+                continue;
+            }
+
+            dbContext.Currencies.Add(new Currency(
+                code: seedCurrency.Code,
+                name: seedCurrency.Name,
+                symbol: seedCurrency.Symbol,
+                isSystem: true,
+                displayOrder: seedCurrency.DisplayOrder,
+                id: seedCurrency.Id));
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
     }
 
     private async Task SeedUnitsAsync(CancellationToken cancellationToken)
@@ -727,6 +760,8 @@ public sealed class IdentityDataSeeder(
         string? Description = null);
 
     private sealed record SeedLaborCategory(string Name, string? Description = null);
+
+    private sealed record SeedCurrency(string Code, string Name, string Symbol, int DisplayOrder, Guid Id);
 
     private sealed record InitialAdminConfiguration(string Email, string Password);
 }

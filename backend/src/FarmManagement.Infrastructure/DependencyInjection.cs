@@ -56,6 +56,7 @@ public static class DependencyInjection
         services.AddScoped<IContractorStore, ContractorStore>();
         services.AddScoped<ILaborCategoryStore, LaborCategoryStore>();
         services.AddScoped<IWorkerFarmAssignmentStore, WorkerFarmAssignmentStore>();
+        services.AddScoped<ILaborWageRateStore, LaborWageRateStore>();
         services.AddScoped<IMasterDataStore, MasterDataStore>();
         services.AddScoped<IDashboardStore, DashboardStore>();
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();

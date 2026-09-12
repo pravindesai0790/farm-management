@@ -25,4 +25,11 @@ public sealed class MasterDataStore(ApplicationDbContext dbContext) : IMasterDat
             .Where(reason => reason.IsActive && (reason.IsSystem || reason.OrganizationId == organizationId))
             .OrderBy(reason => reason.Name)
             .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<Currency>> ListCurrenciesAsync(CancellationToken cancellationToken = default) =>
+        await dbContext.Currencies.AsNoTracking()
+            .Where(currency => currency.IsActive)
+            .OrderBy(currency => currency.DisplayOrder)
+            .ThenBy(currency => currency.Code)
+            .ToListAsync(cancellationToken);
 }

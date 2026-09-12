@@ -117,6 +117,11 @@ public static class UserContextHelper
             return (TActor)(object)new LaborCategoryActor(userId, organizationId);
         }
 
+        if (typeof(TActor) == typeof(LaborWageRateActor))
+        {
+            return (TActor)(object)new LaborWageRateActor(userId, organizationId);
+        }
+
         if (typeof(TActor) == typeof(DashboardActor))
         {
             return (TActor)(object)new DashboardActor(userId, organizationId);

@@ -57,6 +57,10 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
 
     public DbSet<WorkerFarmAssignment> WorkerFarmAssignments => Set<WorkerFarmAssignment>();
 
+    public DbSet<Currency> Currencies => Set<Currency>();
+
+    public DbSet<LaborWageRate> LaborWageRates => Set<LaborWageRate>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);

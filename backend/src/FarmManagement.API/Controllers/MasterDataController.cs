@@ -30,5 +30,9 @@ public sealed class MasterDataController(IMasterDataService masterDataService) :
     public async Task<IActionResult> ListCycleCancellationReasons(CancellationToken cancellationToken) =>
         Ok(await masterDataService.ListCycleCancellationReasonsAsync(GetUserContext(), cancellationToken));
 
+    [HttpGet("currencies")]
+    public async Task<IActionResult> ListCurrencies(CancellationToken cancellationToken) =>
+        Ok(await masterDataService.ListCurrenciesAsync(GetUserContext(), cancellationToken));
+
     private MasterDataActor GetUserContext() => UserContextHelper.GetUserContext<MasterDataActor>(User);
 }
