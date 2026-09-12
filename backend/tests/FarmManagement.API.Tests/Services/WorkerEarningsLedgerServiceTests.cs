@@ -317,6 +317,28 @@ public sealed class WorkerEarningsLedgerServiceTests
     }
 
     [Fact]
+    public async Task CalculateAttendanceEarningsAsync_WhenNotWorkedWithZeroQuantity_ReturnsNonEarningZeroGross()
+    {
+        var (store, worker, _) = SetupDefaultScenario();
+        var service = new WorkerEarningsLedgerService(store);
+
+        var requestNotWorked = new CalculateAttendanceEarningsRequest(
+            WorkerId: _workerId,
+            AttendanceDate: new DateOnly(2026, 9, 1),
+            AttendanceType: "NOT_WORKED",
+            Quantity: 0m);
+
+        var result = await service.CalculateAttendanceEarningsAsync(CreateActor(), requestNotWorked);
+        Assert.NotNull(result);
+        Assert.False(result.IsEarningEligible);
+        Assert.Equal(0m, result.GrossAmount);
+        Assert.Equal(0m, result.WageRate);
+        Assert.Equal(0m, result.Quantity);
+        Assert.Null(result.WageType);
+        Assert.Equal("NOT_WORKED", result.AttendanceType);
+    }
+
+    [Fact]
     public async Task ProcessAttendanceEarningsAsync_NewAttendance_CreatesCalculatedEntry()
     {
         var (store, _, _) = SetupDefaultScenario();

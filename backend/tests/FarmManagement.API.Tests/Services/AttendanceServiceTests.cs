@@ -968,6 +968,281 @@ public sealed class AttendanceServiceTests
 
     #endregion
 
+    #region Attendance Wage Preview Tests
+
+    [Fact]
+    public async Task PreviewWageAsync_FullDay_ReturnsFullDayRateAndCalculatedAmount()
+    {
+        var store = new FakeAttendanceStore();
+        var earnings = new FakeAttendanceEarningsIntegration { FullDayRate = 500m };
+        var worker = CreateWorker(gender: Gender.Male);
+        store.Workers.Add(worker);
+        var service = CreateService(store, earnings);
+
+        var request = new AttendanceWagePreviewRequest(
+            WorkerId: worker.Id,
+            AttendanceDate: new DateOnly(2026, 9, 12),
+            AttendanceType: "FULL_DAY");
+
+        var response = await service.PreviewWageAsync(CreateActor(), request);
+
+        Assert.NotNull(response);
+        Assert.Equal(worker.Id, response.WorkerId);
+        Assert.Equal("FULL_DAY", response.AttendanceType);
+        Assert.Equal("FULL_DAY", response.ResolvedWageType);
+        Assert.Equal("FULL_DAY", response.WageType);
+        Assert.Equal(500m, response.Rate);
+        Assert.Equal(1m, response.Quantity);
+        Assert.Null(response.WorkingHours);
+        Assert.Equal(500m, response.CalculatedAmount);
+        Assert.Equal("INR", response.CurrencyCode);
+        Assert.Equal("₹", response.CurrencySymbol);
+        Assert.Equal("INR", response.Currency);
+        Assert.True(response.IsEarningEligible);
+        Assert.True(response.IsWorkerEligible);
+        Assert.Equal(0, earnings.LedgerWriteCallCount);
+    }
+
+    [Fact]
+    public async Task PreviewWageAsync_HalfDay_ReturnsHalfDayRateAndCalculatedAmount()
+    {
+        var store = new FakeAttendanceStore();
+        var earnings = new FakeAttendanceEarningsIntegration { HalfDayRate = 275m };
+        var worker = CreateWorker(gender: Gender.Female);
+        store.Workers.Add(worker);
+        var service = CreateService(store, earnings);
+
+        var request = new AttendanceWagePreviewRequest(
+            WorkerId: worker.Id,
+            AttendanceDate: new DateOnly(2026, 9, 12),
+            AttendanceType: "HALF_DAY");
+
+        var response = await service.PreviewWageAsync(CreateActor(), request);
+
+        Assert.NotNull(response);
+        Assert.Equal("HALF_DAY", response.AttendanceType);
+        Assert.Equal("HALF_DAY", response.ResolvedWageType);
+        Assert.Equal(275m, response.Rate);
+        Assert.Equal(1m, response.Quantity);
+        Assert.Null(response.WorkingHours);
+        Assert.Equal(275m, response.CalculatedAmount);
+        Assert.True(response.IsEarningEligible);
+        Assert.Equal(0, earnings.LedgerWriteCallCount);
+    }
+
+    [Fact]
+    public async Task PreviewWageAsync_Hourly_CalculatesHoursMultipliedByRate()
+    {
+        var store = new FakeAttendanceStore();
+        var earnings = new FakeAttendanceEarningsIntegration { HourlyRate = 60m };
+        var worker = CreateWorker();
+        store.Workers.Add(worker);
+        var service = CreateService(store, earnings);
+
+        var request = new AttendanceWagePreviewRequest(
+            WorkerId: worker.Id,
+            AttendanceDate: new DateOnly(2026, 9, 12),
+            AttendanceType: "HOURLY",
+            WorkingHours: 6.5m);
+
+        var response = await service.PreviewWageAsync(CreateActor(), request);
+
+        Assert.NotNull(response);
+        Assert.Equal("HOURLY", response.AttendanceType);
+        Assert.Equal("HOURLY", response.ResolvedWageType);
+        Assert.Equal(60m, response.Rate);
+        Assert.Equal(6.5m, response.Quantity);
+        Assert.Equal(6.5m, response.WorkingHours);
+        Assert.Equal(390m, response.CalculatedAmount);
+        Assert.True(response.IsEarningEligible);
+        Assert.Equal(0, earnings.LedgerWriteCallCount);
+    }
+
+    [Fact]
+    public async Task PreviewWageAsync_NotWorked_ReturnsZeroEarningsAndZeroRate()
+    {
+        var store = new FakeAttendanceStore();
+        var earnings = new FakeAttendanceEarningsIntegration();
+        var worker = CreateWorker();
+        store.Workers.Add(worker);
+        var service = CreateService(store, earnings);
+
+        var request = new AttendanceWagePreviewRequest(
+            WorkerId: worker.Id,
+            AttendanceDate: new DateOnly(2026, 9, 12),
+            AttendanceType: "NOT_WORKED");
+
+        var response = await service.PreviewWageAsync(CreateActor(), request);
+
+        Assert.NotNull(response);
+        Assert.Equal("NOT_WORKED", response.AttendanceType);
+        Assert.Null(response.ResolvedWageType);
+        Assert.Null(response.WageType);
+        Assert.Equal(0m, response.Rate);
+        Assert.Equal(0m, response.Quantity);
+        Assert.Null(response.WorkingHours);
+        Assert.Equal(0m, response.CalculatedAmount);
+        Assert.False(response.IsEarningEligible);
+        Assert.Equal(0, earnings.LedgerWriteCallCount);
+    }
+
+    [Fact]
+    public async Task PreviewWageAsync_WhenHourlyMissingWorkingHours_ThrowsValidationException()
+    {
+        var store = new FakeAttendanceStore();
+        var service = CreateService(store);
+
+        var request = new AttendanceWagePreviewRequest(
+            WorkerId: Guid.NewGuid(),
+            AttendanceDate: new DateOnly(2026, 9, 12),
+            AttendanceType: "HOURLY",
+            WorkingHours: null);
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(() =>
+            service.PreviewWageAsync(CreateActor(), request));
+        Assert.NotNull(ex.Errors);
+        Assert.True(ex.Errors.ContainsKey("workingHours"));
+    }
+
+    [Fact]
+    public async Task PreviewWageAsync_WhenWorkingHoursGivenForFullDay_ThrowsValidationException()
+    {
+        var store = new FakeAttendanceStore();
+        var service = CreateService(store);
+
+        var request = new AttendanceWagePreviewRequest(
+            WorkerId: Guid.NewGuid(),
+            AttendanceDate: new DateOnly(2026, 9, 12),
+            AttendanceType: "FULL_DAY",
+            WorkingHours: 5m);
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(() =>
+            service.PreviewWageAsync(CreateActor(), request));
+        Assert.NotNull(ex.Errors);
+        Assert.True(ex.Errors.ContainsKey("workingHours"));
+    }
+
+    [Fact]
+    public async Task PreviewWageAsync_WhenFarmIdProvidedAndWorkerNotAssigned_ThrowsValidationException()
+    {
+        var store = new FakeAttendanceStore();
+        var farm = CreateFarm();
+        var worker = CreateWorker();
+        store.Farms.Add(farm);
+        store.Workers.Add(worker); // Not assigned to farm
+        var service = CreateService(store);
+
+        var request = new AttendanceWagePreviewRequest(
+            WorkerId: worker.Id,
+            AttendanceDate: new DateOnly(2026, 9, 12),
+            AttendanceType: "FULL_DAY",
+            FarmId: farm.Id);
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(() =>
+            service.PreviewWageAsync(CreateActor(), request));
+        Assert.NotNull(ex.Errors);
+        Assert.True(ex.Errors.ContainsKey("workerId"));
+    }
+
+    [Fact]
+    public async Task PreviewWageAsync_WhenFarmIdProvidedAndWorkerAssigned_Succeeds()
+    {
+        var store = new FakeAttendanceStore();
+        var earnings = new FakeAttendanceEarningsIntegration { FullDayRate = 500m };
+        var farm = CreateFarm();
+        var worker = CreateWorker();
+        AssignWorkerToFarm(worker, farm, new DateOnly(2026, 1, 1));
+        store.Farms.Add(farm);
+        store.Workers.Add(worker);
+        var service = CreateService(store, earnings);
+
+        var request = new AttendanceWagePreviewRequest(
+            WorkerId: worker.Id,
+            AttendanceDate: new DateOnly(2026, 9, 12),
+            AttendanceType: "FULL_DAY",
+            FarmId: farm.Id);
+
+        var response = await service.PreviewWageAsync(CreateActor(), request);
+
+        Assert.NotNull(response);
+        Assert.Equal(500m, response.CalculatedAmount);
+    }
+
+    [Fact]
+    public async Task PreviewWageAsync_DoesNotWriteToEarningsLedger()
+    {
+        var store = new FakeAttendanceStore();
+        var earnings = new FakeAttendanceEarningsIntegration();
+        var worker = CreateWorker();
+        store.Workers.Add(worker);
+        var service = CreateService(store, earnings);
+
+        var request = new AttendanceWagePreviewRequest(
+            WorkerId: worker.Id,
+            AttendanceDate: new DateOnly(2026, 9, 12),
+            AttendanceType: "FULL_DAY");
+
+        await service.PreviewWageAsync(CreateActor(), request);
+
+        Assert.Equal(1, earnings.CalculationCallCount);
+        Assert.Equal(0, earnings.LedgerWriteCallCount);
+        Assert.Empty(store.Attendances);
+    }
+
+    [Fact]
+    public async Task PreviewWageBatchAsync_WithMixedAttendanceTypes_CalculatesRosterPreviewAndSummaryTotals()
+    {
+        var store = new FakeAttendanceStore();
+        var earnings = new FakeAttendanceEarningsIntegration
+        {
+            FullDayRate = 500m,
+            HalfDayRate = 250m,
+            HourlyRate = 60m
+        };
+        var farm = CreateFarm();
+        var w1 = CreateWorker(firstName: "Worker1");
+        var w2 = CreateWorker(firstName: "Worker2");
+        var w3 = CreateWorker(firstName: "Worker3");
+        var w4 = CreateWorker(firstName: "Worker4");
+        AssignWorkerToFarm(w1, farm, new DateOnly(2026, 1, 1));
+        AssignWorkerToFarm(w2, farm, new DateOnly(2026, 1, 1));
+        AssignWorkerToFarm(w3, farm, new DateOnly(2026, 1, 1));
+        AssignWorkerToFarm(w4, farm, new DateOnly(2026, 1, 1));
+        store.Farms.Add(farm);
+        store.Workers.AddRange([w1, w2, w3, w4]);
+
+        var service = CreateService(store, earnings);
+        var date = new DateOnly(2026, 9, 12);
+
+        var request = new AttendanceWagePreviewBatchRequest(
+            AttendanceDate: date,
+            FarmId: farm.Id,
+            Items:
+            [
+                new AttendanceWagePreviewBatchItemRequest(w1.Id, "FULL_DAY"),
+                new AttendanceWagePreviewBatchItemRequest(w2.Id, "HALF_DAY"),
+                new AttendanceWagePreviewBatchItemRequest(w3.Id, "HOURLY", WorkingHours: 5m),
+                new AttendanceWagePreviewBatchItemRequest(w4.Id, "NOT_WORKED")
+            ]);
+
+        var response = await service.PreviewWageBatchAsync(CreateActor(), request);
+
+        Assert.NotNull(response);
+        Assert.Equal(date, response.AttendanceDate);
+        Assert.Equal(4, response.TotalCount);
+        Assert.Equal(3, response.WorkedCount);
+        Assert.Equal(1, response.FullDayCount);
+        Assert.Equal(1, response.HalfDayCount);
+        Assert.Equal(1, response.HourlyCount);
+        Assert.Equal(1, response.NotWorkedCount);
+        // 500 (full) + 250 (half) + 300 (5 * 60) + 0 (not worked) = 1050
+        Assert.Equal(1050m, response.TotalEstimatedEarnings);
+        Assert.Equal(4, response.Items.Count);
+        Assert.Equal(0, earnings.LedgerWriteCallCount);
+    }
+
+    #endregion
+
     #region Fake Store & Integration
 
     private sealed class FakeAttendanceEarningsIntegration : IAttendanceEarningsIntegration

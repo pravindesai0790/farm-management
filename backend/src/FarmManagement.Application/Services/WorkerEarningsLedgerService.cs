@@ -28,11 +28,6 @@ public sealed class WorkerEarningsLedgerService(IWorkerEarningsLedgerStore store
             throw new ValidationException("An attendance type is required.");
         }
 
-        if (request.Quantity <= 0)
-        {
-            throw new ValidationException("The attendance quantity must be greater than zero.");
-        }
-
         // 1. Load the worker
         var worker = await store.FindWorkerAsync(request.WorkerId, actor.OrganizationId, cancellationToken);
         if (worker is null)
@@ -53,7 +48,7 @@ public sealed class WorkerEarningsLedgerService(IWorkerEarningsLedgerStore store
         if (!TryResolveWageTypeFromAttendanceType(request.AttendanceType, out var wageType, out var isEarningEligible))
         {
             throw new ValidationException(
-                $"The attendance type '{request.AttendanceType}' is invalid. Supported values: FULL_DAY, HALF_DAY, HOURLY, MONTHLY, ABSENT, LEAVE.");
+                $"The attendance type '{request.AttendanceType}' is invalid. Supported values: FULL_DAY, HALF_DAY, HOURLY, MONTHLY, ABSENT, LEAVE, NOT_WORKED.");
         }
 
         if (!isEarningEligible || wageType is null)
@@ -64,7 +59,7 @@ public sealed class WorkerEarningsLedgerService(IWorkerEarningsLedgerStore store
                 Gender: gender,
                 AttendanceType: request.AttendanceType.Trim().ToUpperInvariant(),
                 WageType: null,
-                Quantity: request.Quantity,
+                Quantity: request.Quantity > 0 ? request.Quantity : 0m,
                 WageRate: 0m,
                 GrossAmount: 0m,
                 CurrencyId: null,
@@ -73,6 +68,11 @@ public sealed class WorkerEarningsLedgerService(IWorkerEarningsLedgerStore store
                 IsEarningEligible: false,
                 IsWorkerEligible: true,
                 IneligibilityReason: null);
+        }
+
+        if (request.Quantity <= 0)
+        {
+            throw new ValidationException("The attendance quantity must be greater than zero.");
         }
 
         // 5. Resolve wage rate by organization + gender + wage type + attendance date
@@ -135,11 +135,6 @@ public sealed class WorkerEarningsLedgerService(IWorkerEarningsLedgerStore store
             throw new ValidationException("An attendance type is required.");
         }
 
-        if (request.Quantity <= 0)
-        {
-            throw new ValidationException("The attendance quantity must be greater than zero.");
-        }
-
         // 1. Load the worker
         var worker = await store.FindWorkerAsync(request.WorkerId, actor.OrganizationId, cancellationToken);
         if (worker is null)
@@ -160,7 +155,7 @@ public sealed class WorkerEarningsLedgerService(IWorkerEarningsLedgerStore store
         if (!TryResolveWageTypeFromAttendanceType(request.AttendanceType, out var wageType, out var isEarningEligible))
         {
             throw new ValidationException(
-                $"The attendance type '{request.AttendanceType}' is invalid. Supported values: FULL_DAY, HALF_DAY, HOURLY, MONTHLY, ABSENT, LEAVE.");
+                $"The attendance type '{request.AttendanceType}' is invalid. Supported values: FULL_DAY, HALF_DAY, HOURLY, MONTHLY, ABSENT, LEAVE, NOT_WORKED.");
         }
 
         var existingEntry = await store.FindByAttendanceIdAsync(actor.OrganizationId, request.AttendanceId, cancellationToken);
@@ -222,6 +217,11 @@ public sealed class WorkerEarningsLedgerService(IWorkerEarningsLedgerStore store
             }
 
             return null;
+        }
+
+        if (request.Quantity <= 0)
+        {
+            throw new ValidationException("The attendance quantity must be greater than zero.");
         }
 
         // 5. Resolve wage rate by organization + gender + wage type + attendance date

@@ -526,6 +526,155 @@ public sealed class AttendanceService(
         }, cancellationToken);
     }
 
+    public async Task<AttendanceWagePreviewResponse> PreviewWageAsync(
+        AttendanceActor actor,
+        AttendanceWagePreviewRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (request.WorkerId == Guid.Empty)
+        {
+            throw Validation("workerId", "A valid worker ID is required.");
+        }
+
+        if (request.AttendanceDate == default)
+        {
+            throw Validation("attendanceDate", "Attendance date is required.");
+        }
+
+        var attendanceType = ParseAttendanceType(request.AttendanceType);
+        ValidateWorkingHours(attendanceType, request.WorkingHours);
+
+        if (request.FarmId.HasValue && request.FarmId.Value != Guid.Empty)
+        {
+            var farm = await store.FindFarmAsync(request.FarmId.Value, actor.OrganizationId, cancellationToken);
+            if (farm is null)
+            {
+                throw new ResourceNotFoundException("The farm was not found.");
+            }
+
+            var workerWithAssignment = await store.FindWorkerWithAssignmentAsync(
+                actor.OrganizationId,
+                request.WorkerId,
+                request.FarmId.Value,
+                request.AttendanceDate,
+                cancellationToken);
+
+            if (workerWithAssignment is null)
+            {
+                throw Validation("workerId", "The worker does not have a valid active farm assignment for this farm on the selected date.");
+            }
+        }
+
+        var quantity = attendanceType switch
+        {
+            AttendanceType.Hourly => request.WorkingHours!.Value,
+            AttendanceType.NotWorked => 0m,
+            _ => 1m
+        };
+
+        var previewResult = await earningsIntegration.CalculateAttendanceEarningsAsync(
+            new EarningsActor(actor.UserId, actor.OrganizationId),
+            new CalculateAttendanceEarningsRequest(
+                WorkerId: request.WorkerId,
+                AttendanceDate: request.AttendanceDate,
+                AttendanceType: FormatAttendanceType(attendanceType),
+                Quantity: quantity),
+            cancellationToken);
+
+        return new AttendanceWagePreviewResponse(
+            WorkerId: previewResult.WorkerId,
+            WorkerDisplayName: previewResult.WorkerDisplayName,
+            Gender: previewResult.Gender.ToString().ToUpperInvariant(),
+            AttendanceDate: request.AttendanceDate,
+            AttendanceType: FormatAttendanceType(attendanceType),
+            ResolvedWageType: previewResult.WageType,
+            WageType: previewResult.WageType,
+            Rate: previewResult.WageRate,
+            Quantity: previewResult.Quantity,
+            WorkingHours: attendanceType == AttendanceType.Hourly ? request.WorkingHours : null,
+            CalculatedAmount: previewResult.GrossAmount,
+            CurrencyId: previewResult.CurrencyId,
+            CurrencyCode: previewResult.CurrencyCode,
+            CurrencySymbol: previewResult.CurrencySymbol,
+            Currency: previewResult.CurrencyCode,
+            IsEarningEligible: previewResult.IsEarningEligible,
+            IsWorkerEligible: previewResult.IsWorkerEligible,
+            IneligibilityReason: previewResult.IneligibilityReason);
+    }
+
+    public async Task<AttendanceWagePreviewBatchResponse> PreviewWageBatchAsync(
+        AttendanceActor actor,
+        AttendanceWagePreviewBatchRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (request.AttendanceDate == default)
+        {
+            throw Validation("attendanceDate", "Attendance date is required.");
+        }
+
+        if (request.Items is null)
+        {
+            throw Validation("items", "Items list is required.");
+        }
+
+        var previewItems = new List<AttendanceWagePreviewResponse>(request.Items.Count);
+        var fullDayCount = 0;
+        var halfDayCount = 0;
+        var hourlyCount = 0;
+        var notWorkedCount = 0;
+        var totalEstimatedEarnings = 0m;
+
+        foreach (var item in request.Items)
+        {
+            var singleRequest = new AttendanceWagePreviewRequest(
+                WorkerId: item.WorkerId,
+                AttendanceDate: request.AttendanceDate,
+                AttendanceType: item.AttendanceType,
+                WorkingHours: item.WorkingHours,
+                FarmId: request.FarmId);
+
+            var preview = await PreviewWageAsync(actor, singleRequest, cancellationToken);
+            previewItems.Add(preview);
+
+            switch (preview.AttendanceType)
+            {
+                case "FULL_DAY":
+                    fullDayCount++;
+                    break;
+                case "HALF_DAY":
+                    halfDayCount++;
+                    break;
+                case "HOURLY":
+                    hourlyCount++;
+                    break;
+                case "NOT_WORKED":
+                    notWorkedCount++;
+                    break;
+            }
+
+            totalEstimatedEarnings += preview.CalculatedAmount;
+        }
+
+        var workedCount = fullDayCount + halfDayCount + hourlyCount;
+
+        return new AttendanceWagePreviewBatchResponse(
+            AttendanceDate: request.AttendanceDate,
+            TotalCount: previewItems.Count,
+            WorkedCount: workedCount,
+            FullDayCount: fullDayCount,
+            HalfDayCount: halfDayCount,
+            HourlyCount: hourlyCount,
+            NotWorkedCount: notWorkedCount,
+            TotalEstimatedEarnings: totalEstimatedEarnings,
+            Items: previewItems);
+    }
+
     private static AttendanceType ParseAttendanceType(string attendanceType) =>
         string.IsNullOrWhiteSpace(attendanceType)
             ? throw Validation("attendanceType", "Attendance type is required.")

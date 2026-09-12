@@ -40,4 +40,15 @@ public interface IAttendanceService
         AttendanceActor actor,
         SaveDailyDraftAttendanceBatchRequest request,
         CancellationToken cancellationToken = default);
+
+    Task<AttendanceWagePreviewResponse> PreviewWageAsync(
+        AttendanceActor actor,
+        AttendanceWagePreviewRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<AttendanceWagePreviewBatchResponse> PreviewWageBatchAsync(
+        AttendanceActor actor,
+        AttendanceWagePreviewBatchRequest request,
+        CancellationToken cancellationToken = default);
 }
+

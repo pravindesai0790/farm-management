@@ -93,3 +93,51 @@ public sealed record DailyAttendanceResponse(
     DateOnly AttendanceDate,
     DailyAttendanceSummaryResponse Summary,
     IReadOnlyList<AttendanceRecordResponse> Records);
+
+public sealed record AttendanceWagePreviewRequest(
+    Guid WorkerId,
+    DateOnly AttendanceDate,
+    string AttendanceType,
+    decimal? WorkingHours = null,
+    Guid? FarmId = null);
+
+public sealed record AttendanceWagePreviewResponse(
+    Guid WorkerId,
+    string WorkerDisplayName,
+    string Gender,
+    DateOnly AttendanceDate,
+    string AttendanceType,
+    string? ResolvedWageType,
+    string? WageType,
+    decimal Rate,
+    decimal Quantity,
+    decimal? WorkingHours,
+    decimal CalculatedAmount,
+    Guid? CurrencyId,
+    string CurrencyCode,
+    string CurrencySymbol,
+    string Currency,
+    bool IsEarningEligible,
+    bool IsWorkerEligible,
+    string? IneligibilityReason = null);
+
+public sealed record AttendanceWagePreviewBatchItemRequest(
+    Guid WorkerId,
+    string AttendanceType,
+    decimal? WorkingHours = null);
+
+public sealed record AttendanceWagePreviewBatchRequest(
+    DateOnly AttendanceDate,
+    IReadOnlyList<AttendanceWagePreviewBatchItemRequest> Items,
+    Guid? FarmId = null);
+
+public sealed record AttendanceWagePreviewBatchResponse(
+    DateOnly AttendanceDate,
+    int TotalCount,
+    int WorkedCount,
+    int FullDayCount,
+    int HalfDayCount,
+    int HourlyCount,
+    int NotWorkedCount,
+    decimal TotalEstimatedEarnings,
+    IReadOnlyList<AttendanceWagePreviewResponse> Items);

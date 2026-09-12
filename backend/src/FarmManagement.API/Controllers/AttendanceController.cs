@@ -134,6 +134,36 @@ public sealed class AttendanceController(
         return Ok(result);
     }
 
+    [HttpPost("preview")]
+    [Authorize(Policy = "Permission:Attendance.View")]
+    public async Task<ActionResult<AttendanceWagePreviewResponse>> PreviewWage(
+        [FromBody] AttendanceWagePreviewRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await attendanceService.PreviewWageAsync(
+            GetUserContext(),
+            request,
+            cancellationToken);
+
+        return Ok(result);
+    }
+
+    [HttpPost("preview-batch")]
+    [HttpPost("preview/batch")]
+    [Authorize(Policy = "Permission:Attendance.View")]
+    public async Task<ActionResult<AttendanceWagePreviewBatchResponse>> PreviewWageBatch(
+        [FromBody] AttendanceWagePreviewBatchRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await attendanceService.PreviewWageBatchAsync(
+            GetUserContext(),
+            request,
+            cancellationToken);
+
+        return Ok(result);
+    }
+
     private AttendanceActor GetUserContext() =>
         UserContextHelper.GetUserContext<AttendanceActor>(User);
 }
+
