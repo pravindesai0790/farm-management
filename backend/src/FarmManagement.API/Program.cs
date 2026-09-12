@@ -125,6 +125,7 @@ builder.Services.AddScoped<IWorkerFarmAssignmentService, WorkerFarmAssignmentSer
 builder.Services.AddScoped<ILaborWageRateService, LaborWageRateService>();
 builder.Services.AddScoped<IWorkerEarningsLedgerService, WorkerEarningsLedgerService>();
 builder.Services.AddScoped<IAttendanceEarningsIntegration, WorkerEarningsLedgerService>();
+builder.Services.AddScoped<IAttendanceService, AttendanceService>();
 builder.Services.AddScoped<IWorkerPaymentService, WorkerPaymentService>();
 builder.Services.AddScoped<IWorkerPaymentAllocationService, WorkerPaymentAllocationService>();
 builder.Services.AddScoped<IWorkerSettlementService, WorkerSettlementService>();

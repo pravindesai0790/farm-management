@@ -61,6 +61,7 @@ public static class DependencyInjection
         services.AddScoped<IWorkerPaymentStore, WorkerPaymentStore>();
         services.AddScoped<IWorkerPaymentAllocationStore, WorkerPaymentAllocationStore>();
         services.AddScoped<IWorkerSettlementStore, WorkerSettlementStore>();
+        services.AddScoped<IAttendanceStore, AttendanceStore>();
         services.AddScoped<IMasterDataStore, MasterDataStore>();
         services.AddScoped<IDashboardStore, DashboardStore>();
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();
