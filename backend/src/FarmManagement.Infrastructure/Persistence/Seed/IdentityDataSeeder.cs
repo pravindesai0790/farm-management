@@ -123,7 +123,11 @@ public sealed class IdentityDataSeeder(
         new("WorkerPayment.Cancel", "Cancel worker payments.", "Worker Payments"),
         new("WorkerEarnings.View", "View worker earnings.", "Worker Earnings"),
         new("WorkerEarnings.Approve", "Approve worker earnings.", "Worker Earnings"),
-        new("WorkerEarnings.Reverse", "Reverse worker earnings.", "Worker Earnings")
+        new("WorkerEarnings.Reverse", "Reverse worker earnings.", "Worker Earnings"),
+        new("Attendance.View", "View labor attendance.", "Attendance"),
+        new("Attendance.Create", "Create labor attendance.", "Attendance"),
+        new("Attendance.Update", "Update labor attendance.", "Attendance"),
+        new("Attendance.Finalize", "Finalize labor attendance.", "Attendance")
     ];
 
     private static readonly IReadOnlySet<string> OrganizationAdminPermissions =
@@ -220,7 +224,11 @@ public sealed class IdentityDataSeeder(
             "WorkerPayment.Cancel",
             "WorkerEarnings.View",
             "WorkerEarnings.Approve",
-            "WorkerEarnings.Reverse"
+            "WorkerEarnings.Reverse",
+            "Attendance.View",
+            "Attendance.Create",
+            "Attendance.Update",
+            "Attendance.Finalize"
         };
 
     private static readonly IReadOnlyList<SeedFarmOwnershipType> SeedFarmOwnershipTypes =
@@ -731,6 +739,12 @@ public sealed class IdentityDataSeeder(
             ?? configuration[environmentVariable]
             ?? Environment.GetEnvironmentVariable(environmentVariable);
     }
+
+    public static IReadOnlyList<(string Name, string Description, string Module)> SeedPermissionDefinitions =>
+        SeedPermissions.Select(p => (p.Name, p.Description, p.Module)).ToArray();
+
+    public static IReadOnlySet<string> OrganizationAdminPermissionNames =>
+        OrganizationAdminPermissions;
 
     private sealed record SeedRole(string Name, string Description);
 

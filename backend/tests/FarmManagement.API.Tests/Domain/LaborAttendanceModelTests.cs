@@ -1,6 +1,7 @@
 using FarmManagement.Domain.Entities;
 using FarmManagement.Domain.Enums;
 using FarmManagement.Infrastructure.Persistence;
+using FarmManagement.Infrastructure.Persistence.Seed;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
@@ -351,5 +352,83 @@ public sealed class LaborAttendanceModelTests
         Assert.NotNull(uniquePayrollIndex);
         Assert.True(uniquePayrollIndex.IsUnique);
         Assert.Equal("attendance_type != 'NOT_WORKED'", uniquePayrollIndex.GetFilter());
+    }
+
+    [Fact]
+    public void Phase3_2_AttendancePermissions_AreConfiguredInIdentityDataSeeder()
+    {
+        var seedPermissions = IdentityDataSeeder.SeedPermissionDefinitions;
+        var orgAdminPermissions = IdentityDataSeeder.OrganizationAdminPermissionNames;
+
+        var expectedAttendancePermissions = new[]
+        {
+            "Attendance.View",
+            "Attendance.Create",
+            "Attendance.Update",
+            "Attendance.Finalize"
+        };
+
+        foreach (var permName in expectedAttendancePermissions)
+        {
+            var match = seedPermissions.FirstOrDefault(p => p.Name == permName);
+            Assert.True(match != default, $"Permission {permName} should be present in SeedPermissions.");
+            Assert.Equal("Attendance", match.Module);
+            Assert.False(string.IsNullOrWhiteSpace(match.Description));
+            Assert.Contains(permName, orgAdminPermissions);
+        }
+
+        // Controlled reversal and unfinalization must NOT be seeded in Phase 3.2
+        Assert.DoesNotContain(seedPermissions, p => p.Name == "Attendance.Reverse");
+        Assert.DoesNotContain(seedPermissions, p => p.Name == "Attendance.Unfinalize");
+        Assert.DoesNotContain("Attendance.Reverse", orgAdminPermissions);
+        Assert.DoesNotContain("Attendance.Unfinalize", orgAdminPermissions);
+    }
+
+    [Fact]
+    public void Phase3_2_AttendancePermissions_SeedingIsIdempotentAndPreservesRoleMappings()
+    {
+        var expectedPermissions = new Dictionary<string, string>
+        {
+            ["Attendance.View"] = "Attendance",
+            ["Attendance.Create"] = "Attendance",
+            ["Attendance.Update"] = "Attendance",
+            ["Attendance.Finalize"] = "Attendance"
+        };
+
+        var existingPermissions = new Dictionary<string, Permission>(StringComparer.Ordinal);
+        var superAdminRole = new Role("SuperAdmin", "Platform-wide administrator.", isSystemRole: true);
+        var orgAdminRole = new Role("OrganizationAdmin", "Administrator for an organization.", isSystemRole: true);
+        var farmManagerRole = new Role("FarmManager", "Manager of farm operations.", isSystemRole: true);
+
+        var rolePermissions = new HashSet<(Guid RoleId, Guid PermissionId)>();
+
+        void RunPermissionSeeding()
+        {
+            foreach (var (name, module) in expectedPermissions)
+            {
+                if (!existingPermissions.TryGetValue(name, out var perm))
+                {
+                    perm = new Permission(name, module, $"Description for {name}");
+                    existingPermissions.Add(name, perm);
+                }
+
+                // SuperAdmin gets all permissions
+                rolePermissions.Add((superAdminRole.Id, perm.Id));
+
+                // OrganizationAdmin gets Phase 3.2 attendance permissions
+                rolePermissions.Add((orgAdminRole.Id, perm.Id));
+            }
+        }
+
+        // Run 1: initial seed
+        RunPermissionSeeding();
+        Assert.Equal(4, existingPermissions.Count);
+        Assert.Equal(8, rolePermissions.Count); // 4 for SuperAdmin, 4 for OrgAdmin
+        Assert.DoesNotContain(rolePermissions, rp => rp.RoleId == farmManagerRole.Id);
+
+        // Run 2: idempotent re-seed
+        RunPermissionSeeding();
+        Assert.Equal(4, existingPermissions.Count);
+        Assert.Equal(8, rolePermissions.Count);
     }
 }
