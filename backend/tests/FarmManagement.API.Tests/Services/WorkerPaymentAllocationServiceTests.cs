@@ -467,6 +467,9 @@ public sealed class WorkerPaymentAllocationServiceTests
         public Task<WorkerEarningsLedger?> FindAsync(Guid id, Guid organizationId, CancellationToken cancellationToken = default) =>
             allocStore.FindEarningAsync(id, organizationId, cancellationToken);
 
+        public Task<WorkerEarningsLedger?> FindByAttendanceIdAsync(Guid organizationId, Guid attendanceId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(allocStore.Earnings.FirstOrDefault(e => e.AttendanceId == attendanceId && e.OrganizationId == organizationId && e.EntryType == EarningsEntryType.Earning));
+
         public Task<PagedResponse<WorkerEarningsLedger>> ListByWorkerAsync(Guid organizationId, Guid workerId, DateOnly? fromDate, DateOnly? toDate, EarningsLedgerStatus? status, EarningsEntryType? entryType, int page, int pageSize, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public Task<bool> HasActiveReversalAsync(Guid originalLedgerId, Guid organizationId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public Task<Worker?> FindWorkerAsync(Guid workerId, Guid organizationId, CancellationToken cancellationToken = default) => throw new NotImplementedException();

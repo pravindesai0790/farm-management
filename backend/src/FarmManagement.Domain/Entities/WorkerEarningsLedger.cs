@@ -226,6 +226,68 @@ public sealed class WorkerEarningsLedger
         return entry;
     }
 
+    public void UpdateAttendanceEarning(
+        DateOnly earningsDate,
+        WageType wageType,
+        decimal quantity,
+        decimal wageRate,
+        decimal grossAmount,
+        Guid currencyId,
+        string? description,
+        DateTimeOffset now,
+        Guid updatedBy)
+    {
+        if (updatedBy == Guid.Empty)
+        {
+            throw new ArgumentException("A user is required.", nameof(updatedBy));
+        }
+
+        if (currencyId == Guid.Empty)
+        {
+            throw new ArgumentException("A currency is required.", nameof(currencyId));
+        }
+
+        if (Status == EarningsLedgerStatus.Reversed)
+        {
+            throw new InvalidOperationException("A reversed ledger entry cannot be updated.");
+        }
+
+        if (Status == EarningsLedgerStatus.Approved)
+        {
+            throw new InvalidOperationException("An approved ledger entry cannot be modified in-place; it must be reversed.");
+        }
+
+        if (!Enum.IsDefined(wageType))
+        {
+            throw new ArgumentOutOfRangeException(nameof(wageType), "The wage type is invalid.");
+        }
+
+        if (quantity <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(quantity), "The quantity must be greater than zero.");
+        }
+
+        if (wageRate <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(wageRate), "The wage rate must be greater than zero.");
+        }
+
+        if (grossAmount <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(grossAmount), "The gross amount must be greater than zero.");
+        }
+
+        EarningsDate = earningsDate;
+        WageType = wageType;
+        Quantity = quantity;
+        WageRate = wageRate;
+        GrossAmount = grossAmount;
+        CurrencyId = currencyId;
+        Description = NormalizeOptional(description);
+        UpdatedAt = now;
+        UpdatedBy = updatedBy;
+    }
+
     public bool Approve(DateTimeOffset now, Guid approvedBy)
     {
         if (approvedBy == Guid.Empty)

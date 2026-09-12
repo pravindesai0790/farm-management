@@ -212,6 +212,38 @@ public sealed class Worker
         }
     }
 
+    public bool IsEligibleForAttendance(DateOnly attendanceDate, out string? reason)
+    {
+        if (!IsActive)
+        {
+            reason = $"Worker '{DisplayName}' is inactive and ineligible for attendance.";
+            return false;
+        }
+
+        if (JoiningDate.HasValue && attendanceDate < JoiningDate.Value)
+        {
+            reason = $"Attendance date {attendanceDate:yyyy-MM-dd} is before worker '{DisplayName}' joining date ({JoiningDate.Value:yyyy-MM-dd}).";
+            return false;
+        }
+
+        if (LeavingDate.HasValue && attendanceDate > LeavingDate.Value)
+        {
+            reason = $"Attendance date {attendanceDate:yyyy-MM-dd} is after worker '{DisplayName}' leaving date ({LeavingDate.Value:yyyy-MM-dd}).";
+            return false;
+        }
+
+        reason = null;
+        return true;
+    }
+
+    public void ValidateAttendanceEligibility(DateOnly attendanceDate)
+    {
+        if (!IsEligibleForAttendance(attendanceDate, out var reason))
+        {
+            throw new InvalidOperationException(reason);
+        }
+    }
+
     private static void ValidateGender(Gender gender)
     {
         if (!Enum.IsDefined(gender))

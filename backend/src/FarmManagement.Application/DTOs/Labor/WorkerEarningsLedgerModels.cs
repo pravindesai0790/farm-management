@@ -14,6 +14,37 @@ public sealed record FinalizedAttendanceRecord(
     string? Description = null,
     bool AutoApprove = false);
 
+public sealed record CalculateAttendanceEarningsRequest(
+    Guid WorkerId,
+    DateOnly AttendanceDate,
+    string AttendanceType,
+    decimal Quantity = 1m);
+
+public sealed record AttendanceEarningsCalculationResult(
+    Guid WorkerId,
+    string WorkerDisplayName,
+    Gender Gender,
+    string AttendanceType,
+    string? WageType,
+    decimal Quantity,
+    decimal WageRate,
+    decimal GrossAmount,
+    Guid? CurrencyId,
+    string CurrencyCode,
+    string CurrencySymbol,
+    bool IsEarningEligible,
+    bool IsWorkerEligible,
+    string? IneligibilityReason = null);
+
+public sealed record ProcessAttendanceEarningsRequest(
+    Guid AttendanceId,
+    Guid WorkerId,
+    DateOnly AttendanceDate,
+    string AttendanceType,
+    decimal Quantity = 1m,
+    string? Description = null,
+    bool AutoApprove = false);
+
 public sealed record ReverseEarningsRequest(
     string? Reason = null);
 

@@ -419,6 +419,9 @@ public sealed class WorkerPaymentServiceTests
         public Task<WorkerEarningsLedger?> FindAsync(Guid id, Guid organizationId, CancellationToken cancellationToken = default) =>
             Task.FromResult(Entries.FirstOrDefault(e => e.Id == id && e.OrganizationId == organizationId));
 
+        public Task<WorkerEarningsLedger?> FindByAttendanceIdAsync(Guid organizationId, Guid attendanceId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(Entries.FirstOrDefault(e => e.AttendanceId == attendanceId && e.OrganizationId == organizationId && e.EntryType == EarningsEntryType.Earning));
+
         public Task<PagedResponse<WorkerEarningsLedger>> ListByWorkerAsync(
             Guid organizationId, Guid workerId, DateOnly? fromDate, DateOnly? toDate,
             EarningsLedgerStatus? status, EarningsEntryType? entryType, int page, int pageSize,

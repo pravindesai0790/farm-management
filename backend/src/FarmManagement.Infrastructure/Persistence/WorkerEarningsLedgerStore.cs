@@ -20,6 +20,20 @@ public sealed class WorkerEarningsLedgerStore(ApplicationDbContext dbContext) : 
                 ledger => ledger.Id == id && ledger.OrganizationId == organizationId,
                 cancellationToken);
 
+    public Task<WorkerEarningsLedger?> FindByAttendanceIdAsync(
+        Guid organizationId,
+        Guid attendanceId,
+        CancellationToken cancellationToken = default) =>
+        dbContext.WorkerEarningsLedgers
+            .Include(ledger => ledger.Worker)
+            .Include(ledger => ledger.Currency)
+            .Include(ledger => ledger.ReferenceLedger)
+            .SingleOrDefaultAsync(
+                ledger => ledger.AttendanceId == attendanceId &&
+                          ledger.OrganizationId == organizationId &&
+                          ledger.EntryType == EarningsEntryType.Earning,
+                cancellationToken);
+
     public async Task<PagedResponse<WorkerEarningsLedger>> ListByWorkerAsync(
         Guid organizationId,
         Guid workerId,

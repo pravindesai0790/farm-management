@@ -10,7 +10,9 @@ namespace FarmManagement.API.Controllers;
 [ApiController]
 [Route("api/labor/workers/{workerId:guid}/earnings")]
 [Authorize]
-public sealed class WorkerEarningsController(IWorkerEarningsLedgerService earningsService) : ControllerBase
+public sealed class WorkerEarningsController(
+    IWorkerEarningsLedgerService earningsService,
+    IAttendanceEarningsIntegration attendanceEarningsIntegration) : ControllerBase
 {
     [HttpGet]
     [Authorize(Policy = "Permission:WorkerEarnings.View")]
@@ -132,6 +134,26 @@ public sealed class WorkerEarningsController(IWorkerEarningsLedgerService earnin
             nameof(GetById),
             new { workerId, id = response.Id },
             response);
+    }
+
+    [HttpPost("calculate-attendance")]
+    [Authorize(Policy = "Permission:WorkerEarnings.View")]
+    public async Task<ActionResult<AttendanceEarningsCalculationResult>> CalculateAttendance(
+        Guid workerId,
+        [FromBody] CalculateAttendanceEarningsRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (request.WorkerId != workerId)
+        {
+            request = request with { WorkerId = workerId };
+        }
+
+        var result = await attendanceEarningsIntegration.CalculateAttendanceEarningsAsync(
+            GetUserContext(),
+            request,
+            cancellationToken);
+
+        return Ok(result);
     }
 
     private EarningsActor GetUserContext() => UserContextHelper.GetUserContext<EarningsActor>(User);

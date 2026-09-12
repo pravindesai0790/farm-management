@@ -167,6 +167,243 @@ public sealed class WorkerEarningsLedgerServiceTests
             service.CreateEarningFromFinalizedAttendanceAsync(CreateActor(), request));
     }
 
+    [Fact]
+    public async Task CalculateAttendanceEarningsAsync_WithValidWorker_CalculatesGrossAndSnapshotsRate()
+    {
+        var (store, worker, _) = SetupDefaultScenario();
+        var service = new WorkerEarningsLedgerService(store);
+        var attendanceDate = new DateOnly(2026, 9, 1);
+
+        var request = new CalculateAttendanceEarningsRequest(
+            WorkerId: _workerId,
+            AttendanceDate: attendanceDate,
+            AttendanceType: "FULL_DAY",
+            Quantity: 1m);
+
+        var result = await service.CalculateAttendanceEarningsAsync(CreateActor(), request);
+
+        Assert.NotNull(result);
+        Assert.Equal(_workerId, result.WorkerId);
+        Assert.Equal("Ramesh Kumar", result.WorkerDisplayName);
+        Assert.Equal(Gender.Male, result.Gender);
+        Assert.Equal("FULL_DAY", result.AttendanceType);
+        Assert.Equal("FULL_DAY", result.WageType);
+        Assert.Equal(1m, result.Quantity);
+        Assert.Equal(500m, result.WageRate);
+        Assert.Equal(500m, result.GrossAmount);
+        Assert.True(result.IsEarningEligible);
+        Assert.True(result.IsWorkerEligible);
+        Assert.Null(result.IneligibilityReason);
+        Assert.Equal("INR", result.CurrencyCode);
+        Assert.Equal("₹", result.CurrencySymbol);
+    }
+
+    [Fact]
+    public async Task CalculateAttendanceEarningsAsync_WithHourlyAttendance_CalculatesGrossAmountCorrectly()
+    {
+        var (store, worker, currency) = SetupDefaultScenario();
+        var hourlyRate = new LaborWageRate(
+            organizationId: _organizationId,
+            gender: Gender.Male,
+            wageType: WageType.Hourly,
+            wageRate: 60m,
+            currencyId: currency.Id,
+            effectiveFrom: new DateOnly(2026, 1, 1),
+            createdBy: _userId);
+        SetEntityId(hourlyRate, Guid.NewGuid());
+        store.WageRates.Add(hourlyRate);
+
+        var service = new WorkerEarningsLedgerService(store);
+        var request = new CalculateAttendanceEarningsRequest(
+            WorkerId: _workerId,
+            AttendanceDate: new DateOnly(2026, 9, 1),
+            AttendanceType: "HOURLY",
+            Quantity: 6.5m);
+
+        var result = await service.CalculateAttendanceEarningsAsync(CreateActor(), request);
+
+        Assert.NotNull(result);
+        Assert.Equal(6.5m, result.Quantity);
+        Assert.Equal(60m, result.WageRate);
+        Assert.Equal(390m, result.GrossAmount); // 6.5 * 60 = 390
+        Assert.True(result.IsEarningEligible);
+    }
+
+    [Fact]
+    public async Task CalculateAttendanceEarningsAsync_WhenWorkerNotYetJoined_ThrowsValidationException()
+    {
+        var (store, _, _) = SetupDefaultScenario();
+        var joiningDate = new DateOnly(2026, 9, 10);
+        var futureWorker = new Worker(
+            organizationId: _organizationId,
+            firstName: "Suresh",
+            lastName: "Patil",
+            gender: Gender.Male,
+            employmentType: EmploymentType.DailyWage,
+            createdBy: _userId,
+            joiningDate: joiningDate);
+        var workerId = Guid.NewGuid();
+        SetEntityId(futureWorker, workerId);
+        store.Workers.Add(futureWorker);
+
+        var service = new WorkerEarningsLedgerService(store);
+        var request = new CalculateAttendanceEarningsRequest(
+            WorkerId: workerId,
+            AttendanceDate: new DateOnly(2026, 9, 1), // Before joining date
+            AttendanceType: "FULL_DAY",
+            Quantity: 1m);
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(() =>
+            service.CalculateAttendanceEarningsAsync(CreateActor(), request));
+        Assert.Contains("joining date", ex.Message);
+    }
+
+    [Fact]
+    public async Task CalculateAttendanceEarningsAsync_WhenWorkerAlreadyLeft_ThrowsValidationException()
+    {
+        var (store, _, _) = SetupDefaultScenario();
+        var leavingDate = new DateOnly(2026, 8, 31);
+        var pastWorker = new Worker(
+            organizationId: _organizationId,
+            firstName: "Suresh",
+            lastName: "Patil",
+            gender: Gender.Male,
+            employmentType: EmploymentType.DailyWage,
+            createdBy: _userId,
+            leavingDate: leavingDate);
+        var workerId = Guid.NewGuid();
+        SetEntityId(pastWorker, workerId);
+        store.Workers.Add(pastWorker);
+
+        var service = new WorkerEarningsLedgerService(store);
+        var request = new CalculateAttendanceEarningsRequest(
+            WorkerId: workerId,
+            AttendanceDate: new DateOnly(2026, 9, 1), // After leaving date
+            AttendanceType: "FULL_DAY",
+            Quantity: 1m);
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(() =>
+            service.CalculateAttendanceEarningsAsync(CreateActor(), request));
+        Assert.Contains("leaving date", ex.Message);
+    }
+
+    [Fact]
+    public async Task CalculateAttendanceEarningsAsync_WhenAbsentOrLeave_ReturnsNonEarningZeroGross()
+    {
+        var (store, worker, _) = SetupDefaultScenario();
+        var service = new WorkerEarningsLedgerService(store);
+
+        var requestAbsent = new CalculateAttendanceEarningsRequest(
+            WorkerId: _workerId,
+            AttendanceDate: new DateOnly(2026, 9, 1),
+            AttendanceType: "ABSENT",
+            Quantity: 1m);
+
+        var resultAbsent = await service.CalculateAttendanceEarningsAsync(CreateActor(), requestAbsent);
+        Assert.False(resultAbsent.IsEarningEligible);
+        Assert.Equal(0m, resultAbsent.GrossAmount);
+        Assert.Equal(0m, resultAbsent.WageRate);
+        Assert.Null(resultAbsent.WageType);
+
+        var requestLeave = new CalculateAttendanceEarningsRequest(
+            WorkerId: _workerId,
+            AttendanceDate: new DateOnly(2026, 9, 1),
+            AttendanceType: "LEAVE",
+            Quantity: 1m);
+
+        var resultLeave = await service.CalculateAttendanceEarningsAsync(CreateActor(), requestLeave);
+        Assert.False(resultLeave.IsEarningEligible);
+        Assert.Equal(0m, resultLeave.GrossAmount);
+    }
+
+    [Fact]
+    public async Task ProcessAttendanceEarningsAsync_NewAttendance_CreatesCalculatedEntry()
+    {
+        var (store, _, _) = SetupDefaultScenario();
+        var service = new WorkerEarningsLedgerService(store);
+        var attendanceId = Guid.NewGuid();
+
+        var request = new ProcessAttendanceEarningsRequest(
+            AttendanceId: attendanceId,
+            WorkerId: _workerId,
+            AttendanceDate: new DateOnly(2026, 9, 1),
+            AttendanceType: "FULL_DAY",
+            Quantity: 1m,
+            Description: "Field weeding");
+
+        var response = await service.ProcessAttendanceEarningsAsync(CreateActor(), request);
+
+        Assert.NotNull(response);
+        Assert.Equal(attendanceId, response.AttendanceId);
+        Assert.Equal("CALCULATED", response.Status);
+        Assert.Equal(500m, response.GrossAmount);
+        Assert.Single(store.LedgerEntries);
+    }
+
+    [Fact]
+    public async Task ProcessAttendanceEarningsAsync_ExistingCalculatedAttendance_UpdatesInPlace()
+    {
+        var (store, _, _) = SetupDefaultScenario();
+        var service = new WorkerEarningsLedgerService(store);
+        var attendanceId = Guid.NewGuid();
+
+        var initialRequest = new ProcessAttendanceEarningsRequest(
+            AttendanceId: attendanceId,
+            WorkerId: _workerId,
+            AttendanceDate: new DateOnly(2026, 9, 1),
+            AttendanceType: "FULL_DAY",
+            Quantity: 1m);
+
+        var initialResponse = await service.ProcessAttendanceEarningsAsync(CreateActor(), initialRequest);
+        Assert.NotNull(initialResponse);
+        Assert.Equal(500m, initialResponse.GrossAmount);
+
+        // Update attendance quantity (e.g. 2 units or half day)
+        var updatedRequest = new ProcessAttendanceEarningsRequest(
+            AttendanceId: attendanceId,
+            WorkerId: _workerId,
+            AttendanceDate: new DateOnly(2026, 9, 1),
+            AttendanceType: "FULL_DAY",
+            Quantity: 1.5m,
+            Description: "Overtime added");
+
+        var updatedResponse = await service.ProcessAttendanceEarningsAsync(CreateActor(), updatedRequest);
+
+        Assert.NotNull(updatedResponse);
+        Assert.Equal(initialResponse.Id, updatedResponse.Id);
+        Assert.Equal(750m, updatedResponse.GrossAmount);
+        Assert.Single(store.LedgerEntries); // No duplicate rows created!
+    }
+
+    [Fact]
+    public async Task ProcessAttendanceEarningsAsync_AttendanceChangedToAbsent_CancelsPriorCalculatedEntry()
+    {
+        var (store, _, _) = SetupDefaultScenario();
+        var service = new WorkerEarningsLedgerService(store);
+        var attendanceId = Guid.NewGuid();
+
+        // Initially recorded as FULL_DAY
+        await service.ProcessAttendanceEarningsAsync(CreateActor(), new ProcessAttendanceEarningsRequest(
+            AttendanceId: attendanceId,
+            WorkerId: _workerId,
+            AttendanceDate: new DateOnly(2026, 9, 1),
+            AttendanceType: "FULL_DAY",
+            Quantity: 1m));
+
+        Assert.Equal("CALCULATED", store.LedgerEntries[0].Status.ToString().ToUpperInvariant());
+
+        // Attendance changed to ABSENT
+        var response = await service.ProcessAttendanceEarningsAsync(CreateActor(), new ProcessAttendanceEarningsRequest(
+            AttendanceId: attendanceId,
+            WorkerId: _workerId,
+            AttendanceDate: new DateOnly(2026, 9, 1),
+            AttendanceType: "ABSENT",
+            Quantity: 1m));
+
+        Assert.NotNull(response);
+        Assert.Equal("REVERSED", response.Status);
+    }
+
     #endregion
 
     #region Reversal Tests
@@ -428,6 +665,9 @@ public sealed class WorkerEarningsLedgerServiceTests
 
         public Task<WorkerEarningsLedger?> FindAsync(Guid id, Guid organizationId, CancellationToken cancellationToken = default) =>
             Task.FromResult(LedgerEntries.FirstOrDefault(e => e.Id == id && e.OrganizationId == organizationId));
+
+        public Task<WorkerEarningsLedger?> FindByAttendanceIdAsync(Guid organizationId, Guid attendanceId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(LedgerEntries.FirstOrDefault(e => e.AttendanceId == attendanceId && e.OrganizationId == organizationId && e.EntryType == EarningsEntryType.Earning));
 
         public Task<PagedResponse<WorkerEarningsLedger>> ListByWorkerAsync(
             Guid organizationId,

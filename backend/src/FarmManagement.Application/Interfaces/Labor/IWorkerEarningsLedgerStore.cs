@@ -11,6 +11,11 @@ public interface IWorkerEarningsLedgerStore
         Guid organizationId,
         CancellationToken cancellationToken = default);
 
+    Task<WorkerEarningsLedger?> FindByAttendanceIdAsync(
+        Guid organizationId,
+        Guid attendanceId,
+        CancellationToken cancellationToken = default);
+
     Task<PagedResponse<WorkerEarningsLedger>> ListByWorkerAsync(
         Guid organizationId,
         Guid workerId,

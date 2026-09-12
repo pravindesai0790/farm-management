@@ -10,6 +10,399 @@ namespace FarmManagement.Application.Services;
 
 public sealed class WorkerEarningsLedgerService(IWorkerEarningsLedgerStore store) : IWorkerEarningsLedgerService, IAttendanceEarningsIntegration
 {
+    public async Task<AttendanceEarningsCalculationResult> CalculateAttendanceEarningsAsync(
+        EarningsActor actor,
+        CalculateAttendanceEarningsRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (request.WorkerId == Guid.Empty)
+        {
+            throw new ValidationException("A valid worker ID is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.AttendanceType))
+        {
+            throw new ValidationException("An attendance type is required.");
+        }
+
+        if (request.Quantity <= 0)
+        {
+            throw new ValidationException("The attendance quantity must be greater than zero.");
+        }
+
+        // 1. Load the worker
+        var worker = await store.FindWorkerAsync(request.WorkerId, actor.OrganizationId, cancellationToken);
+        if (worker is null)
+        {
+            throw new ResourceNotFoundException("The worker was not found.");
+        }
+
+        // 2. Validate worker is eligible for attendance on that date
+        if (!worker.IsEligibleForAttendance(request.AttendanceDate, out var ineligibilityReason))
+        {
+            throw new ValidationException(ineligibilityReason!);
+        }
+
+        // 3. Determine worker gender
+        var gender = worker.Gender;
+
+        // 4. Determine applicable wage type
+        if (!TryResolveWageTypeFromAttendanceType(request.AttendanceType, out var wageType, out var isEarningEligible))
+        {
+            throw new ValidationException(
+                $"The attendance type '{request.AttendanceType}' is invalid. Supported values: FULL_DAY, HALF_DAY, HOURLY, MONTHLY, ABSENT, LEAVE.");
+        }
+
+        if (!isEarningEligible || wageType is null)
+        {
+            return new AttendanceEarningsCalculationResult(
+                WorkerId: worker.Id,
+                WorkerDisplayName: worker.DisplayName,
+                Gender: gender,
+                AttendanceType: request.AttendanceType.Trim().ToUpperInvariant(),
+                WageType: null,
+                Quantity: request.Quantity,
+                WageRate: 0m,
+                GrossAmount: 0m,
+                CurrencyId: null,
+                CurrencyCode: "INR",
+                CurrencySymbol: "₹",
+                IsEarningEligible: false,
+                IsWorkerEligible: true,
+                IneligibilityReason: null);
+        }
+
+        // 5. Resolve wage rate by organization + gender + wage type + attendance date
+        var wageRate = await store.FindApplicableWageRateAsync(
+            actor.OrganizationId,
+            gender,
+            wageType.Value,
+            request.AttendanceDate,
+            cancellationToken);
+
+        if (wageRate is null)
+        {
+            throw new ValidationException(
+                $"No active labor wage rate found for gender '{gender}' and wage type '{FormatWageType(wageType.Value)}' on {request.AttendanceDate:yyyy-MM-dd}.");
+        }
+
+        // 6. Snapshot wage rate
+        var snappedRate = wageRate.WageRate;
+
+        // 7. Calculate gross earnings
+        var grossAmount = Math.Round(request.Quantity * snappedRate, 2);
+
+        return new AttendanceEarningsCalculationResult(
+            WorkerId: worker.Id,
+            WorkerDisplayName: worker.DisplayName,
+            Gender: gender,
+            AttendanceType: request.AttendanceType.Trim().ToUpperInvariant(),
+            WageType: FormatWageType(wageType.Value),
+            Quantity: request.Quantity,
+            WageRate: snappedRate,
+            GrossAmount: grossAmount,
+            CurrencyId: wageRate.CurrencyId,
+            CurrencyCode: wageRate.Currency?.Code ?? "INR",
+            CurrencySymbol: wageRate.Currency?.Symbol ?? "₹",
+            IsEarningEligible: true,
+            IsWorkerEligible: true,
+            IneligibilityReason: null);
+    }
+
+    public async Task<WorkerEarningsLedgerResponse?> ProcessAttendanceEarningsAsync(
+        EarningsActor actor,
+        ProcessAttendanceEarningsRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (request.AttendanceId == Guid.Empty)
+        {
+            throw new ValidationException("A valid attendance ID is required.");
+        }
+
+        if (request.WorkerId == Guid.Empty)
+        {
+            throw new ValidationException("A valid worker ID is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.AttendanceType))
+        {
+            throw new ValidationException("An attendance type is required.");
+        }
+
+        if (request.Quantity <= 0)
+        {
+            throw new ValidationException("The attendance quantity must be greater than zero.");
+        }
+
+        // 1. Load the worker
+        var worker = await store.FindWorkerAsync(request.WorkerId, actor.OrganizationId, cancellationToken);
+        if (worker is null)
+        {
+            throw new ResourceNotFoundException("The worker was not found.");
+        }
+
+        // 2. Validate worker is eligible for attendance on that date
+        if (!worker.IsEligibleForAttendance(request.AttendanceDate, out var ineligibilityReason))
+        {
+            throw new ValidationException(ineligibilityReason!);
+        }
+
+        // 3. Determine worker gender
+        var gender = worker.Gender;
+
+        // 4. Determine applicable wage type
+        if (!TryResolveWageTypeFromAttendanceType(request.AttendanceType, out var wageType, out var isEarningEligible))
+        {
+            throw new ValidationException(
+                $"The attendance type '{request.AttendanceType}' is invalid. Supported values: FULL_DAY, HALF_DAY, HOURLY, MONTHLY, ABSENT, LEAVE.");
+        }
+
+        var existingEntry = await store.FindByAttendanceIdAsync(actor.OrganizationId, request.AttendanceId, cancellationToken);
+        var now = DateTimeOffset.UtcNow;
+
+        // Non-earning attendance (ABSENT, LEAVE)
+        if (!isEarningEligible || wageType is null)
+        {
+            if (existingEntry is null)
+            {
+                return null;
+            }
+
+            if (existingEntry.Status == EarningsLedgerStatus.Calculated)
+            {
+                existingEntry.MarkReversed(now, actor.UserId);
+                AddAudit(
+                    actor,
+                    existingEntry,
+                    "WorkerEarnings.CancelledFromAttendance",
+                    new
+                    {
+                        AttendanceId = request.AttendanceId,
+                        WorkerId = request.WorkerId,
+                        Reason = $"Attendance updated to non-earning type '{request.AttendanceType}'"
+                    },
+                    ipAddress: null);
+
+                await store.SaveChangesAsync(cancellationToken);
+                return MapToResponse(existingEntry, worker.DisplayName, existingEntry.Currency?.Code ?? "INR", existingEntry.Currency?.Symbol ?? "₹");
+            }
+
+            if (existingEntry.Status == EarningsLedgerStatus.Approved)
+            {
+                var reversal = WorkerEarningsLedger.CreateReversal(
+                    existingEntry,
+                    actor.UserId,
+                    now,
+                    $"Attendance changed to '{request.AttendanceType}'");
+
+                existingEntry.MarkReversed(now, actor.UserId);
+                store.Add(reversal);
+
+                AddAudit(
+                    actor,
+                    reversal,
+                    "WorkerEarnings.ReversedFromAttendance",
+                    new
+                    {
+                        AttendanceId = request.AttendanceId,
+                        WorkerId = request.WorkerId,
+                        ReversalLedgerId = reversal.Id,
+                        Reason = $"Attendance updated to non-earning type '{request.AttendanceType}'"
+                    },
+                    ipAddress: null);
+
+                await store.SaveChangesAsync(cancellationToken);
+                return null;
+            }
+
+            return null;
+        }
+
+        // 5. Resolve wage rate by organization + gender + wage type + attendance date
+        var wageRate = await store.FindApplicableWageRateAsync(
+            actor.OrganizationId,
+            gender,
+            wageType.Value,
+            request.AttendanceDate,
+            cancellationToken);
+
+        if (wageRate is null)
+        {
+            throw new ValidationException(
+                $"No active labor wage rate found for gender '{gender}' and wage type '{FormatWageType(wageType.Value)}' on {request.AttendanceDate:yyyy-MM-dd}.");
+        }
+
+        // 6. Snapshot wage rate
+        var snappedRate = wageRate.WageRate;
+
+        // 7. Calculate gross earnings
+        var grossAmount = Math.Round(request.Quantity * snappedRate, 2);
+
+        // 8. Create/update appropriate earnings state according to attendance finalization rules
+        if (existingEntry is null)
+        {
+            var newEntry = WorkerEarningsLedger.CreateEarning(
+                organizationId: actor.OrganizationId,
+                workerId: request.WorkerId,
+                earningsDate: request.AttendanceDate,
+                wageType: wageType.Value,
+                quantity: request.Quantity,
+                wageRate: snappedRate,
+                currencyId: wageRate.CurrencyId,
+                createdBy: actor.UserId,
+                attendanceId: request.AttendanceId,
+                grossAmount: grossAmount,
+                approveImmediately: request.AutoApprove,
+                referenceLedgerId: null,
+                description: request.Description);
+
+            store.Add(newEntry);
+
+            AddAudit(
+                actor,
+                newEntry,
+                "WorkerEarnings.CreatedFromAttendance",
+                new
+                {
+                    AttendanceId = request.AttendanceId,
+                    WorkerId = request.WorkerId,
+                    EarningsDate = request.AttendanceDate,
+                    WageType = FormatWageType(wageType.Value),
+                    Quantity = request.Quantity,
+                    WageRate = snappedRate,
+                    CurrencyId = wageRate.CurrencyId,
+                    GrossAmount = grossAmount,
+                    Status = FormatStatus(newEntry.Status)
+                },
+                ipAddress: null);
+
+            await store.SaveChangesAsync(cancellationToken);
+
+            return MapToResponse(newEntry, worker.DisplayName, wageRate.Currency?.Code ?? "INR", wageRate.Currency?.Symbol ?? "₹");
+        }
+
+        if (existingEntry.Status == EarningsLedgerStatus.Calculated)
+        {
+            existingEntry.UpdateAttendanceEarning(
+                earningsDate: request.AttendanceDate,
+                wageType: wageType.Value,
+                quantity: request.Quantity,
+                wageRate: snappedRate,
+                grossAmount: grossAmount,
+                currencyId: wageRate.CurrencyId,
+                description: request.Description,
+                now: now,
+                updatedBy: actor.UserId);
+
+            if (request.AutoApprove)
+            {
+                existingEntry.Approve(now, actor.UserId);
+            }
+
+            AddAudit(
+                actor,
+                existingEntry,
+                "WorkerEarnings.UpdatedFromAttendance",
+                new
+                {
+                    AttendanceId = request.AttendanceId,
+                    WorkerId = request.WorkerId,
+                    EarningsDate = request.AttendanceDate,
+                    WageType = FormatWageType(wageType.Value),
+                    Quantity = request.Quantity,
+                    WageRate = snappedRate,
+                    GrossAmount = grossAmount,
+                    Status = FormatStatus(existingEntry.Status)
+                },
+                ipAddress: null);
+
+            await store.SaveChangesAsync(cancellationToken);
+
+            return MapToResponse(existingEntry, worker.DisplayName, wageRate.Currency?.Code ?? "INR", wageRate.Currency?.Symbol ?? "₹");
+        }
+
+        if (existingEntry.Status == EarningsLedgerStatus.Approved)
+        {
+            if (existingEntry.WageType == wageType.Value &&
+                existingEntry.Quantity == request.Quantity &&
+                existingEntry.WageRate == snappedRate &&
+                existingEntry.EarningsDate == request.AttendanceDate)
+            {
+                return MapToResponse(existingEntry, worker.DisplayName, wageRate.Currency?.Code ?? "INR", wageRate.Currency?.Symbol ?? "₹");
+            }
+
+            var reversal = WorkerEarningsLedger.CreateReversal(
+                existingEntry,
+                actor.UserId,
+                now,
+                "Reversal due to attendance adjustment");
+
+            existingEntry.MarkReversed(now, actor.UserId);
+            store.Add(reversal);
+
+            var replacementEntry = WorkerEarningsLedger.CreateEarning(
+                organizationId: actor.OrganizationId,
+                workerId: request.WorkerId,
+                earningsDate: request.AttendanceDate,
+                wageType: wageType.Value,
+                quantity: request.Quantity,
+                wageRate: snappedRate,
+                currencyId: wageRate.CurrencyId,
+                createdBy: actor.UserId,
+                attendanceId: request.AttendanceId,
+                grossAmount: grossAmount,
+                approveImmediately: request.AutoApprove,
+                referenceLedgerId: existingEntry.Id,
+                description: request.Description);
+
+            store.Add(replacementEntry);
+
+            AddAudit(
+                actor,
+                replacementEntry,
+                "WorkerEarnings.AdjustedFromAttendance",
+                new
+                {
+                    AttendanceId = request.AttendanceId,
+                    PreviousLedgerId = existingEntry.Id,
+                    ReversalLedgerId = reversal.Id,
+                    NewLedgerId = replacementEntry.Id,
+                    GrossAmount = grossAmount
+                },
+                ipAddress: null);
+
+            await store.SaveChangesAsync(cancellationToken);
+
+            return MapToResponse(replacementEntry, worker.DisplayName, wageRate.Currency?.Code ?? "INR", wageRate.Currency?.Symbol ?? "₹");
+        }
+
+        // If existingEntry was already reversed, create a fresh entry
+        var reactivatedEntry = WorkerEarningsLedger.CreateEarning(
+            organizationId: actor.OrganizationId,
+            workerId: request.WorkerId,
+            earningsDate: request.AttendanceDate,
+            wageType: wageType.Value,
+            quantity: request.Quantity,
+            wageRate: snappedRate,
+            currencyId: wageRate.CurrencyId,
+            createdBy: actor.UserId,
+            attendanceId: request.AttendanceId,
+            grossAmount: grossAmount,
+            approveImmediately: request.AutoApprove,
+            referenceLedgerId: null,
+            description: request.Description);
+
+        store.Add(reactivatedEntry);
+        await store.SaveChangesAsync(cancellationToken);
+        return MapToResponse(reactivatedEntry, worker.DisplayName, wageRate.Currency?.Code ?? "INR", wageRate.Currency?.Symbol ?? "₹");
+    }
+
     public async Task<WorkerEarningsLedgerResponse> CreateEarningFromFinalizedAttendanceAsync(
         EarningsActor actor,
         FinalizedAttendanceRecord attendance,
@@ -23,85 +416,17 @@ public sealed class WorkerEarningsLedgerService(IWorkerEarningsLedgerStore store
             throw new ValidationException("The attendance record belongs to a different organization.");
         }
 
-        if (attendance.AttendanceId == Guid.Empty)
-        {
-            throw new ValidationException("A valid attendance ID is required.");
-        }
+        var request = new ProcessAttendanceEarningsRequest(
+            AttendanceId: attendance.AttendanceId,
+            WorkerId: attendance.WorkerId,
+            AttendanceDate: attendance.AttendanceDate,
+            AttendanceType: FormatWageType(attendance.WageType),
+            Quantity: attendance.Quantity,
+            Description: attendance.Description,
+            AutoApprove: attendance.AutoApprove);
 
-        if (attendance.WorkerId == Guid.Empty)
-        {
-            throw new ValidationException("A valid worker ID is required.");
-        }
-
-        if (attendance.Quantity <= 0)
-        {
-            throw new ValidationException("The attendance quantity must be greater than zero.");
-        }
-
-        var worker = await store.FindWorkerAsync(attendance.WorkerId, actor.OrganizationId, cancellationToken);
-        if (worker is null)
-        {
-            throw new ResourceNotFoundException("The worker was not found.");
-        }
-
-        if (!worker.IsActive)
-        {
-            throw new ValidationException("Cannot generate earnings for an inactive worker.");
-        }
-
-        var wageRate = await store.FindApplicableWageRateAsync(
-            actor.OrganizationId,
-            worker.Gender,
-            attendance.WageType,
-            attendance.AttendanceDate,
-            cancellationToken);
-
-        if (wageRate is null)
-        {
-            throw new ValidationException(
-                $"No active labor wage rate found for gender '{worker.Gender}' and wage type '{FormatWageType(attendance.WageType)}' on {attendance.AttendanceDate:yyyy-MM-dd}.");
-        }
-
-        var grossAmount = Math.Round(attendance.Quantity * wageRate.WageRate, 2);
-
-        var entry = WorkerEarningsLedger.CreateEarning(
-            organizationId: actor.OrganizationId,
-            workerId: attendance.WorkerId,
-            earningsDate: attendance.AttendanceDate,
-            wageType: attendance.WageType,
-            quantity: attendance.Quantity,
-            wageRate: wageRate.WageRate,
-            currencyId: wageRate.CurrencyId,
-            createdBy: actor.UserId,
-            attendanceId: attendance.AttendanceId,
-            grossAmount: grossAmount,
-            approveImmediately: attendance.AutoApprove,
-            referenceLedgerId: null,
-            description: attendance.Description);
-
-        store.Add(entry);
-
-        AddAudit(
-            actor,
-            entry,
-            "WorkerEarnings.CreatedFromAttendance",
-            new
-            {
-                AttendanceId = attendance.AttendanceId,
-                WorkerId = attendance.WorkerId,
-                EarningsDate = attendance.AttendanceDate,
-                WageType = FormatWageType(attendance.WageType),
-                Quantity = attendance.Quantity,
-                WageRate = wageRate.WageRate,
-                CurrencyId = wageRate.CurrencyId,
-                GrossAmount = grossAmount,
-                Status = FormatStatus(entry.Status)
-            },
-            ipAddress: null);
-
-        await store.SaveChangesAsync(cancellationToken);
-
-        return MapToResponse(entry, worker.DisplayName, wageRate.Currency?.Code ?? "INR", wageRate.Currency?.Symbol ?? "₹");
+        var result = await ProcessAttendanceEarningsAsync(actor, request, cancellationToken);
+        return result ?? throw new ValidationException("Failed to generate earnings for finalized attendance.");
     }
 
     public async Task<WorkerEarningsLedgerResponse> ReverseEarningAsync(
@@ -511,6 +836,45 @@ public sealed class WorkerEarningsLedgerService(IWorkerEarningsLedgerStore store
             CreatedBy: entry.CreatedBy,
             UpdatedAt: entry.UpdatedAt,
             UpdatedBy: entry.UpdatedBy);
+
+    public static bool TryResolveWageTypeFromAttendanceType(
+        string attendanceTypeOrWageType,
+        out WageType? wageType,
+        out bool isEarningEligible)
+    {
+        var normalized = attendanceTypeOrWageType.Trim().ToUpperInvariant();
+        switch (normalized)
+        {
+            case "FULL_DAY":
+            case "FULLDAY":
+            case "PRESENT":
+                wageType = WageType.FullDay;
+                isEarningEligible = true;
+                return true;
+            case "HALF_DAY":
+            case "HALFDAY":
+                wageType = WageType.HalfDay;
+                isEarningEligible = true;
+                return true;
+            case "HOURLY":
+                wageType = WageType.Hourly;
+                isEarningEligible = true;
+                return true;
+            case "MONTHLY":
+                wageType = WageType.Monthly;
+                isEarningEligible = true;
+                return true;
+            case "ABSENT":
+            case "LEAVE":
+                wageType = null;
+                isEarningEligible = false;
+                return true;
+            default:
+                wageType = null;
+                isEarningEligible = false;
+                return false;
+        }
+    }
 
     public static WageType ParseWageType(string value) => value.Trim().ToUpperInvariant() switch
     {
