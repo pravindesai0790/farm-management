@@ -1,0 +1,210 @@
+.dialog-container {
+  display: flex;
+  flex-direction: column;
+  max-width: 640px;
+}
+
+.dialog-header {
+  margin: 0;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--mat-sys-outline-variant, #e0e0e0);
+
+  .header-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .title-icon {
+      color: var(--mat-sys-primary, #1b5e20);
+      font-size: 28px;
+      width: 28px;
+      height: 28px;
+    }
+
+    .main-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      display: block;
+      color: var(--mat-sys-on-surface, #1c1b1f);
+    }
+
+    .sub-title {
+      font-size: 0.82rem;
+      color: var(--mat-sys-on-surface-variant, #49454f);
+      display: block;
+      margin-top: 2px;
+    }
+  }
+}
+
+.dialog-body {
+  padding: 16px 24px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 70vh;
+}
+
+.settlement-section {
+  background-color: var(--mat-sys-surface-container-low, #f7f9f6);
+  border: 1px solid var(--mat-sys-outline-variant, #e1e3de);
+  border-radius: 8px;
+  padding: 12px 16px;
+
+  .settlement-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+
+    .section-badge {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+      color: var(--mat-sys-primary, #2e7d32);
+    }
+
+    .refreshing-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      color: var(--mat-sys-on-surface-variant, #757575);
+    }
+  }
+
+  .settlement-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 8px;
+
+    .summary-chip {
+      background-color: var(--mat-sys-surface, #ffffff);
+      border: 1px solid var(--mat-sys-outline-variant, #e0e0e0);
+      border-radius: 6px;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+
+      .chip-label {
+        font-size: 0.68rem;
+        color: var(--mat-sys-on-surface-variant, #666);
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        margin-bottom: 2px;
+        white-space: nowrap;
+      }
+
+      .chip-value {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--mat-sys-on-surface, #212121);
+
+        &.highlight {
+          color: #2e7d32;
+        }
+      }
+
+      &.payable-chip {
+        background-color: #edf7ed;
+        border-color: #c8e6c9;
+
+        &.zero-payable {
+          background-color: #fff8e1;
+          border-color: #ffe082;
+          .chip-value {
+            color: #b78103;
+          }
+        }
+      }
+
+      &.advance-chip {
+        background-color: #e3f2fd;
+        border-color: #bbdefb;
+      }
+    }
+  }
+
+  .summary-loading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 0;
+    font-size: 0.85rem;
+    color: var(--mat-sys-on-surface-variant, #666);
+  }
+}
+
+.notice-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  line-height: 1.35;
+
+  .notice-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  &.info-notice {
+    background-color: #e8f5e9;
+    color: #1b5e20;
+    border: 1px solid #c8e6c9;
+  }
+
+  &.warning-notice {
+    background-color: #fff3e0;
+    color: #e65100;
+    border: 1px solid #ffe082;
+  }
+}
+
+.payment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+
+  .form-row {
+    display: flex;
+    gap: 12px;
+
+    &.two-cols > mat-form-field {
+      flex: 1;
+      min-width: 0;
+    }
+  }
+
+  .full-width {
+    width: 100%;
+  }
+
+  .prefix-currency {
+    font-weight: 600;
+    color: var(--mat-sys-on-surface-variant, #49454f);
+  }
+
+  .period-error {
+    font-size: 0.8rem;
+    margin-top: -6px;
+    margin-bottom: 8px;
+  }
+}
+
+.dialog-actions {
+  padding: 12px 24px 16px;
+  border-top: 1px solid var(--mat-sys-outline-variant, #e0e0e0);
+  gap: 8px;
+
+  .btn-spinner {
+    display: inline-block;
+    margin-right: 6px;
+  }
+}

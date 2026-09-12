@@ -4,6 +4,7 @@ import { Observable, catchError, of } from "rxjs";
 import { environment } from "../../../environments/environment";
 import { PagedResponse } from "../models/paged-response.model";
 import {
+  CancelWorkerPaymentRequest,
   ContractorItem,
   CurrencyItem,
   CreateWorkerFarmAssignmentRequest,
@@ -12,13 +13,16 @@ import {
   EndWorkerFarmAssignmentRequest,
   LaborCategoryItem,
   LaborWageRate,
+  RecordWorkerPaymentRequest,
   UpdateLaborWageRateRequest,
   UpdateWorkerFarmAssignmentRequest,
   UpdateWorkerRequest,
   WorkerDetail,
   WorkerFarmAssignment,
+  WorkerFinancialSummary,
   WorkerList,
   WorkerPayment,
+  WorkerSettlementCalculation,
 } from "./labor.models";
 
 @Injectable({ providedIn: "root" })
@@ -366,6 +370,103 @@ export class LaborService {
             });
           }),
       );
+  }
+
+  listWorkerPaymentsPaged(
+    workerId: string,
+    page = 1,
+    pageSize = 20,
+    fromDate?: string | null,
+    toDate?: string | null,
+    paymentType?: string | null,
+    status?: string | null,
+  ): Observable<PagedResponse<WorkerPayment>> {
+    let params = new HttpParams()
+      .set("page", page.toString())
+      .set("pageSize", pageSize.toString());
+
+    if (fromDate) {
+      params = params.set("fromDate", fromDate);
+    }
+    if (toDate) {
+      params = params.set("toDate", toDate);
+    }
+    if (paymentType && paymentType !== "all") {
+      params = params.set("paymentType", paymentType);
+    }
+    if (status && status !== "all") {
+      params = params.set("status", status);
+    }
+
+    return this.http.get<PagedResponse<WorkerPayment>>(
+      `${this.api}/labor/workers/${workerId}/payments`,
+      { params },
+    );
+  }
+
+  getWorkerPayment(workerId: string, paymentId: string): Observable<WorkerPayment> {
+    return this.http.get<WorkerPayment>(
+      `${this.api}/labor/workers/${workerId}/payments/${paymentId}`,
+    );
+  }
+
+  recordWorkerPayment(
+    workerId: string,
+    request: RecordWorkerPaymentRequest,
+  ): Observable<WorkerPayment> {
+    return this.http.post<WorkerPayment>(
+      `${this.api}/labor/workers/${workerId}/payments`,
+      request,
+    );
+  }
+
+  cancelWorkerPayment(
+    workerId: string,
+    paymentId: string,
+    request: CancelWorkerPaymentRequest,
+  ): Observable<WorkerPayment> {
+    return this.http.post<WorkerPayment>(
+      `${this.api}/labor/workers/${workerId}/payments/${paymentId}/cancel`,
+      request,
+    );
+  }
+
+  getWorkerSettlement(
+    workerId: string,
+    periodFrom?: string | null,
+    periodTo?: string | null,
+    asOfDate?: string | null,
+  ): Observable<WorkerSettlementCalculation> {
+    let params = new HttpParams();
+    if (periodFrom) {
+      params = params.set("periodFrom", periodFrom);
+    }
+    if (periodTo) {
+      params = params.set("periodTo", periodTo);
+    }
+    if (asOfDate) {
+      params = params.set("asOfDate", asOfDate);
+    }
+
+    return this.http.get<WorkerSettlementCalculation>(
+      `${this.api}/labor/workers/${workerId}/settlement`,
+      { params },
+    );
+  }
+
+  getWorkerFinancialSummary(
+    workerId: string,
+    asOfDate?: string | null,
+  ): Observable<WorkerFinancialSummary> {
+    let params = new HttpParams();
+    if (asOfDate) {
+      params = params.set("asOfDate", asOfDate);
+    }
+
+    return this.http.get<WorkerFinancialSummary>(
+      `${this.api}/labor/workers/${workerId}/payments/summary`,
+      { params },
+    );
   }
 }
 

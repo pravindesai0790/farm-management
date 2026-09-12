@@ -469,44 +469,114 @@
       <!-- 4. Payment History Tab -->
       <mat-tab label="Payment History">
         <div class="tab-content">
-          <!-- Summary Stat Cards -->
-          <div class="payment-stats-grid">
-            <mat-card class="stat-card">
-              <mat-card-content>
-                <div class="stat-icon-wrap icon-primary">
-                  <mat-icon>account_balance_wallet</mat-icon>
-                </div>
-                <div class="stat-info">
-                  <span class="stat-label">Total Transactions</span>
-                  <span class="stat-value">{{ payments().length }}</span>
-                </div>
-              </mat-card-content>
-            </mat-card>
+          <!-- Action Toolbar -->
+          <div class="tab-action-bar">
+            <div class="action-bar-left">
+              <span class="auth-pos-badge">Authoritative Backend Settlement</span>
+            </div>
 
-            <mat-card class="stat-card">
-              <mat-card-content>
-                <div class="stat-icon-wrap icon-advance">
-                  <mat-icon>receipt_long</mat-icon>
-                </div>
-                <div class="stat-info">
-                  <span class="stat-label">Payment Processing</span>
-                  <span class="stat-value">Ready</span>
-                </div>
-              </mat-card-content>
-            </mat-card>
+            <div class="action-bar-right">
+              @if (permissionService.has("WorkerPayment.Create")) {
+                <button
+                  mat-stroked-button
+                  color="primary"
+                  (click)="openRecordPaymentDialog('ADVANCE')"
+                >
+                  <mat-icon>request_quote</mat-icon> Record Advance
+                </button>
 
-            <mat-card class="stat-card">
-              <mat-card-content>
-                <div class="stat-icon-wrap icon-balance">
-                  <mat-icon>savings</mat-icon>
-                </div>
-                <div class="stat-info">
-                  <span class="stat-label">Settlement Mode</span>
-                  <span class="stat-value">FIFO</span>
-                </div>
-              </mat-card-content>
-            </mat-card>
+                <button
+                  mat-stroked-button
+                  color="accent"
+                  (click)="openRecordPaymentDialog('PARTIAL_PAYOUT')"
+                  [disabled]="(settlement()?.amountAvailableForPayout ?? 0) <= 0"
+                >
+                  <mat-icon>paid</mat-icon> Record Payout
+                </button>
+
+                <button
+                  mat-flat-button
+                  color="primary"
+                  (click)="openRecordPaymentDialog('GENERAL')"
+                >
+                  <mat-icon>add_card</mat-icon> Record Payment
+                </button>
+              }
+
+              <a
+                mat-button
+                [routerLink]="['/labor/workers', w.id, 'payments']"
+                class="view-all-link"
+              >
+                <mat-icon>open_in_new</mat-icon> Full Payment Ledger
+              </a>
+            </div>
           </div>
+
+          <!-- Real Settlement Financial Position Cards -->
+          @if (settlement(); as s) {
+            <div class="payment-stats-grid">
+              <mat-card class="stat-card">
+                <mat-card-content>
+                  <div class="stat-icon-wrap icon-primary">
+                    <mat-icon>trending_up</mat-icon>
+                  </div>
+                  <div class="stat-info">
+                    <span class="stat-label">Gross Earnings</span>
+                    <span class="stat-value">{{ currencySymbol() }}{{ s.grossPayable | number:'1.2-2' }}</span>
+                  </div>
+                </mat-card-content>
+              </mat-card>
+
+              <mat-card class="stat-card">
+                <mat-card-content>
+                  <div class="stat-icon-wrap icon-advance">
+                    <mat-icon>account_balance_wallet</mat-icon>
+                  </div>
+                  <div class="stat-info">
+                    <span class="stat-label">Advance Balance</span>
+                    <span class="stat-value">{{ currencySymbol() }}{{ s.currentAdvanceBalance | number:'1.2-2' }}</span>
+                  </div>
+                </mat-card-content>
+              </mat-card>
+
+              <mat-card class="stat-card">
+                <mat-card-content>
+                  <div class="stat-icon-wrap icon-balance">
+                    <mat-icon>receipt_long</mat-icon>
+                  </div>
+                  <div class="stat-info">
+                    <span class="stat-label">Previous Payouts</span>
+                    <span class="stat-value">{{ currencySymbol() }}{{ s.totalPayouts | number:'1.2-2' }}</span>
+                  </div>
+                </mat-card-content>
+              </mat-card>
+
+              <mat-card class="stat-card highlight-payable-card" [class.zero-payable]="s.amountAvailableForPayout <= 0">
+                <mat-card-content>
+                  <div class="stat-icon-wrap icon-payable">
+                    <mat-icon>payments</mat-icon>
+                  </div>
+                  <div class="stat-info">
+                    <span class="stat-label">Available Payable</span>
+                    <span class="stat-value payable-highlight">{{ currencySymbol() }}{{ s.amountAvailableForPayout | number:'1.2-2' }}</span>
+                  </div>
+                </mat-card-content>
+              </mat-card>
+
+              <mat-card class="stat-card">
+                <mat-card-content>
+                  <div class="stat-icon-wrap icon-outstanding">
+                    <mat-icon>pending_actions</mat-icon>
+                  </div>
+                  <div class="stat-info">
+                    <span class="stat-label">Outstanding</span>
+                    <span class="stat-value">{{ currencySymbol() }}{{ s.outstandingAmount | number:'1.2-2' }}</span>
+                  </div>
+                </mat-card-content>
+              </mat-card>
+            </div>
+          }
 
           @if (isLoadingPayments()) {
             <div class="tab-loading">
@@ -519,8 +589,18 @@
               <h4>No payment records found</h4>
               <p>
                 Payment transactions (advances, partial payouts, and final settlements) for this worker
-                will appear here once recorded through the payroll module.
+                will appear here once recorded.
               </p>
+              @if (permissionService.has("WorkerPayment.Create")) {
+                <div class="empty-buttons">
+                  <button mat-stroked-button color="primary" (click)="openRecordPaymentDialog('ADVANCE')">
+                    <mat-icon>add</mat-icon> Record Advance
+                  </button>
+                  <button mat-flat-button color="primary" (click)="openRecordPaymentDialog('GENERAL')">
+                    <mat-icon>add_card</mat-icon> Record Payment
+                  </button>
+                </div>
+              }
             </div>
           } @else {
             <div class="table-wrap">
@@ -537,7 +617,7 @@
                 <ng-container matColumnDef="paymentType">
                   <th mat-header-cell *matHeaderCellDef>Type</th>
                   <td mat-cell *matCellDef="let p">
-                    <span class="badge-type">{{ formatPaymentType(p.paymentType) }}</span>
+                    <span class="badge-type" [attr.data-type]="p.paymentType">{{ formatPaymentType(p.paymentType) }}</span>
                   </td>
                 </ng-container>
 
@@ -545,7 +625,9 @@
                 <ng-container matColumnDef="amount">
                   <th mat-header-cell *matHeaderCellDef>Amount</th>
                   <td mat-cell *matCellDef="let p">
-                    <strong class="rate-amount">{{ p.currencyCode || "₹" }}{{ p.amount | number:'1.2-2' }}</strong>
+                    <strong class="rate-amount" [class.cancelled-amount]="p.status === 'CANCELLED'">
+                      {{ p.currencySymbol || "₹" }}{{ p.amount | number:'1.2-2' }}
+                    </strong>
                   </td>
                 </ng-container>
 
@@ -569,20 +651,44 @@
                 <ng-container matColumnDef="status">
                   <th mat-header-cell *matHeaderCellDef>Status</th>
                   <td mat-cell *matCellDef="let p">
-                    <span class="status-pill">{{ p.status }}</span>
+                    <span class="status-pill" [attr.data-status]="p.status">{{ p.status }}</span>
                   </td>
                 </ng-container>
 
                 <!-- Notes -->
                 <ng-container matColumnDef="notes">
-                  <th mat-header-cell *matHeaderCellDef>Notes</th>
+                  <th mat-header-cell *matHeaderCellDef>Notes / Reason</th>
                   <td mat-cell *matCellDef="let p">
-                    {{ p.notes || "—" }}
+                    @if (p.status === 'CANCELLED' && p.cancellationReason) {
+                      <span class="cancelled-reason" [matTooltip]="p.cancellationReason">
+                        Cancelled: {{ p.cancellationReason }}
+                      </span>
+                    } @else {
+                      {{ p.notes || "—" }}
+                    }
+                  </td>
+                </ng-container>
+
+                <!-- Actions -->
+                <ng-container matColumnDef="actions">
+                  <th mat-header-cell *matHeaderCellDef class="actions-header">Actions</th>
+                  <td mat-cell *matCellDef="let p" class="actions-cell">
+                    @if (p.status !== 'CANCELLED' && permissionService.has('WorkerPayment.Cancel')) {
+                      <button
+                        mat-icon-button
+                        color="warn"
+                        (click)="openCancelPaymentDialog(p)"
+                        matTooltip="Cancel payment"
+                        aria-label="Cancel payment"
+                      >
+                        <mat-icon>cancel</mat-icon>
+                      </button>
+                    }
                   </td>
                 </ng-container>
 
                 <tr mat-header-row *matHeaderRowDef="paymentColumns"></tr>
-                <tr mat-row *matRowDef="let row; columns: paymentColumns;"></tr>
+                <tr mat-row *matRowDef="let row; columns: paymentColumns;" [class.cancelled-row]="row.status === 'CANCELLED'"></tr>
               </table>
             </div>
           }

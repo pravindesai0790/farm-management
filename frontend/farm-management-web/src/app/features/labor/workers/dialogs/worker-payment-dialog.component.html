@@ -1,0 +1,256 @@
+<div class="dialog-container">
+  <h2 mat-dialog-title class="dialog-header">
+    <div class="header-content">
+      <mat-icon class="title-icon">payments</mat-icon>
+      <div>
+        <span class="main-title">{{ dialogTitle() }}</span>
+        @if (data.workerDisplayName) {
+          <span class="sub-title">Worker: <strong>{{ data.workerDisplayName }}</strong></span>
+        }
+      </div>
+    </div>
+  </h2>
+
+  <mat-dialog-content class="dialog-body">
+    <!-- Read-only Backend Settlement Summary -->
+    <div class="settlement-section">
+      <div class="settlement-header">
+        <span class="section-badge">Authoritative Backend Position</span>
+        @if (isLoadingSettlement()) {
+          <span class="refreshing-indicator">
+            <mat-spinner diameter="14"></mat-spinner>
+            Fetching balance…
+          </span>
+        }
+      </div>
+
+      @if (settlement(); as s) {
+        <div class="settlement-summary-grid">
+          <div class="summary-chip">
+            <span class="chip-label">Gross Earnings</span>
+            <span class="chip-value">{{ currencySymbol() }}{{ s.grossPayable | number:'1.2-2' }}</span>
+          </div>
+
+          <div class="summary-chip advance-chip">
+            <span class="chip-label">Advance Balance</span>
+            <span class="chip-value">{{ currencySymbol() }}{{ s.currentAdvanceBalance | number:'1.2-2' }}</span>
+          </div>
+
+          <div class="summary-chip payout-chip">
+            <span class="chip-label">Previous Payouts</span>
+            <span class="chip-value">{{ currencySymbol() }}{{ s.totalPayouts | number:'1.2-2' }}</span>
+          </div>
+
+          <div class="summary-chip payable-chip" [class.zero-payable]="s.amountAvailableForPayout <= 0">
+            <span class="chip-label">Available Payable</span>
+            <span class="chip-value highlight">{{ currencySymbol() }}{{ s.amountAvailableForPayout | number:'1.2-2' }}</span>
+          </div>
+
+          <div class="summary-chip outstanding-chip">
+            <span class="chip-label">Outstanding Amount</span>
+            <span class="chip-value">{{ currencySymbol() }}{{ s.outstandingAmount | number:'1.2-2' }}</span>
+          </div>
+        </div>
+
+        @if (s.advanceCarriedForward > 0) {
+          <div class="notice-box info-notice">
+            <mat-icon class="notice-icon">info</mat-icon>
+            <span>Worker has a carried forward advance balance of <strong>{{ currencySymbol() }}{{ s.advanceCarriedForward | number:'1.2-2' }}</strong>.</span>
+          </div>
+        }
+      } @else if (isLoadingSettlement()) {
+        <div class="summary-loading">
+          <mat-spinner diameter="24"></mat-spinner>
+          <span>Loading financial position from settlement service…</span>
+        </div>
+      }
+    </div>
+
+    <!-- Error Alert if API error -->
+    @if (errorMessage()) {
+      <app-error-alert [error]="errorMessage()!" />
+    }
+
+    <!-- PAYOUT Constraint Banner -->
+    @if (isPayoutType() && availablePayable() <= 0 && !isLoadingSettlement()) {
+      <div class="notice-box warning-notice">
+        <mat-icon class="notice-icon">warning</mat-icon>
+        <div>
+          <strong>No available payable balance:</strong>
+          This worker currently has {{ currencySymbol() }}0.00 available for payout.
+          To record an advance before earnings accrue, select <strong>Advance</strong> as the payment type.
+        </div>
+      </div>
+    }
+
+    <!-- Payment Form -->
+    <form [formGroup]="form" (ngSubmit)="submit()" class="payment-form">
+      <div class="form-row two-cols">
+        <!-- Payment Date -->
+        <mat-form-field appearance="outline">
+          <mat-label>Payment Date</mat-label>
+          <input
+            matInput
+            [matDatepicker]="paymentDatePicker"
+            formControlName="paymentDate"
+            required
+          />
+          <mat-datepicker-toggle matIconSuffix [for]="paymentDatePicker"></mat-datepicker-toggle>
+          <mat-datepicker #paymentDatePicker></mat-datepicker>
+          @if (form.controls.paymentDate.hasError('required')) {
+            <mat-error>Payment date is required.</mat-error>
+          }
+        </mat-form-field>
+
+        <!-- Payment Type -->
+        <mat-form-field appearance="outline">
+          <mat-label>Payment Type</mat-label>
+          <mat-select formControlName="paymentType" required>
+            @for (type of paymentTypes; track type.value) {
+              <mat-option [value]="type.value">
+                {{ type.label }}
+              </mat-option>
+            }
+          </mat-select>
+          @if (form.controls.paymentType.hasError('required')) {
+            <mat-error>Payment type is required.</mat-error>
+          }
+        </mat-form-field>
+      </div>
+
+      <div class="form-row two-cols">
+        <!-- Amount -->
+        <mat-form-field appearance="outline">
+          <mat-label>Amount</mat-label>
+          <span matTextPrefix class="prefix-currency">{{ currencySymbol() }}&nbsp;</span>
+          <input
+            matInput
+            type="number"
+            step="0.01"
+            min="0.01"
+            formControlName="amount"
+            placeholder="0.00"
+            required
+          />
+          @if (apiError('amount')) {
+            <mat-error>{{ apiError('amount') }}</mat-error>
+          } @else if (form.controls.amount.hasError('required')) {
+            <mat-error>Amount is required.</mat-error>
+          } @else if (form.controls.amount.hasError('min')) {
+            <mat-error>Amount must be greater than zero.</mat-error>
+          } @else if (form.hasError('amountExceedsPayable')) {
+            <mat-error>{{ form.getError('amountExceedsPayable') }}</mat-error>
+          } @else if (form.hasError('noPayableEarnings')) {
+            <mat-error>{{ form.getError('noPayableEarnings') }}</mat-error>
+          }
+        </mat-form-field>
+
+        <!-- Currency -->
+        <mat-form-field appearance="outline">
+          <mat-label>Currency</mat-label>
+          <mat-select formControlName="currencyId" required>
+            @for (c of currencies(); track c.id) {
+              <mat-option [value]="c.id">
+                {{ c.name }} ({{ c.code }} - {{ c.symbol }})
+              </mat-option>
+            }
+          </mat-select>
+          @if (form.controls.currencyId.hasError('required')) {
+            <mat-error>Currency is required.</mat-error>
+          }
+        </mat-form-field>
+      </div>
+
+      <div class="form-row two-cols">
+        <!-- Payment Method -->
+        <mat-form-field appearance="outline">
+          <mat-label>Payment Method</mat-label>
+          <mat-select formControlName="paymentMethod" required>
+            @for (m of paymentMethods; track m.value) {
+              <mat-option [value]="m.value">
+                {{ m.label }}
+              </mat-option>
+            }
+          </mat-select>
+          @if (form.controls.paymentMethod.hasError('required')) {
+            <mat-error>Payment method is required.</mat-error>
+          }
+        </mat-form-field>
+
+        <!-- Reference Number -->
+        <mat-form-field appearance="outline">
+          <mat-label>Reference / Receipt No.</mat-label>
+          <input
+            matInput
+            formControlName="referenceNumber"
+            placeholder="e.g. UPI-12345, CHQ-9988"
+          />
+        </mat-form-field>
+      </div>
+
+      <!-- Applicable Period (Optional) -->
+      <div class="form-row two-cols">
+        <mat-form-field appearance="outline">
+          <mat-label>Applicable Period From</mat-label>
+          <input
+            matInput
+            [matDatepicker]="periodFromPicker"
+            formControlName="paymentPeriodFrom"
+            placeholder="Optional start date"
+          />
+          <mat-datepicker-toggle matIconSuffix [for]="periodFromPicker"></mat-datepicker-toggle>
+          <mat-datepicker #periodFromPicker></mat-datepicker>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Applicable Period To</mat-label>
+          <input
+            matInput
+            [matDatepicker]="periodToPicker"
+            formControlName="paymentPeriodTo"
+            placeholder="Optional end date"
+          />
+          <mat-datepicker-toggle matIconSuffix [for]="periodToPicker"></mat-datepicker-toggle>
+          <mat-datepicker #periodToPicker></mat-datepicker>
+        </mat-form-field>
+      </div>
+
+      @if (form.hasError('invalidPeriodRange')) {
+        <mat-error class="period-error">
+          {{ form.getError('invalidPeriodRange') }}
+        </mat-error>
+      }
+
+      <!-- Notes -->
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Notes / Comments</mat-label>
+        <textarea
+          matInput
+          rows="2"
+          formControlName="notes"
+          placeholder="Additional context or remarks about this payment"
+        ></textarea>
+      </mat-form-field>
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end" class="dialog-actions">
+    <button mat-button type="button" (click)="cancel()" [disabled]="isSubmitting()">
+      Cancel
+    </button>
+    <button
+      mat-flat-button
+      color="primary"
+      type="button"
+      (click)="submit()"
+      [disabled]="form.invalid || isSubmitting()"
+    >
+      @if (isSubmitting()) {
+        <mat-spinner diameter="18" class="btn-spinner"></mat-spinner>
+        Recording…
+      } @else {
+        Record Payment
+      }
+    </button>
+  </mat-dialog-actions>
+</div>

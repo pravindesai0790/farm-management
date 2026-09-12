@@ -414,6 +414,16 @@ export const routes: Routes = [
               ).then((module) => module.WorkerEditorPageComponent),
           },
           {
+            path: "workers/:id/payments",
+            title: "Worker payments & settlement",
+            canActivate: [permissionGuard],
+            data: { permission: "WorkerPayment.View" },
+            loadComponent: () =>
+              import(
+                "./features/labor/workers/worker-payments-page.component"
+              ).then((module) => module.WorkerPaymentsPageComponent),
+          },
+          {
             path: "workers/:id",
             title: "Worker details",
             canActivate: [permissionGuard],

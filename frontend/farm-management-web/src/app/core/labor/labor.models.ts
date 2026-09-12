@@ -290,21 +290,165 @@ export function getRateLifecycle(
   return "CURRENT";
 }
 
+export type PaymentType = "ADVANCE" | "PAYOUT" | "ADJUSTMENT";
+export type PaymentMethod = "CASH" | "BANK_TRANSFER" | "UPI" | "CHEQUE" | "OTHER";
+export type PaymentStatus = "PENDING" | "COMPLETED" | "CANCELLED";
+
 export interface WorkerPayment {
   readonly id: string;
   readonly organizationId: string;
   readonly workerId: string;
+  readonly workerDisplayName?: string;
   readonly paymentDate: string;
-  readonly paymentType: "ADVANCE" | "PAYOUT" | "ADJUSTMENT" | string;
+  readonly paymentType: PaymentType | string;
   readonly amount: number;
+  readonly currencyId?: string;
   readonly currencyCode?: string;
-  readonly paymentMethod: "CASH" | "BANK_TRANSFER" | "UPI" | "CHEQUE" | "OTHER" | string;
+  readonly currencySymbol?: string;
+  readonly paymentMethod: PaymentMethod | string;
   readonly referenceNumber?: string | null;
   readonly paymentPeriodFrom?: string | null;
   readonly paymentPeriodTo?: string | null;
-  readonly status: "PENDING" | "COMPLETED" | "CANCELLED" | string;
+  readonly status: PaymentStatus | string;
   readonly notes?: string | null;
+  readonly cancelledAt?: string | null;
+  readonly cancelledBy?: string | null;
+  readonly cancellationReason?: string | null;
   readonly createdAt: string;
+  readonly createdBy?: string;
+  readonly updatedAt?: string | null;
+  readonly updatedBy?: string | null;
 }
+
+export interface RecordWorkerPaymentRequest {
+  readonly workerId: string;
+  readonly paymentDate: string;
+  readonly paymentType: PaymentType | string;
+  readonly amount: number;
+  readonly currencyId: string;
+  readonly paymentMethod: PaymentMethod | string;
+  readonly referenceNumber?: string | null;
+  readonly paymentPeriodFrom?: string | null;
+  readonly paymentPeriodTo?: string | null;
+  readonly status?: string;
+  readonly notes?: string | null;
+}
+
+export interface CancelWorkerPaymentRequest {
+  readonly reason?: string | null;
+}
+
+export interface WorkerSettlementCalculation {
+  readonly workerId: string;
+  readonly workerDisplayName: string;
+  readonly organizationId: string;
+  readonly periodFrom?: string | null;
+  readonly periodTo?: string | null;
+  readonly asOfDate?: string | null;
+  readonly totalEarnings: number;
+  readonly totalApprovedPositiveAdjustments: number;
+  readonly totalApprovedNegativeAdjustments: number;
+  readonly totalApprovedAdjustments: number;
+  readonly grossPayable: number;
+  readonly totalAdvances: number;
+  readonly totalAdvanceApplied: number;
+  readonly currentAdvanceBalance: number;
+  readonly totalPayouts: number;
+  readonly totalPayoutsApplied: number;
+  readonly totalPaid: number;
+  readonly outstandingAmount: number;
+  readonly amountAvailableForPayout: number;
+  readonly advanceCarriedForward: number;
+  readonly settlementStatus: string;
+  readonly currencyId?: string | null;
+  readonly currencyCode?: string | null;
+  readonly currencySymbol?: string | null;
+  readonly unsettledEarningCount: number;
+  readonly settledEarningCount: number;
+  readonly pendingApprovalEarningCount: number;
+}
+
+export interface WorkerFinancialSummary {
+  readonly workerId: string;
+  readonly organizationId: string;
+  readonly workerDisplayName: string;
+  readonly asOfDate?: string | null;
+  readonly grossEarnings: number;
+  readonly totalAdvances: number;
+  readonly totalPayouts: number;
+  readonly totalAdjustments: number;
+  readonly netOutstanding: number;
+  readonly carryForwardAdvanceBalance: number;
+  readonly completedPaymentCount: number;
+  readonly cancelledPaymentCount: number;
+  readonly currencyId?: string | null;
+  readonly currencyCode?: string | null;
+  readonly currencySymbol?: string | null;
+}
+
+export const PAYMENT_TYPE_OPTIONS: readonly { readonly value: PaymentType; readonly label: string }[] = [
+  { value: "ADVANCE", label: "Advance" },
+  { value: "PAYOUT", label: "Payout" },
+  { value: "ADJUSTMENT", label: "Adjustment" },
+];
+
+export const PAYMENT_METHOD_OPTIONS: readonly { readonly value: PaymentMethod; readonly label: string }[] = [
+  { value: "CASH", label: "Cash" },
+  { value: "BANK_TRANSFER", label: "Bank Transfer" },
+  { value: "UPI", label: "UPI" },
+  { value: "CHEQUE", label: "Cheque" },
+  { value: "OTHER", label: "Other" },
+];
+
+export const PAYMENT_STATUS_OPTIONS: readonly { readonly value: string; readonly label: string }[] = [
+  { value: "all", label: "All statuses" },
+  { value: "COMPLETED", label: "Completed" },
+  { value: "CANCELLED", label: "Cancelled" },
+  { value: "PENDING", label: "Pending" },
+];
+
+export function formatPaymentType(type: string | null | undefined): string {
+  switch ((type || "").toUpperCase()) {
+    case "ADVANCE":
+      return "Advance";
+    case "PAYOUT":
+      return "Payout";
+    case "ADJUSTMENT":
+      return "Adjustment";
+    default:
+      return type || "—";
+  }
+}
+
+export function formatPaymentMethod(method: string | null | undefined): string {
+  switch ((method || "").toUpperCase()) {
+    case "CASH":
+      return "Cash";
+    case "BANK_TRANSFER":
+      return "Bank Transfer";
+    case "UPI":
+      return "UPI";
+    case "CHEQUE":
+      return "Cheque";
+    case "OTHER":
+      return "Other";
+    default:
+      return method || "—";
+  }
+}
+
+export function formatPaymentStatus(status: string | null | undefined): string {
+  switch ((status || "").toUpperCase()) {
+    case "COMPLETED":
+      return "Completed";
+    case "CANCELLED":
+      return "Cancelled";
+    case "PENDING":
+      return "Pending";
+    default:
+      return status || "—";
+  }
+}
+
 
 

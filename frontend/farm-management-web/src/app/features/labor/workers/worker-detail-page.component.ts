@@ -29,6 +29,7 @@ import {
   WorkerDetail,
   WorkerFarmAssignment,
   WorkerPayment,
+  WorkerSettlementCalculation,
   formatEmploymentType,
   formatGender,
 } from "../../../core/labor/labor.models";
@@ -36,6 +37,11 @@ import { LaborService } from "../../../core/labor/labor.service";
 import { getApiErrorMessage } from "../../../core/models/api-error.model";
 import { WorkerFarmAssignmentDialogComponent } from "./dialogs/worker-farm-assignment-dialog.component";
 import { WorkerFarmAssignmentEndDialogComponent } from "./dialogs/worker-farm-assignment-end-dialog.component";
+import {
+  WorkerPaymentDialogComponent,
+  WorkerPaymentDialogData,
+} from "./dialogs/worker-payment-dialog.component";
+import { WorkerPaymentCancelDialogComponent } from "./dialogs/worker-payment-cancel-dialog.component";
 
 @Component({
   selector: "app-worker-detail-page",
@@ -73,12 +79,18 @@ export class WorkerDetailPageComponent implements OnInit {
   readonly assignments = signal<readonly WorkerFarmAssignment[]>([]);
   readonly wageRates = signal<readonly LaborWageRate[]>([]);
   readonly payments = signal<readonly WorkerPayment[]>([]);
+  readonly settlement = signal<WorkerSettlementCalculation | null>(null);
 
   readonly isLoading = signal(true);
   readonly isLoadingAssignments = signal(false);
   readonly isLoadingWageRates = signal(false);
   readonly isLoadingPayments = signal(false);
+  readonly isLoadingSettlement = signal(false);
   readonly actionInProgress = signal(false);
+
+  readonly currencySymbol = computed(() => {
+    return this.settlement()?.currencySymbol || "₹";
+  });
 
   readonly assignmentFilter = signal<"all" | "active">("all");
 
@@ -121,6 +133,7 @@ export class WorkerDetailPageComponent implements OnInit {
     "referenceNumber",
     "status",
     "notes",
+    "actions",
   ];
 
   ngOnInit(): void {
@@ -153,6 +166,8 @@ export class WorkerDetailPageComponent implements OnInit {
 
           // Load applicable wage rates based on worker gender
           this.loadWageRates(worker.gender);
+          // Load settlement summary
+          this.loadSettlement();
           // Load payment history
           this.loadPayments();
         },
@@ -212,6 +227,58 @@ export class WorkerDetailPageComponent implements OnInit {
         next: (records) => this.payments.set(records),
         error: () => this.payments.set([]),
       });
+  }
+
+  loadSettlement(): void {
+    this.isLoadingSettlement.set(true);
+    this.laborService
+      .getWorkerSettlement(this.workerId)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.isLoadingSettlement.set(false)),
+      )
+      .subscribe({
+        next: (res) => this.settlement.set(res),
+        error: () => this.settlement.set(null),
+      });
+  }
+
+  openRecordPaymentDialog(mode: "ADVANCE" | "PARTIAL_PAYOUT" | "FINAL_PAYOUT" | "GENERAL" = "GENERAL"): void {
+    const currentWorker = this.worker();
+    const data: WorkerPaymentDialogData = {
+      workerId: this.workerId,
+      workerDisplayName: currentWorker?.displayName,
+      mode,
+    };
+
+    const ref = this.dialog.open(WorkerPaymentDialogComponent, {
+      width: "600px",
+      data,
+    });
+
+    ref.afterClosed().subscribe((res) => {
+      if (res) {
+        this.loadSettlement();
+        this.loadPayments();
+      }
+    });
+  }
+
+  openCancelPaymentDialog(payment: WorkerPayment): void {
+    const ref = this.dialog.open(WorkerPaymentCancelDialogComponent, {
+      width: "520px",
+      data: {
+        workerId: this.workerId,
+        payment,
+      },
+    });
+
+    ref.afterClosed().subscribe((res) => {
+      if (res) {
+        this.loadSettlement();
+        this.loadPayments();
+      }
+    });
   }
 
   toggleWorkerStatus(): void {

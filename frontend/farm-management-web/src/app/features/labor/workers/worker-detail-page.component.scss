@@ -335,7 +335,65 @@
         color: #212121;
       }
     }
+
+    .highlight-payable-card {
+      border: 1px solid #81c784;
+      background-color: #f1f8e9;
+
+      .payable-highlight {
+        color: #1b5e20;
+      }
+
+      &.zero-payable {
+        border-color: #ffe082;
+        background-color: #fffde7;
+        .payable-highlight {
+          color: #b78103;
+        }
+      }
+    }
+
+    .icon-payable {
+      background-color: #e8f5e9;
+      color: #1b5e20;
+    }
+
+    .icon-outstanding {
+      background-color: #fff3e0;
+      color: #e65100;
+    }
   }
+}
+
+.auth-pos-badge {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  background: #e8f5e9;
+  color: #1b5e20;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid #c8e6c9;
+}
+
+.action-bar-left {
+  display: flex;
+  align-items: center;
+}
+
+.action-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.empty-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 8px;
 }
 
 /* Tables */
@@ -362,6 +420,56 @@
     font-size: 1rem;
     font-weight: 600;
     color: #2e7d32;
+
+    &.cancelled-amount {
+      text-decoration: line-through;
+      color: #888;
+    }
+  }
+
+  .cancelled-row {
+    opacity: 0.65;
+    background-color: #fafafa;
+  }
+
+  .cancelled-reason {
+    color: #c62828;
+    font-size: 0.8rem;
+    display: block;
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .badge-type {
+    &[data-type="ADVANCE"] {
+      background-color: #e3f2fd;
+      color: #1565c0;
+    }
+    &[data-type="PAYOUT"] {
+      background-color: #e8f5e9;
+      color: #1b5e20;
+    }
+    &[data-type="ADJUSTMENT"] {
+      background-color: #fff3e0;
+      color: #e65100;
+    }
+  }
+
+  .status-pill {
+    &[data-status="COMPLETED"] {
+      background-color: #e8f5e9;
+      color: #2e7d32;
+    }
+    &[data-status="CANCELLED"] {
+      background-color: #ffebee;
+      color: #c62828;
+    }
+    &[data-status="PENDING"] {
+      background-color: #fff8e1;
+      color: #f57f17;
+    }
   }
 
   .actions-header {
