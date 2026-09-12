@@ -466,20 +466,98 @@
         </div>
       </mat-tab>
 
-      <!-- 4. Payment History Tab -->
-      <mat-tab label="Payment History">
+      <!-- 4. Financial & Payment History Tab -->
+      <mat-tab label="Financial & Payment History">
         <div class="tab-content">
-          <!-- Action Toolbar -->
-          <div class="tab-action-bar">
-            <div class="action-bar-left">
-              <span class="auth-pos-badge">Authoritative Backend Settlement</span>
+          <!-- Top Filter & Action Bar -->
+          <div class="financial-toolbar">
+            <!-- Filter Row: Presets and Date Pickers -->
+            <div class="filter-controls-row">
+              <div class="presets-group">
+                <button
+                  mat-stroked-button
+                  type="button"
+                  class="preset-chip"
+                  [class.active-preset]="activePreset() === 'all'"
+                  (click)="setPreset('all')"
+                >
+                  All Time
+                </button>
+                <button
+                  mat-stroked-button
+                  type="button"
+                  class="preset-chip"
+                  [class.active-preset]="activePreset() === 'this_month'"
+                  (click)="setPreset('this_month')"
+                >
+                  This Month
+                </button>
+                <button
+                  mat-stroked-button
+                  type="button"
+                  class="preset-chip"
+                  [class.active-preset]="activePreset() === 'last_month'"
+                  (click)="setPreset('last_month')"
+                >
+                  Last Month
+                </button>
+                <button
+                  mat-stroked-button
+                  type="button"
+                  class="preset-chip"
+                  [class.active-preset]="activePreset() === 'last_30_days'"
+                  (click)="setPreset('last_30_days')"
+                >
+                  Last 30 Days
+                </button>
+              </div>
+
+              <div class="date-pickers-group">
+                <mat-form-field appearance="outline" density="compact" class="date-field">
+                  <mat-label>Period From</mat-label>
+                  <input
+                    matInput
+                    [matDatepicker]="detailPickerFrom"
+                    [value]="periodFrom()"
+                    (dateChange)="periodFrom.set($event.value); onDateRangeChange()"
+                  />
+                  <mat-datepicker-toggle matIconSuffix [for]="detailPickerFrom" />
+                  <mat-datepicker #detailPickerFrom />
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" density="compact" class="date-field">
+                  <mat-label>Period To</mat-label>
+                  <input
+                    matInput
+                    [matDatepicker]="detailPickerTo"
+                    [value]="periodTo()"
+                    (dateChange)="periodTo.set($event.value); onDateRangeChange()"
+                  />
+                  <mat-datepicker-toggle matIconSuffix [for]="detailPickerTo" />
+                  <mat-datepicker #detailPickerTo />
+                </mat-form-field>
+
+                @if (periodFrom() || periodTo()) {
+                  <button
+                    mat-button
+                    type="button"
+                    class="reset-btn"
+                    (click)="clearDateRange()"
+                    matTooltip="Reset date filter"
+                  >
+                    <mat-icon>clear</mat-icon> Clear
+                  </button>
+                }
+              </div>
             </div>
 
-            <div class="action-bar-right">
+            <!-- Action Buttons Row -->
+            <div class="actions-group">
               @if (permissionService.has("WorkerPayment.Create")) {
                 <button
                   mat-stroked-button
                   color="primary"
+                  type="button"
                   (click)="openRecordPaymentDialog('ADVANCE')"
                 >
                   <mat-icon>request_quote</mat-icon> Record Advance
@@ -488,15 +566,27 @@
                 <button
                   mat-stroked-button
                   color="accent"
+                  type="button"
                   (click)="openRecordPaymentDialog('PARTIAL_PAYOUT')"
                   [disabled]="(settlement()?.amountAvailableForPayout ?? 0) <= 0"
                 >
-                  <mat-icon>paid</mat-icon> Record Payout
+                  <mat-icon>paid</mat-icon> Record Partial Payout
+                </button>
+
+                <button
+                  mat-stroked-button
+                  color="accent"
+                  type="button"
+                  (click)="openRecordPaymentDialog('FINAL_PAYOUT')"
+                  [disabled]="(settlement()?.amountAvailableForPayout ?? 0) <= 0"
+                >
+                  <mat-icon>task_alt</mat-icon> Record Final Payout
                 </button>
 
                 <button
                   mat-flat-button
                   color="primary"
+                  type="button"
                   (click)="openRecordPaymentDialog('GENERAL')"
                 >
                   <mat-icon>add_card</mat-icon> Record Payment
@@ -513,185 +603,330 @@
             </div>
           </div>
 
-          <!-- Real Settlement Financial Position Cards -->
+          <!-- Advance Carried Forward Notice Banner -->
           @if (settlement(); as s) {
-            <div class="payment-stats-grid">
-              <mat-card class="stat-card">
-                <mat-card-content>
-                  <div class="stat-icon-wrap icon-primary">
-                    <mat-icon>trending_up</mat-icon>
-                  </div>
-                  <div class="stat-info">
-                    <span class="stat-label">Gross Earnings</span>
-                    <span class="stat-value">{{ currencySymbol() }}{{ s.grossPayable | number:'1.2-2' }}</span>
-                  </div>
-                </mat-card-content>
-              </mat-card>
-
-              <mat-card class="stat-card">
-                <mat-card-content>
-                  <div class="stat-icon-wrap icon-advance">
-                    <mat-icon>account_balance_wallet</mat-icon>
-                  </div>
-                  <div class="stat-info">
-                    <span class="stat-label">Advance Balance</span>
-                    <span class="stat-value">{{ currencySymbol() }}{{ s.currentAdvanceBalance | number:'1.2-2' }}</span>
-                  </div>
-                </mat-card-content>
-              </mat-card>
-
-              <mat-card class="stat-card">
-                <mat-card-content>
-                  <div class="stat-icon-wrap icon-balance">
-                    <mat-icon>receipt_long</mat-icon>
-                  </div>
-                  <div class="stat-info">
-                    <span class="stat-label">Previous Payouts</span>
-                    <span class="stat-value">{{ currencySymbol() }}{{ s.totalPayouts | number:'1.2-2' }}</span>
-                  </div>
-                </mat-card-content>
-              </mat-card>
-
-              <mat-card class="stat-card highlight-payable-card" [class.zero-payable]="s.amountAvailableForPayout <= 0">
-                <mat-card-content>
-                  <div class="stat-icon-wrap icon-payable">
-                    <mat-icon>payments</mat-icon>
-                  </div>
-                  <div class="stat-info">
-                    <span class="stat-label">Available Payable</span>
-                    <span class="stat-value payable-highlight">{{ currencySymbol() }}{{ s.amountAvailableForPayout | number:'1.2-2' }}</span>
-                  </div>
-                </mat-card-content>
-              </mat-card>
-
-              <mat-card class="stat-card">
-                <mat-card-content>
-                  <div class="stat-icon-wrap icon-outstanding">
-                    <mat-icon>pending_actions</mat-icon>
-                  </div>
-                  <div class="stat-info">
-                    <span class="stat-label">Outstanding</span>
-                    <span class="stat-value">{{ currencySymbol() }}{{ s.outstandingAmount | number:'1.2-2' }}</span>
-                  </div>
-                </mat-card-content>
-              </mat-card>
-            </div>
-          }
-
-          @if (isLoadingPayments()) {
-            <div class="tab-loading">
-              <mat-spinner diameter="32" />
-              <span>Loading payment history…</span>
-            </div>
-          } @else if (payments().length === 0) {
-            <div class="tab-empty">
-              <mat-icon>history_toggle_off</mat-icon>
-              <h4>No payment records found</h4>
-              <p>
-                Payment transactions (advances, partial payouts, and final settlements) for this worker
-                will appear here once recorded.
-              </p>
-              @if (permissionService.has("WorkerPayment.Create")) {
-                <div class="empty-buttons">
-                  <button mat-stroked-button color="primary" (click)="openRecordPaymentDialog('ADVANCE')">
-                    <mat-icon>add</mat-icon> Record Advance
-                  </button>
-                  <button mat-flat-button color="primary" (click)="openRecordPaymentDialog('GENERAL')">
-                    <mat-icon>add_card</mat-icon> Record Payment
-                  </button>
+            @if (s.advanceCarriedForward > 0) {
+              <div class="carried-forward-banner">
+                <mat-icon class="banner-icon">info</mat-icon>
+                <div class="banner-text">
+                  <strong>Advance Carried Forward: {{ currencySymbol() }}{{ s.advanceCarriedForward | number:'1.2-2' }}</strong>
+                  <p>Advances issued exceed current period earnings. The unapplied balance will carry forward to future settlements.</p>
                 </div>
-              }
-            </div>
-          } @else {
-            <div class="table-wrap">
-              <table mat-table [dataSource]="payments()" class="payments-table">
-                <!-- Date -->
-                <ng-container matColumnDef="paymentDate">
-                  <th mat-header-cell *matHeaderCellDef>Date</th>
-                  <td mat-cell *matCellDef="let p">
-                    {{ p.paymentDate | date:'mediumDate' }}
-                  </td>
-                </ng-container>
+              </div>
+            }
 
-                <!-- Type -->
-                <ng-container matColumnDef="paymentType">
-                  <th mat-header-cell *matHeaderCellDef>Type</th>
-                  <td mat-cell *matCellDef="let p">
-                    <span class="badge-type" [attr.data-type]="p.paymentType">{{ formatPaymentType(p.paymentType) }}</span>
-                  </td>
-                </ng-container>
+            <!-- 3 Financial Summary Cards: Earnings, Advance, Payout -->
+            <div class="financial-cards-grid">
+              <!-- 1. Earnings Summary -->
+              <mat-card class="financial-card earnings-card">
+                <div class="card-top-header">
+                  <div class="card-icon-title">
+                    <span class="icon-avatar icon-earnings">
+                      <mat-icon>trending_up</mat-icon>
+                    </span>
+                    <div>
+                      <h4 class="card-heading">Earnings Summary</h4>
+                      <span class="card-subheading">Period attendance & adjustments</span>
+                    </div>
+                  </div>
+                  <span class="period-pill">
+                    {{ periodFrom() ? (periodFrom() | date:'shortDate') : 'Start' }} – {{ periodTo() ? (periodTo() | date:'shortDate') : 'Present' }}
+                  </span>
+                </div>
 
-                <!-- Amount -->
-                <ng-container matColumnDef="amount">
-                  <th mat-header-cell *matHeaderCellDef>Amount</th>
-                  <td mat-cell *matCellDef="let p">
-                    <strong class="rate-amount" [class.cancelled-amount]="p.status === 'CANCELLED'">
-                      {{ p.currencySymbol || "₹" }}{{ p.amount | number:'1.2-2' }}
-                    </strong>
-                  </td>
-                </ng-container>
+                <div class="card-body">
+                  <div class="hero-metric">
+                    <span class="hero-label">Total Earned</span>
+                    <span class="hero-val hero-val-earnings">{{ currencySymbol() }}{{ s.totalEarnings | number:'1.2-2' }}</span>
+                  </div>
 
-                <!-- Method -->
-                <ng-container matColumnDef="paymentMethod">
-                  <th mat-header-cell *matHeaderCellDef>Method</th>
-                  <td mat-cell *matCellDef="let p">
-                    {{ formatPaymentMethod(p.paymentMethod) }}
-                  </td>
-                </ng-container>
-
-                <!-- Reference -->
-                <ng-container matColumnDef="referenceNumber">
-                  <th mat-header-cell *matHeaderCellDef>Reference</th>
-                  <td mat-cell *matCellDef="let p">
-                    <code>{{ p.referenceNumber || "—" }}</code>
-                  </td>
-                </ng-container>
-
-                <!-- Status -->
-                <ng-container matColumnDef="status">
-                  <th mat-header-cell *matHeaderCellDef>Status</th>
-                  <td mat-cell *matCellDef="let p">
-                    <span class="status-pill" [attr.data-status]="p.status">{{ p.status }}</span>
-                  </td>
-                </ng-container>
-
-                <!-- Notes -->
-                <ng-container matColumnDef="notes">
-                  <th mat-header-cell *matHeaderCellDef>Notes / Reason</th>
-                  <td mat-cell *matCellDef="let p">
-                    @if (p.status === 'CANCELLED' && p.cancellationReason) {
-                      <span class="cancelled-reason" [matTooltip]="p.cancellationReason">
-                        Cancelled: {{ p.cancellationReason }}
-                      </span>
-                    } @else {
-                      {{ p.notes || "—" }}
-                    }
-                  </td>
-                </ng-container>
-
-                <!-- Actions -->
-                <ng-container matColumnDef="actions">
-                  <th mat-header-cell *matHeaderCellDef class="actions-header">Actions</th>
-                  <td mat-cell *matCellDef="let p" class="actions-cell">
-                    @if (p.status !== 'CANCELLED' && permissionService.has('WorkerPayment.Cancel')) {
-                      <button
-                        mat-icon-button
-                        color="warn"
-                        (click)="openCancelPaymentDialog(p)"
-                        matTooltip="Cancel payment"
-                        aria-label="Cancel payment"
+                  <div class="metric-breakdown">
+                    <div class="breakdown-item">
+                      <span class="item-name">Approved Adjustments</span>
+                      <span
+                        class="item-val"
+                        [class.positive-val]="s.totalApprovedAdjustments > 0"
+                        [class.negative-val]="s.totalApprovedAdjustments < 0"
                       >
-                        <mat-icon>cancel</mat-icon>
-                      </button>
-                    }
-                  </td>
-                </ng-container>
+                        {{ s.totalApprovedAdjustments > 0 ? '+' : '' }}{{ currencySymbol() }}{{ s.totalApprovedAdjustments | number:'1.2-2' }}
+                      </span>
+                    </div>
+                    <div class="breakdown-item highlight-row">
+                      <span class="item-name">Gross Payable</span>
+                      <span class="item-val font-semibold">{{ currencySymbol() }}{{ s.grossPayable | number:'1.2-2' }}</span>
+                    </div>
+                    <div class="breakdown-item subtle-row">
+                      <span class="item-name">Earning Records</span>
+                      <span class="item-val muted">{{ s.settledEarningCount }} settled &bull; {{ s.unsettledEarningCount }} pending</span>
+                    </div>
+                  </div>
+                </div>
+              </mat-card>
 
-                <tr mat-header-row *matHeaderRowDef="paymentColumns"></tr>
-                <tr mat-row *matRowDef="let row; columns: paymentColumns;" [class.cancelled-row]="row.status === 'CANCELLED'"></tr>
-              </table>
+              <!-- 2. Advance Summary -->
+              <mat-card class="financial-card advance-card">
+                <div class="card-top-header">
+                  <div class="card-icon-title">
+                    <span class="icon-avatar icon-advance">
+                      <mat-icon>account_balance_wallet</mat-icon>
+                    </span>
+                    <div>
+                      <h4 class="card-heading">Advance Summary</h4>
+                      <span class="card-subheading">Cash advances & recovery</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card-body">
+                  <div class="hero-metric">
+                    <span class="hero-label">Remaining Advance Balance</span>
+                    <span class="hero-val hero-val-advance">{{ currencySymbol() }}{{ s.currentAdvanceBalance | number:'1.2-2' }}</span>
+                  </div>
+
+                  <div class="metric-breakdown">
+                    <div class="breakdown-item">
+                      <span class="item-name">Total Advances</span>
+                      <span class="item-val">{{ currencySymbol() }}{{ s.totalAdvances | number:'1.2-2' }}</span>
+                    </div>
+                    <div class="breakdown-item">
+                      <span class="item-name">Applied Advances</span>
+                      <span class="item-val deduction-val">-{{ currencySymbol() }}{{ s.totalAdvanceApplied | number:'1.2-2' }}</span>
+                    </div>
+                    <div class="breakdown-item highlight-row">
+                      <span class="item-name">Advance Carried Forward</span>
+                      <span class="item-val" [class.carried-active]="s.advanceCarriedForward > 0">
+                        {{ currencySymbol() }}{{ s.advanceCarriedForward | number:'1.2-2' }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </mat-card>
+
+              <!-- 3. Payout Summary -->
+              <mat-card class="financial-card payout-card">
+                <div class="card-top-header">
+                  <div class="card-icon-title">
+                    <span class="icon-avatar icon-payout">
+                      <mat-icon>payments</mat-icon>
+                    </span>
+                    <div>
+                      <h4 class="card-heading">Payout Summary</h4>
+                      <span class="card-subheading">Disbursements & balance</span>
+                    </div>
+                  </div>
+                  <span class="settlement-badge" [attr.data-status]="s.settlementStatus">
+                    {{ s.settlementStatus }}
+                  </span>
+                </div>
+
+                <div class="card-body">
+                  <div class="hero-metric">
+                    <span class="hero-label">Outstanding Payable</span>
+                    <span class="hero-val hero-val-outstanding" [class.settled]="s.outstandingAmount <= 0">
+                      {{ currencySymbol() }}{{ s.outstandingAmount | number:'1.2-2' }}
+                    </span>
+                  </div>
+
+                  <div class="metric-breakdown">
+                    <div class="breakdown-item">
+                      <span class="item-name">Total Paid</span>
+                      <span class="item-val">{{ currencySymbol() }}{{ s.totalPaid | number:'1.2-2' }}</span>
+                    </div>
+                    <div class="breakdown-item">
+                      <span class="item-name">Last Payout Date</span>
+                      <span class="item-val muted">
+                        {{ lastPayoutDate() ? (lastPayoutDate() | date:'mediumDate') : 'No payouts yet' }}
+                      </span>
+                    </div>
+                    <div class="breakdown-item highlight-row payable-highlight-item">
+                      <span class="item-name font-semibold">Available Payable</span>
+                      <span class="item-val payable-badge">
+                        {{ currencySymbol() }}{{ s.amountAvailableForPayout | number:'1.2-2' }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </mat-card>
             </div>
           }
+
+          <!-- Transaction History Section -->
+          <div class="history-section">
+            <div class="history-header">
+              <div class="history-title-area">
+                <h3>Financial Transaction History</h3>
+                <span class="history-subtitle">
+                  Unified log of advances, payouts, attendance earnings, and adjustments ({{ filteredTransactions().length }} records)
+                </span>
+              </div>
+
+              <!-- Table Filters -->
+              <div class="table-filters-area">
+                <mat-form-field appearance="outline" density="compact" class="filter-field">
+                  <mat-label>Transaction Type</mat-label>
+                  <mat-select
+                    [value]="selectedTxType()"
+                    (selectionChange)="selectedTxType.set($event.value)"
+                  >
+                    <mat-option value="all">All Types</mat-option>
+                    <mat-option value="ADVANCE">Advance</mat-option>
+                    <mat-option value="PARTIAL_PAYOUT">Partial Payout</mat-option>
+                    <mat-option value="FINAL_PAYOUT">Final Payout</mat-option>
+                    <mat-option value="EARNING">Earnings</mat-option>
+                    <mat-option value="ADJUSTMENT">Adjustment</mat-option>
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" density="compact" class="filter-field">
+                  <mat-label>Status</mat-label>
+                  <mat-select
+                    [value]="selectedStatus()"
+                    (selectionChange)="selectedStatus.set($event.value)"
+                  >
+                    <mat-option value="all">All Statuses</mat-option>
+                    <mat-option value="COMPLETED">Completed / Approved</mat-option>
+                    <mat-option value="CANCELLED">Cancelled</mat-option>
+                    <mat-option value="PENDING">Pending</mat-option>
+                  </mat-select>
+                </mat-form-field>
+              </div>
+            </div>
+
+            @if (isLoadingPayments()) {
+              <div class="tab-loading">
+                <mat-spinner diameter="32" />
+                <span>Loading financial transactions…</span>
+              </div>
+            } @else if (filteredTransactions().length === 0) {
+              <div class="tab-empty">
+                <mat-icon>receipt_long</mat-icon>
+                <h4>No financial transactions found</h4>
+                <p>
+                  No earnings, advances, payouts, or adjustments match the selected date range and filter criteria.
+                </p>
+                @if (permissionService.has("WorkerPayment.Create")) {
+                  <div class="empty-buttons">
+                    <button mat-stroked-button color="primary" (click)="openRecordPaymentDialog('ADVANCE')">
+                      <mat-icon>add</mat-icon> Record Advance
+                    </button>
+                    <button mat-flat-button color="primary" (click)="openRecordPaymentDialog('GENERAL')">
+                      <mat-icon>add_card</mat-icon> Record Payment
+                    </button>
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="table-wrap">
+                <table mat-table [dataSource]="filteredTransactions()" class="financial-table">
+                  <!-- Date -->
+                  <ng-container matColumnDef="date">
+                    <th mat-header-cell *matHeaderCellDef>Date</th>
+                    <td mat-cell *matCellDef="let tx" class="date-cell">
+                      {{ tx.date | date:'mediumDate' }}
+                    </td>
+                  </ng-container>
+
+                  <!-- Transaction Type -->
+                  <ng-container matColumnDef="transactionType">
+                    <th mat-header-cell *matHeaderCellDef>Type</th>
+                    <td mat-cell *matCellDef="let tx">
+                      <span class="tx-badge" [attr.data-tx-type]="tx.transactionType">
+                        {{ tx.typeLabel }}
+                      </span>
+                    </td>
+                  </ng-container>
+
+                  <!-- Description -->
+                  <ng-container matColumnDef="description">
+                    <th mat-header-cell *matHeaderCellDef>Description</th>
+                    <td mat-cell *matCellDef="let tx" class="description-cell">
+                      <span>{{ tx.description }}</span>
+                    </td>
+                  </ng-container>
+
+                  <!-- Amount -->
+                  <ng-container matColumnDef="amount">
+                    <th mat-header-cell *matHeaderCellDef class="amount-header">Amount</th>
+                    <td mat-cell *matCellDef="let tx" class="amount-cell">
+                      <span
+                        class="amount-display"
+                        [class.amount-earning]="tx.isEarning"
+                        [class.amount-payment]="!tx.isEarning"
+                        [class.amount-cancelled]="tx.status === 'CANCELLED'"
+                      >
+                        {{ tx.isEarning ? '+' : '-' }}{{ currencySymbol() }}{{ tx.amount | number:'1.2-2' }}
+                      </span>
+                    </td>
+                  </ng-container>
+
+                  <!-- Status -->
+                  <ng-container matColumnDef="status">
+                    <th mat-header-cell *matHeaderCellDef>Status</th>
+                    <td mat-cell *matCellDef="let tx">
+                      <span class="status-pill" [attr.data-status]="tx.status">{{ tx.status }}</span>
+                    </td>
+                  </ng-container>
+
+                  <!-- Payment Method -->
+                  <ng-container matColumnDef="paymentMethod">
+                    <th mat-header-cell *matHeaderCellDef>Method</th>
+                    <td mat-cell *matCellDef="let tx">
+                      {{ tx.paymentMethod ? formatPaymentMethod(tx.paymentMethod) : '—' }}
+                    </td>
+                  </ng-container>
+
+                  <!-- Reference -->
+                  <ng-container matColumnDef="reference">
+                    <th mat-header-cell *matHeaderCellDef>Reference</th>
+                    <td mat-cell *matCellDef="let tx">
+                      @if (tx.referenceNumber) {
+                        <code>{{ tx.referenceNumber }}</code>
+                      } @else {
+                        <span class="muted">—</span>
+                      }
+                    </td>
+                  </ng-container>
+
+                  <!-- Related Earning / Allocation -->
+                  <ng-container matColumnDef="relatedAllocation">
+                    <th mat-header-cell *matHeaderCellDef>Related Earning / Allocation</th>
+                    <td mat-cell *matCellDef="let tx" class="allocation-cell">
+                      @if (tx.relatedEarningOrAllocation) {
+                        <span class="allocation-text">{{ tx.relatedEarningOrAllocation }}</span>
+                      } @else {
+                        <span class="muted">—</span>
+                      }
+                    </td>
+                  </ng-container>
+
+                  <!-- Actions -->
+                  <ng-container matColumnDef="actions">
+                    <th mat-header-cell *matHeaderCellDef class="actions-header">Actions</th>
+                    <td mat-cell *matCellDef="let tx" class="actions-cell">
+                      @if (tx.rawPayment && tx.status !== 'CANCELLED' && permissionService.has('WorkerPayment.Cancel')) {
+                        <button
+                          mat-icon-button
+                          color="warn"
+                          (click)="openCancelPaymentDialog(tx.rawPayment)"
+                          matTooltip="Cancel payment"
+                          aria-label="Cancel payment"
+                        >
+                          <mat-icon>cancel</mat-icon>
+                        </button>
+                      }
+                    </td>
+                  </ng-container>
+
+                  <tr mat-header-row *matHeaderRowDef="transactionColumns"></tr>
+                  <tr
+                    mat-row
+                    *matRowDef="let row; columns: transactionColumns;"
+                    [class.cancelled-row]="row.status === 'CANCELLED'"
+                  ></tr>
+                </table>
+              </div>
+            }
+          </div>
         </div>
       </mat-tab>
 

@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from "@angular/common/http";
 import { Injectable, inject } from "@angular/core";
-import { Observable, catchError, of } from "rxjs";
+import { Observable, catchError, map, of } from "rxjs";
 import { environment } from "../../../environments/environment";
 import { PagedResponse } from "../models/paged-response.model";
 import {
@@ -18,10 +18,12 @@ import {
   UpdateWorkerFarmAssignmentRequest,
   UpdateWorkerRequest,
   WorkerDetail,
+  WorkerEarningsLedgerItem,
   WorkerFarmAssignment,
   WorkerFinancialSummary,
   WorkerList,
   WorkerPayment,
+  WorkerPaymentAllocationItem,
   WorkerSettlementCalculation,
 } from "./labor.models";
 
@@ -346,29 +348,33 @@ export class LaborService {
 
   listWorkerPayments(
     workerId: string,
+    fromDate?: string | null,
+    toDate?: string | null,
   ): Observable<readonly WorkerPayment[]> {
+    let params = new HttpParams().set("pageSize", "100");
+    if (fromDate) {
+      params = params.set("fromDate", fromDate);
+    }
+    if (toDate) {
+      params = params.set("toDate", toDate);
+    }
+
     return this.http
       .get<readonly WorkerPayment[] | PagedResponse<WorkerPayment>>(
         `${this.api}/labor/workers/${workerId}/payments`,
+        { params },
       )
       .pipe(
         catchError(() => of([] as readonly WorkerPayment[])),
-        (source$) =>
-          new Observable<readonly WorkerPayment[]>((observer) => {
-            return source$.subscribe({
-              next: (val) => {
-                if (Array.isArray(val)) {
-                  observer.next(val);
-                } else if (val && "items" in val && Array.isArray((val as any).items)) {
-                  observer.next((val as any).items);
-                } else {
-                  observer.next([]);
-                }
-              },
-              error: () => observer.next([]),
-              complete: () => observer.complete(),
-            });
-          }),
+        map((val) => {
+          if (Array.isArray(val)) {
+            return val;
+          }
+          if (val && "items" in val && Array.isArray((val as any).items)) {
+            return (val as any).items;
+          }
+          return [];
+        }),
       );
   }
 
@@ -467,6 +473,60 @@ export class LaborService {
       `${this.api}/labor/workers/${workerId}/payments/summary`,
       { params },
     );
+  }
+
+  listWorkerEarnings(
+    workerId: string,
+    fromDate?: string | null,
+    toDate?: string | null,
+    status?: string | null,
+    entryType?: string | null,
+    page = 1,
+    pageSize = 100,
+  ): Observable<PagedResponse<WorkerEarningsLedgerItem>> {
+    let params = new HttpParams()
+      .set("page", page.toString())
+      .set("pageSize", pageSize.toString());
+
+    if (fromDate) {
+      params = params.set("fromDate", fromDate);
+    }
+    if (toDate) {
+      params = params.set("toDate", toDate);
+    }
+    if (status && status !== "all") {
+      params = params.set("status", status);
+    }
+    if (entryType && entryType !== "all") {
+      params = params.set("entryType", entryType);
+    }
+
+    return this.http.get<PagedResponse<WorkerEarningsLedgerItem>>(
+      `${this.api}/labor/workers/${workerId}/earnings`,
+      { params },
+    ).pipe(
+      catchError(() =>
+        of({
+          items: [] as WorkerEarningsLedgerItem[],
+          totalCount: 0,
+          page: 1,
+          pageSize,
+          totalPages: 0,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        } as PagedResponse<WorkerEarningsLedgerItem>),
+      ),
+    );
+  }
+
+  listWorkerPaymentAllocations(
+    workerId: string,
+  ): Observable<readonly WorkerPaymentAllocationItem[]> {
+    return this.http
+      .get<readonly WorkerPaymentAllocationItem[]>(
+        `${this.api}/labor/workers/${workerId}/allocations`,
+      )
+      .pipe(catchError(() => of([] as readonly WorkerPaymentAllocationItem[])));
   }
 }
 

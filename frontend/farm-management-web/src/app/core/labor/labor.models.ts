@@ -450,5 +450,84 @@ export function formatPaymentStatus(status: string | null | undefined): string {
   }
 }
 
+export interface WorkerEarningsLedgerItem {
+  readonly id: string;
+  readonly organizationId: string;
+  readonly workerId: string;
+  readonly workerDisplayName: string;
+  readonly attendanceId?: string | null;
+  readonly earningsDate: string;
+  readonly wageType: string;
+  readonly quantity: number;
+  readonly wageRate: number;
+  readonly currencyId: string;
+  readonly currencyCode: string;
+  readonly currencySymbol: string;
+  readonly grossAmount: number;
+  readonly entryType: string;
+  readonly status: string;
+  readonly referenceLedgerId?: string | null;
+  readonly description?: string | null;
+  readonly finalizedAt?: string | null;
+  readonly createdAt: string;
+}
+
+export interface WorkerPaymentAllocationItem {
+  readonly id: string;
+  readonly organizationId: string;
+  readonly workerPaymentId: string;
+  readonly workerEarningsLedgerId?: string | null;
+  readonly allocatedAmount: number;
+  readonly allocationType: string;
+  readonly allocationDate: string;
+  readonly notes?: string | null;
+  readonly createdAt: string;
+  readonly paymentType?: string | null;
+  readonly paymentAmount?: number | null;
+  readonly earningDate?: string | null;
+  readonly earningGrossAmount?: number | null;
+}
+
+export type FinancialTransactionType =
+  | "ADVANCE"
+  | "PARTIAL_PAYOUT"
+  | "FINAL_PAYOUT"
+  | "ADJUSTMENT"
+  | "EARNING";
+
+export interface WorkerFinancialTransaction {
+  readonly id: string;
+  readonly date: string;
+  readonly transactionType: FinancialTransactionType;
+  readonly typeLabel: string;
+  readonly description: string;
+  readonly amount: number;
+  readonly isEarning: boolean;
+  readonly status: string;
+  readonly paymentMethod?: string | null;
+  readonly referenceNumber?: string | null;
+  readonly relatedEarningOrAllocation?: string | null;
+  readonly rawPayment?: WorkerPayment;
+  readonly rawEarning?: WorkerEarningsLedgerItem;
+}
+
+export function formatFinancialTransactionType(type: FinancialTransactionType | string): string {
+  switch (type?.toUpperCase()) {
+    case "ADVANCE":
+      return "Advance";
+    case "PARTIAL_PAYOUT":
+      return "Partial Payout";
+    case "FINAL_PAYOUT":
+      return "Final Payout";
+    case "ADJUSTMENT":
+      return "Adjustment";
+    case "EARNING":
+      return "Earnings";
+    default:
+      return type || "—";
+  }
+}
+
+
 
 

@@ -9,32 +9,48 @@ import {
   signal,
 } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { MatCardModule } from "@angular/material/card";
+import { MatDatepickerModule } from "@angular/material/datepicker";
 import { MatDialog, MatDialogModule } from "@angular/material/dialog";
+import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
+import { MatInputModule } from "@angular/material/input";
+import { MatMenuModule } from "@angular/material/menu";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
+import { MatSelectModule } from "@angular/material/select";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { MatTableModule } from "@angular/material/table";
 import { MatTabsModule } from "@angular/material/tabs";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { ActivatedRoute, RouterLink } from "@angular/router";
-import { finalize, forkJoin } from "rxjs";
+import { catchError, finalize, forkJoin, of } from "rxjs";
 
 import { PermissionService } from "../../../core/auth/permission.service";
 import { BreadcrumbService } from "../../../core/breadcrumb/breadcrumb.service";
 import {
+  FinancialTransactionType,
   LaborWageRate,
   WorkerDetail,
+  WorkerEarningsLedgerItem,
   WorkerFarmAssignment,
+  WorkerFinancialTransaction,
   WorkerPayment,
+  WorkerPaymentAllocationItem,
   WorkerSettlementCalculation,
   formatEmploymentType,
+  formatFinancialTransactionType,
   formatGender,
+  formatPaymentMethod,
+  formatPaymentStatus,
+  formatPaymentType,
+  formatWageType,
 } from "../../../core/labor/labor.models";
 import { LaborService } from "../../../core/labor/labor.service";
 import { getApiErrorMessage } from "../../../core/models/api-error.model";
+import { formatDateOnly, parseDateOnly } from "../../../core/utils/date.utils";
 import { WorkerFarmAssignmentDialogComponent } from "./dialogs/worker-farm-assignment-dialog.component";
 import { WorkerFarmAssignmentEndDialogComponent } from "./dialogs/worker-farm-assignment-end-dialog.component";
 import {
@@ -49,15 +65,22 @@ import { WorkerPaymentCancelDialogComponent } from "./dialogs/worker-payment-can
   imports: [
     DatePipe,
     DecimalPipe,
+    FormsModule,
     MatButtonModule,
     MatButtonToggleModule,
     MatCardModule,
+    MatDatepickerModule,
     MatDialogModule,
+    MatFormFieldModule,
     MatIconModule,
+    MatInputModule,
+    MatMenuModule,
     MatProgressSpinnerModule,
+    MatSelectModule,
     MatTableModule,
     MatTabsModule,
     MatTooltipModule,
+    ReactiveFormsModule,
     RouterLink,
   ],
   templateUrl: "./worker-detail-page.component.html",
@@ -79,6 +102,8 @@ export class WorkerDetailPageComponent implements OnInit {
   readonly assignments = signal<readonly WorkerFarmAssignment[]>([]);
   readonly wageRates = signal<readonly LaborWageRate[]>([]);
   readonly payments = signal<readonly WorkerPayment[]>([]);
+  readonly earnings = signal<readonly WorkerEarningsLedgerItem[]>([]);
+  readonly allocations = signal<readonly WorkerPaymentAllocationItem[]>([]);
   readonly settlement = signal<WorkerSettlementCalculation | null>(null);
 
   readonly isLoading = signal(true);
@@ -88,8 +113,148 @@ export class WorkerDetailPageComponent implements OnInit {
   readonly isLoadingSettlement = signal(false);
   readonly actionInProgress = signal(false);
 
+  // Date range filter signals
+  readonly periodFrom = signal<Date | null>(null);
+  readonly periodTo = signal<Date | null>(null);
+  readonly activePreset = signal<"all" | "this_month" | "last_month" | "last_30_days">("all");
+
+  // Transaction table filter signals
+  readonly selectedTxType = signal<string>("all");
+  readonly selectedStatus = signal<string>("all");
+
   readonly currencySymbol = computed(() => {
     return this.settlement()?.currencySymbol || "₹";
+  });
+
+  readonly lastPayoutDate = computed<string | null>(() => {
+    const payouts = this.payments()
+      .filter((p) => p.status === "COMPLETED" && p.paymentType === "PAYOUT")
+      .sort((a, b) => (b.paymentDate > a.paymentDate ? 1 : b.paymentDate < a.paymentDate ? -1 : 0));
+    return payouts.length > 0 ? payouts[0].paymentDate : null;
+  });
+
+  // Unified financial transaction stream combining payments and earnings
+  readonly transactions = computed<readonly WorkerFinancialTransaction[]>(() => {
+    const paymentsList = this.payments();
+    const earningsList = this.earnings();
+    const allocationsList = this.allocations();
+    const symbol = this.currencySymbol();
+
+    const results: WorkerFinancialTransaction[] = [];
+
+    // 1. Process payments (Advance, Payout, Adjustment)
+    for (const p of paymentsList) {
+      const pAllocations = allocationsList.filter((a) => a.workerPaymentId === p.id);
+      let relatedText: string | null = null;
+      if (pAllocations.length > 0) {
+        const totalAllocated = pAllocations.reduce((acc, curr) => acc + curr.allocatedAmount, 0);
+        const dates = pAllocations
+          .map((a) => a.earningDate)
+          .filter(Boolean)
+          .join(", ");
+        relatedText = dates
+          ? `Applied ${symbol}${totalAllocated.toFixed(2)} to earnings of ${dates}`
+          : `Applied ${symbol}${totalAllocated.toFixed(2)} to wage settlement`;
+      } else if (p.paymentType === "ADVANCE" && p.status === "COMPLETED") {
+        relatedText = "Unapplied advance balance";
+      }
+
+      let txType: FinancialTransactionType = "ADVANCE";
+      let label = "Advance";
+      if (p.paymentType === "PAYOUT") {
+        const isFinal =
+          (p.notes || "").toLowerCase().includes("final") ||
+          (p.referenceNumber || "").toLowerCase().includes("final");
+        txType = isFinal ? "FINAL_PAYOUT" : "PARTIAL_PAYOUT";
+        label = isFinal ? "Final Payout" : "Partial Payout";
+      } else if (p.paymentType === "ADJUSTMENT") {
+        txType = "ADJUSTMENT";
+        label = "Payment Adjustment";
+      } else if (p.paymentType === "ADVANCE") {
+        txType = "ADVANCE";
+        label = "Advance";
+      }
+
+      results.push({
+        id: p.id,
+        date: p.paymentDate,
+        transactionType: txType,
+        typeLabel: label,
+        description:
+          p.notes ||
+          (p.paymentType === "ADVANCE"
+            ? "Cash advance to worker"
+            : `${label} disbursed`),
+        amount: p.amount,
+        isEarning: false,
+        status: p.status,
+        paymentMethod: p.paymentMethod,
+        referenceNumber: p.referenceNumber,
+        relatedEarningOrAllocation: relatedText,
+        rawPayment: p,
+      });
+    }
+
+    // 2. Process earnings ledger items
+    for (const e of earningsList) {
+      const eAllocations = allocationsList.filter((a) => a.workerEarningsLedgerId === e.id);
+      let relatedText: string | null = null;
+      if (eAllocations.length > 0) {
+        const settledAmt = eAllocations.reduce((acc, curr) => acc + curr.allocatedAmount, 0);
+        relatedText = `Settled ${symbol}${settledAmt.toFixed(2)} via settlement`;
+      } else {
+        relatedText = "Unsettled earning entry";
+      }
+
+      results.push({
+        id: e.id,
+        date: e.earningsDate,
+        transactionType: e.entryType === "ADJUSTMENT" ? "ADJUSTMENT" : "EARNING",
+        typeLabel: e.entryType === "ADJUSTMENT" ? "Wage Adjustment" : "Attendance Earning",
+        description:
+          e.description ||
+          `${formatWageType(e.wageType)} (${e.quantity} @ ${symbol}${e.wageRate})`,
+        amount: e.grossAmount,
+        isEarning: true,
+        status: e.status,
+        paymentMethod: null,
+        referenceNumber: e.attendanceId ? `Att: ${e.attendanceId.slice(0, 8)}` : null,
+        relatedEarningOrAllocation: relatedText,
+        rawEarning: e,
+      });
+    }
+
+    // Sort descending by date
+    return results.sort((a, b) => (b.date > a.date ? 1 : b.date < a.date ? -1 : 0));
+  });
+
+  // Filtered transactions for the table
+  readonly filteredTransactions = computed<readonly WorkerFinancialTransaction[]>(() => {
+    const list = this.transactions();
+    const typeFilter = this.selectedTxType();
+    const statusFilter = this.selectedStatus();
+
+    return list.filter((tx) => {
+      if (typeFilter !== "all") {
+        if (typeFilter === "PAYOUT") {
+          if (tx.transactionType !== "PARTIAL_PAYOUT" && tx.transactionType !== "FINAL_PAYOUT") {
+            return false;
+          }
+        } else if (tx.transactionType !== typeFilter) {
+          return false;
+        }
+      }
+      if (statusFilter !== "all") {
+        if (statusFilter === "COMPLETED") {
+          if (tx.status !== "COMPLETED" && tx.status !== "APPROVED") {
+            return false;
+          }
+        } else if (tx.status !== statusFilter) {
+          return false;
+        }
+      }
+      return true;
+    });
   });
 
   readonly assignmentFilter = signal<"all" | "active">("all");
@@ -125,14 +290,15 @@ export class WorkerDetailPageComponent implements OnInit {
     "notes",
   ];
 
-  readonly paymentColumns: readonly string[] = [
-    "paymentDate",
-    "paymentType",
+  readonly transactionColumns: readonly string[] = [
+    "date",
+    "transactionType",
+    "description",
     "amount",
-    "paymentMethod",
-    "referenceNumber",
     "status",
-    "notes",
+    "paymentMethod",
+    "reference",
+    "relatedAllocation",
     "actions",
   ];
 
@@ -166,10 +332,8 @@ export class WorkerDetailPageComponent implements OnInit {
 
           // Load applicable wage rates based on worker gender
           this.loadWageRates(worker.gender);
-          // Load settlement summary
-          this.loadSettlement();
-          // Load payment history
-          this.loadPayments();
+          // Load unified financial settlement and transaction records
+          this.loadFinancials();
         },
         error: (error: unknown) => {
           this.snack.open(
@@ -215,32 +379,87 @@ export class WorkerDetailPageComponent implements OnInit {
       });
   }
 
-  loadPayments(): void {
+  loadFinancials(): void {
     this.isLoadingPayments.set(true);
-    this.laborService
-      .listWorkerPayments(this.workerId)
+    this.isLoadingSettlement.set(true);
+
+    const fromDateStr = formatDateOnly(this.periodFrom());
+    const toDateStr = formatDateOnly(this.periodTo());
+
+    forkJoin({
+      settlement: this.laborService.getWorkerSettlement(this.workerId, fromDateStr, toDateStr),
+      payments: this.laborService.listWorkerPayments(this.workerId, fromDateStr, toDateStr),
+      earnings: this.laborService.listWorkerEarnings(this.workerId, fromDateStr, toDateStr, undefined, undefined, 1, 100),
+      allocations: this.laborService.listWorkerPaymentAllocations(this.workerId),
+    })
       .pipe(
         takeUntilDestroyed(this.destroyRef),
-        finalize(() => this.isLoadingPayments.set(false)),
+        finalize(() => {
+          this.isLoadingPayments.set(false);
+          this.isLoadingSettlement.set(false);
+        }),
       )
       .subscribe({
-        next: (records) => this.payments.set(records),
-        error: () => this.payments.set([]),
+        next: ({ settlement, payments, earnings, allocations }) => {
+          this.settlement.set(settlement);
+          this.payments.set(payments);
+          this.earnings.set(earnings?.items || []);
+          this.allocations.set(allocations || []);
+        },
+        error: (err) => {
+          this.snack.open(
+            getApiErrorMessage(err, "Financial data could not be loaded."),
+            "Dismiss",
+            { duration: 4000 },
+          );
+        },
       });
   }
 
+  loadPayments(): void {
+    this.loadFinancials();
+  }
+
   loadSettlement(): void {
-    this.isLoadingSettlement.set(true);
-    this.laborService
-      .getWorkerSettlement(this.workerId)
-      .pipe(
-        takeUntilDestroyed(this.destroyRef),
-        finalize(() => this.isLoadingSettlement.set(false)),
-      )
-      .subscribe({
-        next: (res) => this.settlement.set(res),
-        error: () => this.settlement.set(null),
-      });
+    this.loadFinancials();
+  }
+
+  setPreset(preset: "all" | "this_month" | "last_month" | "last_30_days"): void {
+    this.activePreset.set(preset);
+    const now = new Date();
+
+    switch (preset) {
+      case "all":
+        this.periodFrom.set(null);
+        this.periodTo.set(null);
+        break;
+      case "this_month":
+        this.periodFrom.set(new Date(now.getFullYear(), now.getMonth(), 1));
+        this.periodTo.set(new Date(now.getFullYear(), now.getMonth(), now.getDate()));
+        break;
+      case "last_month":
+        this.periodFrom.set(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+        this.periodTo.set(new Date(now.getFullYear(), now.getMonth(), 0));
+        break;
+      case "last_30_days": {
+        const past = new Date();
+        past.setDate(now.getDate() - 30);
+        this.periodFrom.set(past);
+        this.periodTo.set(now);
+        break;
+      }
+    }
+
+    this.loadFinancials();
+  }
+
+  onDateRangeChange(): void {
+    this.activePreset.set("all");
+    this.loadFinancials();
+  }
+
+  clearDateRange(): void {
+    this.setPreset("all");
   }
 
   openRecordPaymentDialog(mode: "ADVANCE" | "PARTIAL_PAYOUT" | "FINAL_PAYOUT" | "GENERAL" = "GENERAL"): void {
@@ -258,8 +477,7 @@ export class WorkerDetailPageComponent implements OnInit {
 
     ref.afterClosed().subscribe((res) => {
       if (res) {
-        this.loadSettlement();
-        this.loadPayments();
+        this.loadFinancials();
       }
     });
   }
@@ -275,8 +493,7 @@ export class WorkerDetailPageComponent implements OnInit {
 
     ref.afterClosed().subscribe((res) => {
       if (res) {
-        this.loadSettlement();
-        this.loadPayments();
+        this.loadFinancials();
       }
     });
   }
