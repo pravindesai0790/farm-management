@@ -242,6 +242,20 @@ export class BreadcrumbService {
           }
         } else if (segments[1] === "contractors") {
           items.push({ label: "Contractors", route: "/labor/contractors" });
+        } else if (segments[1] === "wage-rates") {
+          items.push({ label: "Wage rates", route: "/labor/wage-rates" });
+          if (segments[2] === "new") {
+            items.push({ label: "New wage rate" });
+          } else if (segments[2]) {
+            const rateId = segments[2];
+            const rateName = this.labelCache.get(rateId) ?? "Wage rate details";
+            if (segments[3] === "edit") {
+              items.push({ label: rateName, route: ["/labor/wage-rates", rateId] });
+              items.push({ label: "Edit" });
+            } else {
+              items.push({ label: rateName });
+            }
+          }
         }
         break;
 

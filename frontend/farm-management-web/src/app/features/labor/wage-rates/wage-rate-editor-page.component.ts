@@ -42,7 +42,10 @@ import {
   formatWageType,
 } from "../../../core/labor/labor.models";
 import { LaborService } from "../../../core/labor/labor.service";
-import { getApiValidationErrors } from "../../../core/models/api-error.model";
+import {
+  getApiErrorMessage,
+  getApiValidationErrors,
+} from "../../../core/models/api-error.model";
 import { formatDateOnly, parseDateOnly } from "../../../core/utils/date.utils";
 import { ErrorAlertComponent } from "../../../shared/components/error-alert/error-alert.component";
 
@@ -127,6 +130,24 @@ export class WageRateEditorPageComponent implements OnInit {
   );
 
   ngOnInit(): void {
+    if (this.isEditing && this.rateId) {
+      const cached = this.breadcrumbService.getEntityName(this.rateId);
+      this.breadcrumbService.setTrail([
+        { label: "Dashboard", route: "/dashboard", icon: "space_dashboard" },
+        { label: "Labor", route: "/labor" },
+        { label: "Wage rates", route: "/labor/wage-rates" },
+        ...(cached ? [{ label: cached, route: `/labor/wage-rates/${this.rateId}` }] : [{ label: "Wage rate details", route: `/labor/wage-rates/${this.rateId}` }]),
+        { label: "Edit" },
+      ]);
+    } else {
+      this.breadcrumbService.setTrail([
+        { label: "Dashboard", route: "/dashboard", icon: "space_dashboard" },
+        { label: "Labor", route: "/labor" },
+        { label: "Wage rates", route: "/labor/wage-rates" },
+        { label: "New wage rate" },
+      ]);
+    }
+
     this.loadData();
   }
 
@@ -166,6 +187,7 @@ export class WageRateEditorPageComponent implements OnInit {
           if (rate) {
             this.populateForm(rate);
             const title = `${formatGender(rate.gender)} · ${formatWageType(rate.wageType)}`;
+            this.breadcrumbService.setEntityName(rate.id, title);
             this.breadcrumbService.setTrail([
               { label: "Dashboard", route: "/dashboard", icon: "space_dashboard" },
               { label: "Labor", route: "/labor" },
@@ -193,6 +215,14 @@ export class WageRateEditorPageComponent implements OnInit {
         },
         error: (error: unknown) => {
           this.errorMessage.set(error);
+          if (this.isEditing) {
+            this.snack.open(
+              getApiErrorMessage(error, "Wage rate could not be loaded."),
+              "Dismiss",
+              { duration: 5000 },
+            );
+            void this.router.navigateByUrl("/labor/wage-rates");
+          }
         },
       });
   }

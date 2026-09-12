@@ -24,6 +24,7 @@ import { RouterLink } from "@angular/router";
 import { finalize, merge } from "rxjs";
 
 import { PermissionService } from "../../../core/auth/permission.service";
+import { BreadcrumbService } from "../../../core/breadcrumb/breadcrumb.service";
 import {
   GENDER_OPTIONS,
   LaborWageRate,
@@ -63,6 +64,7 @@ export class WageRatesPageComponent implements OnInit {
   private readonly formBuilder = inject(FormBuilder);
   private readonly snack = inject(MatSnackBar);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly breadcrumbService = inject(BreadcrumbService);
   readonly permissionService = inject(PermissionService);
 
   readonly displayedColumns: readonly string[] = [
@@ -94,6 +96,12 @@ export class WageRatesPageComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.breadcrumbService.setTrail([
+      { label: "Dashboard", route: "/dashboard", icon: "space_dashboard" },
+      { label: "Labor", route: "/labor" },
+      { label: "Wage rates" },
+    ]);
+
     merge(
       this.filterForm.controls.status.valueChanges,
       this.filterForm.controls.gender.valueChanges,

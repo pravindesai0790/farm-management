@@ -18,6 +18,7 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 import { finalize } from "rxjs";
 
 import { PermissionService } from "../../../core/auth/permission.service";
+import { BreadcrumbService } from "../../../core/breadcrumb/breadcrumb.service";
 import {
   LaborWageRate,
   formatGender,
@@ -49,6 +50,7 @@ export class WageRateDetailPageComponent implements OnInit {
   private readonly laborService = inject(LaborService);
   private readonly snack = inject(MatSnackBar);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly breadcrumbService = inject(BreadcrumbService);
   readonly permissionService = inject(PermissionService);
 
   readonly wageRate = signal<LaborWageRate | null>(null);
@@ -61,6 +63,14 @@ export class WageRateDetailPageComponent implements OnInit {
       this.router.navigate(["/labor/wage-rates"]);
       return;
     }
+
+    const cached = this.breadcrumbService.getEntityName(id);
+    this.breadcrumbService.setTrail([
+      { label: "Dashboard", route: "/dashboard", icon: "space_dashboard" },
+      { label: "Labor", route: "/labor" },
+      { label: "Wage rates", route: "/labor/wage-rates" },
+      { label: cached ?? "Wage rate details" },
+    ]);
 
     this.load(id);
   }
@@ -77,6 +87,14 @@ export class WageRateDetailPageComponent implements OnInit {
       .subscribe({
         next: (rate) => {
           this.wageRate.set(rate);
+          const title = `${this.getGenderLabel(rate.gender)} · ${this.getWageTypeLabel(rate.wageType)}`;
+          this.breadcrumbService.setEntityName(rate.id, title);
+          this.breadcrumbService.setTrail([
+            { label: "Dashboard", route: "/dashboard", icon: "space_dashboard" },
+            { label: "Labor", route: "/labor" },
+            { label: "Wage rates", route: "/labor/wage-rates" },
+            { label: title },
+          ]);
         },
         error: (error) => {
           this.snack.open(
