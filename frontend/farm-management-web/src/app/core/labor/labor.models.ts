@@ -172,3 +172,70 @@ export function formatEmploymentType(type: string): string {
   }
 }
 
+export interface WorkerFarmAssignment {
+  readonly id: string;
+  readonly organizationId: string;
+  readonly workerId: string;
+  readonly workerName: string;
+  readonly farmId: string;
+  readonly farmCode: string;
+  readonly farmName: string;
+  readonly assignedFrom: string;
+  readonly assignedTo?: string | null;
+  readonly isActive: boolean;
+  readonly notes?: string | null;
+  readonly createdAt: string;
+  readonly createdBy: string;
+  readonly updatedAt?: string | null;
+  readonly updatedBy?: string | null;
+}
+
+export interface CreateWorkerFarmAssignmentRequest {
+  readonly farmId: string;
+  readonly assignedFrom: string;
+  readonly assignedTo?: string | null;
+  readonly notes?: string | null;
+}
+
+export interface UpdateWorkerFarmAssignmentRequest {
+  readonly assignedFrom: string;
+  readonly assignedTo?: string | null;
+  readonly notes?: string | null;
+}
+
+export interface EndWorkerFarmAssignmentRequest {
+  readonly endDate?: string | null;
+  readonly notes?: string | null;
+}
+
+export interface LaborWageRate {
+  readonly id: string;
+  readonly organizationId: string;
+  readonly gender: Gender | string;
+  readonly wageType: string;
+  readonly wageRate: number;
+  readonly currencyCode?: string;
+  readonly effectiveFrom: string;
+  readonly effectiveTo?: string | null;
+  readonly isActive: boolean;
+  readonly notes?: string | null;
+}
+
+export interface WorkerPayment {
+  readonly id: string;
+  readonly organizationId: string;
+  readonly workerId: string;
+  readonly paymentDate: string;
+  readonly paymentType: "ADVANCE" | "PAYOUT" | "ADJUSTMENT" | string;
+  readonly amount: number;
+  readonly currencyCode?: string;
+  readonly paymentMethod: "CASH" | "BANK_TRANSFER" | "UPI" | "CHEQUE" | "OTHER" | string;
+  readonly referenceNumber?: string | null;
+  readonly paymentPeriodFrom?: string | null;
+  readonly paymentPeriodTo?: string | null;
+  readonly status: "PENDING" | "COMPLETED" | "CANCELLED" | string;
+  readonly notes?: string | null;
+  readonly createdAt: string;
+}
+
+

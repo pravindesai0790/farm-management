@@ -414,6 +414,16 @@ export const routes: Routes = [
               ).then((module) => module.WorkerEditorPageComponent),
           },
           {
+            path: "workers/:id",
+            title: "Worker details",
+            canActivate: [permissionGuard],
+            data: { permission: "Worker.View" },
+            loadComponent: () =>
+              import(
+                "./features/labor/workers/worker-detail-page.component"
+              ).then((module) => module.WorkerDetailPageComponent),
+          },
+          {
             path: "contractors",
             title: "Contractors",
             canActivate: [permissionGuard],

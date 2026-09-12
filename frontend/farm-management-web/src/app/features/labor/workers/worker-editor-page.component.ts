@@ -385,7 +385,7 @@ export class WorkerEditorPageComponent implements OnInit {
             this.snack.open("Worker updated successfully.", "Dismiss", {
               duration: 3000,
             });
-            void this.router.navigateByUrl("/labor/workers");
+            void this.router.navigateByUrl(`/labor/workers/${this.workerId}`);
           },
           error: (error: unknown) => {
             this.errorMessage.set(error);
@@ -416,11 +416,11 @@ export class WorkerEditorPageComponent implements OnInit {
           finalize(() => this.isSubmitting.set(false)),
         )
         .subscribe({
-          next: () => {
+          next: (created) => {
             this.snack.open("Worker created successfully.", "Dismiss", {
               duration: 3000,
             });
-            void this.router.navigateByUrl("/labor/workers");
+            void this.router.navigateByUrl(`/labor/workers/${created.id}`);
           },
           error: (error: unknown) => {
             this.errorMessage.set(error);

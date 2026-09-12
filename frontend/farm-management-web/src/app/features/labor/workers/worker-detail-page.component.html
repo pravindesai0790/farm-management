@@ -1,0 +1,614 @@
+<div class="page-container">
+  <!-- Back Link & Header -->
+  <div class="header-section">
+    <div>
+      <a mat-button routerLink="/labor/workers" class="back-link">
+        <mat-icon>arrow_back</mat-icon> Back to workers
+      </a>
+      <p class="eyebrow">Labor Management &bull; Worker Master</p>
+      @if (worker(); as w) {
+        <div class="title-row">
+          <h2>{{ w.displayName }}</h2>
+          <span class="badge-type">{{ getEmploymentTypeLabel(w.employmentType) }}</span>
+          <span
+            class="status-pill"
+            [class.status-pill-inactive]="!w.isActive"
+          >
+            {{ w.isActive ? "Active" : "Inactive" }}
+          </span>
+        </div>
+        <p class="subtext">
+          Worker ID: <code>{{ w.id }}</code> &bull; Gender: {{ getGenderLabel(w.gender) }}
+          @if (w.contractorName) {
+            &bull; Contractor: <strong>{{ w.contractorName }}</strong>
+          }
+        </p>
+      } @else {
+        <h2>Worker details</h2>
+      }
+    </div>
+
+    @if (worker(); as w) {
+      <div class="header-actions">
+        @if (permissionService.has("Worker.Update")) {
+          <a
+            mat-stroked-button
+            [routerLink]="['/labor/workers', w.id, 'edit']"
+          >
+            <mat-icon>edit</mat-icon> Edit worker
+          </a>
+        }
+
+        @if (w.isActive && permissionService.has("Worker.Deactivate")) {
+          <button
+            mat-flat-button
+            color="warn"
+            (click)="toggleWorkerStatus()"
+            [disabled]="actionInProgress()"
+          >
+            <mat-icon>visibility_off</mat-icon> Deactivate worker
+          </button>
+        } @else if (!w.isActive && permissionService.has("Worker.Activate")) {
+          <button
+            mat-flat-button
+            color="primary"
+            (click)="toggleWorkerStatus()"
+            [disabled]="actionInProgress()"
+          >
+            <mat-icon>check_circle</mat-icon> Activate worker
+          </button>
+        }
+      </div>
+    }
+  </div>
+
+  @if (isLoading()) {
+    <div class="loading-state">
+      <mat-spinner diameter="40" />
+      <span>Loading worker profile…</span>
+    </div>
+  } @else if (worker(); as w) {
+    <!-- Tabs Section -->
+    <mat-tab-group animationDuration="200ms" class="detail-tabs">
+      <!-- 1. Overview Tab -->
+      <mat-tab label="Overview">
+        <div class="tab-content">
+          <div class="overview-grid">
+            <!-- Basic Details Card -->
+            <mat-card class="detail-card">
+              <mat-card-header>
+                <mat-icon mat-card-avatar class="card-icon">badge</mat-icon>
+                <mat-card-title>Personal Information</mat-card-title>
+                <mat-card-subtitle>Worker identity and demographic details</mat-card-subtitle>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="info-list">
+                  <div class="info-item">
+                    <span class="label">First Name</span>
+                    <span class="value">{{ w.firstName }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="label">Last Name</span>
+                    <span class="value">{{ w.lastName || "—" }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="label">Display Name</span>
+                    <span class="value font-medium">{{ w.displayName }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="label">Gender</span>
+                    <span class="value">{{ getGenderLabel(w.gender) }}</span>
+                  </div>
+                </div>
+              </mat-card-content>
+            </mat-card>
+
+            <!-- Contact Information Card -->
+            <mat-card class="detail-card">
+              <mat-card-header>
+                <mat-icon mat-card-avatar class="card-icon">contact_phone</mat-icon>
+                <mat-card-title>Contact Details</mat-card-title>
+                <mat-card-subtitle>Phone numbers and communication channels</mat-card-subtitle>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="info-list">
+                  <div class="info-item">
+                    <span class="label">Primary Mobile</span>
+                    <span class="value">
+                      @if (w.mobileNumber) {
+                        <a [href]="'tel:' + w.mobileNumber" class="tel-link">
+                          <mat-icon class="inline-icon">call</mat-icon> {{ w.mobileNumber }}
+                        </a>
+                      } @else {
+                        <span class="muted">—</span>
+                      }
+                    </span>
+                  </div>
+                  <div class="info-item">
+                    <span class="label">Alternate Mobile</span>
+                    <span class="value">
+                      @if (w.alternateMobileNumber) {
+                        <a [href]="'tel:' + w.alternateMobileNumber" class="tel-link">
+                          <mat-icon class="inline-icon">phone_iphone</mat-icon> {{ w.alternateMobileNumber }}
+                        </a>
+                      } @else {
+                        <span class="muted">—</span>
+                      }
+                    </span>
+                  </div>
+                </div>
+              </mat-card-content>
+            </mat-card>
+
+            <!-- Employment Details Card -->
+            <mat-card class="detail-card">
+              <mat-card-header>
+                <mat-icon mat-card-avatar class="card-icon">work</mat-icon>
+                <mat-card-title>Employment Profile</mat-card-title>
+                <mat-card-subtitle>Employment type, category, and contracting</mat-card-subtitle>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="info-list">
+                  <div class="info-item">
+                    <span class="label">Employment Type</span>
+                    <span class="value font-medium">{{ getEmploymentTypeLabel(w.employmentType) }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="label">Labor Category</span>
+                    <span class="value">{{ w.laborCategoryName || "Unassigned" }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="label">Contractor</span>
+                    <span class="value">
+                      @if (w.contractorName) {
+                        <strong>{{ w.contractorName }}</strong>
+                      } @else {
+                        <span class="muted">Direct Workforce / None</span>
+                      }
+                    </span>
+                  </div>
+                  <div class="info-item">
+                    <span class="label">Active Farms</span>
+                    <span class="value">{{ activeAssignmentsCount() }} assigned</span>
+                  </div>
+                </div>
+              </mat-card-content>
+            </mat-card>
+
+            <!-- Timeline & Status Card -->
+            <mat-card class="detail-card">
+              <mat-card-header>
+                <mat-icon mat-card-avatar class="card-icon">calendar_today</mat-icon>
+                <mat-card-title>Tenure & Status</mat-card-title>
+                <mat-card-subtitle>Joining, separation, and system status</mat-card-subtitle>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="info-list">
+                  <div class="info-item">
+                    <span class="label">Joining Date</span>
+                    <span class="value">{{ w.joiningDate ? (w.joiningDate | date:'mediumDate') : "—" }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="label">Leaving Date</span>
+                    <span class="value">{{ w.leavingDate ? (w.leavingDate | date:'mediumDate') : "Present / Ongoing" }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="label">Active Status</span>
+                    <span class="value">
+                      <span class="status-pill" [class.status-pill-inactive]="!w.isActive">
+                        {{ w.isActive ? "Active" : "Inactive" }}
+                      </span>
+                    </span>
+                  </div>
+                  <div class="info-item">
+                    <span class="label">Created Date</span>
+                    <span class="value muted">{{ w.createdAt | date:'mediumDate' }}</span>
+                  </div>
+                </div>
+              </mat-card-content>
+            </mat-card>
+
+            <!-- Notes Card -->
+            <mat-card class="detail-card wide-card">
+              <mat-card-header>
+                <mat-icon mat-card-avatar class="card-icon">notes</mat-icon>
+                <mat-card-title>Worker Notes</mat-card-title>
+                <mat-card-subtitle>Additional background, specializations, or remarks</mat-card-subtitle>
+              </mat-card-header>
+              <mat-card-content>
+                @if (w.notes) {
+                  <p class="notes-body">{{ w.notes }}</p>
+                } @else {
+                  <p class="muted-italic">No additional notes recorded for this worker.</p>
+                }
+              </mat-card-content>
+            </mat-card>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- 2. Farm Assignments Tab -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          Farm Assignments ({{ activeAssignmentsCount() }})
+        </ng-template>
+
+        <div class="tab-content">
+          <!-- Action Bar -->
+          <div class="tab-action-bar">
+            <mat-button-toggle-group
+              [value]="assignmentFilter()"
+              (change)="assignmentFilter.set($event.value)"
+              appearance="standard"
+            >
+              <mat-button-toggle value="all">
+                All ({{ assignments().length }})
+              </mat-button-toggle>
+              <mat-button-toggle value="active">
+                Active Only ({{ activeAssignmentsCount() }})
+              </mat-button-toggle>
+            </mat-button-toggle-group>
+
+            @if (permissionService.has("Worker.Update")) {
+              <button mat-flat-button color="primary" (click)="openAssignFarmDialog()">
+                <mat-icon>add_business</mat-icon> Assign farm
+              </button>
+            }
+          </div>
+
+          @if (isLoadingAssignments()) {
+            <div class="tab-loading">
+              <mat-spinner diameter="32" />
+              <span>Refreshing farm assignments…</span>
+            </div>
+          } @else if (filteredAssignments().length === 0) {
+            <div class="tab-empty">
+              <mat-icon>domain_disabled</mat-icon>
+              <h4>No farm assignments found</h4>
+              <p>
+                {{
+                  assignmentFilter() === "active"
+                    ? "This worker does not currently have any active farm assignments."
+                    : "This worker has not been assigned to any farms yet."
+                }}
+              </p>
+              @if (permissionService.has("Worker.Update")) {
+                <button mat-stroked-button color="primary" (click)="openAssignFarmDialog()">
+                  <mat-icon>add</mat-icon> Assign to a farm
+                </button>
+              }
+            </div>
+          } @else {
+            <div class="table-wrap">
+              <table mat-table [dataSource]="filteredAssignments()" class="assignments-table">
+                <!-- Farm Name & Code -->
+                <ng-container matColumnDef="farm">
+                  <th mat-header-cell *matHeaderCellDef>Farm</th>
+                  <td mat-cell *matCellDef="let a">
+                    <strong>{{ a.farmName }}</strong>
+                    <small class="code-badge">{{ a.farmCode }}</small>
+                  </td>
+                </ng-container>
+
+                <!-- Assigned From -->
+                <ng-container matColumnDef="assignedFrom">
+                  <th mat-header-cell *matHeaderCellDef>Assigned From</th>
+                  <td mat-cell *matCellDef="let a">
+                    {{ a.assignedFrom | date:'mediumDate' }}
+                  </td>
+                </ng-container>
+
+                <!-- Assigned To -->
+                <ng-container matColumnDef="assignedTo">
+                  <th mat-header-cell *matHeaderCellDef>Assigned To</th>
+                  <td mat-cell *matCellDef="let a">
+                    {{ a.assignedTo ? (a.assignedTo | date:'mediumDate') : "Present / Ongoing" }}
+                  </td>
+                </ng-container>
+
+                <!-- Status -->
+                <ng-container matColumnDef="status">
+                  <th mat-header-cell *matHeaderCellDef>Status</th>
+                  <td mat-cell *matCellDef="let a">
+                    <span
+                      class="status-pill"
+                      [class.status-pill-inactive]="!a.isActive"
+                    >
+                      {{ a.isActive ? "Active" : "Ended / Inactive" }}
+                    </span>
+                  </td>
+                </ng-container>
+
+                <!-- Notes -->
+                <ng-container matColumnDef="notes">
+                  <th mat-header-cell *matHeaderCellDef>Notes</th>
+                  <td mat-cell *matCellDef="let a">
+                    {{ a.notes || "—" }}
+                  </td>
+                </ng-container>
+
+                <!-- Actions -->
+                <ng-container matColumnDef="actions">
+                  <th mat-header-cell *matHeaderCellDef class="actions-header">Actions</th>
+                  <td mat-cell *matCellDef="let a" class="actions-cell">
+                    @if (permissionService.has("Worker.Update")) {
+                      <button
+                        mat-icon-button
+                        (click)="openEditAssignmentDialog(a)"
+                        aria-label="Edit assignment"
+                        matTooltip="Edit assignment"
+                      >
+                        <mat-icon>edit</mat-icon>
+                      </button>
+
+                      @if (a.isActive) {
+                        <button
+                          mat-icon-button
+                          color="warn"
+                          (click)="openEndAssignmentDialog(a)"
+                          aria-label="End assignment"
+                          matTooltip="Conclude assignment"
+                        >
+                          <mat-icon>event_busy</mat-icon>
+                        </button>
+                      }
+
+                      <button
+                        mat-icon-button
+                        (click)="toggleAssignmentStatus(a)"
+                        [disabled]="actionInProgress()"
+                        [attr.aria-label]="a.isActive ? 'Deactivate' : 'Activate'"
+                        [matTooltip]="a.isActive ? 'Deactivate assignment' : 'Activate assignment'"
+                      >
+                        <mat-icon>{{ a.isActive ? "visibility_off" : "check_circle" }}</mat-icon>
+                      </button>
+                    }
+                  </td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="assignmentColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: assignmentColumns;"></tr>
+              </table>
+            </div>
+          }
+        </div>
+      </mat-tab>
+
+      <!-- 3. Applicable Wage Rates Tab -->
+      <mat-tab label="Applicable Wage Rates">
+        <div class="tab-content">
+          <!-- Policy Explanatory Callout -->
+          <div class="policy-callout">
+            <mat-icon class="policy-icon">info</mat-icon>
+            <div>
+              <h5>Organization Wage Policy</h5>
+              <p>
+                Wage rates are maintained at the organization level by gender and wage type,
+                rather than worker-specific negotiated amounts.
+                The table below displays the organization wage rates currently applicable to
+                <strong>{{ w.displayName }}</strong> based on gender (<strong>{{ getGenderLabel(w.gender) }}</strong>).
+              </p>
+            </div>
+          </div>
+
+          @if (isLoadingWageRates()) {
+            <div class="tab-loading">
+              <mat-spinner diameter="32" />
+              <span>Loading applicable wage rates…</span>
+            </div>
+          } @else if (wageRates().length === 0) {
+            <div class="tab-empty">
+              <mat-icon>payments</mat-icon>
+              <h4>No organization wage rates configured</h4>
+              <p>
+                There are currently no active wage rates defined for <strong>{{ getGenderLabel(w.gender) }}</strong> workers in your organization.
+                Rates can be configured in the organization Labor Wage Rates master.
+              </p>
+            </div>
+          } @else {
+            <div class="table-wrap">
+              <table mat-table [dataSource]="wageRates()" class="rates-table">
+                <!-- Wage Type -->
+                <ng-container matColumnDef="wageType">
+                  <th mat-header-cell *matHeaderCellDef>Wage Type</th>
+                  <td mat-cell *matCellDef="let r">
+                    <strong>{{ formatWageType(r.wageType) }}</strong>
+                  </td>
+                </ng-container>
+
+                <!-- Rate & Currency -->
+                <ng-container matColumnDef="wageRate">
+                  <th mat-header-cell *matHeaderCellDef>Rate</th>
+                  <td mat-cell *matCellDef="let r">
+                    <span class="rate-amount">{{ r.currencyCode || "₹" }}{{ r.wageRate | number:'1.2-2' }}</span>
+                  </td>
+                </ng-container>
+
+                <!-- Effective From -->
+                <ng-container matColumnDef="effectiveFrom">
+                  <th mat-header-cell *matHeaderCellDef>Effective From</th>
+                  <td mat-cell *matCellDef="let r">
+                    {{ r.effectiveFrom | date:'mediumDate' }}
+                  </td>
+                </ng-container>
+
+                <!-- Effective To -->
+                <ng-container matColumnDef="effectiveTo">
+                  <th mat-header-cell *matHeaderCellDef>Effective To</th>
+                  <td mat-cell *matCellDef="let r">
+                    {{ r.effectiveTo ? (r.effectiveTo | date:'mediumDate') : "Current / Ongoing" }}
+                  </td>
+                </ng-container>
+
+                <!-- Status -->
+                <ng-container matColumnDef="status">
+                  <th mat-header-cell *matHeaderCellDef>Status</th>
+                  <td mat-cell *matCellDef="let r">
+                    <span class="status-pill" [class.status-pill-inactive]="!r.isActive">
+                      {{ r.isActive ? "Active" : "Inactive" }}
+                    </span>
+                  </td>
+                </ng-container>
+
+                <!-- Notes -->
+                <ng-container matColumnDef="notes">
+                  <th mat-header-cell *matHeaderCellDef>Notes</th>
+                  <td mat-cell *matCellDef="let r">
+                    {{ r.notes || "—" }}
+                  </td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="wageRateColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: wageRateColumns;"></tr>
+              </table>
+            </div>
+          }
+        </div>
+      </mat-tab>
+
+      <!-- 4. Payment History Tab -->
+      <mat-tab label="Payment History">
+        <div class="tab-content">
+          <!-- Summary Stat Cards -->
+          <div class="payment-stats-grid">
+            <mat-card class="stat-card">
+              <mat-card-content>
+                <div class="stat-icon-wrap icon-primary">
+                  <mat-icon>account_balance_wallet</mat-icon>
+                </div>
+                <div class="stat-info">
+                  <span class="stat-label">Total Transactions</span>
+                  <span class="stat-value">{{ payments().length }}</span>
+                </div>
+              </mat-card-content>
+            </mat-card>
+
+            <mat-card class="stat-card">
+              <mat-card-content>
+                <div class="stat-icon-wrap icon-advance">
+                  <mat-icon>receipt_long</mat-icon>
+                </div>
+                <div class="stat-info">
+                  <span class="stat-label">Payment Processing</span>
+                  <span class="stat-value">Ready</span>
+                </div>
+              </mat-card-content>
+            </mat-card>
+
+            <mat-card class="stat-card">
+              <mat-card-content>
+                <div class="stat-icon-wrap icon-balance">
+                  <mat-icon>savings</mat-icon>
+                </div>
+                <div class="stat-info">
+                  <span class="stat-label">Settlement Mode</span>
+                  <span class="stat-value">FIFO</span>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          </div>
+
+          @if (isLoadingPayments()) {
+            <div class="tab-loading">
+              <mat-spinner diameter="32" />
+              <span>Loading payment history…</span>
+            </div>
+          } @else if (payments().length === 0) {
+            <div class="tab-empty">
+              <mat-icon>history_toggle_off</mat-icon>
+              <h4>No payment records found</h4>
+              <p>
+                Payment transactions (advances, partial payouts, and final settlements) for this worker
+                will appear here once recorded through the payroll module.
+              </p>
+            </div>
+          } @else {
+            <div class="table-wrap">
+              <table mat-table [dataSource]="payments()" class="payments-table">
+                <!-- Date -->
+                <ng-container matColumnDef="paymentDate">
+                  <th mat-header-cell *matHeaderCellDef>Date</th>
+                  <td mat-cell *matCellDef="let p">
+                    {{ p.paymentDate | date:'mediumDate' }}
+                  </td>
+                </ng-container>
+
+                <!-- Type -->
+                <ng-container matColumnDef="paymentType">
+                  <th mat-header-cell *matHeaderCellDef>Type</th>
+                  <td mat-cell *matCellDef="let p">
+                    <span class="badge-type">{{ formatPaymentType(p.paymentType) }}</span>
+                  </td>
+                </ng-container>
+
+                <!-- Amount -->
+                <ng-container matColumnDef="amount">
+                  <th mat-header-cell *matHeaderCellDef>Amount</th>
+                  <td mat-cell *matCellDef="let p">
+                    <strong class="rate-amount">{{ p.currencyCode || "₹" }}{{ p.amount | number:'1.2-2' }}</strong>
+                  </td>
+                </ng-container>
+
+                <!-- Method -->
+                <ng-container matColumnDef="paymentMethod">
+                  <th mat-header-cell *matHeaderCellDef>Method</th>
+                  <td mat-cell *matCellDef="let p">
+                    {{ formatPaymentMethod(p.paymentMethod) }}
+                  </td>
+                </ng-container>
+
+                <!-- Reference -->
+                <ng-container matColumnDef="referenceNumber">
+                  <th mat-header-cell *matHeaderCellDef>Reference</th>
+                  <td mat-cell *matCellDef="let p">
+                    <code>{{ p.referenceNumber || "—" }}</code>
+                  </td>
+                </ng-container>
+
+                <!-- Status -->
+                <ng-container matColumnDef="status">
+                  <th mat-header-cell *matHeaderCellDef>Status</th>
+                  <td mat-cell *matCellDef="let p">
+                    <span class="status-pill">{{ p.status }}</span>
+                  </td>
+                </ng-container>
+
+                <!-- Notes -->
+                <ng-container matColumnDef="notes">
+                  <th mat-header-cell *matHeaderCellDef>Notes</th>
+                  <td mat-cell *matCellDef="let p">
+                    {{ p.notes || "—" }}
+                  </td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="paymentColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: paymentColumns;"></tr>
+              </table>
+            </div>
+          }
+        </div>
+      </mat-tab>
+
+      <!-- 5. Future Roadmap Tabs -->
+      <mat-tab label="Attendance (Phase 3.2)" disabled>
+        <ng-template matTabContent>
+          <div class="tab-empty">
+            <mat-icon>schedule</mat-icon>
+            <h4>Coming in Phase 3.2</h4>
+            <p>Attendance tracking and wage generation will be available in Phase 3.2.</p>
+          </div>
+        </ng-template>
+      </mat-tab>
+
+      <mat-tab label="Earnings Ledger (Phase 3.2)" disabled>
+        <ng-template matTabContent>
+          <div class="tab-empty">
+            <mat-icon>account_balance</mat-icon>
+            <h4>Coming in Phase 3.2</h4>
+            <p>Worker earnings ledger driven by attendance will be available in Phase 3.2.</p>
+          </div>
+        </ng-template>
+      </mat-tab>
+    </mat-tab-group>
+  }
+</div>
