@@ -43,6 +43,12 @@ public interface IAttendanceStore
         DateOnly attendanceDate,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<LaborAttendance>> ListDailyAttendanceTrackedAsync(
+        Guid organizationId,
+        Guid farmId,
+        DateOnly attendanceDate,
+        CancellationToken cancellationToken = default);
+
     Task<Worker?> FindWorkerWithAssignmentAsync(
         Guid organizationId,
         Guid workerId,

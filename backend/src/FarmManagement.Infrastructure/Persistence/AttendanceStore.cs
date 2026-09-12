@@ -125,6 +125,24 @@ public sealed class AttendanceStore(ApplicationDbContext dbContext) : IAttendanc
             .ThenBy(a => a.Id)
             .ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<LaborAttendance>> ListDailyAttendanceTrackedAsync(
+        Guid organizationId,
+        Guid farmId,
+        DateOnly attendanceDate,
+        CancellationToken cancellationToken = default) =>
+        await dbContext.LaborAttendances
+            .Include(a => a.Farm)
+            .Include(a => a.Worker)
+                .ThenInclude(w => w!.LaborCategory)
+            .Include(a => a.Currency)
+            .Where(a =>
+                a.OrganizationId == organizationId &&
+                a.FarmId == farmId &&
+                a.AttendanceDate == attendanceDate)
+            .OrderBy(a => a.Worker != null ? a.Worker.DisplayName : string.Empty)
+            .ThenBy(a => a.Id)
+            .ToListAsync(cancellationToken);
+
     public Task<Worker?> FindWorkerWithAssignmentAsync(
         Guid organizationId,
         Guid workerId,

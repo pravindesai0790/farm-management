@@ -163,7 +163,36 @@ public sealed class AttendanceController(
         return Ok(result);
     }
 
+    [HttpPost("finalize")]
+    [Authorize(Policy = "Permission:Attendance.Finalize")]
+    public async Task<ActionResult<FinalizeAttendanceResponse>> FinalizeAttendance(
+        [FromBody] FinalizeAttendanceRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await attendanceService.FinalizeAttendanceAsync(
+            GetUserContext(),
+            request,
+            cancellationToken);
+
+        return Ok(result);
+    }
+
+    [HttpPost("{id:guid}/finalize")]
+    [Authorize(Policy = "Permission:Attendance.Finalize")]
+    public async Task<ActionResult<AttendanceRecordResponse>> FinalizeSingleAttendance(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await attendanceService.FinalizeSingleAttendanceAsync(
+            GetUserContext(),
+            id,
+            cancellationToken);
+
+        return Ok(result);
+    }
+
     private AttendanceActor GetUserContext() =>
         UserContextHelper.GetUserContext<AttendanceActor>(User);
 }
+
 

@@ -1243,6 +1243,274 @@ public sealed class AttendanceServiceTests
 
     #endregion
 
+    #region Attendance Finalization Tests
+
+    [Fact]
+    public async Task FinalizeAttendanceAsync_WhenValidDraftBatch_FinalizesAllAndGeneratesApprovedEarnings()
+    {
+        var store = new FakeAttendanceStore();
+        var earnings = new FakeAttendanceEarningsIntegration
+        {
+            FullDayRate = 500m,
+            HalfDayRate = 250m,
+            HourlyRate = 75m
+        };
+        var farm = CreateFarm();
+        var w1 = CreateWorker(firstName: "Worker1");
+        var w2 = CreateWorker(firstName: "Worker2");
+        var w3 = CreateWorker(firstName: "Worker3");
+        var date = new DateOnly(2026, 9, 12);
+        AssignWorkerToFarm(w1, farm, new DateOnly(2026, 1, 1));
+        AssignWorkerToFarm(w2, farm, new DateOnly(2026, 1, 1));
+        AssignWorkerToFarm(w3, farm, new DateOnly(2026, 1, 1));
+        store.Farms.Add(farm);
+        store.Workers.AddRange([w1, w2, w3]);
+
+        var d1 = LaborAttendance.CreateDraft(_organizationId, farm.Id, w1.Id, date, AttendanceType.FullDay, _userId);
+        var d2 = LaborAttendance.CreateDraft(_organizationId, farm.Id, w2.Id, date, AttendanceType.HalfDay, _userId);
+        var d3 = LaborAttendance.CreateDraft(_organizationId, farm.Id, w3.Id, date, AttendanceType.Hourly, _userId, workingHours: 6m);
+        store.Attendances.AddRange([d1, d2, d3]);
+
+        var service = CreateService(store, earnings);
+        var request = new FinalizeAttendanceRequest(farm.Id, date);
+
+        var response = await service.FinalizeAttendanceAsync(CreateActor(), request);
+
+        Assert.NotNull(response);
+        Assert.Equal(3, response.FinalizedCount);
+        Assert.Equal(3, response.PaidCount);
+        Assert.Equal(0, response.NotWorkedCount);
+        // 500 + 250 + (6 * 75 = 450) = 1200
+        Assert.Equal(1200m, response.TotalEarnings);
+        Assert.Equal(3, earnings.LedgerWriteCallCount);
+        Assert.Equal(3, earnings.CreatedEarnings.Count);
+        Assert.All(earnings.CreatedEarnings, e => Assert.Equal("APPROVED", e.Status));
+
+        Assert.All(store.Attendances, a =>
+        {
+            Assert.Equal(AttendanceStatus.Finalized, a.Status);
+            Assert.NotNull(a.FinalizedAt);
+            Assert.Equal(_userId, a.FinalizedBy);
+        });
+    }
+
+    [Fact]
+    public async Task FinalizeAttendanceAsync_WithNotWorkedRow_FinalizesWithoutCreatingEarningsEntry()
+    {
+        var store = new FakeAttendanceStore();
+        var earnings = new FakeAttendanceEarningsIntegration { FullDayRate = 500m };
+        var farm = CreateFarm();
+        var w1 = CreateWorker(firstName: "WorkedWorker");
+        var w2 = CreateWorker(firstName: "NotWorkedWorker");
+        var date = new DateOnly(2026, 9, 12);
+        AssignWorkerToFarm(w1, farm, new DateOnly(2026, 1, 1));
+        AssignWorkerToFarm(w2, farm, new DateOnly(2026, 1, 1));
+        store.Farms.Add(farm);
+        store.Workers.AddRange([w1, w2]);
+
+        var d1 = LaborAttendance.CreateDraft(_organizationId, farm.Id, w1.Id, date, AttendanceType.FullDay, _userId);
+        var d2 = LaborAttendance.CreateDraft(_organizationId, farm.Id, w2.Id, date, AttendanceType.NotWorked, _userId);
+        store.Attendances.AddRange([d1, d2]);
+
+        var service = CreateService(store, earnings);
+        var request = new FinalizeAttendanceRequest(farm.Id, date);
+
+        var response = await service.FinalizeAttendanceAsync(CreateActor(), request);
+
+        Assert.NotNull(response);
+        Assert.Equal(2, response.FinalizedCount);
+        Assert.Equal(1, response.PaidCount);
+        Assert.Equal(1, response.NotWorkedCount);
+        Assert.Equal(500m, response.TotalEarnings);
+        // Only 1 ledger write for the paid worker, NOT for NOT_WORKED!
+        Assert.Equal(1, earnings.LedgerWriteCallCount);
+
+        var finalizedNotWorked = store.Attendances.Single(a => a.WorkerId == w2.Id);
+        Assert.Equal(AttendanceStatus.Finalized, finalizedNotWorked.Status);
+        Assert.Null(finalizedNotWorked.CalculatedRate);
+        Assert.Equal(0m, finalizedNotWorked.CalculatedAmount);
+    }
+
+    [Fact]
+    public async Task FinalizeAttendanceAsync_WhenWorkerMissingFarmAssignment_RollsBackAllAndCreatesNoEarnings()
+    {
+        var store = new FakeAttendanceStore();
+        var earnings = new FakeAttendanceEarningsIntegration();
+        var farm = CreateFarm();
+        var w1 = CreateWorker(firstName: "ValidWorker");
+        var w2 = CreateWorker(firstName: "UnassignedWorker");
+        var date = new DateOnly(2026, 9, 12);
+        AssignWorkerToFarm(w1, farm, new DateOnly(2026, 1, 1));
+        // w2 has NO farm assignment
+        store.Farms.Add(farm);
+        store.Workers.AddRange([w1, w2]);
+
+        var d1 = LaborAttendance.CreateDraft(_organizationId, farm.Id, w1.Id, date, AttendanceType.FullDay, _userId);
+        var d2 = LaborAttendance.CreateDraft(_organizationId, farm.Id, w2.Id, date, AttendanceType.FullDay, _userId);
+        store.Attendances.AddRange([d1, d2]);
+
+        var service = CreateService(store, earnings);
+        var request = new FinalizeAttendanceRequest(farm.Id, date);
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(() =>
+            service.FinalizeAttendanceAsync(CreateActor(), request));
+        Assert.NotNull(ex.Errors);
+        Assert.True(ex.Errors.ContainsKey("workerId"));
+
+        // Atomicity check: w1 must NOT be left finalized!
+        Assert.All(store.Attendances, a => Assert.Equal(AttendanceStatus.Draft, a.Status));
+        Assert.Equal(0, earnings.LedgerWriteCallCount);
+    }
+
+    [Fact]
+    public async Task FinalizeAttendanceAsync_WhenEarningsCreationFails_RollsBackAllAttendanceRows()
+    {
+        var store = new FakeAttendanceStore();
+        var earnings = new FakeAttendanceEarningsIntegration { ThrowOnLedgerWrite = true };
+        var farm = CreateFarm();
+        var w1 = CreateWorker(firstName: "Worker1");
+        var date = new DateOnly(2026, 9, 12);
+        AssignWorkerToFarm(w1, farm, new DateOnly(2026, 1, 1));
+        store.Farms.Add(farm);
+        store.Workers.Add(w1);
+
+        var d1 = LaborAttendance.CreateDraft(_organizationId, farm.Id, w1.Id, date, AttendanceType.FullDay, _userId);
+        store.Attendances.Add(d1);
+
+        var service = CreateService(store, earnings);
+        var request = new FinalizeAttendanceRequest(farm.Id, date);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.FinalizeAttendanceAsync(CreateActor(), request));
+
+        // Attendance remains draft
+        Assert.Equal(AttendanceStatus.Draft, d1.Status);
+        Assert.Null(d1.FinalizedAt);
+    }
+
+    [Fact]
+    public async Task FinalizeAttendanceAsync_WhenNoDraftRowsExist_ThrowsValidationException()
+    {
+        var store = new FakeAttendanceStore();
+        var farm = CreateFarm();
+        store.Farms.Add(farm);
+        var service = CreateService(store);
+
+        var request = new FinalizeAttendanceRequest(farm.Id, new DateOnly(2026, 9, 12));
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(() =>
+            service.FinalizeAttendanceAsync(CreateActor(), request));
+        Assert.NotNull(ex.Errors);
+        Assert.True(ex.Errors.ContainsKey("attendance") || ex.Errors.ContainsKey("status"));
+    }
+
+    [Fact]
+    public async Task FinalizeAttendanceAsync_WhenAlreadyFinalized_ThrowsValidationException()
+    {
+        var store = new FakeAttendanceStore();
+        var farm = CreateFarm();
+        var worker = CreateWorker();
+        var date = new DateOnly(2026, 9, 12);
+        AssignWorkerToFarm(worker, farm, new DateOnly(2026, 1, 1));
+        store.Farms.Add(farm);
+        store.Workers.Add(worker);
+
+        var att = LaborAttendance.CreateFinalized(_organizationId, farm.Id, worker.Id, date, AttendanceType.FullDay, _userId);
+        store.Attendances.Add(att);
+
+        var service = CreateService(store);
+        var request = new FinalizeAttendanceRequest(farm.Id, date);
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(() =>
+            service.FinalizeAttendanceAsync(CreateActor(), request));
+        Assert.NotNull(ex.Errors);
+        Assert.True(ex.Errors.ContainsKey("status"));
+    }
+
+    [Fact]
+    public async Task FinalizeSingleAttendanceAsync_WhenValidDraft_FinalizesSingleAndCreatesEarnings()
+    {
+        var store = new FakeAttendanceStore();
+        var earnings = new FakeAttendanceEarningsIntegration { FullDayRate = 500m };
+        var farm = CreateFarm();
+        var worker = CreateWorker();
+        var date = new DateOnly(2026, 9, 12);
+        AssignWorkerToFarm(worker, farm, new DateOnly(2026, 1, 1));
+        store.Farms.Add(farm);
+        store.Workers.Add(worker);
+
+        var draft = LaborAttendance.CreateDraft(_organizationId, farm.Id, worker.Id, date, AttendanceType.FullDay, _userId);
+        store.Attendances.Add(draft);
+
+        var service = CreateService(store, earnings);
+
+        var response = await service.FinalizeSingleAttendanceAsync(CreateActor(), draft.Id);
+
+        Assert.NotNull(response);
+        Assert.Equal(draft.Id, response.Id);
+        Assert.Equal("FINALIZED", response.Status);
+        Assert.Equal(500m, response.CalculatedAmount);
+        Assert.Equal(1, earnings.LedgerWriteCallCount);
+        Assert.Equal(AttendanceStatus.Finalized, draft.Status);
+    }
+
+    [Fact]
+    public async Task UpdateDraftAsync_AfterFinalization_ThrowsValidationException()
+    {
+        var store = new FakeAttendanceStore();
+        var earnings = new FakeAttendanceEarningsIntegration { FullDayRate = 500m };
+        var farm = CreateFarm();
+        var worker = CreateWorker();
+        var date = new DateOnly(2026, 9, 12);
+        AssignWorkerToFarm(worker, farm, new DateOnly(2026, 1, 1));
+        store.Farms.Add(farm);
+        store.Workers.Add(worker);
+
+        var draft = LaborAttendance.CreateDraft(_organizationId, farm.Id, worker.Id, date, AttendanceType.FullDay, _userId);
+        store.Attendances.Add(draft);
+
+        var service = CreateService(store, earnings);
+
+        // Finalize attendance
+        await service.FinalizeSingleAttendanceAsync(CreateActor(), draft.Id);
+
+        // Now attempt to update it
+        var updateRequest = new UpdateDraftAttendanceRequest("HALF_DAY");
+        var ex = await Assert.ThrowsAsync<ValidationException>(() =>
+            service.UpdateDraftAsync(CreateActor(), draft.Id, updateRequest));
+        Assert.NotNull(ex.Errors);
+        Assert.True(ex.Errors.ContainsKey("status"));
+    }
+
+    [Fact]
+    public async Task DeleteDraftAsync_AfterFinalization_ThrowsValidationException()
+    {
+        var store = new FakeAttendanceStore();
+        var earnings = new FakeAttendanceEarningsIntegration { FullDayRate = 500m };
+        var farm = CreateFarm();
+        var worker = CreateWorker();
+        var date = new DateOnly(2026, 9, 12);
+        AssignWorkerToFarm(worker, farm, new DateOnly(2026, 1, 1));
+        store.Farms.Add(farm);
+        store.Workers.Add(worker);
+
+        var draft = LaborAttendance.CreateDraft(_organizationId, farm.Id, worker.Id, date, AttendanceType.FullDay, _userId);
+        store.Attendances.Add(draft);
+
+        var service = CreateService(store, earnings);
+
+        // Finalize attendance
+        await service.FinalizeSingleAttendanceAsync(CreateActor(), draft.Id);
+
+        // Now attempt to delete it
+        var ex = await Assert.ThrowsAsync<ValidationException>(() =>
+            service.DeleteDraftAsync(CreateActor(), draft.Id));
+        Assert.NotNull(ex.Errors);
+        Assert.True(ex.Errors.ContainsKey("status"));
+    }
+
+    #endregion
+
     #region Fake Store & Integration
 
     private sealed class FakeAttendanceEarningsIntegration : IAttendanceEarningsIntegration
@@ -1281,6 +1549,9 @@ public sealed class AttendanceServiceTests
                 request.WorkerId, "Worker", Gender.Male, norm, norm, request.Quantity, rate, amount, CurrencyId, "INR", "₹", true, true));
         }
 
+        public bool ThrowOnLedgerWrite { get; set; }
+        public List<WorkerEarningsLedgerResponse> CreatedEarnings { get; } = [];
+
         public Task<WorkerEarningsLedgerResponse?> ProcessAttendanceEarningsAsync(
             EarningsActor actor,
             ProcessAttendanceEarningsRequest request,
@@ -1296,7 +1567,47 @@ public sealed class AttendanceServiceTests
             CancellationToken cancellationToken = default)
         {
             LedgerWriteCallCount++;
-            throw new NotSupportedException("Ordinary draft operations must never invoke CreateEarningFromFinalizedAttendanceAsync.");
+            if (ThrowOnLedgerWrite)
+            {
+                throw new InvalidOperationException("Simulated earnings creation failure.");
+            }
+
+            var rate = attendance.WageType switch
+            {
+                WageType.FullDay => FullDayRate,
+                WageType.HalfDay => HalfDayRate,
+                WageType.Hourly => HourlyRate,
+                _ => 100m
+            };
+
+            var amount = Math.Round(rate * attendance.Quantity, 2);
+            var response = new WorkerEarningsLedgerResponse(
+                Id: Guid.NewGuid(),
+                OrganizationId: actor.OrganizationId,
+                WorkerId: attendance.WorkerId,
+                WorkerDisplayName: "Worker",
+                AttendanceId: attendance.AttendanceId,
+                EarningsDate: attendance.AttendanceDate,
+                WageType: attendance.WageType.ToString().ToUpperInvariant(),
+                Quantity: attendance.Quantity,
+                WageRate: rate,
+                CurrencyId: CurrencyId,
+                CurrencyCode: "INR",
+                CurrencySymbol: "₹",
+                GrossAmount: amount,
+                EntryType: "EARNING",
+                Status: "APPROVED",
+                ReferenceLedgerId: null,
+                Description: attendance.Description,
+                FinalizedAt: DateTimeOffset.UtcNow,
+                FinalizedBy: actor.UserId,
+                CreatedAt: DateTimeOffset.UtcNow,
+                CreatedBy: actor.UserId,
+                UpdatedAt: null,
+                UpdatedBy: null);
+
+            CreatedEarnings.Add(response);
+            return Task.FromResult(response);
         }
     }
 
@@ -1422,6 +1733,13 @@ public sealed class AttendanceServiceTests
             return Task.FromResult<IReadOnlyList<LaborAttendance>>(results);
         }
 
+        public Task<IReadOnlyList<LaborAttendance>> ListDailyAttendanceTrackedAsync(
+            Guid organizationId,
+            Guid farmId,
+            DateOnly attendanceDate,
+            CancellationToken cancellationToken = default) =>
+            ListDailyAttendanceAsync(organizationId, farmId, attendanceDate, cancellationToken);
+
         public Task<Worker?> FindWorkerWithAssignmentAsync(
             Guid organizationId,
             Guid workerId,
@@ -1452,8 +1770,46 @@ public sealed class AttendanceServiceTests
 
         public async Task<T> ExecuteInTransactionAsync<T>(
             Func<CancellationToken, Task<T>> operation,
-            CancellationToken cancellationToken = default) =>
-            await operation(cancellationToken);
+            CancellationToken cancellationToken = default)
+        {
+            var snapshot = Attendances.Select(a => (
+                a.Id,
+                a.Status,
+                a.CalculatedRate,
+                a.CalculatedAmount,
+                a.CurrencyId,
+                a.FinalizedAt,
+                a.FinalizedBy
+            )).ToList();
+
+            try
+            {
+                return await operation(cancellationToken);
+            }
+            catch
+            {
+                foreach (var snap in snapshot)
+                {
+                    var att = Attendances.FirstOrDefault(a => a.Id == snap.Id);
+                    if (att != null)
+                    {
+                        typeof(LaborAttendance).GetProperty(nameof(LaborAttendance.Status))!
+                            .SetValue(att, snap.Status);
+                        typeof(LaborAttendance).GetProperty(nameof(LaborAttendance.CalculatedRate))!
+                            .SetValue(att, snap.CalculatedRate);
+                        typeof(LaborAttendance).GetProperty(nameof(LaborAttendance.CalculatedAmount))!
+                            .SetValue(att, snap.CalculatedAmount);
+                        typeof(LaborAttendance).GetProperty(nameof(LaborAttendance.CurrencyId))!
+                            .SetValue(att, snap.CurrencyId);
+                        typeof(LaborAttendance).GetProperty(nameof(LaborAttendance.FinalizedAt))!
+                            .SetValue(att, snap.FinalizedAt);
+                        typeof(LaborAttendance).GetProperty(nameof(LaborAttendance.FinalizedBy))!
+                            .SetValue(att, snap.FinalizedBy);
+                    }
+                }
+                throw;
+            }
+        }
 
         private List<Worker> FilterWorkers(
             Guid organizationId,

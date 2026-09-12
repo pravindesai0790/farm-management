@@ -141,3 +141,20 @@ public sealed record AttendanceWagePreviewBatchResponse(
     int NotWorkedCount,
     decimal TotalEstimatedEarnings,
     IReadOnlyList<AttendanceWagePreviewResponse> Items);
+
+public sealed record FinalizeAttendanceRequest(
+    Guid FarmId,
+    DateOnly AttendanceDate,
+    IReadOnlyList<Guid>? AttendanceIds = null);
+
+public sealed record FinalizeAttendanceResponse(
+    Guid FarmId,
+    string FarmName,
+    DateOnly AttendanceDate,
+    int FinalizedCount,
+    int PaidCount,
+    int NotWorkedCount,
+    decimal TotalEarnings,
+    DailyAttendanceSummaryResponse Summary,
+    IReadOnlyList<AttendanceRecordResponse> Records);
+

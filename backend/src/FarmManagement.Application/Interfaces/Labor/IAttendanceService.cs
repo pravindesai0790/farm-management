@@ -50,5 +50,15 @@ public interface IAttendanceService
         AttendanceActor actor,
         AttendanceWagePreviewBatchRequest request,
         CancellationToken cancellationToken = default);
+
+    Task<FinalizeAttendanceResponse> FinalizeAttendanceAsync(
+        AttendanceActor actor,
+        FinalizeAttendanceRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<AttendanceRecordResponse> FinalizeSingleAttendanceAsync(
+        AttendanceActor actor,
+        Guid id,
+        CancellationToken cancellationToken = default);
 }
 
