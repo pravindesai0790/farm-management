@@ -77,6 +77,106 @@ public sealed class AttendanceStore(ApplicationDbContext dbContext) : IAttendanc
         }).ToArray();
     }
 
+    public Task<LaborAttendance?> FindAttendanceByIdAsync(
+        Guid id,
+        Guid organizationId,
+        CancellationToken cancellationToken = default) =>
+        dbContext.LaborAttendances
+            .Include(a => a.Farm)
+            .Include(a => a.Worker)
+                .ThenInclude(w => w!.LaborCategory)
+            .Include(a => a.Currency)
+            .SingleOrDefaultAsync(
+                a => a.Id == id && a.OrganizationId == organizationId,
+                cancellationToken);
+
+    public Task<LaborAttendance?> FindAttendanceByWorkerAndDateAsync(
+        Guid organizationId,
+        Guid workerId,
+        DateOnly attendanceDate,
+        CancellationToken cancellationToken = default) =>
+        dbContext.LaborAttendances
+            .Include(a => a.Farm)
+            .Include(a => a.Worker)
+                .ThenInclude(w => w!.LaborCategory)
+            .Include(a => a.Currency)
+            .SingleOrDefaultAsync(
+                a => a.OrganizationId == organizationId &&
+                     a.WorkerId == workerId &&
+                     a.AttendanceDate == attendanceDate,
+                cancellationToken);
+
+    public async Task<IReadOnlyList<LaborAttendance>> ListDailyAttendanceAsync(
+        Guid organizationId,
+        Guid farmId,
+        DateOnly attendanceDate,
+        CancellationToken cancellationToken = default) =>
+        await dbContext.LaborAttendances
+            .AsNoTracking()
+            .Include(a => a.Farm)
+            .Include(a => a.Worker)
+                .ThenInclude(w => w!.LaborCategory)
+            .Include(a => a.Currency)
+            .Where(a =>
+                a.OrganizationId == organizationId &&
+                a.FarmId == farmId &&
+                a.AttendanceDate == attendanceDate)
+            .OrderBy(a => a.Worker != null ? a.Worker.DisplayName : string.Empty)
+            .ThenBy(a => a.Id)
+            .ToListAsync(cancellationToken);
+
+    public Task<Worker?> FindWorkerWithAssignmentAsync(
+        Guid organizationId,
+        Guid workerId,
+        Guid farmId,
+        DateOnly attendanceDate,
+        CancellationToken cancellationToken = default) =>
+        dbContext.Workers
+            .Include(w => w.LaborCategory)
+            .Include(w => w.FarmAssignments)
+            .SingleOrDefaultAsync(
+                w => w.Id == workerId &&
+                     w.OrganizationId == organizationId &&
+                     w.IsActive &&
+                     (!w.JoiningDate.HasValue || w.JoiningDate.Value <= attendanceDate) &&
+                     (!w.LeavingDate.HasValue || w.LeavingDate.Value >= attendanceDate) &&
+                     w.FarmAssignments.Any(a =>
+                         a.OrganizationId == organizationId &&
+                         a.FarmId == farmId &&
+                         a.IsActive &&
+                         a.AssignedFrom <= attendanceDate &&
+                         (!a.AssignedTo.HasValue || a.AssignedTo.Value >= attendanceDate)),
+                cancellationToken);
+
+    public void AddAttendance(LaborAttendance attendance) =>
+        dbContext.LaborAttendances.Add(attendance);
+
+    public void RemoveAttendance(LaborAttendance attendance) =>
+        dbContext.LaborAttendances.Remove(attendance);
+
+    public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) =>
+        dbContext.SaveChangesAsync(cancellationToken);
+
+    public async Task<T> ExecuteInTransactionAsync<T>(
+        Func<CancellationToken, Task<T>> operation,
+        CancellationToken cancellationToken = default)
+    {
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(
+            System.Data.IsolationLevel.ReadCommitted,
+            cancellationToken);
+        try
+        {
+            var result = await operation(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return result;
+        }
+        catch
+        {
+            await transaction.RollbackAsync(CancellationToken.None);
+            throw;
+        }
+    }
+
     private IQueryable<Worker> BuildEligibleWorkersQuery(
         Guid organizationId,
         Guid farmId,

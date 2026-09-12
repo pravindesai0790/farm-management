@@ -25,4 +25,38 @@ public interface IAttendanceStore
         int skip,
         int take,
         CancellationToken cancellationToken = default);
+
+    Task<LaborAttendance?> FindAttendanceByIdAsync(
+        Guid id,
+        Guid organizationId,
+        CancellationToken cancellationToken = default);
+
+    Task<LaborAttendance?> FindAttendanceByWorkerAndDateAsync(
+        Guid organizationId,
+        Guid workerId,
+        DateOnly attendanceDate,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<LaborAttendance>> ListDailyAttendanceAsync(
+        Guid organizationId,
+        Guid farmId,
+        DateOnly attendanceDate,
+        CancellationToken cancellationToken = default);
+
+    Task<Worker?> FindWorkerWithAssignmentAsync(
+        Guid organizationId,
+        Guid workerId,
+        Guid farmId,
+        DateOnly attendanceDate,
+        CancellationToken cancellationToken = default);
+
+    void AddAttendance(LaborAttendance attendance);
+
+    void RemoveAttendance(LaborAttendance attendance);
+
+    Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+
+    Task<T> ExecuteInTransactionAsync<T>(
+        Func<CancellationToken, Task<T>> operation,
+        CancellationToken cancellationToken = default);
 }

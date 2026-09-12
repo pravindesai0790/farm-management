@@ -866,6 +866,8 @@ public sealed class WorkerEarningsLedgerService(IWorkerEarningsLedgerStore store
                 return true;
             case "ABSENT":
             case "LEAVE":
+            case "NOT_WORKED":
+            case "NOTWORKED":
                 wageType = null;
                 isEarningEligible = false;
                 return true;

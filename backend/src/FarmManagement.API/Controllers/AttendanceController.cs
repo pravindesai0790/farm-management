@@ -47,6 +47,93 @@ public sealed class AttendanceController(
         return Ok(result);
     }
 
+    [HttpGet("daily")]
+    [Authorize(Policy = "Permission:Attendance.View")]
+    public async Task<ActionResult<DailyAttendanceResponse>> GetDailyAttendance(
+        [FromQuery] Guid farmId,
+        [FromQuery] DateOnly? date = null,
+        [FromQuery] DateOnly? attendanceDate = null,
+        CancellationToken cancellationToken = default)
+    {
+        var effectiveDate = date ?? attendanceDate;
+        if (!effectiveDate.HasValue || effectiveDate.Value == default)
+        {
+            throw new ValidationException("Validation failed.", new Dictionary<string, string[]>
+            {
+                ["attendanceDate"] = ["Attendance date is required."]
+            });
+        }
+
+        var result = await attendanceService.GetDailyAttendanceAsync(
+            GetUserContext(),
+            farmId,
+            effectiveDate.Value,
+            cancellationToken);
+
+        return Ok(result);
+    }
+
+    [HttpPost("draft")]
+    [Authorize(Policy = "Permission:Attendance.Create")]
+    public async Task<ActionResult<AttendanceRecordResponse>> CreateDraft(
+        [FromBody] CreateDraftAttendanceRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await attendanceService.CreateDraftAsync(
+            GetUserContext(),
+            request,
+            cancellationToken);
+
+        return CreatedAtAction(
+            nameof(GetDailyAttendance),
+            new { farmId = result.FarmId, date = result.AttendanceDate.ToString("yyyy-MM-dd") },
+            result);
+    }
+
+    [HttpPut("{id:guid}")]
+    [Authorize(Policy = "Permission:Attendance.Update")]
+    public async Task<ActionResult<AttendanceRecordResponse>> UpdateDraft(
+        [FromRoute] Guid id,
+        [FromBody] UpdateDraftAttendanceRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await attendanceService.UpdateDraftAsync(
+            GetUserContext(),
+            id,
+            request,
+            cancellationToken);
+
+        return Ok(result);
+    }
+
+    [HttpDelete("{id:guid}")]
+    [Authorize(Policy = "Permission:Attendance.Update")]
+    public async Task<IActionResult> DeleteDraft(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        await attendanceService.DeleteDraftAsync(
+            GetUserContext(),
+            id,
+            cancellationToken);
+
+        return NoContent();
+    }
+
+    [HttpPost("draft/batch")]
+    [Authorize(Policy = "Permission:Attendance.Create")]
+    public async Task<ActionResult<DailyAttendanceResponse>> SaveDailyDraftBatch(
+        [FromBody] SaveDailyDraftAttendanceBatchRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await attendanceService.SaveDailyDraftBatchAsync(
+            GetUserContext(),
+            request,
+            cancellationToken);
+
+        return Ok(result);
+    }
+
     private AttendanceActor GetUserContext() =>
         UserContextHelper.GetUserContext<AttendanceActor>(User);
 }
