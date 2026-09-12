@@ -1,0 +1,249 @@
+<div class="section-heading">
+  <a mat-button routerLink="/labor/workers">← Back to workers</a>
+  <p class="eyebrow">Labor Management</p>
+  <h2>{{ isEditing ? "Edit worker" : "New worker" }}</h2>
+  <p class="subtext">
+    {{
+      isEditing
+        ? "Update worker profile, employment details, and active workforce status."
+        : "Add a new worker to your organization workforce."
+    }}
+  </p>
+</div>
+
+@if (isLoading()) {
+  <div class="loading-state">
+    <mat-spinner diameter="36" />
+    <span>Loading worker details…</span>
+  </div>
+} @else {
+  <mat-card>
+    <mat-card-content>
+      <form [formGroup]="form" (ngSubmit)="submit()">
+        <div class="form-grid">
+          <!-- First Name -->
+          <mat-form-field appearance="outline">
+            <mat-label>First name</mat-label>
+            <input matInput formControlName="firstName" placeholder="Enter first name" />
+            @if (apiError("firstName")) {
+              <mat-error>{{ apiError("firstName") }}</mat-error>
+            } @else if (form.controls.firstName.hasError("required")) {
+              <mat-error>First name is required.</mat-error>
+            } @else if (form.controls.firstName.hasError("maxlength")) {
+              <mat-error>First name cannot exceed 100 characters.</mat-error>
+            }
+          </mat-form-field>
+
+          <!-- Last Name -->
+          <mat-form-field appearance="outline">
+            <mat-label>Last name</mat-label>
+            <input matInput formControlName="lastName" placeholder="Enter last name (optional)" />
+            @if (apiError("lastName")) {
+              <mat-error>{{ apiError("lastName") }}</mat-error>
+            } @else if (form.controls.lastName.hasError("maxlength")) {
+              <mat-error>Last name cannot exceed 100 characters.</mat-error>
+            }
+          </mat-form-field>
+
+          <!-- Display Name -->
+          <mat-form-field appearance="outline">
+            <mat-label>Display name</mat-label>
+            <input
+              matInput
+              formControlName="displayName"
+              placeholder="Full name for displays"
+            />
+            <mat-hint>Auto-generated from first and last name unless modified.</mat-hint>
+            @if (apiError("displayName")) {
+              <mat-error>{{ apiError("displayName") }}</mat-error>
+            } @else if (form.controls.displayName.hasError("maxlength")) {
+              <mat-error>Display name cannot exceed 200 characters.</mat-error>
+            }
+          </mat-form-field>
+
+          <!-- Gender -->
+          <mat-form-field appearance="outline">
+            <mat-label>Gender</mat-label>
+            <mat-select formControlName="gender">
+              @for (option of genderOptions; track option.value) {
+                <mat-option [value]="option.value">{{ option.label }}</mat-option>
+              }
+            </mat-select>
+            @if (apiError("gender")) {
+              <mat-error>{{ apiError("gender") }}</mat-error>
+            } @else if (form.controls.gender.hasError("required")) {
+              <mat-error>Gender is required.</mat-error>
+            }
+          </mat-form-field>
+
+          <!-- Employment Type -->
+          <mat-form-field appearance="outline">
+            <mat-label>Employment type</mat-label>
+            <mat-select formControlName="employmentType">
+              @for (option of employmentTypeOptions; track option.value) {
+                <mat-option [value]="option.value">{{ option.label }}</mat-option>
+              }
+            </mat-select>
+            @if (apiError("employmentType")) {
+              <mat-error>{{ apiError("employmentType") }}</mat-error>
+            } @else if (form.controls.employmentType.hasError("required")) {
+              <mat-error>Employment type is required.</mat-error>
+            }
+          </mat-form-field>
+
+          <!-- Contractor -->
+          <mat-form-field appearance="outline">
+            <mat-label>Contractor</mat-label>
+            <mat-select formControlName="contractorId">
+              @if (form.controls.employmentType.value !== "CONTRACT") {
+                <mat-option [value]="null">None</mat-option>
+              }
+              @for (c of contractors(); track c.id) {
+                <mat-option [value]="c.id">{{ c.name }}</mat-option>
+              }
+            </mat-select>
+            @if (form.controls.contractorId.disabled) {
+              <mat-hint>Required only for Contract employment type.</mat-hint>
+            }
+            @if (apiError("contractorId")) {
+              <mat-error>{{ apiError("contractorId") }}</mat-error>
+            } @else if (form.controls.contractorId.hasError("required")) {
+              <mat-error>A contractor is required for contract workers.</mat-error>
+            }
+          </mat-form-field>
+
+          <!-- Labor Category -->
+          <mat-form-field appearance="outline">
+            <mat-label>Labor category</mat-label>
+            <mat-select formControlName="laborCategoryId">
+              <mat-option [value]="null">None / Unassigned</mat-option>
+              @for (cat of laborCategories(); track cat.id) {
+                <mat-option [value]="cat.id">{{ cat.name }}</mat-option>
+              }
+            </mat-select>
+            @if (apiError("laborCategoryId")) {
+              <mat-error>{{ apiError("laborCategoryId") }}</mat-error>
+            }
+          </mat-form-field>
+
+          <!-- Mobile Number -->
+          <mat-form-field appearance="outline">
+            <mat-label>Mobile number</mat-label>
+            <input
+              matInput
+              type="tel"
+              formControlName="mobileNumber"
+              placeholder="e.g. +91 9876543210"
+            />
+            @if (apiError("mobileNumber")) {
+              <mat-error>{{ apiError("mobileNumber") }}</mat-error>
+            } @else if (form.controls.mobileNumber.hasError("maxlength")) {
+              <mat-error>Mobile number cannot exceed 30 characters.</mat-error>
+            }
+          </mat-form-field>
+
+          <!-- Alternate Mobile Number -->
+          <mat-form-field appearance="outline">
+            <mat-label>Alternate mobile number</mat-label>
+            <input
+              matInput
+              type="tel"
+              formControlName="alternateMobileNumber"
+              placeholder="Secondary contact number"
+            />
+            @if (apiError("alternateMobileNumber")) {
+              <mat-error>{{ apiError("alternateMobileNumber") }}</mat-error>
+            } @else if (form.controls.alternateMobileNumber.hasError("maxlength")) {
+              <mat-error>Alternate mobile number cannot exceed 30 characters.</mat-error>
+            }
+          </mat-form-field>
+
+          <!-- Joining Date -->
+          <mat-form-field appearance="outline">
+            <mat-label>Joining date</mat-label>
+            <input
+              matInput
+              [matDatepicker]="joiningPicker"
+              formControlName="joiningDate"
+              placeholder="Select start date"
+            />
+            <mat-datepicker-toggle matIconSuffix [for]="joiningPicker" />
+            <mat-datepicker #joiningPicker />
+            @if (apiError("joiningDate")) {
+              <mat-error>{{ apiError("joiningDate") }}</mat-error>
+            }
+          </mat-form-field>
+
+          <!-- Leaving Date -->
+          <mat-form-field appearance="outline">
+            <mat-label>Leaving date</mat-label>
+            <input
+              matInput
+              [matDatepicker]="leavingPicker"
+              [min]="form.controls.joiningDate.value"
+              formControlName="leavingDate"
+              placeholder="Select end date"
+            />
+            <mat-datepicker-toggle matIconSuffix [for]="leavingPicker" />
+            <mat-datepicker #leavingPicker />
+            @if (apiError("leavingDate")) {
+              <mat-error>{{ apiError("leavingDate") }}</mat-error>
+            } @else if (form.hasError("leavingDateBeforeJoiningDate")) {
+              <mat-error>Leaving date cannot be before joining date.</mat-error>
+            }
+          </mat-form-field>
+
+          <!-- Notes -->
+          <mat-form-field appearance="outline" class="wide">
+            <mat-label>Notes</mat-label>
+            <textarea
+              matInput
+              rows="3"
+              formControlName="notes"
+              placeholder="Additional notes about skills, experience, or equipment."
+            ></textarea>
+            @if (apiError("notes")) {
+              <mat-error>{{ apiError("notes") }}</mat-error>
+            }
+          </mat-form-field>
+
+          <!-- Active Status (Edit Mode) -->
+          @if (isEditing) {
+            <div class="status-field wide">
+              <mat-checkbox formControlName="isActive" color="primary">
+                Active worker
+              </mat-checkbox>
+              @if (form.controls.isActive.disabled) {
+                <span class="status-permission-hint">
+                  You do not have permission to change active status.
+                </span>
+              }
+            </div>
+          }
+        </div>
+
+        @if (errorMessage()) {
+          <app-error-alert
+            [error]="errorMessage()"
+            fallback="Worker could not be saved."
+          />
+        }
+
+        <div class="form-actions">
+          <a mat-button routerLink="/labor/workers">Cancel</a>
+          <button
+            mat-flat-button
+            color="primary"
+            [disabled]="isSubmitting()"
+            type="submit"
+          >
+            @if (isSubmitting()) {
+              <mat-spinner diameter="18" class="button-spinner" />
+            }
+            {{ isEditing ? "Save changes" : "Create worker" }}
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+}

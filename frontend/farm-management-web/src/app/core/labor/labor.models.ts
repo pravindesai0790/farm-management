@@ -70,6 +70,80 @@ export const EMPLOYMENT_TYPE_OPTIONS: readonly { readonly value: string; readonl
   { value: "CONTRACT", label: "Contract" },
 ];
 
+export const WORKER_GENDER_OPTIONS: readonly { readonly value: Gender; readonly label: string }[] = [
+  { value: "MALE", label: "Male" },
+  { value: "FEMALE", label: "Female" },
+  { value: "OTHER", label: "Other" },
+];
+
+export const WORKER_EMPLOYMENT_TYPE_OPTIONS: readonly { readonly value: EmploymentType; readonly label: string }[] = [
+  { value: "PERMANENT", label: "Permanent" },
+  { value: "SEASONAL", label: "Seasonal" },
+  { value: "DAILY_WAGE", label: "Daily wage" },
+  { value: "CONTRACT", label: "Contract" },
+];
+
+export interface CreateWorkerRequest {
+  readonly firstName: string;
+  readonly lastName?: string | null;
+  readonly displayName?: string | null;
+  readonly gender: Gender | string;
+  readonly employmentType: EmploymentType | string;
+  readonly mobileNumber?: string | null;
+  readonly alternateMobileNumber?: string | null;
+  readonly laborCategoryId?: string | null;
+  readonly contractorId?: string | null;
+  readonly joiningDate?: string | null;
+  readonly leavingDate?: string | null;
+  readonly notes?: string | null;
+}
+
+export interface UpdateWorkerRequest {
+  readonly firstName: string;
+  readonly lastName?: string | null;
+  readonly displayName?: string | null;
+  readonly gender: Gender | string;
+  readonly employmentType: EmploymentType | string;
+  readonly mobileNumber?: string | null;
+  readonly alternateMobileNumber?: string | null;
+  readonly laborCategoryId?: string | null;
+  readonly contractorId?: string | null;
+  readonly joiningDate?: string | null;
+  readonly leavingDate?: string | null;
+  readonly notes?: string | null;
+}
+
+export interface ContractorItem {
+  readonly id: string;
+  readonly organizationId: string;
+  readonly name: string;
+  readonly contactPerson?: string | null;
+  readonly phoneNumber?: string | null;
+  readonly email?: string | null;
+  readonly address?: string | null;
+  readonly notes?: string | null;
+  readonly isActive: boolean;
+  readonly workerCount: number;
+  readonly createdAt: string;
+  readonly createdBy: string;
+  readonly updatedAt?: string | null;
+  readonly updatedBy?: string | null;
+}
+
+export interface LaborCategoryItem {
+  readonly id: string;
+  readonly organizationId?: string | null;
+  readonly name: string;
+  readonly description?: string | null;
+  readonly isSystem: boolean;
+  readonly isActive: boolean;
+  readonly workerCount: number;
+  readonly createdAt: string;
+  readonly createdBy?: string | null;
+  readonly updatedAt?: string | null;
+  readonly updatedBy?: string | null;
+}
+
 export function formatGender(gender: string): string {
   switch (gender?.toUpperCase()) {
     case "MALE":
@@ -97,3 +171,4 @@ export function formatEmploymentType(type: string): string {
       return type || "—";
   }
 }
+

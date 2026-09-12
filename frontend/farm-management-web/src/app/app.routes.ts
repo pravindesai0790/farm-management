@@ -394,6 +394,26 @@ export const routes: Routes = [
               ).then((module) => module.WorkersPageComponent),
           },
           {
+            path: "workers/new",
+            title: "Create worker",
+            canActivate: [permissionGuard],
+            data: { permission: "Worker.Create" },
+            loadComponent: () =>
+              import(
+                "./features/labor/workers/worker-editor-page.component"
+              ).then((module) => module.WorkerEditorPageComponent),
+          },
+          {
+            path: "workers/:id/edit",
+            title: "Edit worker",
+            canActivate: [permissionGuard],
+            data: { permission: "Worker.Update" },
+            loadComponent: () =>
+              import(
+                "./features/labor/workers/worker-editor-page.component"
+              ).then((module) => module.WorkerEditorPageComponent),
+          },
+          {
             path: "contractors",
             title: "Contractors",
             canActivate: [permissionGuard],
