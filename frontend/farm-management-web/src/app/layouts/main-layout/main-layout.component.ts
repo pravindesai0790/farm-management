@@ -169,6 +169,13 @@ export class MainLayoutComponent {
           permissions: ["Contractor.View"],
           isSubItem: true,
         },
+        {
+          label: "Wage rates",
+          icon: "payments",
+          route: "/labor/wage-rates",
+          permissions: ["WorkerWage.View"],
+          isSubItem: true,
+        },
       ],
     },
     {

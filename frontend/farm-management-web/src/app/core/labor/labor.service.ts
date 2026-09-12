@@ -5,11 +5,14 @@ import { environment } from "../../../environments/environment";
 import { PagedResponse } from "../models/paged-response.model";
 import {
   ContractorItem,
+  CurrencyItem,
   CreateWorkerFarmAssignmentRequest,
   CreateWorkerRequest,
+  CreateLaborWageRateRequest,
   EndWorkerFarmAssignmentRequest,
   LaborCategoryItem,
   LaborWageRate,
+  UpdateLaborWageRateRequest,
   UpdateWorkerFarmAssignmentRequest,
   UpdateWorkerRequest,
   WorkerDetail,
@@ -231,6 +234,109 @@ export class LaborService {
               complete: () => observer.complete(),
             });
           }),
+      );
+  }
+
+  listWageRatesPaged(
+    page = 1,
+    pageSize = 20,
+    gender?: string | null,
+    wageType?: string | null,
+    isActive?: boolean | null,
+    businessDate?: string | null,
+  ): Observable<PagedResponse<LaborWageRate>> {
+    let params = new HttpParams()
+      .set("page", page.toString())
+      .set("pageSize", pageSize.toString());
+
+    if (gender && gender !== "all") {
+      params = params.set("gender", gender);
+    }
+    if (wageType && wageType !== "all") {
+      params = params.set("wageType", wageType);
+    }
+    if (isActive !== null && isActive !== undefined) {
+      params = params.set("isActive", isActive.toString());
+    }
+    if (businessDate) {
+      params = params.set("businessDate", businessDate);
+    }
+
+    return this.http.get<PagedResponse<LaborWageRate>>(
+      `${this.api}/labor/wage-rates`,
+      { params },
+    );
+  }
+
+  getWageRate(id: string): Observable<LaborWageRate> {
+    return this.http.get<LaborWageRate>(`${this.api}/labor/wage-rates/${id}`);
+  }
+
+  createWageRate(
+    request: CreateLaborWageRateRequest,
+  ): Observable<LaborWageRate> {
+    return this.http.post<LaborWageRate>(
+      `${this.api}/labor/wage-rates`,
+      request,
+    );
+  }
+
+  updateWageRate(
+    id: string,
+    request: UpdateLaborWageRateRequest,
+  ): Observable<LaborWageRate> {
+    return this.http.put<LaborWageRate>(
+      `${this.api}/labor/wage-rates/${id}`,
+      request,
+    );
+  }
+
+  activateWageRate(id: string): Observable<void> {
+    return this.http.post<void>(
+      `${this.api}/labor/wage-rates/${id}/activate`,
+      {},
+    );
+  }
+
+  deactivateWageRate(id: string): Observable<void> {
+    return this.http.post<void>(
+      `${this.api}/labor/wage-rates/${id}/deactivate`,
+      {},
+    );
+  }
+
+  getApplicableWageRate(
+    gender: string,
+    wageType: string,
+    businessDate: string,
+  ): Observable<LaborWageRate | null> {
+    const params = new HttpParams()
+      .set("gender", gender)
+      .set("wageType", wageType)
+      .set("businessDate", businessDate);
+
+    return this.http
+      .get<LaborWageRate>(`${this.api}/labor/wage-rates/applicable`, { params })
+      .pipe(catchError(() => of(null)));
+  }
+
+  listCurrencies(): Observable<readonly CurrencyItem[]> {
+    return this.http
+      .get<readonly CurrencyItem[]>(`${this.api}/master-data/currencies`)
+      .pipe(
+        catchError(() =>
+          of([
+            {
+              id: "10000000-0000-0000-0000-000000000001",
+              code: "INR",
+              name: "Indian Rupee",
+              symbol: "₹",
+              isSystem: true,
+              isActive: true,
+              displayOrder: 1,
+            },
+          ] as readonly CurrencyItem[]),
+        ),
       );
   }
 

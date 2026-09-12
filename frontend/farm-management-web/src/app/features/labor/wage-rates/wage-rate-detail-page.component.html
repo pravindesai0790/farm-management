@@ -1,0 +1,131 @@
+@if (isLoading()) {
+  <div class="loading-state">
+    <mat-spinner diameter="40" />
+    <span>Loading wage rate details…</span>
+  </div>
+} @else if (wageRate(); as rate) {
+  <div class="detail-header">
+    <div>
+      <div class="breadcrumb">
+        <a routerLink="/labor/wage-rates">
+          <mat-icon>arrow_back</mat-icon>
+          Back to Wage Rates
+        </a>
+      </div>
+      <div class="title-row">
+        <h2>{{ getGenderLabel(rate.gender) }} · {{ getWageTypeLabel(rate.wageType) }}</h2>
+        <span class="period-pill" [ngClass]="getLifecycleClass(rate)">
+          {{ getLifecycleLabel(rate) }}
+        </span>
+        <span
+          class="status-pill"
+          [class.status-pill-inactive]="!rate.isActive"
+        >
+          {{ rate.isActive ? "Active" : "Inactive" }}
+        </span>
+      </div>
+      <p class="subtitle">
+        Standard organization wage rate used for workforce attendance settlement.
+      </p>
+    </div>
+
+    <div class="header-actions">
+      @if (permissionService.has("WorkerWage.Update")) {
+        <a mat-stroked-button [routerLink]="['/labor/wage-rates', rate.id, 'edit']">
+          <mat-icon>edit</mat-icon>Edit
+        </a>
+
+        @if (rate.isActive) {
+          <button
+            mat-stroked-button
+            color="warn"
+            (click)="changeStatus(false)"
+            [disabled]="actionInProgress()"
+          >
+            <mat-icon>visibility_off</mat-icon>Deactivate
+          </button>
+        } @else {
+          <button
+            mat-flat-button
+            color="primary"
+            (click)="changeStatus(true)"
+            [disabled]="actionInProgress()"
+          >
+            <mat-icon>visibility</mat-icon>Activate
+          </button>
+        }
+      }
+    </div>
+  </div>
+
+  <div class="cards-grid">
+    <!-- Primary Details -->
+    <mat-card>
+      <mat-card-header>
+        <mat-icon mat-card-avatar class="card-avatar">payments</mat-icon>
+        <mat-card-title>Rate Configuration</mat-card-title>
+        <mat-card-subtitle>Wage amount and classification</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content class="info-grid">
+        <div class="info-item">
+          <label>Wage Rate</label>
+          <span class="rate-value">{{ rate.currencySymbol || "₹" }}{{ rate.wageRate | number:'1.2-2' }}</span>
+        </div>
+        <div class="info-item">
+          <label>Currency</label>
+          <span>{{ rate.currencyCode || "INR" }}</span>
+        </div>
+        <div class="info-item">
+          <label>Gender</label>
+          <span>{{ getGenderLabel(rate.gender) }}</span>
+        </div>
+        <div class="info-item">
+          <label>Wage Type</label>
+          <span>{{ getWageTypeLabel(rate.wageType) }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Effective Dating -->
+    <mat-card>
+      <mat-card-header>
+        <mat-icon mat-card-avatar class="card-avatar">date_range</mat-icon>
+        <mat-card-title>Effective Dating</mat-card-title>
+        <mat-card-subtitle>Validity period and historical policy</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content class="info-grid">
+        <div class="info-item">
+          <label>Effective From</label>
+          <span>{{ rate.effectiveFrom | date:'dd-MMMM-yyyy' }}</span>
+        </div>
+        <div class="info-item">
+          <label>Effective To</label>
+          <span>{{ rate.effectiveTo ? (rate.effectiveTo | date:'dd-MMMM-yyyy') : "Ongoing / Open-Ended" }}</span>
+        </div>
+        <div class="info-item full-width">
+          <label>Notes</label>
+          <span>{{ rate.notes || "No additional notes provided." }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Audit Metadata -->
+    <mat-card class="full-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar class="card-avatar">history</mat-icon>
+        <mat-card-title>Audit History</mat-card-title>
+        <mat-card-subtitle>Record timestamps</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content class="info-grid">
+        <div class="info-item">
+          <label>Created At</label>
+          <span>{{ rate.createdAt ? (rate.createdAt | date:'medium') : "—" }}</span>
+        </div>
+        <div class="info-item">
+          <label>Last Updated</label>
+          <span>{{ rate.updatedAt ? (rate.updatedAt | date:'medium') : "—" }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+}

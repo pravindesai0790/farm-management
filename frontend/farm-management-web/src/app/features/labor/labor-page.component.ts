@@ -99,7 +99,11 @@ export class LaborPageComponent {
       description:
         "Define organization-level gender and wage-type rates with effective date preservation.",
       icon: "payments",
-      status: "UPCOMING",
+      route: "/labor/wage-rates",
+      status: "AVAILABLE",
+      requiredPermission: "WorkerWage.View",
+      createPermission: "WorkerWage.Create",
+      createRoute: "/labor/wage-rates/new",
       highlights: [
         "Gender-based rates",
         "Effective dating",

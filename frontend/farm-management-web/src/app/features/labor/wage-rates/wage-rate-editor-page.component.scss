@@ -1,0 +1,152 @@
+:host {
+  display: block;
+}
+
+.section-heading {
+  margin-bottom: 20px;
+
+  a[mat-button] {
+    margin-bottom: 8px;
+    margin-left: -8px;
+    color: var(--mat-sys-primary, #2e7d32);
+  }
+
+  .eyebrow {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--mat-sys-primary, #2e7d32);
+    margin: 0 0 4px 0;
+  }
+
+  h2 {
+    margin: 0 0 4px 0;
+    font-size: 1.75rem;
+    font-weight: 600;
+  }
+
+  .subtext {
+    margin: 0;
+    color: var(--mat-sys-on-surface-variant, #616161);
+    font-size: 0.9375rem;
+  }
+}
+
+.policy-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #f0f7f3;
+  border: 1px solid #d2e7db;
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 24px;
+  color: #1e4b34;
+
+  .notice-icon {
+    color: #2f6f4e;
+    font-size: 22px;
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .notice-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.88rem;
+    line-height: 1.45;
+
+    .notice-title {
+      font-weight: 600;
+      color: #163e2a;
+    }
+  }
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 16px;
+  gap: 16px;
+  color: var(--mat-sys-on-surface-variant, #616161);
+}
+
+mat-card {
+  padding: 16px 20px 24px;
+  border-radius: 12px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.full-width {
+  width: 100%;
+  margin-top: 4px;
+
+  .notes-field {
+    width: 100%;
+  }
+}
+
+.cross-validation-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #b00020;
+  font-size: 0.85rem;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  background-color: #fdecea;
+  border-radius: 4px;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.status-toggle {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 0;
+
+  .status-hint {
+    font-size: 0.8125rem;
+    color: var(--mat-sys-on-surface-variant, #616161);
+    margin-left: 28px;
+  }
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #e0e0e0;
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 640px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}

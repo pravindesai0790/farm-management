@@ -214,11 +214,80 @@ export interface LaborWageRate {
   readonly gender: Gender | string;
   readonly wageType: string;
   readonly wageRate: number;
+  readonly currencyId?: string;
   readonly currencyCode?: string;
+  readonly currencySymbol?: string;
   readonly effectiveFrom: string;
   readonly effectiveTo?: string | null;
   readonly isActive: boolean;
   readonly notes?: string | null;
+  readonly createdAt?: string;
+  readonly updatedAt?: string | null;
+}
+
+export interface CreateLaborWageRateRequest {
+  readonly gender: string;
+  readonly wageType: string;
+  readonly wageRate: number;
+  readonly currencyId: string;
+  readonly effectiveFrom: string;
+  readonly effectiveTo?: string | null;
+  readonly notes?: string | null;
+}
+
+export interface UpdateLaborWageRateRequest {
+  readonly wageRate: number;
+  readonly currencyId: string;
+  readonly effectiveFrom: string;
+  readonly effectiveTo?: string | null;
+  readonly notes?: string | null;
+}
+
+export interface CurrencyItem {
+  readonly id: string;
+  readonly code: string;
+  readonly name: string;
+  readonly symbol: string;
+  readonly isSystem: boolean;
+  readonly isActive: boolean;
+  readonly displayOrder: number;
+}
+
+export const WAGE_TYPE_OPTIONS: readonly { readonly value: string; readonly label: string }[] = [
+  { value: "FULL_DAY", label: "Full Day" },
+  { value: "HALF_DAY", label: "Half Day" },
+  { value: "HOURLY", label: "Hourly" },
+  { value: "MONTHLY", label: "Monthly" },
+] as const;
+
+export function formatWageType(wageType: string | null | undefined): string {
+  switch ((wageType || "").toUpperCase()) {
+    case "FULL_DAY":
+      return "Full Day";
+    case "HALF_DAY":
+      return "Half Day";
+    case "HOURLY":
+      return "Hourly";
+    case "MONTHLY":
+      return "Monthly";
+    default:
+      return wageType || "—";
+  }
+}
+
+export type RateLifecycle = "CURRENT" | "FUTURE" | "HISTORICAL";
+
+export function getRateLifecycle(
+  rate: Pick<LaborWageRate, "effectiveFrom" | "effectiveTo">,
+  asOfDate: string = new Date().toISOString().slice(0, 10),
+): RateLifecycle {
+  if (rate.effectiveFrom > asOfDate) {
+    return "FUTURE";
+  }
+  if (rate.effectiveTo && rate.effectiveTo < asOfDate) {
+    return "HISTORICAL";
+  }
+  return "CURRENT";
 }
 
 export interface WorkerPayment {

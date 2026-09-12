@@ -433,6 +433,46 @@ export const routes: Routes = [
                 "./features/labor/contractors/contractors-page.component"
               ).then((module) => module.ContractorsPageComponent),
           },
+          {
+            path: "wage-rates",
+            title: "Wage rates",
+            canActivate: [permissionGuard],
+            data: { permission: "WorkerWage.View" },
+            loadComponent: () =>
+              import(
+                "./features/labor/wage-rates/wage-rates-page.component"
+              ).then((module) => module.WageRatesPageComponent),
+          },
+          {
+            path: "wage-rates/new",
+            title: "Create wage rate",
+            canActivate: [permissionGuard],
+            data: { permission: "WorkerWage.Create" },
+            loadComponent: () =>
+              import(
+                "./features/labor/wage-rates/wage-rate-editor-page.component"
+              ).then((module) => module.WageRateEditorPageComponent),
+          },
+          {
+            path: "wage-rates/:id/edit",
+            title: "Edit wage rate",
+            canActivate: [permissionGuard],
+            data: { permission: "WorkerWage.Update" },
+            loadComponent: () =>
+              import(
+                "./features/labor/wage-rates/wage-rate-editor-page.component"
+              ).then((module) => module.WageRateEditorPageComponent),
+          },
+          {
+            path: "wage-rates/:id",
+            title: "Wage rate details",
+            canActivate: [permissionGuard],
+            data: { permission: "WorkerWage.View" },
+            loadComponent: () =>
+              import(
+                "./features/labor/wage-rates/wage-rate-detail-page.component"
+              ).then((module) => module.WageRateDetailPageComponent),
+          },
         ],
       },
       {

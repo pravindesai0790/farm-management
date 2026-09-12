@@ -1,0 +1,223 @@
+<div class="section-heading">
+  <div>
+    <p class="eyebrow">Labor Management</p>
+    <h2>Wage Rates</h2>
+    <p>
+      Organization-level standard wage rates applied during attendance logging. Rates are determined by worker gender and attendance wage type.
+    </p>
+  </div>
+  @if (permissionService.has("WorkerWage.Create")) {
+    <a mat-flat-button color="primary" routerLink="/labor/wage-rates/new">
+      <mat-icon>add</mat-icon>Add wage rate
+    </a>
+  }
+</div>
+
+<div class="info-callout">
+  <mat-icon>info</mat-icon>
+  <div class="callout-text">
+    <strong>Organization-Level Policy</strong>
+    <span>Wage rates are maintained at the organization level with historical effective dating. When attendance is recorded, the applicable rate is resolved by worker gender and wage type.</span>
+  </div>
+</div>
+
+<mat-card>
+  <mat-card-content>
+    <form class="filters" [formGroup]="filterForm">
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Gender</mat-label>
+        <mat-select formControlName="gender">
+          @for (option of genderOptions; track option.value) {
+            <mat-option [value]="option.value">{{ option.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Wage type</mat-label>
+        <mat-select formControlName="wageType">
+          <mat-option value="all">All wage types</mat-option>
+          @for (option of wageTypeOptions; track option.value) {
+            <mat-option [value]="option.value">{{ option.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Status</mat-label>
+        <mat-select formControlName="status">
+          <mat-option value="all">All statuses</mat-option>
+          <mat-option value="active">Active</mat-option>
+          <mat-option value="inactive">Inactive</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filter-field date-filter">
+        <mat-label>Effective as of</mat-label>
+        <input
+          matInput
+          type="date"
+          formControlName="effectiveAsOf"
+          placeholder="YYYY-MM-DD"
+        />
+        @if (filterForm.controls.effectiveAsOf.value) {
+          <button
+            mat-icon-button
+            matSuffix
+            (click)="clearEffectiveAsOf()"
+            aria-label="Clear date filter"
+            type="button"
+          >
+            <mat-icon>close</mat-icon>
+          </button>
+        }
+      </mat-form-field>
+    </form>
+
+    @if (isLoading()) {
+      <div class="loading-state">
+        <mat-spinner diameter="36" />
+        <span>Loading wage rates…</span>
+      </div>
+    } @else if (wageRates().length === 0) {
+      <div class="empty-state">
+        <mat-icon>payments</mat-icon>
+        <h3>No wage rates found</h3>
+        <p>
+          No wage rates match the selected filters. Get started by adding a wage rate or clearing your filters.
+        </p>
+      </div>
+    } @else {
+      <div class="table-wrap">
+        <table mat-table [dataSource]="wageRates()" class="wage-rates-table">
+          <!-- Gender Column -->
+          <ng-container matColumnDef="gender">
+            <th mat-header-cell *matHeaderCellDef>Gender</th>
+            <td mat-cell *matCellDef="let rate">
+              <span class="gender-cell">
+                <mat-icon class="gender-icon">{{ rate.gender === 'FEMALE' ? 'female' : (rate.gender === 'MALE' ? 'male' : 'transgender') }}</mat-icon>
+                <strong>{{ getGenderLabel(rate.gender) }}</strong>
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Wage Type Column -->
+          <ng-container matColumnDef="wageType">
+            <th mat-header-cell *matHeaderCellDef>Wage Type</th>
+            <td mat-cell *matCellDef="let rate">
+              <span class="wage-type-badge">{{ getWageTypeLabel(rate.wageType) }}</span>
+            </td>
+          </ng-container>
+
+          <!-- Wage Rate Column -->
+          <ng-container matColumnDef="wageRate">
+            <th mat-header-cell *matHeaderCellDef>Wage Rate</th>
+            <td mat-cell *matCellDef="let rate">
+              <span class="rate-amount">{{ rate.currencySymbol || "₹" }}{{ rate.wageRate | number:'1.2-2' }}</span>
+            </td>
+          </ng-container>
+
+          <!-- Currency Column -->
+          <ng-container matColumnDef="currency">
+            <th mat-header-cell *matHeaderCellDef>Currency</th>
+            <td mat-cell *matCellDef="let rate">
+              <span class="currency-badge">{{ rate.currencyCode || "INR" }}</span>
+            </td>
+          </ng-container>
+
+          <!-- Effective Period Column -->
+          <ng-container matColumnDef="effectivePeriod">
+            <th mat-header-cell *matHeaderCellDef>Effective Period</th>
+            <td mat-cell *matCellDef="let rate">
+              <div class="effective-period-cell">
+                <span class="period-dates">
+                  {{ rate.effectiveFrom | date:'dd-MMM-yyyy' }}
+                  <span class="period-arrow">→</span>
+                  {{ rate.effectiveTo ? (rate.effectiveTo | date:'dd-MMM-yyyy') : 'Ongoing' }}
+                </span>
+                @if (rate.notes) {
+                  <small class="period-notes" [matTooltip]="rate.notes">{{ rate.notes }}</small>
+                }
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Lifecycle Status Column -->
+          <ng-container matColumnDef="periodStatus">
+            <th mat-header-cell *matHeaderCellDef>Timeline</th>
+            <td mat-cell *matCellDef="let rate">
+              <span class="period-pill" [ngClass]="getLifecycleClass(rate)">
+                {{ getLifecycleLabel(rate) }}
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Active Column -->
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Status</th>
+            <td mat-cell *matCellDef="let rate">
+              <span
+                class="status-pill"
+                [class.status-pill-inactive]="!rate.isActive"
+              >
+                {{ rate.isActive ? "Active" : "Inactive" }}
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Actions Column -->
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef class="actions-header">Actions</th>
+            <td mat-cell *matCellDef="let rate" class="actions-cell">
+              <a mat-button [routerLink]="['/labor/wage-rates', rate.id]">View</a>
+
+              @if (permissionService.has("WorkerWage.Update")) {
+                <a
+                  mat-icon-button
+                  [routerLink]="['/labor/wage-rates', rate.id, 'edit']"
+                  aria-label="Edit wage rate"
+                  matTooltip="Edit wage rate"
+                >
+                  <mat-icon>edit</mat-icon>
+                </a>
+
+                @if (rate.isActive) {
+                  <button
+                    mat-icon-button
+                    (click)="changeStatus(rate, false)"
+                    [disabled]="actionInProgress()"
+                    aria-label="Deactivate wage rate"
+                    matTooltip="Deactivate wage rate"
+                  >
+                    <mat-icon>visibility_off</mat-icon>
+                  </button>
+                } @else {
+                  <button
+                    mat-icon-button
+                    (click)="changeStatus(rate, true)"
+                    [disabled]="actionInProgress()"
+                    aria-label="Activate wage rate"
+                    matTooltip="Activate wage rate"
+                  >
+                    <mat-icon>visibility</mat-icon>
+                  </button>
+                }
+              }
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+        </table>
+      </div>
+    }
+
+    <mat-paginator
+      [length]="totalCount()"
+      [pageIndex]="pageIndex()"
+      [pageSize]="pageSize()"
+      [pageSizeOptions]="[10, 20, 50]"
+      (page)="pageChanged($event)"
+    />
+  </mat-card-content>
+</mat-card>
