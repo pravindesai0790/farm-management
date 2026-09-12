@@ -378,6 +378,17 @@ public class UserContextHelperTests
     }
 
     [Fact]
+    public void GetUserContext_ForSettlementActor_PopulatesUserIdAndOrganizationId()
+    {
+        var principal = CreatePrincipal(TestUserId.ToString(), TestOrganizationId.ToString());
+
+        var actor = UserContextHelper.GetUserContext<SettlementActor>(principal);
+
+        Assert.Equal(TestUserId, actor.UserId);
+        Assert.Equal(TestOrganizationId, actor.OrganizationId);
+    }
+
+    [Fact]
     public void GetUserContext_WithCustomFactory_InvokesFactoryWithExtractedIds()
     {
         var principal = CreatePrincipal(TestUserId.ToString(), TestOrganizationId.ToString());
