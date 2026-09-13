@@ -165,7 +165,9 @@ public sealed class WorkerEarningsLedgerConfiguration : IEntityTypeConfiguration
             .HasDatabaseName("ix_worker_earnings_ledger_org_worker_status");
 
         builder.HasIndex(ledger => new { ledger.OrganizationId, ledger.AttendanceId })
-            .HasDatabaseName("ix_worker_earnings_ledger_org_attendance");
+            .HasDatabaseName("ux_worker_earnings_ledger_org_attendance")
+            .HasFilter("attendance_id IS NOT NULL AND entry_type = 'EARNING'")
+            .IsUnique();
 
         builder.HasIndex(ledger => new { ledger.OrganizationId, ledger.ReferenceLedgerId })
             .HasDatabaseName("ix_worker_earnings_ledger_org_reference");
