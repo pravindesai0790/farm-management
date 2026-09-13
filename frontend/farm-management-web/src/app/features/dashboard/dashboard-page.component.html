@@ -270,249 +270,255 @@
         }
       </div>
 
-      <!-- Operational Grid: Crop Allocation + Active Cycles + Labor Pulse -->
+      <!-- Operational Grid: Left Column (Land + Labor Pulse) & Right Column (Active Cycles) -->
       <div class="dashboard-operational-grid">
-        <!-- Crop & Variety Land Allocation -->
-        <mat-card class="operational-card">
-          <mat-card-content>
-            <div class="card-title-bar">
-              <div>
-                <p class="card-eyebrow">Land Allocation</p>
-                <h2>Crop & Variety Distribution</h2>
-              </div>
-              <a mat-stroked-button routerLink="/plantations" class="view-all-link">
-                View Plantations <mat-icon>arrow_forward</mat-icon>
-              </a>
-            </div>
-
-            @if (s.cropAllocations.length === 0) {
-              <div class="empty-panel">
-                <mat-icon>yard</mat-icon>
-                <p>No active crop plantations found.</p>
-                <a mat-button color="primary" routerLink="/plantations/new">
-                  + Add Plantation
-                </a>
-              </div>
-            } @else {
-              <!-- Segmented Distribution Bar -->
-              <div class="stacked-bar-container">
-                <div class="stacked-bar">
-                  @for (crop of s.cropAllocations; track crop.cropId; let i = $index) {
-                    <div
-                      class="bar-segment"
-                      [style.width.%]="crop.percentageOfAllocated"
-                      [style.background-color]="getCropColor(i)"
-                      [matTooltip]="crop.cropName + ': ' + crop.totalAllocatedArea + ' ' + crop.areaUnitSymbol + ' (' + crop.percentageOfAllocated + '%)'"
-                    ></div>
-                  }
-                </div>
-              </div>
-
-              <!-- Crop Details List -->
-              <div class="crop-list">
-                @for (crop of s.cropAllocations; track crop.cropId; let i = $index) {
-                  <div class="crop-item">
-                    <div class="crop-item-header">
-                      <div class="crop-name-wrap">
-                        <span
-                          class="crop-dot"
-                          [style.background-color]="getCropColor(i)"
-                          aria-hidden="true"
-                        ></span>
-                        <div>
-                          <strong class="crop-title">{{ crop.cropName }}</strong>
-                          <span class="crop-code">{{ crop.cropCode }}</span>
-                        </div>
-                      </div>
-                      <div class="crop-area-stats">
-                        <span class="crop-area-value">
-                          {{ crop.totalAllocatedArea | number: "1.1-2" }} {{ crop.areaUnitSymbol }}
-                        </span>
-                        <span class="crop-pct-pill">{{ crop.percentageOfAllocated }}% of cultivated</span>
-                      </div>
-                    </div>
-
-                    <!-- Varieties Breakdown -->
-                    @if (crop.varieties.length > 0) {
-                      <div class="variety-chips">
-                        @for (v of crop.varieties; track v.varietyName) {
-                          <div class="variety-chip">
-                            <span class="variety-name">{{ v.varietyName }}:</span>
-                            <span class="variety-area">{{ v.allocatedArea | number: "1.1-2" }} {{ v.areaUnitSymbol }}</span>
-                            <span class="variety-pct">({{ v.percentageOfCrop }}%)</span>
-                          </div>
-                        }
-                      </div>
-                    }
-                  </div>
-                }
-              </div>
-            }
-          </mat-card-content>
-        </mat-card>
-
-        <!-- Active Crop Cycles -->
-        <mat-card class="operational-card">
-          <mat-card-content>
-            <div class="card-title-bar">
-              <div>
-                <p class="card-eyebrow">Season Lifecycle</p>
-                <h2>Active Crop Cycles</h2>
-              </div>
-              <a mat-stroked-button routerLink="/crop-cycles" class="view-all-link">
-                All Cycles <mat-icon>arrow_forward</mat-icon>
-              </a>
-            </div>
-
-            @if (s.activeCycles.length === 0) {
-              <div class="empty-panel">
-                <mat-icon>event_available</mat-icon>
-                <p>No active crop cycles currently running.</p>
-                <a mat-button color="primary" routerLink="/crop-cycles/new">
-                  + Start a Crop Cycle
-                </a>
-              </div>
-            } @else {
-              <div class="cycles-list">
-                @for (cycle of s.activeCycles; track cycle.cycleId) {
-                  <div class="cycle-item">
-                    <div class="cycle-top">
-                      <div>
-                        <div class="cycle-title-row">
-                          <strong class="cycle-name">{{ cycle.cycleName }}</strong>
-                          <span class="cycle-code">{{ cycle.cycleCode }}</span>
-                          <span
-                            class="status-tag"
-                            [class.status-tag-active]="cycle.status === 'ACTIVE'"
-                          >
-                            {{ cycle.status }}
-                          </span>
-                        </div>
-                        <p class="cycle-meta">
-                          <span><strong>{{ cycle.cropName }}</strong>@if (cycle.varietyName) { · {{ cycle.varietyName }} }</span>
-                          <span class="meta-dot">·</span>
-                          <span>{{ cycle.farmName }} ({{ cycle.farmAreaName }})</span>
-                          <span class="meta-dot">·</span>
-                          <span>{{ cycle.allocatedArea }} {{ cycle.areaUnitSymbol }}</span>
-                        </p>
-                      </div>
-
-                      @if (cycle.seasonName) {
-                        <div class="season-badge">
-                          <mat-icon>eco</mat-icon>
-                          <span>{{ cycle.seasonName }}</span>
-                        </div>
-                      }
-                    </div>
-
-                    <!-- Progress timeline bar -->
-                    @if (cycle.progressPercentage !== null) {
-                      <div class="cycle-timeline">
-                        <div class="timeline-bar">
-                          <div
-                            class="timeline-fill"
-                            [style.width.%]="cycle.progressPercentage"
-                          ></div>
-                        </div>
-                        <div class="timeline-labels">
-                          <span>Planted: {{ cycle.startDate | date: "mediumDate" }}</span>
-                          <span class="timeline-pct">{{ cycle.progressPercentage }}% elapsed</span>
-                          <span>
-                            @if (cycle.expectedEndDate) {
-                              Est. Harvest: {{ cycle.expectedEndDate | date: "mediumDate" }}
-                            } @else {
-                              Open-ended
-                            }
-                          </span>
-                        </div>
-                      </div>
-                    } @else {
-                      <div class="timeline-labels-compact">
-                        <span>Started: {{ cycle.startDate | date: "mediumDate" }}</span>
-                        <span>
-                          @if (cycle.expectedEndDate) {
-                            Expected: {{ cycle.expectedEndDate | date: "mediumDate" }}
-                          }
-                        </span>
-                      </div>
-                    }
-                  </div>
-                }
-              </div>
-            }
-          </mat-card-content>
-        </mat-card>
-
-        <!-- Farm Labor & Attendance 7-Day Trend Card -->
-        @if (s.labor; as labor) {
-          <mat-card class="operational-card labor-trend-card">
+        <!-- Left Operational Column -->
+        <div class="operational-column">
+          <!-- Crop & Variety Land Allocation -->
+          <mat-card class="operational-card">
             <mat-card-content>
               <div class="card-title-bar">
                 <div>
-                  <p class="card-eyebrow">Labor Operations</p>
-                  <h2>Labor & Attendance Pulse</h2>
+                  <p class="card-eyebrow">Land Allocation</p>
+                  <h2>Crop & Variety Distribution</h2>
                 </div>
-                <a mat-stroked-button routerLink="/labor/attendance/history" class="view-all-link">
-                  History <mat-icon>arrow_forward</mat-icon>
+                <a mat-stroked-button routerLink="/plantations" class="view-all-link">
+                  View Plantations <mat-icon>arrow_forward</mat-icon>
                 </a>
               </div>
 
-              <!-- 7-Day Trend Grid -->
-              <div class="trend-section">
-                <span class="section-label">7-Day Headcount & Wage Trend</span>
-                <div class="trend-grid">
-                  @for (day of labor.recentDaysTrend; track day.date) {
-                    <div class="trend-day-item" [class.is-today]="day.date === labor.recentDaysTrend[6].date">
-                      <div class="day-header">
-                        <span class="day-date">{{ day.date | date: "dd MMM" }}</span>
-                        <span
-                          class="day-status-dot"
-                          [class.dot-finalized]="day.status === 'FINALIZED'"
-                          [class.dot-draft]="day.status === 'DRAFT'"
-                        ></span>
+              @if (s.cropAllocations.length === 0) {
+                <div class="empty-panel">
+                  <mat-icon>yard</mat-icon>
+                  <p>No active crop plantations found.</p>
+                  <a mat-button color="primary" routerLink="/plantations/new">
+                    + Add Plantation
+                  </a>
+                </div>
+              } @else {
+                <!-- Segmented Distribution Bar -->
+                <div class="stacked-bar-container">
+                  <div class="stacked-bar">
+                    @for (crop of s.cropAllocations; track crop.cropId; let i = $index) {
+                      <div
+                        class="bar-segment"
+                        [style.width.%]="crop.percentageOfAllocated"
+                        [style.background-color]="getCropColor(i)"
+                        [matTooltip]="crop.cropName + ': ' + crop.totalAllocatedArea + ' ' + crop.areaUnitSymbol + ' (' + crop.percentageOfAllocated + '%)'"
+                      ></div>
+                    }
+                  </div>
+                </div>
+
+                <!-- Crop Details List -->
+                <div class="crop-list">
+                  @for (crop of s.cropAllocations; track crop.cropId; let i = $index) {
+                    <div class="crop-item">
+                      <div class="crop-item-header">
+                        <div class="crop-name-wrap">
+                          <span
+                            class="crop-dot"
+                            [style.background-color]="getCropColor(i)"
+                            aria-hidden="true"
+                          ></span>
+                          <div>
+                            <strong class="crop-title">{{ crop.cropName }}</strong>
+                            <span class="crop-code">{{ crop.cropCode }}</span>
+                          </div>
+                        </div>
+                        <div class="crop-area-stats">
+                          <span class="crop-area-value">
+                            {{ crop.totalAllocatedArea | number: "1.1-2" }} {{ crop.areaUnitSymbol }}
+                          </span>
+                          <span class="crop-pct-pill">{{ crop.percentageOfAllocated }}% of cultivated</span>
+                        </div>
                       </div>
-                      <div class="day-bar-wrap">
-                        <div
-                          class="day-bar-fill"
-                          [style.height.%]="(day.wageExpense / getMaxTrendWages()) * 100"
-                        ></div>
-                      </div>
-                      <div class="day-metrics">
-                        <strong class="day-workers">{{ day.workedCount }}w</strong>
-                        <span class="day-wages">{{ labor.currencySymbol }}{{ day.wageExpense | number: "1.0-0" }}</span>
-                      </div>
+
+                      <!-- Varieties Breakdown -->
+                      @if (crop.varieties.length > 0) {
+                        <div class="variety-chips">
+                          @for (v of crop.varieties; track v.varietyName) {
+                            <div class="variety-chip">
+                              <span class="variety-name">{{ v.varietyName }}:</span>
+                              <span class="variety-area">{{ v.allocatedArea | number: "1.1-2" }} {{ v.areaUnitSymbol }}</span>
+                              <span class="variety-pct">({{ v.percentageOfCrop }}%)</span>
+                            </div>
+                          }
+                        </div>
+                      }
                     </div>
                   }
                 </div>
-              </div>
+              }
+            </mat-card-content>
+          </mat-card>
 
-              <!-- Skill Category Breakdown -->
-              @if (labor.skillMix.length > 0) {
-                <div class="skill-mix-section">
-                  <span class="section-label">Today's Category Mix</span>
-                  <div class="skill-chips">
-                    @for (cat of labor.skillMix; track cat.categoryName) {
-                      <div class="skill-chip">
-                        <span class="skill-name">{{ cat.categoryName }}</span>
-                        <span class="skill-count">{{ cat.workerCount }}</span>
+          <!-- Farm Labor & Attendance 7-Day Trend Card -->
+          @if (s.labor; as labor) {
+            <mat-card class="operational-card labor-trend-card">
+              <mat-card-content>
+                <div class="card-title-bar">
+                  <div>
+                    <p class="card-eyebrow">Labor Operations</p>
+                    <h2>Labor & Attendance Pulse</h2>
+                  </div>
+                  <a mat-stroked-button routerLink="/labor/attendance/history" class="view-all-link">
+                    History <mat-icon>arrow_forward</mat-icon>
+                  </a>
+                </div>
+
+                <!-- 7-Day Trend Grid -->
+                <div class="trend-section">
+                  <span class="section-label">7-Day Headcount & Wage Trend</span>
+                  <div class="trend-grid">
+                    @for (day of labor.recentDaysTrend; track day.date) {
+                      <div class="trend-day-item" [class.is-today]="day.date === labor.recentDaysTrend[6].date">
+                        <div class="day-header">
+                          <span class="day-date">{{ day.date | date: "dd MMM" }}</span>
+                          <span
+                            class="day-status-dot"
+                            [class.dot-finalized]="day.status === 'FINALIZED'"
+                            [class.dot-draft]="day.status === 'DRAFT'"
+                          ></span>
+                        </div>
+                        <div class="day-bar-wrap">
+                          <div
+                            class="day-bar-fill"
+                            [style.height.%]="(day.wageExpense / getMaxTrendWages()) * 100"
+                          ></div>
+                        </div>
+                        <div class="day-metrics">
+                          <strong class="day-workers">{{ day.workedCount }}w</strong>
+                          <span class="day-wages">{{ labor.currencySymbol }}{{ day.wageExpense | number: "1.0-0" }}</span>
+                        </div>
                       </div>
                     }
                   </div>
                 </div>
-              }
 
-              <!-- Labor Quick Actions -->
-              <div class="labor-quick-actions">
-                <a mat-stroked-button routerLink="/labor/attendance" [queryParams]="selectedFarmId() ? { farmId: selectedFarmId() } : null">
-                  <mat-icon>edit_calendar</mat-icon> Daily Roster
-                </a>
-                <a mat-stroked-button routerLink="/labor/workers">
-                  <mat-icon>group</mat-icon> Workers
+                <!-- Skill Category Breakdown -->
+                @if (labor.skillMix.length > 0) {
+                  <div class="skill-mix-section">
+                    <span class="section-label">Today's Category Mix</span>
+                    <div class="skill-chips">
+                      @for (cat of labor.skillMix; track cat.categoryName) {
+                        <div class="skill-chip">
+                          <span class="skill-name">{{ cat.categoryName }}</span>
+                          <span class="skill-count">{{ cat.workerCount }}</span>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
+
+                <!-- Labor Quick Actions -->
+                <div class="labor-quick-actions">
+                  <a mat-stroked-button routerLink="/labor/attendance" [queryParams]="selectedFarmId() ? { farmId: selectedFarmId() } : null">
+                    <mat-icon>edit_calendar</mat-icon> Daily Roster
+                  </a>
+                  <a mat-stroked-button routerLink="/labor/workers">
+                    <mat-icon>group</mat-icon> Workers
+                  </a>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          }
+        </div>
+
+        <!-- Right Operational Column -->
+        <div class="operational-column">
+          <!-- Active Crop Cycles -->
+          <mat-card class="operational-card">
+            <mat-card-content>
+              <div class="card-title-bar">
+                <div>
+                  <p class="card-eyebrow">Season Lifecycle</p>
+                  <h2>Active Crop Cycles</h2>
+                </div>
+                <a mat-stroked-button routerLink="/crop-cycles" class="view-all-link">
+                  All Cycles <mat-icon>arrow_forward</mat-icon>
                 </a>
               </div>
+
+              @if (s.activeCycles.length === 0) {
+                <div class="empty-panel">
+                  <mat-icon>event_available</mat-icon>
+                  <p>No active crop cycles currently running.</p>
+                  <a mat-button color="primary" routerLink="/crop-cycles/new">
+                    + Start a Crop Cycle
+                  </a>
+                </div>
+              } @else {
+                <div class="cycles-list">
+                  @for (cycle of s.activeCycles; track cycle.cycleId) {
+                    <div class="cycle-item">
+                      <div class="cycle-top">
+                        <div>
+                          <div class="cycle-title-row">
+                            <strong class="cycle-name">{{ cycle.cycleName }}</strong>
+                            <span class="cycle-code">{{ cycle.cycleCode }}</span>
+                            <span
+                              class="status-tag"
+                              [class.status-tag-active]="cycle.status === 'ACTIVE'"
+                            >
+                              {{ cycle.status }}
+                            </span>
+                          </div>
+                          <p class="cycle-meta">
+                            <span><strong>{{ cycle.cropName }}</strong>@if (cycle.varietyName) { · {{ cycle.varietyName }} }</span>
+                            <span class="meta-dot">·</span>
+                            <span>{{ cycle.farmName }} ({{ cycle.farmAreaName }})</span>
+                            <span class="meta-dot">·</span>
+                            <span>{{ cycle.allocatedArea }} {{ cycle.areaUnitSymbol }}</span>
+                          </p>
+                        </div>
+
+                        @if (cycle.seasonName) {
+                          <div class="season-badge">
+                            <mat-icon>eco</mat-icon>
+                            <span>{{ cycle.seasonName }}</span>
+                          </div>
+                        }
+                      </div>
+
+                      <!-- Progress timeline bar -->
+                      @if (cycle.progressPercentage !== null) {
+                        <div class="cycle-timeline">
+                          <div class="timeline-bar">
+                            <div
+                              class="timeline-fill"
+                              [style.width.%]="cycle.progressPercentage"
+                            ></div>
+                          </div>
+                          <div class="timeline-labels">
+                            <span>Planted: {{ cycle.startDate | date: "mediumDate" }}</span>
+                            <span class="timeline-pct">{{ cycle.progressPercentage }}% elapsed</span>
+                            <span>
+                              @if (cycle.expectedEndDate) {
+                                Est. Harvest: {{ cycle.expectedEndDate | date: "mediumDate" }}
+                              } @else {
+                                Open-ended
+                              }
+                            </span>
+                          </div>
+                        </div>
+                      } @else {
+                        <div class="timeline-labels-compact">
+                          <span>Started: {{ cycle.startDate | date: "mediumDate" }}</span>
+                          <span>
+                            @if (cycle.expectedEndDate) {
+                              Expected: {{ cycle.expectedEndDate | date: "mediumDate" }}
+                            }
+                          </span>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              }
             </mat-card-content>
           </mat-card>
-        }
+        </div>
       </div>
 
       <!-- All Farms Labor Attendance Matrix (visible when All Farms selected) -->

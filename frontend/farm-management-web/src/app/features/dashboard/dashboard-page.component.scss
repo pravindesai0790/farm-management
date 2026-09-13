@@ -249,6 +249,12 @@ h1 {
   align-items: start;
 }
 
+.operational-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
 .operational-card {
   display: flex;
   flex-direction: column;
