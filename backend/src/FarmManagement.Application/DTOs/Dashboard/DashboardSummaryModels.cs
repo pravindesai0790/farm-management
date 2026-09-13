@@ -7,7 +7,8 @@ public sealed record DashboardSummaryResponse(
     IReadOnlyList<CropAllocationSummaryDto> CropAllocations,
     IReadOnlyList<ActiveCycleSummaryDto> ActiveCycles,
     IReadOnlyList<FarmUtilizationSummaryDto> FarmUtilizations,
-    string? CurrentSeason
+    string? CurrentSeason,
+    FarmLaborDashboardDto? Labor = null
 );
 
 public sealed record KpiSummaryDto(

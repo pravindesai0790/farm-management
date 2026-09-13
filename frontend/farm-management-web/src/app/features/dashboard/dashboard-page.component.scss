@@ -638,3 +638,216 @@ h1 {
     grid-template-columns: 1fr;
   }
 }
+
+/* Labor Operational Banner */
+.labor-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  border-radius: 14px;
+  border: 1px solid var(--app-border);
+  background: #f8faf9;
+  flex-wrap: wrap;
+
+  &-warning {
+    background: #fffbeb;
+    border-color: #fde68a;
+    .banner-icon { color: #d97706; }
+  }
+
+  &-info {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    .banner-icon { color: #2563eb; }
+  }
+
+  &-success {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+    .banner-icon { color: #16a34a; }
+  }
+}
+
+.banner-content {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.banner-icon {
+  font-size: 28px;
+  width: 28px;
+  height: 28px;
+}
+
+.banner-title {
+  display: block;
+  font-size: 0.95rem;
+  color: var(--app-ink);
+}
+
+.banner-subtext {
+  margin: 2px 0 0;
+  font-size: 0.82rem;
+  color: var(--app-muted);
+}
+
+.banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Labor KPI Icons & Badges */
+.kpi-icon-workers { background: #f0f9ff; color: #0284c7; }
+.kpi-icon-wages { background: #fefce8; color: #ca8a04; }
+
+.kpi-badge-draft {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.kpi-badge-notrecorded {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+/* Labor Trend Card */
+.labor-trend-card {
+  .trend-section {
+    margin-top: 12px;
+  }
+
+  .section-label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--app-muted);
+    margin-bottom: 10px;
+  }
+
+  .trend-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    align-items: flex-end;
+    padding: 12px;
+    background: #fafcfb;
+    border-radius: 12px;
+    border: 1px solid #edf2ee;
+  }
+
+  .trend-day-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+
+    &.is-today {
+      .day-date { font-weight: 700; color: var(--app-primary); }
+    }
+  }
+
+  .day-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .day-date {
+    font-size: 0.7rem;
+    color: var(--app-muted);
+  }
+
+  .day-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #d1d5db;
+
+    &.dot-finalized { background: #16a34a; }
+    &.dot-draft { background: #2563eb; }
+  }
+
+  .day-bar-wrap {
+    width: 14px;
+    height: 48px;
+    background: #eef3ef;
+    border-radius: 999px;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+  }
+
+  .day-bar-fill {
+    width: 100%;
+    background: var(--app-primary);
+    border-radius: 999px;
+    min-height: 4px;
+    transition: height 0.3s ease;
+  }
+
+  .day-metrics {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .day-workers {
+    font-size: 0.75rem;
+    color: var(--app-ink);
+  }
+
+  .day-wages {
+    font-size: 0.68rem;
+    color: var(--app-muted);
+  }
+
+  .skill-mix-section {
+    margin-top: 16px;
+  }
+
+  .skill-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .skill-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #f1f5f2;
+    font-size: 0.76rem;
+    color: var(--app-ink);
+  }
+
+  .skill-count {
+    font-weight: 700;
+    color: var(--app-primary);
+  }
+
+  .labor-quick-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+    border-top: 1px dashed var(--app-border);
+    padding-top: 12px;
+  }
+}
+
+.status-tag-draft {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.status-tag-empty {
+  background: #fef2f2;
+  color: #b91c1c;
+}

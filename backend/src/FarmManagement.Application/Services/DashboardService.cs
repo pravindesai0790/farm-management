@@ -1,4 +1,5 @@
 using FarmManagement.Application.DTOs.Dashboard;
+using FarmManagement.Application.Helpers;
 using FarmManagement.Application.Interfaces.Dashboard;
 using FarmManagement.Domain.Entities;
 using FarmManagement.Domain.Enums;
@@ -65,12 +66,17 @@ public sealed class DashboardService(IDashboardStore store) : IDashboardService
         var farmUtilizations = BuildFarmUtilizations(farms, activePlantations, targetUnit, targetSymbol);
         var currentSeason = DetermineCurrentSeason(cycles);
 
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var laborRawData = await store.GetLaborDashboardDataAsync(actor.OrganizationId, farmId, today, cancellationToken);
+        var laborDashboard = LaborDashboardHelper.BuildLaborDashboard(laborRawData, farms, farmId, today);
+
         return new DashboardSummaryResponse(
             Kpi: kpi,
             CropAllocations: cropAllocations,
             ActiveCycles: activeCycleSummaries,
             FarmUtilizations: farmUtilizations,
-            CurrentSeason: currentSeason
+            CurrentSeason: currentSeason,
+            Labor: laborDashboard
         );
     }
 

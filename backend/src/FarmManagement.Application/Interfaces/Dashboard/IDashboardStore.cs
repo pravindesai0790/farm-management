@@ -1,3 +1,4 @@
+using FarmManagement.Application.DTOs.Dashboard;
 using FarmManagement.Domain.Entities;
 
 namespace FarmManagement.Application.Interfaces.Dashboard;
@@ -25,5 +26,11 @@ public interface IDashboardStore
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<Unit>> GetAreaUnitsAsync(
+        CancellationToken cancellationToken = default);
+
+    Task<LaborDashboardRawData> GetLaborDashboardDataAsync(
+        Guid organizationId,
+        Guid? farmId,
+        DateOnly today,
         CancellationToken cancellationToken = default);
 }

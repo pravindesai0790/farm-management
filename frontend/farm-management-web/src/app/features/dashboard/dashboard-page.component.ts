@@ -125,4 +125,24 @@ export class DashboardPageComponent implements OnInit {
   getCropColor(index: number): string {
     return this.cropColors[index % this.cropColors.length];
   }
+
+  getSelectedFarmName(): string {
+    const id = this.selectedFarmId();
+    if (!id) return "All Farms";
+    const farm = this.farms().find((f) => f.id === id);
+    return farm ? farm.name : "Selected Farm";
+  }
+
+  getTurnoutPercentage(): number {
+    const l = this.summary()?.labor;
+    if (!l || l.assignedWorkersCount === 0) return 0;
+    return Math.round((l.workedWorkersCount / l.assignedWorkersCount) * 100);
+  }
+
+  getMaxTrendWages(): number {
+    const trend = this.summary()?.labor?.recentDaysTrend;
+    if (!trend || trend.length === 0) return 1;
+    const max = Math.max(...trend.map((t) => t.wageExpense));
+    return max > 0 ? max : 1;
+  }
 }

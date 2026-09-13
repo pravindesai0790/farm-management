@@ -283,11 +283,51 @@ export interface FarmUtilizationSummary {
   activePlantationsCount: number;
 }
 
+export interface LaborCategoryMix {
+  categoryName: string;
+  workerCount: number;
+}
+
+export interface DailyLaborTrend {
+  date: string;
+  workedCount: number;
+  wageExpense: number;
+  status: string;
+}
+
+export interface FarmLaborStatusSummary {
+  farmId: string;
+  farmName: string;
+  farmCode: string;
+  assignedCount: number;
+  workedCount: number;
+  todayWageExpense: number;
+  status: string;
+}
+
+export interface FarmLaborDashboard {
+  todayStatus: string;
+  assignedWorkersCount: number;
+  workedWorkersCount: number;
+  notWorkedCount: number;
+  fullDayCount: number;
+  halfDayCount: number;
+  hourlyCount: number;
+  totalWorkingHours: number;
+  todayWageExpense: number;
+  currencySymbol: string;
+  finalizedAt: string | null;
+  skillMix: readonly LaborCategoryMix[];
+  recentDaysTrend: readonly DailyLaborTrend[];
+  farmSummaries: readonly FarmLaborStatusSummary[] | null;
+}
+
 export interface DashboardSummaryResponse {
   kpi: KpiSummary;
   cropAllocations: readonly CropAllocationSummary[];
   activeCycles: readonly ActiveCycleSummary[];
   farmUtilizations: readonly FarmUtilizationSummary[];
   currentSeason: string | null;
+  labor?: FarmLaborDashboard | null;
 }
 

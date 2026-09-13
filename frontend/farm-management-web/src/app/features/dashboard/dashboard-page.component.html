@@ -7,7 +7,7 @@
         Good morning, {{ currentUser()?.firstName }} {{ currentUser()?.lastName }}.
       </h1>
       <p class="page-description">
-        Real-time land utilization, crop allocations, and seasonal cycles across your organization.
+        Real-time land utilization, crop allocations, and daily labor operations across your organization.
       </p>
     </div>
 
@@ -48,7 +48,7 @@
   @if (isLoading()) {
     <div class="state-container">
       <mat-spinner diameter="44" />
-      <p class="state-text">Aggregating farm metrics and crop allocations…</p>
+      <p class="state-text">Aggregating farm metrics and labor operations…</p>
     </div>
   } @else if (error()) {
     <!-- Error State -->
@@ -76,7 +76,7 @@
           </div>
           <h2>Welcome to your Farm Workspace</h2>
           <p class="empty-description">
-            Get started by registering your first farm. Once your farms and plots are set up, you can allocate crops, track plantations, and manage seasonal harvest cycles here.
+            Get started by registering your first farm. Once your farms and plots are set up, you can allocate crops, track plantations, and manage daily labor attendance here.
           </p>
           <a mat-flat-button color="primary" routerLink="/farms/new">
             <mat-icon>add</mat-icon> Register First Farm
@@ -84,6 +84,52 @@
         </mat-card-content>
       </mat-card>
     } @else {
+
+      <!-- Labor Attendance Operational Alert Banner -->
+      @if (s.labor; as labor) {
+        <div
+          class="labor-banner"
+          [class.labor-banner-warning]="labor.todayStatus === 'NOT_RECORDED'"
+          [class.labor-banner-info]="labor.todayStatus === 'DRAFT'"
+          [class.labor-banner-success]="labor.todayStatus === 'FINALIZED'"
+        >
+          <div class="banner-content">
+            <mat-icon class="banner-icon">
+              @if (labor.todayStatus === 'NOT_RECORDED') { warning }
+              @else if (labor.todayStatus === 'DRAFT') { edit_note }
+              @else { check_circle }
+            </mat-icon>
+            <div>
+              <strong class="banner-title">
+                @if (labor.todayStatus === 'NOT_RECORDED') { Today's attendance for {{ getSelectedFarmName() }} is not recorded }
+                @else if (labor.todayStatus === 'DRAFT') { Today's draft attendance for {{ getSelectedFarmName() }} has {{ labor.workedWorkersCount }} workers }
+                @else { Today's attendance for {{ getSelectedFarmName() }} is finalized }
+              </strong>
+              <p class="banner-subtext">
+                @if (labor.todayStatus === 'NOT_RECORDED') { Record daily attendance to track workforce turnout and compute daily payroll earnings. }
+                @else if (labor.todayStatus === 'DRAFT') { Estimated earnings: {{ labor.currencySymbol }}{{ labor.todayWageExpense | number: "1.2-2" }} across {{ labor.workedWorkersCount }} active workers. }
+                @else { Finalized wages locked at {{ labor.currencySymbol }}{{ labor.todayWageExpense | number: "1.2-2" }} for {{ labor.workedWorkersCount }} workers. }
+              </p>
+            </div>
+          </div>
+          <div class="banner-actions">
+            @if (labor.todayStatus === 'NOT_RECORDED') {
+              <a mat-flat-button color="primary" routerLink="/labor/attendance" [queryParams]="selectedFarmId() ? { farmId: selectedFarmId() } : null">
+                <mat-icon>add</mat-icon> Record Attendance
+              </a>
+            } @else if (labor.todayStatus === 'DRAFT') {
+              <a mat-flat-button color="accent" routerLink="/labor/attendance" [queryParams]="selectedFarmId() ? { farmId: selectedFarmId() } : null">
+                <mat-icon>done_all</mat-icon> Review & Finalize
+              </a>
+            } @else {
+              <a mat-stroked-button routerLink="/labor/attendance" [queryParams]="selectedFarmId() ? { farmId: selectedFarmId() } : null">
+                <mat-icon>visibility</mat-icon> View Daily Roster
+              </a>
+            }
+          </div>
+        </div>
+      }
+
       <!-- KPI Cards Row -->
       <div class="kpi-grid">
         <!-- KPI 1: Total Land -->
@@ -168,11 +214,65 @@
             </p>
           </mat-card-content>
         </mat-card>
+
+        <!-- KPI 5: Today's Workers & Turnout -->
+        @if (s.labor; as labor) {
+          <mat-card class="kpi-card">
+            <mat-card-content>
+              <div class="kpi-header">
+                <span class="kpi-eyebrow">Workforce Turnout</span>
+                <div class="kpi-icon kpi-icon-workers" aria-hidden="true">
+                  <mat-icon>badge</mat-icon>
+                </div>
+              </div>
+              <div class="kpi-value">
+                {{ labor.workedWorkersCount }}
+                <span class="kpi-unit">/ {{ labor.assignedWorkersCount }}</span>
+              </div>
+              <div class="mini-progress-bar">
+                <div
+                  class="mini-progress-fill"
+                  [style.width.%]="getTurnoutPercentage()"
+                ></div>
+              </div>
+              <p class="kpi-subtext">
+                <strong>{{ getTurnoutPercentage() }}% Turnout</strong> · {{ labor.fullDayCount }} Full · {{ labor.halfDayCount }} Half · {{ labor.hourlyCount }} Hr
+              </p>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- KPI 6: Today's Wages -->
+          <mat-card class="kpi-card">
+            <mat-card-content>
+              <div class="kpi-header">
+                <span class="kpi-eyebrow">Today's Wages</span>
+                <div class="kpi-icon kpi-icon-wages" aria-hidden="true">
+                  <mat-icon>payments</mat-icon>
+                </div>
+              </div>
+              <div class="kpi-value">
+                {{ labor.currencySymbol }}{{ labor.todayWageExpense | number: "1.0-2" }}
+                <span
+                  class="kpi-badge"
+                  [class.kpi-badge-draft]="labor.todayStatus === 'DRAFT'"
+                  [class.kpi-badge-notrecorded]="labor.todayStatus === 'NOT_RECORDED'"
+                >
+                  {{ labor.todayStatus }}
+                </span>
+              </div>
+              <p class="kpi-subtext">
+                @if (labor.todayStatus === 'FINALIZED') { Approved earnings locked }
+                @else if (labor.todayStatus === 'DRAFT') { Estimated pending finalization }
+                @else { No attendance recorded today }
+              </p>
+            </mat-card-content>
+          </mat-card>
+        }
       </div>
 
-      <!-- Operational Grid: Crop Allocation (Left) + Active Cycles (Right) -->
+      <!-- Operational Grid: Crop Allocation + Active Cycles + Labor Pulse -->
       <div class="dashboard-operational-grid">
-        <!-- Left: Crop & Variety Land Allocation -->
+        <!-- Crop & Variety Land Allocation -->
         <mat-card class="operational-card">
           <mat-card-content>
             <div class="card-title-bar">
@@ -251,7 +351,7 @@
           </mat-card-content>
         </mat-card>
 
-        <!-- Right: Active Crop Cycles -->
+        <!-- Active Crop Cycles -->
         <mat-card class="operational-card">
           <mat-card-content>
             <div class="card-title-bar">
@@ -342,7 +442,148 @@
             }
           </mat-card-content>
         </mat-card>
+
+        <!-- Farm Labor & Attendance 7-Day Trend Card -->
+        @if (s.labor; as labor) {
+          <mat-card class="operational-card labor-trend-card">
+            <mat-card-content>
+              <div class="card-title-bar">
+                <div>
+                  <p class="card-eyebrow">Labor Operations</p>
+                  <h2>Labor & Attendance Pulse</h2>
+                </div>
+                <a mat-stroked-button routerLink="/labor/attendance/history" class="view-all-link">
+                  History <mat-icon>arrow_forward</mat-icon>
+                </a>
+              </div>
+
+              <!-- 7-Day Trend Grid -->
+              <div class="trend-section">
+                <span class="section-label">7-Day Headcount & Wage Trend</span>
+                <div class="trend-grid">
+                  @for (day of labor.recentDaysTrend; track day.date) {
+                    <div class="trend-day-item" [class.is-today]="day.date === labor.recentDaysTrend[6].date">
+                      <div class="day-header">
+                        <span class="day-date">{{ day.date | date: "dd MMM" }}</span>
+                        <span
+                          class="day-status-dot"
+                          [class.dot-finalized]="day.status === 'FINALIZED'"
+                          [class.dot-draft]="day.status === 'DRAFT'"
+                        ></span>
+                      </div>
+                      <div class="day-bar-wrap">
+                        <div
+                          class="day-bar-fill"
+                          [style.height.%]="(day.wageExpense / getMaxTrendWages()) * 100"
+                        ></div>
+                      </div>
+                      <div class="day-metrics">
+                        <strong class="day-workers">{{ day.workedCount }}w</strong>
+                        <span class="day-wages">{{ labor.currencySymbol }}{{ day.wageExpense | number: "1.0-0" }}</span>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <!-- Skill Category Breakdown -->
+              @if (labor.skillMix.length > 0) {
+                <div class="skill-mix-section">
+                  <span class="section-label">Today's Category Mix</span>
+                  <div class="skill-chips">
+                    @for (cat of labor.skillMix; track cat.categoryName) {
+                      <div class="skill-chip">
+                        <span class="skill-name">{{ cat.categoryName }}</span>
+                        <span class="skill-count">{{ cat.workerCount }}</span>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+
+              <!-- Labor Quick Actions -->
+              <div class="labor-quick-actions">
+                <a mat-stroked-button routerLink="/labor/attendance" [queryParams]="selectedFarmId() ? { farmId: selectedFarmId() } : null">
+                  <mat-icon>edit_calendar</mat-icon> Daily Roster
+                </a>
+                <a mat-stroked-button routerLink="/labor/workers">
+                  <mat-icon>group</mat-icon> Workers
+                </a>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        }
       </div>
+
+      <!-- All Farms Labor Attendance Matrix (visible when All Farms selected) -->
+      @if (!selectedFarmId() && s.labor?.farmSummaries; as farmSummaries) {
+        @if (farmSummaries.length > 0) {
+          <mat-card class="farm-table-card">
+            <mat-card-content>
+              <div class="card-title-bar">
+                <div>
+                  <p class="card-eyebrow">Workforce Deployment</p>
+                  <h2>Farm Labor Today Matrix</h2>
+                </div>
+                <a mat-stroked-button routerLink="/labor/attendance" class="view-all-link">
+                  Open Attendance <mat-icon>arrow_forward</mat-icon>
+                </a>
+              </div>
+
+              <div class="table-responsive">
+                <table class="utilization-table">
+                  <thead>
+                    <tr>
+                      <th>Farm</th>
+                      <th>Assigned Crew</th>
+                      <th>Worked Today</th>
+                      <th>Today's Wage Expense</th>
+                      <th>Attendance Status</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (fs of farmSummaries; track fs.farmId) {
+                      <tr>
+                        <td class="farm-cell">
+                          <strong>{{ fs.farmName }}</strong>
+                          <span class="code-sub">{{ fs.farmCode }}</span>
+                        </td>
+                        <td>
+                          <strong>{{ fs.assignedCount }}</strong> active workers
+                        </td>
+                        <td>
+                          <span class="allocated-val">
+                            {{ fs.workedCount }} present
+                          </span>
+                        </td>
+                        <td>
+                          <strong>{{ s.labor?.currencySymbol }}{{ fs.todayWageExpense | number: "1.2-2" }}</strong>
+                        </td>
+                        <td>
+                          <span
+                            class="status-tag"
+                            [class.status-tag-active]="fs.status === 'FINALIZED'"
+                            [class.status-tag-draft]="fs.status === 'DRAFT'"
+                            [class.status-tag-empty]="fs.status === 'NOT_RECORDED'"
+                          >
+                            {{ fs.status }}
+                          </span>
+                        </td>
+                        <td>
+                          <a mat-button color="primary" routerLink="/labor/attendance" [queryParams]="{ farmId: fs.farmId }">
+                            Roster <mat-icon>chevron_right</mat-icon>
+                          </a>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        }
+      }
 
       <!-- Farm & Land Utilization Table Section -->
       @if (s.farmUtilizations.length > 0) {
