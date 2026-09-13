@@ -226,7 +226,16 @@ export class BreadcrumbService {
 
       case "labor":
         items.push({ label: "Labor", route: "/labor" });
-        if (segments[1] === "workers") {
+        if (segments[1] === "attendance") {
+          items.push({ label: "Daily Attendance", route: "/labor/attendance" });
+          if (segments[2] === "history") {
+            items.push({ label: "Attendance History" });
+          } else if (segments[2]) {
+            const attId = segments[2];
+            const attName = this.labelCache.get(attId) ?? "Attendance details";
+            items.push({ label: attName });
+          }
+        } else if (segments[1] === "workers") {
           items.push({ label: "Workers", route: "/labor/workers" });
           if (segments[2] === "new") {
             items.push({ label: "Add worker" });

@@ -1,5 +1,6 @@
 using FarmManagement.Application.DTOs.Labor;
 using FarmManagement.Domain.Entities;
+using FarmManagement.Domain.Enums;
 
 namespace FarmManagement.Application.Interfaces.Labor;
 
@@ -47,6 +48,21 @@ public interface IAttendanceStore
         Guid organizationId,
         Guid farmId,
         DateOnly attendanceDate,
+        CancellationToken cancellationToken = default);
+
+    Task<(IReadOnlyList<LaborAttendance> Items, int TotalCount)> ListAttendanceHistoryAsync(
+        Guid organizationId,
+        Guid? farmId,
+        Guid? workerId,
+        DateOnly? fromDate,
+        DateOnly? toDate,
+        AttendanceType? attendanceType,
+        AttendanceStatus? status,
+        string? search,
+        string? sortBy,
+        bool sortDescending,
+        int skip,
+        int take,
         CancellationToken cancellationToken = default);
 
     Task<Worker?> FindWorkerWithAssignmentAsync(

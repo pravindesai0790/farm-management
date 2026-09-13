@@ -178,8 +178,14 @@ export class MainLayoutComponent {
           exactMatch: true,
           children: [
             {
-              label: "Attendance",
+              label: "Daily Attendance",
               route: "/labor/attendance",
+              exactMatch: true,
+              permissions: ["Attendance.View"],
+            },
+            {
+              label: "Attendance History",
+              route: "/labor/attendance/history",
               permissions: ["Attendance.View"],
             },
             {

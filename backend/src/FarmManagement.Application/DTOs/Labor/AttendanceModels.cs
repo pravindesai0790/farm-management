@@ -2,6 +2,19 @@ namespace FarmManagement.Application.DTOs.Labor;
 
 public sealed record AttendanceActor(Guid UserId, Guid OrganizationId);
 
+public sealed record AttendanceHistoryQuery(
+    Guid? FarmId = null,
+    Guid? WorkerId = null,
+    DateOnly? FromDate = null,
+    DateOnly? ToDate = null,
+    string? AttendanceType = null,
+    string? Status = null,
+    string? Search = null,
+    string? SortBy = null,
+    bool SortDescending = false,
+    int Page = 1,
+    int PageSize = 20);
+
 public sealed record AttendanceEligibleWorkerResponse(
     Guid WorkerId,
     string DisplayName,

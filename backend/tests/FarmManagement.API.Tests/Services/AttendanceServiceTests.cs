@@ -1943,6 +1943,49 @@ public sealed class AttendanceServiceTests
         Assert.Equal("Finalized hourly attendance", result.EarningsLedger.Description);
     }
 
+    [Fact]
+    public async Task GetAttendanceHistoryAsync_ReturnsPagedHistoryRecords()
+    {
+        var store = new FakeAttendanceStore();
+        var farm = CreateFarm();
+        store.Farms.Add(farm);
+        var worker1 = CreateWorker(firstName: "Worker", lastName: "One", mobileNumber: "9876543210");
+        var worker2 = CreateWorker(firstName: "Worker", lastName: "Two", mobileNumber: "9876543211");
+        store.Workers.Add(worker1);
+        store.Workers.Add(worker2);
+
+        var date1 = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-2));
+        var date2 = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1));
+
+        store.Attendances.Add(LaborAttendance.CreateFinalized(
+            _organizationId, farm.Id, worker1.Id, date1, AttendanceType.FullDay, _userId, calculatedRate: 500m, calculatedAmount: 500m));
+        store.Attendances.Add(LaborAttendance.CreateDraft(
+            _organizationId, farm.Id, worker2.Id, date2, AttendanceType.HalfDay, _userId));
+
+        var service = CreateService(store);
+        var query = new AttendanceHistoryQuery(FarmId: farm.Id, Page: 1, PageSize: 10);
+        var result = await service.GetAttendanceHistoryAsync(CreateActor(), query);
+
+        Assert.NotNull(result);
+        Assert.Equal(2, result.TotalCount);
+        Assert.Equal(2, result.Items.Count);
+        Assert.Equal(1, result.Page);
+        Assert.Equal(10, result.PageSize);
+    }
+
+    [Fact]
+    public async Task GetAttendanceHistoryAsync_WhenInvalidDateRange_ThrowsValidationException()
+    {
+        var store = new FakeAttendanceStore();
+        var service = CreateService(store);
+        var fromDate = new DateOnly(2026, 9, 10);
+        var toDate = new DateOnly(2026, 9, 1);
+
+        var query = new AttendanceHistoryQuery(FromDate: fromDate, ToDate: toDate);
+
+        await Assert.ThrowsAsync<ValidationException>(() => service.GetAttendanceHistoryAsync(CreateActor(), query));
+    }
+
     #endregion
 
     #region Fake Store & Integration
@@ -2197,6 +2240,78 @@ public sealed class AttendanceServiceTests
             DateOnly attendanceDate,
             CancellationToken cancellationToken = default) =>
             ListDailyAttendanceAsync(organizationId, farmId, attendanceDate, cancellationToken);
+
+        public Task<(IReadOnlyList<LaborAttendance> Items, int TotalCount)> ListAttendanceHistoryAsync(
+            Guid organizationId,
+            Guid? farmId,
+            Guid? workerId,
+            DateOnly? fromDate,
+            DateOnly? toDate,
+            AttendanceType? attendanceType,
+            AttendanceStatus? status,
+            string? search,
+            string? sortBy,
+            bool sortDescending,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default)
+        {
+            var query = Attendances.Where(a => a.OrganizationId == organizationId);
+
+            if (farmId.HasValue && farmId.Value != Guid.Empty)
+            {
+                query = query.Where(a => a.FarmId == farmId.Value);
+            }
+
+            if (workerId.HasValue && workerId.Value != Guid.Empty)
+            {
+                query = query.Where(a => a.WorkerId == workerId.Value);
+            }
+
+            if (fromDate.HasValue)
+            {
+                query = query.Where(a => a.AttendanceDate >= fromDate.Value);
+            }
+
+            if (toDate.HasValue)
+            {
+                query = query.Where(a => a.AttendanceDate <= toDate.Value);
+            }
+
+            if (attendanceType.HasValue)
+            {
+                query = query.Where(a => a.AttendanceType == attendanceType.Value);
+            }
+
+            if (status.HasValue)
+            {
+                query = query.Where(a => a.Status == status.Value);
+            }
+
+            foreach (var att in query)
+            {
+                AttachNavigations(att);
+            }
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var norm = search.Trim().ToLower();
+                query = query.Where(a =>
+                    (a.Worker != null && (
+                        a.Worker.DisplayName.ToLower().Contains(norm) ||
+                        a.Worker.FirstName.ToLower().Contains(norm) ||
+                        (a.Worker.LastName != null && a.Worker.LastName.ToLower().Contains(norm)) ||
+                        (a.Worker.MobileNumber != null && a.Worker.MobileNumber.ToLower().Contains(norm))
+                    )) ||
+                    (a.Farm != null && a.Farm.Name.ToLower().Contains(norm)));
+            }
+
+            var list = query.ToList();
+            var totalCount = list.Count;
+            var items = list.OrderByDescending(a => a.AttendanceDate).Skip(skip).Take(take).ToList();
+
+            return Task.FromResult<(IReadOnlyList<LaborAttendance> Items, int TotalCount)>((items, totalCount));
+        }
 
         public Task<Worker?> FindWorkerWithAssignmentAsync(
             Guid organizationId,

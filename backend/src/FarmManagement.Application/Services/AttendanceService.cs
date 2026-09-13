@@ -129,6 +129,64 @@ public sealed class AttendanceService(
             Records: mappedRecords);
     }
 
+    public async Task<PagedResponse<AttendanceRecordResponse>> GetAttendanceHistoryAsync(
+        AttendanceActor actor,
+        AttendanceHistoryQuery query,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+
+        if (query.Page < 1)
+        {
+            throw Validation("page", "Page must be at least 1.");
+        }
+
+        var pageSize = NormalizePageSize(query.PageSize);
+
+        if (query.FromDate.HasValue && query.ToDate.HasValue && query.FromDate.Value > query.ToDate.Value)
+        {
+            throw Validation("toDate", "To date cannot be earlier than from date.");
+        }
+
+        AttendanceType? parsedType = null;
+        if (!string.IsNullOrWhiteSpace(query.AttendanceType) && !query.AttendanceType.Equals("ALL", StringComparison.OrdinalIgnoreCase))
+        {
+            parsedType = ParseAttendanceType(query.AttendanceType);
+        }
+
+        AttendanceStatus? parsedStatus = null;
+        if (!string.IsNullOrWhiteSpace(query.Status) && !query.Status.Equals("ALL", StringComparison.OrdinalIgnoreCase))
+        {
+            parsedStatus = ParseAttendanceStatus(query.Status);
+        }
+
+        var normalizedSearch = string.IsNullOrWhiteSpace(query.Search) ? null : query.Search.Trim();
+        var skip = (query.Page - 1) * pageSize;
+
+        var (items, totalCount) = await store.ListAttendanceHistoryAsync(
+            actor.OrganizationId,
+            query.FarmId,
+            query.WorkerId,
+            query.FromDate,
+            query.ToDate,
+            parsedType,
+            parsedStatus,
+            normalizedSearch,
+            query.SortBy,
+            query.SortDescending,
+            skip,
+            pageSize,
+            cancellationToken);
+
+        var mappedRecords = items.Select(r => MapToResponse(r, r.Farm?.Name ?? string.Empty)).ToArray();
+
+        return new PagedResponse<AttendanceRecordResponse>(
+            mappedRecords,
+            query.Page,
+            pageSize,
+            totalCount);
+    }
+
     public async Task<AttendanceDetailResponse> GetAttendanceByIdAsync(
         AttendanceActor actor,
         Guid id,
@@ -1532,6 +1590,13 @@ public sealed class AttendanceService(
             CreatedBy: a.CreatedBy,
             UpdatedAt: a.UpdatedAt,
             UpdatedBy: a.UpdatedBy);
+
+    private static AttendanceStatus ParseAttendanceStatus(string value) => value.Trim().ToUpperInvariant() switch
+    {
+        "DRAFT" => AttendanceStatus.Draft,
+        "FINALIZED" => AttendanceStatus.Finalized,
+        _ => throw Validation("status", $"Invalid attendance status '{value}'. Supported values are DRAFT, FINALIZED.")
+    };
 
     private static string ConvertEmploymentTypeToString(EmploymentType type) => type switch
     {

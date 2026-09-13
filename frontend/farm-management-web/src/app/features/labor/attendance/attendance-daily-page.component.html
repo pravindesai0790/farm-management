@@ -26,6 +26,11 @@
 
     <!-- Primary Action Buttons in Header -->
     <div class="header-actions">
+      <a mat-stroked-button color="primary" routerLink="/labor/attendance/history">
+        <mat-icon>history</mat-icon>
+        Attendance History
+      </a>
+
       @if (
         !isFinalized() &&
         (permissionService.has("Attendance.Create") ||

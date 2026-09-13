@@ -315,6 +315,20 @@ export interface AttendanceGridRow {
   hoursError?: string | null;
 }
 
+export interface AttendanceHistoryFilter {
+  readonly farmId?: string | null;
+  readonly workerId?: string | null;
+  readonly fromDate?: string | null;
+  readonly toDate?: string | null;
+  readonly attendanceType?: string | null;
+  readonly status?: string | null;
+  readonly search?: string | null;
+  readonly sortBy?: string | null;
+  readonly sortDescending?: boolean;
+  readonly page?: number;
+  readonly pageSize?: number;
+}
+
 export const ATTENDANCE_TYPE_OPTIONS: readonly {
   readonly value: AttendanceType;
   readonly label: string;

@@ -1,0 +1,270 @@
+<div class="page-container">
+  <!-- Page Header -->
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Workforce Operations &bull; Attendance</p>
+      <h2>Attendance History</h2>
+      <p class="subtitle">
+        Search, filter, and audit historical labor attendance records across your organization.
+      </p>
+    </div>
+    <div class="header-actions">
+      <a mat-stroked-button color="primary" routerLink="/labor/attendance">
+        <mat-icon>today</mat-icon>
+        Daily Attendance
+      </a>
+    </div>
+  </div>
+
+  @if (errorMessage()) {
+    <app-error-alert [error]="errorMessage()!" fallback="Failed to load attendance history." />
+  }
+
+  <!-- Filters Card -->
+  <mat-card class="filters-card">
+    <mat-card-content>
+      <div class="filters-grid">
+        <!-- Date Range Filter -->
+        <mat-form-field appearance="outline" class="filter-field date-range-field">
+          <mat-label>Date Range</mat-label>
+          <mat-date-range-input [rangePicker]="rangePicker">
+            <input
+              matStartDate
+              placeholder="From Date"
+              [ngModel]="fromDate()"
+              (ngModelChange)="onFromDateChange($event)"
+            />
+            <input
+              matEndDate
+              placeholder="To Date"
+              [ngModel]="toDate()"
+              (ngModelChange)="onToDateChange($event)"
+            />
+          </mat-date-range-input>
+          <mat-datepicker-toggle matIconSuffix [for]="rangePicker" />
+          <mat-date-range-picker #rangePicker />
+        </mat-form-field>
+
+        <!-- Farm Filter -->
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Farm</mat-label>
+          <mat-select [value]="farmId()" (valueChange)="onFarmChange($event)">
+            <mat-option value="">All Farms</mat-option>
+            @for (farm of farms(); track farm.id) {
+              <mat-option [value]="farm.id">{{ farm.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Worker Filter -->
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Worker</mat-label>
+          <mat-select [value]="workerId()" (valueChange)="onWorkerChange($event)">
+            <mat-option value="">All Workers</mat-option>
+            @for (w of workers(); track w.id) {
+              <mat-option [value]="w.id">{{ w.displayName }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Attendance Type Filter -->
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Attendance Type</mat-label>
+          <mat-select [value]="attendanceType()" (valueChange)="onAttendanceTypeChange($event)">
+            <mat-option value="">All Types</mat-option>
+            @for (opt of attendanceTypeOptions; track opt.value) {
+              <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Status Filter -->
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Status</mat-label>
+          <mat-select [value]="status()" (valueChange)="onStatusChange($event)">
+            <mat-option value="">All Statuses</mat-option>
+            <mat-option value="DRAFT">Draft</mat-option>
+            <mat-option value="FINALIZED">Finalized</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Search Input -->
+        <mat-form-field appearance="outline" class="filter-field search-field">
+          <mat-label>Search</mat-label>
+          <input
+            matInput
+            [value]="search()"
+            (input)="onSearchInput($event)"
+            placeholder="Search worker name, mobile, farm..."
+          />
+          <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
+
+        @if (hasActiveFilters()) {
+          <div class="clear-btn-wrapper">
+            <button mat-stroked-button color="warn" (click)="clearFilters()">
+              <mat-icon>clear</mat-icon> Clear Filters
+            </button>
+          </div>
+        }
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Table Container -->
+  <mat-card class="table-card">
+    <mat-card-content>
+      @if (isLoading()) {
+        <div class="loading-state">
+          <mat-spinner diameter="36" />
+          <p>Loading attendance history…</p>
+        </div>
+      } @else if (records().length === 0) {
+        <div class="empty-state">
+          <mat-icon class="empty-icon">history</mat-icon>
+          <h3>No Attendance Records Found</h3>
+          <p>Try adjusting your search criteria or date filters, or record new daily attendance.</p>
+          @if (hasActiveFilters()) {
+            <button mat-stroked-button color="primary" (click)="clearFilters()">
+              <mat-icon>clear_all</mat-icon> Clear All Filters
+            </button>
+          } @else {
+            <a mat-stroked-button color="primary" routerLink="/labor/attendance">
+              <mat-icon>today</mat-icon> Go to Daily Attendance
+            </a>
+          }
+        </div>
+      } @else {
+        <div class="table-wrap">
+          <table
+            mat-table
+            [dataSource]="records()"
+            matSort
+            [matSortActive]="sortBy()"
+            [matSortDirection]="sortDescending() ? 'desc' : 'asc'"
+            (matSortChange)="onSortChange($event)"
+            class="history-table"
+          >
+            <!-- Date Column -->
+            <ng-container matColumnDef="date">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header="date">Date</th>
+              <td mat-cell *matCellDef="let r">
+                <span class="date-text">{{ r.attendanceDate | date: 'dd-MMM-yyyy' }}</span>
+              </td>
+            </ng-container>
+
+            <!-- Farm Column -->
+            <ng-container matColumnDef="farm">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header="farm">Farm</th>
+              <td mat-cell *matCellDef="let r">
+                <strong>{{ r.farmName }}</strong>
+              </td>
+            </ng-container>
+
+            <!-- Worker Column -->
+            <ng-container matColumnDef="worker">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header="worker">Worker</th>
+              <td mat-cell *matCellDef="let r">
+                <div class="worker-cell">
+                  <span class="worker-name">{{ r.workerDisplayName }}</span>
+                  @if (r.laborCategoryName) {
+                    <small class="category-subtext">{{ r.laborCategoryName }}</small>
+                  }
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- Gender Column -->
+            <ng-container matColumnDef="gender">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header="gender">Gender</th>
+              <td mat-cell *matCellDef="let r">
+                <span class="gender-tag">{{ r.gender }}</span>
+              </td>
+            </ng-container>
+
+            <!-- Attendance Type Column -->
+            <ng-container matColumnDef="attendanceType">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header="attendanceType">Attendance Type</th>
+              <td mat-cell *matCellDef="let r">
+                <span class="type-badge" [ngClass]="getTypeBadgeClass(r.attendanceType)">
+                  {{ formatType(r.attendanceType) }}
+                </span>
+              </td>
+            </ng-container>
+
+            <!-- Hours Column -->
+            <ng-container matColumnDef="hours">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header="hours">Hours</th>
+              <td mat-cell *matCellDef="let r">
+                <span>{{ r.workingHours ? r.workingHours + ' hrs' : '—' }}</span>
+              </td>
+            </ng-container>
+
+            <!-- Earnings Column -->
+            <ng-container matColumnDef="earnings">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header="earnings" class="text-right">Earnings</th>
+              <td mat-cell *matCellDef="let r" class="text-right">
+                @if (r.calculatedAmount !== null && r.calculatedAmount !== undefined && r.attendanceType !== 'NOT_WORKED') {
+                  <span class="earnings-amount">
+                    {{ r.currencySymbol || '₹' }}{{ r.calculatedAmount | number: '1.2-2' }}
+                  </span>
+                } @else {
+                  <span class="text-muted">&mdash;</span>
+                }
+              </td>
+            </ng-container>
+
+            <!-- Status Column -->
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header="status">Status</th>
+              <td mat-cell *matCellDef="let r">
+                <span
+                  class="status-pill"
+                  [class.status-pill-finalized]="r.status?.toUpperCase() === 'FINALIZED'"
+                  [class.status-pill-draft]="r.status?.toUpperCase() === 'DRAFT'"
+                >
+                  <mat-icon class="pill-icon">
+                    {{ r.status?.toUpperCase() === 'FINALIZED' ? 'verified' : 'edit_note' }}
+                  </mat-icon>
+                  {{ formatStatus(r.status) }}
+                </span>
+              </td>
+            </ng-container>
+
+            <!-- Actions Column -->
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef class="actions-header">Actions</th>
+              <td mat-cell *matCellDef="let r" class="actions-cell" (click)="$event.stopPropagation()">
+                <a
+                  mat-icon-button
+                  [routerLink]="['/labor/attendance', r.id]"
+                  matTooltip="View attendance detail"
+                  aria-label="View attendance detail"
+                >
+                  <mat-icon>visibility</mat-icon>
+                </a>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr
+              mat-row
+              *matRowDef="let row; columns: displayedColumns"
+              class="clickable-row"
+              (click)="navigateToDetail(row.id)"
+            ></tr>
+          </table>
+        </div>
+
+        <mat-paginator
+          [length]="totalCount()"
+          [pageSize]="pageSize()"
+          [pageIndex]="pageIndex()"
+          [pageSizeOptions]="[10, 20, 50, 100]"
+          (page)="pageChanged($event)"
+          showFirstLastButtons
+        />
+      }
+    </mat-card-content>
+  </mat-card>
+</div>

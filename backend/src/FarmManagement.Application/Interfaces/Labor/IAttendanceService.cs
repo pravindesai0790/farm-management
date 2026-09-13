@@ -20,6 +20,11 @@ public interface IAttendanceService
         DateOnly attendanceDate,
         CancellationToken cancellationToken = default);
 
+    Task<PagedResponse<AttendanceRecordResponse>> GetAttendanceHistoryAsync(
+        AttendanceActor actor,
+        AttendanceHistoryQuery query,
+        CancellationToken cancellationToken = default);
+
     Task<AttendanceDetailResponse> GetAttendanceByIdAsync(
         AttendanceActor actor,
         Guid id,

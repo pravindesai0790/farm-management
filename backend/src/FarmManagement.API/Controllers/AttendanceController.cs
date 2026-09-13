@@ -73,6 +73,48 @@ public sealed class AttendanceController(
         return Ok(result);
     }
 
+    [HttpGet("history")]
+    [Authorize(Policy = "Permission:Attendance.View")]
+    public async Task<ActionResult<PagedResponse<AttendanceRecordResponse>>> GetHistory(
+        [FromQuery] Guid? farmId = null,
+        [FromQuery] Guid? workerId = null,
+        [FromQuery] DateOnly? fromDate = null,
+        [FromQuery] DateOnly? toDate = null,
+        [FromQuery] DateOnly? dateFrom = null,
+        [FromQuery] DateOnly? dateTo = null,
+        [FromQuery] string? attendanceType = null,
+        [FromQuery] string? status = null,
+        [FromQuery] string? search = null,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] bool sortDescending = false,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        var effectiveFrom = fromDate ?? dateFrom;
+        var effectiveTo = toDate ?? dateTo;
+
+        var query = new AttendanceHistoryQuery(
+            FarmId: farmId,
+            WorkerId: workerId,
+            FromDate: effectiveFrom,
+            ToDate: effectiveTo,
+            AttendanceType: attendanceType,
+            Status: status,
+            Search: search,
+            SortBy: sortBy,
+            SortDescending: sortDescending,
+            Page: page,
+            PageSize: pageSize);
+
+        var result = await attendanceService.GetAttendanceHistoryAsync(
+            GetUserContext(),
+            query,
+            cancellationToken);
+
+        return Ok(result);
+    }
+
     [HttpGet("{id:guid}")]
     [Authorize(Policy = "Permission:Attendance.View")]
     public async Task<ActionResult<AttendanceDetailResponse>> GetAttendanceById(

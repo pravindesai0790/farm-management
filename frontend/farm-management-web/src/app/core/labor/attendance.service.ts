@@ -6,6 +6,7 @@ import { PagedResponse } from "../models/paged-response.model";
 import {
   AttendanceDetail,
   AttendanceEligibleWorker,
+  AttendanceHistoryFilter,
   AttendanceRecord,
   AttendanceWagePreviewBatchRequest,
   AttendanceWagePreviewBatchResponse,
@@ -37,6 +38,51 @@ export class AttendanceService {
 
     return this.http.get<DailyAttendanceResponse>(
       `${this.api}/attendance/daily`,
+      { params },
+    );
+  }
+
+  getAttendanceHistory(
+    filter: AttendanceHistoryFilter,
+  ): Observable<PagedResponse<AttendanceRecord>> {
+    let params = new HttpParams();
+
+    if (filter.farmId && filter.farmId.trim()) {
+      params = params.set("farmId", filter.farmId.trim());
+    }
+    if (filter.workerId && filter.workerId.trim()) {
+      params = params.set("workerId", filter.workerId.trim());
+    }
+    if (filter.fromDate && filter.fromDate.trim()) {
+      params = params.set("fromDate", filter.fromDate.trim());
+    }
+    if (filter.toDate && filter.toDate.trim()) {
+      params = params.set("toDate", filter.toDate.trim());
+    }
+    if (filter.attendanceType && filter.attendanceType.trim()) {
+      params = params.set("attendanceType", filter.attendanceType.trim());
+    }
+    if (filter.status && filter.status.trim()) {
+      params = params.set("status", filter.status.trim());
+    }
+    if (filter.search && filter.search.trim()) {
+      params = params.set("search", filter.search.trim());
+    }
+    if (filter.sortBy && filter.sortBy.trim()) {
+      params = params.set("sortBy", filter.sortBy.trim());
+    }
+    if (filter.sortDescending !== undefined && filter.sortDescending !== null) {
+      params = params.set("sortDescending", filter.sortDescending.toString());
+    }
+    if (filter.page !== undefined && filter.page !== null) {
+      params = params.set("page", Math.max(filter.page, 1).toString());
+    }
+    if (filter.pageSize !== undefined && filter.pageSize !== null) {
+      params = params.set("pageSize", Math.min(Math.max(filter.pageSize, 1), 100).toString());
+    }
+
+    return this.http.get<PagedResponse<AttendanceRecord>>(
+      `${this.api}/attendance/history`,
       { params },
     );
   }
