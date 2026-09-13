@@ -1,0 +1,227 @@
+@if (isLoading()) {
+  <div class="loading-state">
+    <mat-spinner diameter="40" />
+    <span>Loading attendance details for editing…</span>
+  </div>
+} @else if (errorMessage() && !attendance()) {
+  <div class="error-container">
+    <app-error-alert
+      [error]="errorMessage()!"
+      fallback="Failed to load attendance record."
+    />
+    <div class="error-actions">
+      <a mat-stroked-button routerLink="/labor/attendance">
+        <mat-icon>arrow_back</mat-icon>
+        Back to Daily Attendance
+      </a>
+    </div>
+  </div>
+} @else if (attendance(); as record) {
+  <div class="page-container">
+    <!-- Header -->
+    <div class="editor-header">
+      <div class="breadcrumb">
+        <a [routerLink]="['/labor/attendance', record.id]">
+          <mat-icon>arrow_back</mat-icon>
+          Back to Attendance Details
+        </a>
+      </div>
+      <div class="title-row">
+        <h2>Edit Attendance Draft</h2>
+        <span
+          class="status-pill"
+          [class.status-pill-finalized]="isFinalized()"
+          [class.status-pill-draft]="isDraft()"
+        >
+          <mat-icon class="pill-icon">{{ isFinalized() ? 'verified' : 'edit_note' }}</mat-icon>
+          {{ formatStatus(record.status) }}
+        </span>
+      </div>
+      <p class="subtitle">
+        Worker: <strong>{{ record.workerDisplayName }}</strong> &bull; Date: <strong>{{ record.attendanceDate | date: 'dd-MMM-yyyy' }}</strong> &bull; Farm: <strong>{{ record.farmName }}</strong>
+      </p>
+    </div>
+
+    <!-- Finalized Record Lock Alert -->
+    @if (isFinalized()) {
+      <mat-card class="finalized-lock-card">
+        <mat-card-content>
+          <div class="lock-icon-wrap">
+            <mat-icon>lock</mat-icon>
+          </div>
+          <div class="lock-info">
+            <h3>Finalized Attendance Cannot Be Edited</h3>
+            <p>
+              This attendance record was finalized on {{ record.finalizedAt | date: 'dd-MMM-yyyy HH:mm' }} and its earnings have been posted to the worker ledger. Normal editing is disallowed when FINALIZED.
+            </p>
+            <div class="lock-actions">
+              <a mat-flat-button color="primary" [routerLink]="['/labor/attendance', record.id]">
+                <mat-icon>visibility</mat-icon>
+                View Attendance Details
+              </a>
+              <a mat-stroked-button routerLink="/labor/attendance">
+                Back to Daily Attendance
+              </a>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    } @else {
+      <!-- Editor Form -->
+      <mat-card class="form-card">
+        <mat-card-content class="form-card-content">
+          @if (errorMessage()) {
+            <app-error-alert
+              [error]="errorMessage()!"
+              fallback="Failed to update draft attendance."
+            />
+          }
+
+          <!-- Context Summary Bar -->
+          <div class="summary-strip">
+            <div class="summary-col">
+              <span class="col-label">Worker Name</span>
+              <span class="col-val">{{ record.workerDisplayName }}</span>
+            </div>
+            <div class="summary-col">
+              <span class="col-label">Farm</span>
+              <span class="col-val">{{ record.farmName }}</span>
+            </div>
+            <div class="summary-col">
+              <span class="col-label">Labor Category</span>
+              <span class="col-val">{{ record.laborCategoryName || "General" }}</span>
+            </div>
+            <div class="summary-col">
+              <span class="col-label">Employment Type</span>
+              <span class="col-val">{{ record.employmentType }}</span>
+            </div>
+          </div>
+
+          <form [formGroup]="form" class="editor-form">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Attendance Type</mat-label>
+              <mat-select formControlName="attendanceType">
+                <mat-select-trigger>
+                  {{ formatType(selectedAttendanceType()) }}
+                </mat-select-trigger>
+                @for (option of typeOptions; track option.value) {
+                  <mat-option [value]="option.value">
+                    <div class="option-row">
+                      <span class="option-label">{{ option.label }}</span>
+                      <span class="option-desc">{{ option.description }}</span>
+                    </div>
+                  </mat-option>
+                }
+              </mat-select>
+              @if (form.controls.attendanceType.hasError("required")) {
+                <mat-error>Attendance type is required.</mat-error>
+              }
+            </mat-form-field>
+
+            @if (isHourly()) {
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Working Hours</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  step="0.5"
+                  min="0.5"
+                  max="24"
+                  formControlName="workingHours"
+                  placeholder="e.g. 8"
+                />
+                <mat-icon matSuffix>schedule</mat-icon>
+                @if (form.controls.workingHours.hasError("required")) {
+                  <mat-error>Working hours are required for hourly attendance.</mat-error>
+                } @else if (form.controls.workingHours.hasError("min")) {
+                  <mat-error>Working hours must be at least 0.5 hours.</mat-error>
+                } @else if (form.controls.workingHours.hasError("max")) {
+                  <mat-error>Working hours cannot exceed 24 hours.</mat-error>
+                }
+              </mat-form-field>
+            }
+
+            <!-- Backend Wage Preview Box -->
+            <div class="wage-preview-panel" [class.panel-error]="!!previewError()">
+              @if (previewLoading()) {
+                <div class="preview-loading">
+                  <mat-spinner diameter="20"></mat-spinner>
+                  <span>Recalculating backend wage preview…</span>
+                </div>
+              } @else if (previewError(); as wageErr) {
+                <div class="preview-error">
+                  <mat-icon class="error-icon">warning_amber</mat-icon>
+                  <div class="error-text">
+                    <strong>Wage Rate Unavailable</strong>
+                    <span>{{ wageErr }}</span>
+                  </div>
+                </div>
+              } @else if (preview(); as prev) {
+                <div class="preview-result">
+                  <div class="preview-item">
+                    <span class="prev-label">Resolved Rate:</span>
+                    <span class="prev-val">
+                      {{ prev.currencySymbol || record.currencySymbol || "₹" }}{{ prev.rate | number: "1.2-2" }}
+                    </span>
+                  </div>
+                  <div class="preview-item highlight">
+                    <span class="prev-label">Estimated Gross Earnings:</span>
+                    <span class="prev-val amount">
+                      {{ prev.currencySymbol || record.currencySymbol || "₹" }}{{ prev.calculatedAmount | number: "1.2-2" }}
+                    </span>
+                  </div>
+                </div>
+              } @else {
+                <div class="preview-initial">
+                  <span class="prev-label">Estimated Gross:</span>
+                  <span class="prev-val amount">
+                    {{ record.currencySymbol || "₹" }}{{ (record.calculatedAmount ?? 0) | number: "1.2-2" }}
+                  </span>
+                </div>
+              }
+            </div>
+
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Notes (Optional)</mat-label>
+              <textarea
+                matInput
+                rows="3"
+                formControlName="notes"
+                maxlength="500"
+                placeholder="Add work context or specific shift notes…"
+              ></textarea>
+              <mat-hint align="end">{{ (form.controls.notes.value?.length || 0) }}/500</mat-hint>
+            </mat-form-field>
+
+            <div class="form-actions">
+              <a
+                mat-button
+                [routerLink]="['/labor/attendance', record.id]"
+                [disabled]="submitting()"
+              >
+                Cancel
+              </a>
+              <button
+                mat-flat-button
+                color="primary"
+                type="button"
+                [disabled]="form.invalid || submitting() || !canEdit() || (selectedAttendanceType() !== 'NOT_WORKED' && !!previewError())"
+                (click)="onSave()"
+              >
+                @if (submitting()) {
+                  <mat-spinner diameter="18" class="btn-spinner"></mat-spinner>
+                  <span>Saving Changes…</span>
+                } @else {
+                  <ng-container>
+                    <mat-icon>save</mat-icon>
+                    <span>Save Draft Changes</span>
+                  </ng-container>
+                }
+              </button>
+            </div>
+          </form>
+        </mat-card-content>
+      </mat-card>
+    }
+  </div>
+}

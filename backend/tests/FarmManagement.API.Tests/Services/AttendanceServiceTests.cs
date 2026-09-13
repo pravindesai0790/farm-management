@@ -775,6 +775,97 @@ public sealed class AttendanceServiceTests
         Assert.Equal("Switched to half day", result.Notes);
     }
 
+    [Fact]
+    public async Task UpdateDraftAsync_WhenChangingToHourly_RecalculatesHourlyEarnings()
+    {
+        var store = new FakeAttendanceStore();
+        var farm = CreateFarm();
+        store.Farms.Add(farm);
+
+        var date = new DateOnly(2026, 9, 12);
+        var worker = CreateWorker();
+        AssignWorkerToFarm(worker, farm, new DateOnly(2026, 1, 1));
+        store.Workers.Add(worker);
+
+        var draft = LaborAttendance.CreateDraft(_organizationId, farm.Id, worker.Id, date, AttendanceType.FullDay, _userId, null, 500m, 500m);
+        store.Attendances.Add(draft);
+
+        var earnings = new FakeAttendanceEarningsIntegration
+        {
+            HourlyRate = 80m
+        };
+
+        var service = CreateService(store, earnings);
+        var req = new UpdateDraftAttendanceRequest("HOURLY", WorkingHours: 6.5m, Notes: "Partial day shift");
+
+        var result = await service.UpdateDraftAsync(CreateActor(), draft.Id, req);
+
+        Assert.Equal("HOURLY", result.AttendanceType);
+        Assert.Equal(6.5m, result.WorkingHours);
+        Assert.Equal(80m, result.CalculatedRate);
+        Assert.Equal(520m, result.CalculatedAmount);
+        Assert.Equal("Partial day shift", result.Notes);
+    }
+
+    [Fact]
+    public async Task UpdateDraftAsync_WhenReassigningWorker_ValidatesAssignmentAndUpdates()
+    {
+        var store = new FakeAttendanceStore();
+        var farm = CreateFarm();
+        store.Farms.Add(farm);
+
+        var date = new DateOnly(2026, 9, 12);
+        var worker1 = CreateWorker(displayName: "Worker One");
+        AssignWorkerToFarm(worker1, farm, new DateOnly(2026, 1, 1));
+        store.Workers.Add(worker1);
+
+        var worker2 = CreateWorker(displayName: "Worker Two");
+        AssignWorkerToFarm(worker2, farm, new DateOnly(2026, 1, 1));
+        store.Workers.Add(worker2);
+
+        var draft = LaborAttendance.CreateDraft(_organizationId, farm.Id, worker1.Id, date, AttendanceType.FullDay, _userId, null, 500m, 500m);
+        store.Attendances.Add(draft);
+
+        var service = CreateService(store);
+        var req = new UpdateDraftAttendanceRequest("FULL_DAY", WorkerId: worker2.Id);
+
+        var result = await service.UpdateDraftAsync(CreateActor(), draft.Id, req);
+
+        Assert.Equal(worker2.Id, result.WorkerId);
+        Assert.Equal("Worker Two", result.WorkerDisplayName);
+    }
+
+    [Fact]
+    public async Task UpdateDraftAsync_WhenReassignedWorkerAlreadyHasAttendance_ThrowsValidationException()
+    {
+        var store = new FakeAttendanceStore();
+        var farm = CreateFarm();
+        store.Farms.Add(farm);
+
+        var date = new DateOnly(2026, 9, 12);
+        var worker1 = CreateWorker(displayName: "Worker One");
+        AssignWorkerToFarm(worker1, farm, new DateOnly(2026, 1, 1));
+        store.Workers.Add(worker1);
+
+        var worker2 = CreateWorker(displayName: "Worker Two");
+        AssignWorkerToFarm(worker2, farm, new DateOnly(2026, 1, 1));
+        store.Workers.Add(worker2);
+
+        var draft1 = LaborAttendance.CreateDraft(_organizationId, farm.Id, worker1.Id, date, AttendanceType.FullDay, _userId, null, 500m, 500m);
+        var draft2 = LaborAttendance.CreateDraft(_organizationId, farm.Id, worker2.Id, date, AttendanceType.FullDay, _userId, null, 500m, 500m);
+        store.Attendances.Add(draft1);
+        store.Attendances.Add(draft2);
+
+        var service = CreateService(store);
+        var req = new UpdateDraftAttendanceRequest("FULL_DAY", WorkerId: worker2.Id);
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(() =>
+            service.UpdateDraftAsync(CreateActor(), draft1.Id, req));
+
+        Assert.NotNull(ex.Errors);
+        Assert.True(ex.Errors.ContainsKey("workerId"));
+    }
+
     #endregion
 
     #region Delete Draft Tests

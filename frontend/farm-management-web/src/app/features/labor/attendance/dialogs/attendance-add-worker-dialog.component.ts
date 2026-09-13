@@ -33,6 +33,7 @@ import {
   AttendanceEligibleWorker,
   AttendanceType,
   AttendanceWagePreviewResponse,
+  formatAttendanceType,
 } from "../../../../core/labor/attendance.models";
 import { AttendanceService } from "../../../../core/labor/attendance.service";
 import { getApiErrorMessage } from "../../../../core/models/api-error.model";
@@ -272,6 +273,9 @@ export interface AttendanceAddWorkerResult {
                   <mat-form-field appearance="outline" class="full-width">
                     <mat-label>Attendance Type</mat-label>
                     <mat-select formControlName="attendanceType">
+                      <mat-select-trigger>
+                        {{ formatType(configForm.controls.attendanceType.value) }}
+                      </mat-select-trigger>
                       @for (opt of attendanceTypeOptions; track opt.value) {
                         <mat-option [value]="opt.value">
                           {{ opt.label }} &mdash; {{ opt.description }}
@@ -984,5 +988,9 @@ export class AttendanceAddWorkerDialogComponent implements OnInit {
     };
 
     this.dialogRef.close(result);
+  }
+
+  formatType(type?: string | null): string {
+    return formatAttendanceType(type);
   }
 }

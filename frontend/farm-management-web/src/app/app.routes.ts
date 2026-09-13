@@ -404,6 +404,16 @@ export const routes: Routes = [
               ).then((module) => module.AttendanceHistoryPageComponent),
           },
           {
+            path: "attendance/:id/edit",
+            title: "Edit Attendance Draft",
+            canActivate: [permissionGuard],
+            data: { permission: "Attendance.Update" },
+            loadComponent: () =>
+              import(
+                "./features/labor/attendance/attendance-editor-page.component"
+              ).then((module) => module.AttendanceEditorPageComponent),
+          },
+          {
             path: "attendance/:id",
             title: "Attendance Details",
             canActivate: [permissionGuard],

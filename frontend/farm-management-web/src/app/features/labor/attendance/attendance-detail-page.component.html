@@ -47,15 +47,14 @@
 
     <div class="header-actions">
       @if (canEdit()) {
-        <button
+        <a
           mat-stroked-button
           color="primary"
-          (click)="openEditDialog()"
-          [disabled]="actionInProgress()"
+          [routerLink]="['/labor/attendance', record.id, 'edit']"
         >
           <mat-icon>edit</mat-icon>
           Edit Attendance
-        </button>
+        </a>
       }
 
       @if (canFinalize()) {

@@ -85,7 +85,9 @@ public sealed class LaborAttendance
         decimal? workingHours,
         string? notes,
         DateTimeOffset now,
-        Guid updatedBy)
+        Guid updatedBy,
+        Guid? farmId = null,
+        Guid? workerId = null)
     {
         if (Status == AttendanceStatus.Finalized)
         {
@@ -97,8 +99,30 @@ public sealed class LaborAttendance
             throw new ArgumentException("A user is required.", nameof(updatedBy));
         }
 
+        if (farmId.HasValue && farmId.Value == Guid.Empty)
+        {
+            throw new ArgumentException("Farm identifier cannot be empty.", nameof(farmId));
+        }
+
+        if (workerId.HasValue && workerId.Value == Guid.Empty)
+        {
+            throw new ArgumentException("Worker identifier cannot be empty.", nameof(workerId));
+        }
+
         ValidateAttendanceType(attendanceType);
         ValidateWorkingHours(attendanceType, ref workingHours);
+
+        if (farmId.HasValue && farmId.Value != FarmId)
+        {
+            FarmId = farmId.Value;
+            Farm = null;
+        }
+
+        if (workerId.HasValue && workerId.Value != WorkerId)
+        {
+            WorkerId = workerId.Value;
+            Worker = null;
+        }
 
         AttendanceType = attendanceType;
         WorkingHours = workingHours;

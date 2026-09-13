@@ -159,6 +159,8 @@ export interface UpdateDraftAttendanceRequest {
   readonly attendanceType: AttendanceType | string;
   readonly workingHours?: number | null;
   readonly notes?: string | null;
+  readonly workerId?: string | null;
+  readonly farmId?: string | null;
 }
 
 export interface AttendanceWagePreviewRequest {

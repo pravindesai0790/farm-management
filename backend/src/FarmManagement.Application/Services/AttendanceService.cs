@@ -389,13 +389,27 @@ public sealed class AttendanceService(
             throw Validation("status", "Only draft attendance records can be modified.");
         }
 
-        var attendanceType = ParseAttendanceType(request.AttendanceType);
-        ValidateWorkingHours(attendanceType, request.WorkingHours);
+        var targetFarmId = request.FarmId.HasValue && request.FarmId.Value != Guid.Empty
+            ? request.FarmId.Value
+            : attendance.FarmId;
+
+        var targetWorkerId = request.WorkerId.HasValue && request.WorkerId.Value != Guid.Empty
+            ? request.WorkerId.Value
+            : attendance.WorkerId;
+
+        if (targetFarmId != attendance.FarmId)
+        {
+            var farm = await store.FindFarmAsync(targetFarmId, actor.OrganizationId, cancellationToken);
+            if (farm is null || !farm.IsActive)
+            {
+                throw Validation("farmId", "Selected farm does not exist or is inactive.");
+            }
+        }
 
         var worker = await store.FindWorkerWithAssignmentAsync(
             actor.OrganizationId,
-            attendance.WorkerId,
-            attendance.FarmId,
+            targetWorkerId,
+            targetFarmId,
             attendance.AttendanceDate,
             cancellationToken);
 
@@ -403,6 +417,23 @@ public sealed class AttendanceService(
         {
             throw Validation("workerId", "The worker does not have a valid active farm assignment for this farm on the selected date.");
         }
+
+        if (targetWorkerId != attendance.WorkerId || targetFarmId != attendance.FarmId)
+        {
+            var existingRecord = await store.FindAttendanceByWorkerAndDateAsync(
+                actor.OrganizationId,
+                targetWorkerId,
+                attendance.AttendanceDate,
+                cancellationToken);
+
+            if (existingRecord is not null && existingRecord.Id != attendance.Id)
+            {
+                throw Validation("workerId", "An attendance record already exists for this worker on this date.");
+            }
+        }
+
+        var attendanceType = ParseAttendanceType(request.AttendanceType);
+        ValidateWorkingHours(attendanceType, request.WorkingHours);
 
         decimal? calculatedRate = null;
         decimal? calculatedAmount = 0m;
@@ -414,7 +445,7 @@ public sealed class AttendanceService(
             var previewResult = await earningsIntegration.CalculateAttendanceEarningsAsync(
                 new EarningsActor(actor.UserId, actor.OrganizationId),
                 new CalculateAttendanceEarningsRequest(
-                    WorkerId: attendance.WorkerId,
+                    WorkerId: targetWorkerId,
                     AttendanceDate: attendance.AttendanceDate,
                     AttendanceType: FormatAttendanceType(attendanceType),
                     Quantity: quantity),
@@ -430,7 +461,9 @@ public sealed class AttendanceService(
             attendanceType == AttendanceType.Hourly ? request.WorkingHours : null,
             request.Notes,
             DateTimeOffset.UtcNow,
-            actor.UserId);
+            actor.UserId,
+            targetFarmId,
+            targetWorkerId);
 
         attendance.SetCalculatedEarnings(
             calculatedRate,
@@ -442,7 +475,7 @@ public sealed class AttendanceService(
         await store.SaveChangesAsync(cancellationToken);
 
         var loaded = await store.FindAttendanceByIdAsync(attendance.Id, actor.OrganizationId, cancellationToken);
-        return MapToResponse(loaded ?? attendance, attendance.Farm?.Name ?? string.Empty);
+        return MapToResponse(loaded ?? attendance, loaded?.Farm?.Name ?? attendance.Farm?.Name ?? string.Empty);
     }
 
     public async Task DeleteDraftAsync(

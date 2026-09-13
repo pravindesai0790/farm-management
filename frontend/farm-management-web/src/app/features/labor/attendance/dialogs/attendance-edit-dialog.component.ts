@@ -33,6 +33,7 @@ import {
   AttendanceRecord,
   AttendanceType,
   AttendanceWagePreviewResponse,
+  formatAttendanceType,
 } from "../../../../core/labor/attendance.models";
 import { AttendanceService } from "../../../../core/labor/attendance.service";
 import { getApiErrorMessage } from "../../../../core/models/api-error.model";
@@ -98,6 +99,9 @@ export interface AttendanceEditDialogData {
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Attendance Type</mat-label>
             <mat-select formControlName="attendanceType">
+              <mat-select-trigger>
+                {{ formatType(selectedAttendanceType()) }}
+              </mat-select-trigger>
               @for (option of typeOptions; track option.value) {
                 <mat-option [value]="option.value">
                   <div class="option-row">
@@ -136,11 +140,19 @@ export interface AttendanceEditDialogData {
           }
 
           <!-- Wage calculation preview -->
-          <div class="wage-preview-panel">
+          <div class="wage-preview-panel" [class.panel-error]="!!previewError()">
             @if (previewLoading()) {
               <div class="preview-loading">
                 <mat-spinner diameter="20"></mat-spinner>
                 <span>Calculating wage preview...</span>
+              </div>
+            } @else if (previewError(); as wageErr) {
+              <div class="preview-error">
+                <mat-icon class="error-icon">warning_amber</mat-icon>
+                <div class="error-text">
+                  <strong>Wage Rate Unavailable</strong>
+                  <span>{{ wageErr }}</span>
+                </div>
               </div>
             } @else if (preview()) {
               <div class="preview-result">
@@ -389,9 +401,14 @@ export class AttendanceEditDialogComponent implements OnInit {
   readonly typeOptions = ATTENDANCE_TYPE_OPTIONS;
 
   readonly errorMessage = signal<string | null>(null);
+  readonly previewError = signal<string | null>(null);
   readonly submitting = signal<boolean>(false);
   readonly previewLoading = signal<boolean>(false);
   readonly preview = signal<AttendanceWagePreviewResponse | null>(null);
+
+  readonly selectedAttendanceType = signal<AttendanceType>(
+    (this.data.record.attendanceType as AttendanceType) || "FULL_DAY",
+  );
 
   readonly form = this.fb.nonNullable.group({
     attendanceType: this.fb.nonNullable.control<AttendanceType>(
@@ -407,15 +424,18 @@ export class AttendanceEditDialogComponent implements OnInit {
   });
 
   readonly isHourly = computed(() => {
-    return this.form.controls.attendanceType.value === "HOURLY";
+    return this.selectedAttendanceType() === "HOURLY";
   });
 
   ngOnInit(): void {
-    this.updateHoursValidation(this.form.controls.attendanceType.value);
+    const initialType = (this.data.record.attendanceType as AttendanceType) || "FULL_DAY";
+    this.selectedAttendanceType.set(initialType);
+    this.updateHoursValidation(initialType);
 
     this.form.controls.attendanceType.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((type) => {
+        this.selectedAttendanceType.set(type);
         this.updateHoursValidation(type);
         this.triggerWagePreview();
       });
@@ -453,11 +473,19 @@ export class AttendanceEditDialogComponent implements OnInit {
     const type = this.form.controls.attendanceType.value;
     const hours = this.form.controls.workingHours.value;
 
+    if (type === "NOT_WORKED") {
+      this.previewError.set(null);
+      this.preview.set(null);
+      return;
+    }
+
     if (type === "HOURLY" && (!hours || hours < 0.5 || hours > 24)) {
       return;
     }
 
     this.previewLoading.set(true);
+    this.previewError.set(null);
+
     this.attendanceService
       .previewWage({
         workerId: this.data.record.workerId,
@@ -471,8 +499,26 @@ export class AttendanceEditDialogComponent implements OnInit {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: (res) => this.preview.set(res),
-        error: () => this.preview.set(null),
+        next: (res) => {
+          if (res.isEarningEligible === false || res.rate <= 0) {
+            this.preview.set(null);
+            this.previewError.set(
+              res.ineligibilityReason ||
+                `No active wage rate entry found for gender '${res.gender}' and wage type '${formatAttendanceType(type)}' on date ${this.data.record.attendanceDate}.`,
+            );
+          } else {
+            this.preview.set(res);
+            this.previewError.set(null);
+          }
+        },
+        error: (err) => {
+          this.preview.set(null);
+          const msg = getApiErrorMessage(
+            err,
+            `No active wage rate entry configured for attendance type '${formatAttendanceType(type)}' on date ${this.data.record.attendanceDate}.`,
+          );
+          this.previewError.set(msg);
+        },
       });
   }
 
@@ -482,6 +528,11 @@ export class AttendanceEditDialogComponent implements OnInit {
     }
 
     const type = this.form.controls.attendanceType.value;
+    if (type !== "NOT_WORKED" && this.previewError()) {
+      this.errorMessage.set(this.previewError());
+      return;
+    }
+
     const hours = this.form.controls.workingHours.value;
     const notes = this.form.controls.notes.value?.trim() || null;
 
@@ -506,5 +557,9 @@ export class AttendanceEditDialogComponent implements OnInit {
           this.errorMessage.set(getApiErrorMessage(err, "Failed to update draft attendance."));
         },
       });
+  }
+
+  formatType(type?: string | null): string {
+    return formatAttendanceType(type);
   }
 }

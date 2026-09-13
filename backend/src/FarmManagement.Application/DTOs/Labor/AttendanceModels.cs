@@ -45,7 +45,9 @@ public sealed record CreateDraftAttendanceRequest(
 public sealed record UpdateDraftAttendanceRequest(
     string AttendanceType,
     decimal? WorkingHours = null,
-    string? Notes = null);
+    string? Notes = null,
+    Guid? WorkerId = null,
+    Guid? FarmId = null);
 
 public sealed record DailyDraftAttendanceItemRequest(
     Guid? Id,
