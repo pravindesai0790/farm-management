@@ -73,6 +73,20 @@ public sealed class AttendanceController(
         return Ok(result);
     }
 
+    [HttpGet("{id:guid}")]
+    [Authorize(Policy = "Permission:Attendance.View")]
+    public async Task<ActionResult<AttendanceDetailResponse>> GetAttendanceById(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await attendanceService.GetAttendanceByIdAsync(
+            GetUserContext(),
+            id,
+            cancellationToken);
+
+        return Ok(result);
+    }
+
     [HttpPost("draft")]
     [Authorize(Policy = "Permission:Attendance.Create")]
     public async Task<ActionResult<AttendanceRecordResponse>> CreateDraft(

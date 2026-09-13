@@ -129,6 +129,82 @@ public sealed class AttendanceService(
             Records: mappedRecords);
     }
 
+    public async Task<AttendanceDetailResponse> GetAttendanceByIdAsync(
+        AttendanceActor actor,
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+
+        if (id == Guid.Empty)
+        {
+            throw Validation("id", "Attendance ID is required.");
+        }
+
+        var attendance = await store.FindAttendanceByIdAsync(id, actor.OrganizationId, cancellationToken);
+        if (attendance is null)
+        {
+            throw new ResourceNotFoundException("The attendance record was not found.");
+        }
+
+        RelatedEarningsLedgerResponse? earningsLedger = null;
+        if (attendance.Status == AttendanceStatus.Finalized)
+        {
+            var ledger = await store.FindEarningsLedgerByAttendanceIdAsync(actor.OrganizationId, attendance.Id, cancellationToken);
+            if (ledger != null)
+            {
+                earningsLedger = new RelatedEarningsLedgerResponse(
+                    Id: ledger.Id,
+                    WorkerId: ledger.WorkerId,
+                    EarningsDate: ledger.EarningsDate,
+                    WageType: WorkerEarningsLedgerService.FormatWageType(ledger.WageType),
+                    Quantity: ledger.Quantity,
+                    WageRate: ledger.WageRate,
+                    GrossAmount: ledger.GrossAmount,
+                    CurrencyId: ledger.CurrencyId,
+                    CurrencyCode: ledger.Currency?.Code ?? "INR",
+                    CurrencySymbol: ledger.Currency?.Symbol ?? "₹",
+                    Status: WorkerEarningsLedgerService.FormatStatus(ledger.Status),
+                    EntryType: WorkerEarningsLedgerService.FormatEntryType(ledger.EntryType),
+                    FinalizedAt: ledger.FinalizedAt,
+                    FinalizedBy: ledger.FinalizedBy,
+                    Description: ledger.Description);
+            }
+        }
+
+        return new AttendanceDetailResponse(
+            Id: attendance.Id,
+            OrganizationId: attendance.OrganizationId,
+            FarmId: attendance.FarmId,
+            FarmName: attendance.Farm?.Name ?? string.Empty,
+            WorkerId: attendance.WorkerId,
+            WorkerDisplayName: attendance.Worker?.DisplayName ?? string.Empty,
+            WorkerFirstName: attendance.Worker?.FirstName ?? string.Empty,
+            WorkerLastName: attendance.Worker?.LastName,
+            Gender: attendance.Worker != null ? attendance.Worker.Gender.ToString().ToUpperInvariant() : string.Empty,
+            LaborCategoryId: attendance.Worker?.LaborCategoryId,
+            LaborCategoryName: attendance.Worker?.LaborCategory?.Name,
+            EmploymentType: attendance.Worker != null ? ConvertEmploymentTypeToString(attendance.Worker.EmploymentType) : string.Empty,
+            MobileNumber: attendance.Worker?.MobileNumber,
+            AttendanceDate: attendance.AttendanceDate,
+            AttendanceType: FormatAttendanceType(attendance.AttendanceType),
+            WorkingHours: attendance.WorkingHours,
+            CalculatedRate: attendance.CalculatedRate,
+            CalculatedAmount: attendance.CalculatedAmount,
+            CurrencyId: attendance.CurrencyId,
+            CurrencyCode: attendance.Currency?.Code ?? "INR",
+            CurrencySymbol: attendance.Currency?.Symbol ?? "₹",
+            Status: FormatAttendanceStatus(attendance.Status),
+            Notes: attendance.Notes,
+            FinalizedAt: attendance.FinalizedAt,
+            FinalizedBy: attendance.FinalizedBy,
+            CreatedAt: attendance.CreatedAt,
+            CreatedBy: attendance.CreatedBy,
+            UpdatedAt: attendance.UpdatedAt,
+            UpdatedBy: attendance.UpdatedBy,
+            EarningsLedger: earningsLedger);
+    }
+
     public async Task<AttendanceRecordResponse> CreateDraftAsync(
         AttendanceActor actor,
         CreateDraftAttendanceRequest request,

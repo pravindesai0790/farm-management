@@ -4,6 +4,7 @@ import { Observable } from "rxjs";
 import { environment } from "../../../environments/environment";
 import { PagedResponse } from "../models/paged-response.model";
 import {
+  AttendanceDetail,
   AttendanceEligibleWorker,
   AttendanceRecord,
   AttendanceWagePreviewBatchRequest,
@@ -38,6 +39,10 @@ export class AttendanceService {
       `${this.api}/attendance/daily`,
       { params },
     );
+  }
+
+  getAttendanceById(id: string): Observable<AttendanceDetail> {
+    return this.http.get<AttendanceDetail>(`${this.api}/attendance/${id}`);
   }
 
   getEligibleWorkers(

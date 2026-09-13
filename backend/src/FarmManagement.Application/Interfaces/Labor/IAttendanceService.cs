@@ -20,6 +20,11 @@ public interface IAttendanceService
         DateOnly attendanceDate,
         CancellationToken cancellationToken = default);
 
+    Task<AttendanceDetailResponse> GetAttendanceByIdAsync(
+        AttendanceActor actor,
+        Guid id,
+        CancellationToken cancellationToken = default);
+
     Task<AttendanceRecordResponse> CreateDraftAsync(
         AttendanceActor actor,
         CreateDraftAttendanceRequest request,

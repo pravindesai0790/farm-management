@@ -1,0 +1,298 @@
+@if (isLoading()) {
+  <div class="loading-state">
+    <mat-spinner diameter="40" />
+    <span>Loading attendance details…</span>
+  </div>
+} @else if (errorMessage()) {
+  <div class="error-container">
+    <app-error-alert
+      [error]="errorMessage()!"
+      fallback="Failed to load attendance details."
+    />
+    <div class="error-actions">
+      <a mat-stroked-button routerLink="/labor/attendance">
+        <mat-icon>arrow_back</mat-icon>
+        Back to Daily Attendance
+      </a>
+    </div>
+  </div>
+} @else if (attendance(); as record) {
+  <div class="detail-header">
+    <div>
+      <div class="breadcrumb">
+        <a routerLink="/labor/attendance">
+          <mat-icon>arrow_back</mat-icon>
+          Back to Daily Attendance
+        </a>
+      </div>
+      <div class="title-row">
+        <h2>{{ record.workerDisplayName }}</h2>
+        <span class="attendance-date-pill">
+          <mat-icon>event</mat-icon>
+          {{ record.attendanceDate | date: 'dd-MMM-yyyy' }}
+        </span>
+        <span
+          class="status-pill"
+          [class.status-pill-finalized]="isFinalized()"
+          [class.status-pill-draft]="isDraft()"
+        >
+          <mat-icon class="pill-icon">{{ isFinalized() ? 'verified' : 'edit_note' }}</mat-icon>
+          {{ formatStatus(record.status) }}
+        </span>
+      </div>
+      <p class="subtitle">
+        Farm: <strong>{{ record.farmName }}</strong> &bull; Worker ID: <code>{{ record.workerId }}</code>
+      </p>
+    </div>
+
+    <div class="header-actions">
+      @if (canEdit()) {
+        <button
+          mat-stroked-button
+          color="primary"
+          (click)="openEditDialog()"
+          [disabled]="actionInProgress()"
+        >
+          <mat-icon>edit</mat-icon>
+          Edit Attendance
+        </button>
+      }
+
+      @if (canFinalize()) {
+        <button
+          mat-flat-button
+          color="primary"
+          (click)="finalizeRecord()"
+          [disabled]="actionInProgress()"
+        >
+          @if (actionInProgress()) {
+            <mat-spinner diameter="18" class="btn-spinner"></mat-spinner>
+          } @else {
+            <mat-icon>verified</mat-icon>
+          }
+          Finalize Record
+        </button>
+      }
+    </div>
+  </div>
+
+  <div class="cards-grid">
+    <!-- Card 1: Worker & Assignment -->
+    <mat-card class="detail-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar class="card-avatar">person</mat-icon>
+        <mat-card-title>Worker Information</mat-card-title>
+        <mat-card-subtitle>Profile and farm assignment details</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content class="info-grid">
+        <div class="info-item">
+          <label>Full Name</label>
+          <span class="value-highlight">
+            {{ record.workerFirstName }} {{ record.workerLastName || '' }}
+          </span>
+        </div>
+        <div class="info-item">
+          <label>Mobile Number</label>
+          <span>{{ record.mobileNumber || "—" }}</span>
+        </div>
+        <div class="info-item">
+          <label>Gender</label>
+          <span>{{ record.gender || "—" }}</span>
+        </div>
+        <div class="info-item">
+          <label>Labor Category</label>
+          <span>{{ record.laborCategoryName || "General" }}</span>
+        </div>
+        <div class="info-item">
+          <label>Employment Type</label>
+          <span>{{ record.employmentType || "—" }}</span>
+        </div>
+        <div class="info-item">
+          <label>Farm</label>
+          <span>{{ record.farmName }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Card 2: Daily Attendance & Wage Calculation -->
+    <mat-card class="detail-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar class="card-avatar">schedule</mat-icon>
+        <mat-card-title>Attendance &amp; Earnings</mat-card-title>
+        <mat-card-subtitle>Daily status, duration, and calculated wages</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content class="info-grid">
+        <div class="info-item">
+          <label>Attendance Type</label>
+          <div>
+            <span class="type-badge" [ngClass]="getTypeBadgeClass(record.attendanceType)">
+              {{ formatType(record.attendanceType) }}
+            </span>
+          </div>
+        </div>
+        <div class="info-item">
+          <label>Working Hours</label>
+          <span>
+            {{ record.workingHours != null ? record.workingHours + ' hrs' : '—' }}
+          </span>
+        </div>
+        <div class="info-item">
+          <label>Resolved Wage Rate</label>
+          <span class="rate-value">
+            {{ record.currencySymbol || "₹" }}{{ (record.calculatedRate ?? 0) | number: '1.2-2' }}
+          </span>
+        </div>
+        <div class="info-item">
+          <label>Calculated Gross Earnings</label>
+          <span class="amount-value">
+            {{ record.currencySymbol || "₹" }}{{ (record.calculatedAmount ?? 0) | number: '1.2-2' }}
+          </span>
+        </div>
+        <div class="info-item">
+          <label>Currency</label>
+          <span>{{ record.currencyCode || "INR" }} ({{ record.currencySymbol || "₹" }})</span>
+        </div>
+        <div class="info-item">
+          <label>Record Status</label>
+          <span>{{ formatStatus(record.status) }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Card 3: Financial Traceability (Full Width) -->
+    <mat-card class="detail-card full-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar class="card-avatar financial-avatar">account_balance_wallet</mat-icon>
+        <mat-card-title>Financial Traceability</mat-card-title>
+        <mat-card-subtitle>Authoritative Worker Earnings Ledger linkage</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        @if (record.earningsLedger; as ledger) {
+          <div class="ledger-banner verified">
+            <div class="banner-icon">
+              <mat-icon>check_circle</mat-icon>
+            </div>
+            <div class="banner-body">
+              <strong>Linked Authoritative Earning Record</strong>
+              <p>
+                Attendance is finalized. An approved earning entry was automatically created in the Worker Earnings Ledger.
+              </p>
+            </div>
+          </div>
+
+          <div class="info-grid ledger-grid">
+            <div class="info-item">
+              <label>Ledger Entry ID</label>
+              <code>{{ ledger.id }}</code>
+            </div>
+            <div class="info-item">
+              <label>Ledger Status</label>
+              <span class="badge-approved">{{ ledger.status }}</span>
+            </div>
+            <div class="info-item">
+              <label>Entry Type</label>
+              <span>{{ ledger.entryType }}</span>
+            </div>
+            <div class="info-item">
+              <label>Earnings Date</label>
+              <span>{{ ledger.earningsDate | date: 'dd-MMM-yyyy' }}</span>
+            </div>
+            <div class="info-item">
+              <label>Wage Classification</label>
+              <span>{{ ledger.wageType }}</span>
+            </div>
+            <div class="info-item">
+              <label>Quantity / Rate</label>
+              <span>
+                {{ ledger.quantity }} &times; {{ ledger.currencySymbol }}{{ ledger.wageRate | number: '1.2-2' }}
+              </span>
+            </div>
+            <div class="info-item highlight-col">
+              <label>Snapshotted Gross Amount</label>
+              <span class="ledger-gross">
+                {{ ledger.currencySymbol }}{{ ledger.grossAmount | number: '1.2-2' }}
+              </span>
+            </div>
+            <div class="info-item">
+              <label>Finalized At</label>
+              <span>{{ (ledger.finalizedAt | date: 'dd-MMM-yyyy, HH:mm') || '—' }}</span>
+            </div>
+            @if (ledger.description) {
+              <div class="info-item full-width">
+                <label>Ledger Description</label>
+                <span>{{ ledger.description }}</span>
+              </div>
+            }
+          </div>
+
+          <div class="ledger-actions">
+            <a
+              mat-stroked-button
+              color="primary"
+              [routerLink]="['/labor/workers', record.workerId, 'payments']"
+            >
+              <mat-icon>receipt_long</mat-icon>
+              View Worker Payments &amp; Settlement
+            </a>
+          </div>
+        } @else {
+          <div class="ledger-banner provisional">
+            <div class="banner-icon">
+              <mat-icon>info</mat-icon>
+            </div>
+            <div class="banner-body">
+              <strong>Draft Attendance Record (No Ledger Entry)</strong>
+              <p>
+                This attendance row is currently in <strong>DRAFT</strong> status. The wage amount shown is a provisional estimate.
+                Authoritative entries are only written to the Worker Earnings Ledger when attendance is finalized.
+              </p>
+            </div>
+          </div>
+        }
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Card 4: Metadata & Audit Trail -->
+    <mat-card class="detail-card full-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar class="card-avatar">history</mat-icon>
+        <mat-card-title>Audit Trail &amp; Notes</mat-card-title>
+        <mat-card-subtitle>Record timestamps, actors, and notes</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content class="info-grid">
+        <div class="info-item">
+          <label>Created At</label>
+          <span>{{ record.createdAt | date: 'dd-MMM-yyyy, HH:mm' }}</span>
+        </div>
+        <div class="info-item">
+          <label>Created By</label>
+          <code>{{ record.createdBy }}</code>
+        </div>
+        @if (record.updatedAt) {
+          <div class="info-item">
+            <label>Last Updated At</label>
+            <span>{{ record.updatedAt | date: 'dd-MMM-yyyy, HH:mm' }}</span>
+          </div>
+          <div class="info-item">
+            <label>Last Updated By</label>
+            <code>{{ record.updatedBy }}</code>
+          </div>
+        }
+        @if (record.finalizedAt) {
+          <div class="info-item">
+            <label>Finalized At</label>
+            <span>{{ record.finalizedAt | date: 'dd-MMM-yyyy, HH:mm' }}</span>
+          </div>
+          <div class="info-item">
+            <label>Finalized By</label>
+            <code>{{ record.finalizedBy }}</code>
+          </div>
+        }
+        <div class="info-item full-width">
+          <label>Notes</label>
+          <p class="notes-content">{{ record.notes || "No notes recorded for this attendance entry." }}</p>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+}

@@ -394,6 +394,16 @@ export const routes: Routes = [
               ).then((module) => module.AttendanceDailyPageComponent),
           },
           {
+            path: "attendance/:id",
+            title: "Attendance Details",
+            canActivate: [permissionGuard],
+            data: { permission: "Attendance.View" },
+            loadComponent: () =>
+              import(
+                "./features/labor/attendance/attendance-detail-page.component"
+              ).then((module) => module.AttendanceDetailPageComponent),
+          },
+          {
             path: "workers",
             title: "Workers",
             canActivate: [permissionGuard],

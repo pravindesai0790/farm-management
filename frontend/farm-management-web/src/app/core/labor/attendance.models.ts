@@ -61,6 +61,57 @@ export interface AttendanceRecord {
   readonly updatedBy?: string | null;
 }
 
+export interface RelatedEarningsLedger {
+  readonly id: string;
+  readonly workerId: string;
+  readonly earningsDate: string;
+  readonly wageType: string;
+  readonly quantity: number;
+  readonly wageRate: number;
+  readonly grossAmount: number;
+  readonly currencyId: string;
+  readonly currencyCode: string;
+  readonly currencySymbol: string;
+  readonly status: string;
+  readonly entryType: string;
+  readonly finalizedAt?: string | null;
+  readonly finalizedBy?: string | null;
+  readonly description?: string | null;
+}
+
+export interface AttendanceDetail {
+  readonly id: string;
+  readonly organizationId: string;
+  readonly farmId: string;
+  readonly farmName: string;
+  readonly workerId: string;
+  readonly workerDisplayName: string;
+  readonly workerFirstName: string;
+  readonly workerLastName?: string | null;
+  readonly gender: string;
+  readonly laborCategoryId?: string | null;
+  readonly laborCategoryName?: string | null;
+  readonly employmentType: string;
+  readonly mobileNumber?: string | null;
+  readonly attendanceDate: string;
+  readonly attendanceType: AttendanceType | string;
+  readonly workingHours?: number | null;
+  readonly calculatedRate?: number | null;
+  readonly calculatedAmount?: number | null;
+  readonly currencyId?: string | null;
+  readonly currencyCode?: string | null;
+  readonly currencySymbol?: string | null;
+  readonly status: AttendanceStatus | string;
+  readonly notes?: string | null;
+  readonly finalizedAt?: string | null;
+  readonly finalizedBy?: string | null;
+  readonly createdAt: string;
+  readonly createdBy: string;
+  readonly updatedAt?: string | null;
+  readonly updatedBy?: string | null;
+  readonly earningsLedger?: RelatedEarningsLedger | null;
+}
+
 export interface DailyAttendanceSummary {
   readonly totalCount: number;
   readonly workedCount: number;

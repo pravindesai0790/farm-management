@@ -67,6 +67,11 @@ public interface IAttendanceStore
         DateOnly targetDate,
         CancellationToken cancellationToken = default);
 
+    Task<WorkerEarningsLedger?> FindEarningsLedgerByAttendanceIdAsync(
+        Guid organizationId,
+        Guid attendanceId,
+        CancellationToken cancellationToken = default);
+
     void AddAttendance(LaborAttendance attendance);
 
     void RemoveAttendance(LaborAttendance attendance);

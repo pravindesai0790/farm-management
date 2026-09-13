@@ -192,6 +192,19 @@ public sealed class AttendanceStore(ApplicationDbContext dbContext) : IAttendanc
             .OrderByDescending(d => d)
             .FirstOrDefaultAsync(cancellationToken);
 
+    public Task<WorkerEarningsLedger?> FindEarningsLedgerByAttendanceIdAsync(
+        Guid organizationId,
+        Guid attendanceId,
+        CancellationToken cancellationToken = default) =>
+        dbContext.WorkerEarningsLedgers
+            .Include(l => l.Currency)
+            .Include(l => l.Worker)
+            .SingleOrDefaultAsync(
+                l => l.OrganizationId == organizationId &&
+                     l.AttendanceId == attendanceId &&
+                     l.EntryType == EarningsEntryType.Earning,
+                cancellationToken);
+
     public void AddAttendance(LaborAttendance attendance) =>
         dbContext.LaborAttendances.Add(attendance);
 

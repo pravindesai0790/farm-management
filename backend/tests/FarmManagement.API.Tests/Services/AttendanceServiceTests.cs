@@ -1814,6 +1814,137 @@ public sealed class AttendanceServiceTests
 
     #endregion
 
+    #region Attendance Detail Tests
+
+    [Fact]
+    public async Task GetAttendanceByIdAsync_WhenIdIsEmpty_ThrowsValidationException()
+    {
+        var store = new FakeAttendanceStore();
+        var service = CreateService(store);
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(() =>
+            service.GetAttendanceByIdAsync(CreateActor(), Guid.Empty));
+
+        Assert.NotNull(ex.Errors);
+        Assert.True(ex.Errors.ContainsKey("id"));
+    }
+
+    [Fact]
+    public async Task GetAttendanceByIdAsync_WhenNotFound_ThrowsResourceNotFoundException()
+    {
+        var store = new FakeAttendanceStore();
+        var service = CreateService(store);
+
+        await Assert.ThrowsAsync<ResourceNotFoundException>(() =>
+            service.GetAttendanceByIdAsync(CreateActor(), Guid.NewGuid()));
+    }
+
+    [Fact]
+    public async Task GetAttendanceByIdAsync_WhenDraft_ReturnsDetailWithoutEarningsLedger()
+    {
+        var store = new FakeAttendanceStore();
+        var farm = CreateFarm();
+        store.Farms.Add(farm);
+
+        var date = new DateOnly(2026, 9, 12);
+        var worker = CreateWorker(firstName: "Ramesh", lastName: "Patil", mobileNumber: "9876543210");
+        store.Workers.Add(worker);
+
+        var att = LaborAttendance.CreateDraft(_organizationId, farm.Id, worker.Id, date, AttendanceType.FullDay, _userId, null, 500m, 500m, notes: "Regular workday");
+        store.Attendances.Add(att);
+
+        var service = CreateService(store);
+        var result = await service.GetAttendanceByIdAsync(CreateActor(), att.Id);
+
+        Assert.Equal(att.Id, result.Id);
+        Assert.Equal(_organizationId, result.OrganizationId);
+        Assert.Equal(farm.Id, result.FarmId);
+        Assert.Equal(worker.Id, result.WorkerId);
+        Assert.Equal("Ramesh", result.WorkerFirstName);
+        Assert.Equal("Patil", result.WorkerLastName);
+        Assert.Equal("9876543210", result.MobileNumber);
+        Assert.Equal(date, result.AttendanceDate);
+        Assert.Equal("FULL_DAY", result.AttendanceType);
+        Assert.Equal(500m, result.CalculatedRate);
+        Assert.Equal(500m, result.CalculatedAmount);
+        Assert.Equal("DRAFT", result.Status);
+        Assert.Equal("Regular workday", result.Notes);
+        Assert.Null(result.FinalizedAt);
+        Assert.Null(result.FinalizedBy);
+        Assert.Null(result.EarningsLedger);
+    }
+
+    [Fact]
+    public async Task GetAttendanceByIdAsync_WhenFinalized_ReturnsDetailWithLinkedEarningsLedger()
+    {
+        var store = new FakeAttendanceStore();
+        var farm = CreateFarm();
+        store.Farms.Add(farm);
+
+        var currencyId = Guid.NewGuid();
+        var date = new DateOnly(2026, 9, 12);
+        var worker = CreateWorker(firstName: "Suresh", lastName: "Shinde", mobileNumber: "9811122233");
+        store.Workers.Add(worker);
+
+        var att = LaborAttendance.CreateFinalized(
+            _organizationId,
+            farm.Id,
+            worker.Id,
+            date,
+            AttendanceType.Hourly,
+            _userId,
+            workingHours: 8m,
+            calculatedRate: 100m,
+            calculatedAmount: 800m,
+            currencyId: currencyId,
+            notes: "Harvest overtime");
+        store.Attendances.Add(att);
+
+        var ledger = WorkerEarningsLedger.CreateEarning(
+            organizationId: _organizationId,
+            workerId: worker.Id,
+            earningsDate: date,
+            wageType: WageType.Hourly,
+            quantity: 8m,
+            wageRate: 100m,
+            currencyId: currencyId,
+            createdBy: _userId,
+            attendanceId: att.Id,
+            grossAmount: 800m,
+            approveImmediately: true,
+            description: "Finalized hourly attendance");
+        store.EarningsLedgers.Add(ledger);
+
+        var service = CreateService(store);
+        var result = await service.GetAttendanceByIdAsync(CreateActor(), att.Id);
+
+        Assert.Equal(att.Id, result.Id);
+        Assert.Equal("FINALIZED", result.Status);
+        Assert.Equal("HOURLY", result.AttendanceType);
+        Assert.Equal(8m, result.WorkingHours);
+        Assert.Equal(100m, result.CalculatedRate);
+        Assert.Equal(800m, result.CalculatedAmount);
+        Assert.NotNull(result.FinalizedAt);
+        Assert.Equal(_userId, result.FinalizedBy);
+        Assert.Equal("Harvest overtime", result.Notes);
+
+        // Verify financial traceability
+        Assert.NotNull(result.EarningsLedger);
+        Assert.Equal(ledger.Id, result.EarningsLedger.Id);
+        Assert.Equal(worker.Id, result.EarningsLedger.WorkerId);
+        Assert.Equal(date, result.EarningsLedger.EarningsDate);
+        Assert.Equal("HOURLY", result.EarningsLedger.WageType);
+        Assert.Equal(8m, result.EarningsLedger.Quantity);
+        Assert.Equal(100m, result.EarningsLedger.WageRate);
+        Assert.Equal(800m, result.EarningsLedger.GrossAmount);
+        Assert.Equal(currencyId, result.EarningsLedger.CurrencyId);
+        Assert.Equal("APPROVED", result.EarningsLedger.Status);
+        Assert.Equal("EARNING", result.EarningsLedger.EntryType);
+        Assert.Equal("Finalized hourly attendance", result.EarningsLedger.Description);
+    }
+
+    #endregion
+
     #region Fake Store & Integration
 
     private sealed class FakeAttendanceEarningsIntegration : IAttendanceEarningsIntegration
@@ -1919,6 +2050,7 @@ public sealed class AttendanceServiceTests
         public List<Worker> Workers { get; } = [];
         public List<Farm> Farms { get; } = [];
         public List<LaborAttendance> Attendances { get; } = [];
+        public List<WorkerEarningsLedger> EarningsLedgers { get; } = [];
 
         public Task<Farm?> FindFarmAsync(
             Guid farmId,
@@ -2003,6 +2135,10 @@ public sealed class AttendanceServiceTests
             CancellationToken cancellationToken = default)
         {
             var attendance = Attendances.FirstOrDefault(a => a.Id == id && a.OrganizationId == organizationId);
+            if (attendance != null)
+            {
+                AttachNavigations(attendance);
+            }
             return Task.FromResult(attendance);
         }
 
@@ -2016,7 +2152,26 @@ public sealed class AttendanceServiceTests
                 a.OrganizationId == organizationId &&
                 a.WorkerId == workerId &&
                 a.AttendanceDate == attendanceDate);
+            if (attendance != null)
+            {
+                AttachNavigations(attendance);
+            }
             return Task.FromResult(attendance);
+        }
+
+        private void AttachNavigations(LaborAttendance attendance)
+        {
+            var worker = Workers.FirstOrDefault(w => w.Id == attendance.WorkerId);
+            if (worker != null)
+            {
+                typeof(LaborAttendance).GetProperty(nameof(LaborAttendance.Worker))!.SetValue(attendance, worker);
+            }
+
+            var farm = Farms.FirstOrDefault(f => f.Id == attendance.FarmId);
+            if (farm != null)
+            {
+                typeof(LaborAttendance).GetProperty(nameof(LaborAttendance.Farm))!.SetValue(attendance, farm);
+            }
         }
 
         public Task<IReadOnlyList<LaborAttendance>> ListDailyAttendanceAsync(
@@ -2086,6 +2241,18 @@ public sealed class AttendanceServiceTests
                 .OrderByDescending(d => d)
                 .FirstOrDefault();
             return Task.FromResult(date);
+        }
+
+        public Task<WorkerEarningsLedger?> FindEarningsLedgerByAttendanceIdAsync(
+            Guid organizationId,
+            Guid attendanceId,
+            CancellationToken cancellationToken = default)
+        {
+            var ledger = EarningsLedgers.FirstOrDefault(l =>
+                l.OrganizationId == organizationId &&
+                l.AttendanceId == attendanceId &&
+                l.EntryType == EarningsEntryType.Earning);
+            return Task.FromResult(ledger);
         }
 
         public void AddAttendance(LaborAttendance attendance) => Attendances.Add(attendance);
