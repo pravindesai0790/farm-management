@@ -562,7 +562,7 @@ public sealed class AttendanceService(
 
         return await store.ExecuteInTransactionAsync(async ct =>
         {
-            var existingDaily = await store.ListDailyAttendanceAsync(
+            var existingDaily = await store.ListDailyAttendanceTrackedAsync(
                 actor.OrganizationId,
                 request.FarmId,
                 request.AttendanceDate,
@@ -712,6 +712,11 @@ public sealed class AttendanceService(
             if (farm is null)
             {
                 throw new ResourceNotFoundException("The farm was not found.");
+            }
+
+            if (!farm.IsActive)
+            {
+                throw Validation("farmId", "Cannot preview attendance for an inactive farm.");
             }
 
             var workerWithAssignment = await store.FindWorkerWithAssignmentAsync(
@@ -903,6 +908,17 @@ public sealed class AttendanceService(
                 throw Validation("status", "There are no draft attendance records to finalize.");
             }
 
+            var duplicateDraftWorkers = draftsToFinalize
+                .GroupBy(a => a.WorkerId)
+                .Where(g => g.Count() > 1)
+                .Select(g => g.Key)
+                .ToList();
+
+            if (duplicateDraftWorkers.Count > 0)
+            {
+                throw Validation("workerId", "Duplicate worker attendance records found in the finalization batch.");
+            }
+
             var now = DateTimeOffset.UtcNow;
             var paidCount = 0;
             var notWorkedCount = 0;
@@ -947,6 +963,18 @@ public sealed class AttendanceService(
                 if (!workerWithAssignment.IsEligibleForAttendance(request.AttendanceDate, out var ineligibilityReason))
                 {
                     throw Validation("workerId", ineligibilityReason!);
+                }
+
+                var existingForWorker = await store.FindAttendanceByWorkerAndDateAsync(
+                    actor.OrganizationId,
+                    attendance.WorkerId,
+                    request.AttendanceDate,
+                    ct);
+
+                if (existingForWorker is not null && existingForWorker.Id != attendance.Id)
+                {
+                    var otherFarmName = existingForWorker.Farm?.Name ?? "another farm";
+                    throw Validation("workerId", $"Worker '{workerWithAssignment.DisplayName}' already has an attendance record at {otherFarmName} on {request.AttendanceDate:yyyy-MM-dd}.");
                 }
 
                 // 7. Validate attendance type & hours

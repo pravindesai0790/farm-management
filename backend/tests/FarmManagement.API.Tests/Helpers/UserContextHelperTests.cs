@@ -274,6 +274,17 @@ public class UserContextHelperTests
     }
 
     [Fact]
+    public void GetUserContext_ForAttendanceActor_ReturnsExpectedValues()
+    {
+        var principal = CreatePrincipal(TestUserId.ToString(), TestOrganizationId.ToString());
+
+        var actor = UserContextHelper.GetUserContext<AttendanceActor>(principal);
+
+        Assert.Equal(TestUserId, actor.UserId);
+        Assert.Equal(TestOrganizationId, actor.OrganizationId);
+    }
+
+    [Fact]
     public void GetUserContext_ForLaborWageRateActor_ReturnsExpectedValues()
     {
         var principal = CreatePrincipal(TestUserId.ToString(), TestOrganizationId.ToString());

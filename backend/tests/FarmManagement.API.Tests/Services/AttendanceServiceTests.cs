@@ -1576,6 +1576,75 @@ public sealed class AttendanceServiceTests
     }
 
     [Fact]
+    public async Task FinalizeAttendanceAsync_WhenDuplicateWorkersInBatch_ThrowsValidationException()
+    {
+        var store = new FakeAttendanceStore();
+        var farm = CreateFarm();
+        var worker = CreateWorker();
+        var date = new DateOnly(2026, 9, 12);
+        AssignWorkerToFarm(worker, farm, new DateOnly(2026, 1, 1));
+        store.Farms.Add(farm);
+        store.Workers.Add(worker);
+
+        var draft1 = LaborAttendance.CreateDraft(_organizationId, farm.Id, worker.Id, date, AttendanceType.FullDay, _userId);
+        var draft2 = LaborAttendance.CreateDraft(_organizationId, farm.Id, worker.Id, date, AttendanceType.HalfDay, _userId);
+        store.Attendances.AddRange([draft1, draft2]);
+
+        var service = CreateService(store);
+        var request = new FinalizeAttendanceRequest(farm.Id, date, [draft1.Id, draft2.Id]);
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(() =>
+            service.FinalizeAttendanceAsync(CreateActor(), request));
+        Assert.NotNull(ex.Errors);
+        Assert.True(ex.Errors.ContainsKey("workerId"));
+    }
+
+    [Fact]
+    public async Task FinalizeAttendanceAsync_WhenWorkerHasExistingAttendanceInAnotherFarm_ThrowsValidationException()
+    {
+        var store = new FakeAttendanceStore();
+        var farm1 = CreateFarm(code: "F-01");
+        var farm2 = CreateFarm(code: "F-02");
+        var worker = CreateWorker();
+        var date = new DateOnly(2026, 9, 12);
+        AssignWorkerToFarm(worker, farm1, new DateOnly(2026, 1, 1));
+        AssignWorkerToFarm(worker, farm2, new DateOnly(2026, 1, 1));
+        store.Farms.AddRange([farm1, farm2]);
+        store.Workers.Add(worker);
+
+        var attFarm1 = LaborAttendance.CreateFinalized(_organizationId, farm1.Id, worker.Id, date, AttendanceType.FullDay, _userId);
+        var attFarm2 = LaborAttendance.CreateDraft(_organizationId, farm2.Id, worker.Id, date, AttendanceType.FullDay, _userId);
+        store.Attendances.AddRange([attFarm1, attFarm2]);
+
+        var service = CreateService(store);
+        var request = new FinalizeAttendanceRequest(farm2.Id, date, [attFarm2.Id]);
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(() =>
+            service.FinalizeAttendanceAsync(CreateActor(), request));
+        Assert.NotNull(ex.Errors);
+        Assert.True(ex.Errors.ContainsKey("workerId"));
+    }
+
+    [Fact]
+    public async Task PreviewWageAsync_WhenFarmInactive_ThrowsValidationException()
+    {
+        var store = new FakeAttendanceStore();
+        var farm = CreateFarm(isActive: false);
+        var worker = CreateWorker();
+        AssignWorkerToFarm(worker, farm, new DateOnly(2026, 1, 1));
+        store.Farms.Add(farm);
+        store.Workers.Add(worker);
+
+        var service = CreateService(store);
+        var request = new AttendanceWagePreviewRequest(worker.Id, new DateOnly(2026, 9, 12), "FULL_DAY", FarmId: farm.Id);
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(() =>
+            service.PreviewWageAsync(CreateActor(), request));
+        Assert.NotNull(ex.Errors);
+        Assert.True(ex.Errors.ContainsKey("farmId"));
+    }
+
+    [Fact]
     public async Task UpdateDraftAsync_AfterFinalization_ThrowsValidationException()
     {
         var store = new FakeAttendanceStore();
