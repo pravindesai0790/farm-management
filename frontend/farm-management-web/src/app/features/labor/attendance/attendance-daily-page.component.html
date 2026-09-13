@@ -71,20 +71,31 @@
     </div>
   </div>
 
-  @if (errorMessage()) {
-    <app-error-alert [error]="errorMessage()!" />
+  @if (apiError() || errorMessage()) {
+    <app-error-alert [error]="apiError() || errorMessage()" fallback="Failed to process daily attendance." />
   }
 
   <!-- Finalized Banner Alert -->
   @if (isFinalized()) {
     <div class="finalized-banner">
-      <mat-icon>lock</mat-icon>
+      <mat-icon class="banner-icon">lock</mat-icon>
       <div class="banner-content">
         <strong>Attendance Finalized &amp; Locked</strong>
         <p>
           Attendance for {{ selectedFarm()?.name }} on {{ formattedDate() }} has been finalized.
           Earnings entries have been posted to the Worker Earnings Ledger. This record is read-only.
         </p>
+      </div>
+      <div class="banner-actions">
+        <a
+          mat-stroked-button
+          color="primary"
+          routerLink="/labor/workers"
+          matTooltip="View Worker Master & Settlement"
+        >
+          <mat-icon>payments</mat-icon>
+          Worker Earnings &amp; Ledger
+        </a>
       </div>
     </div>
   }
@@ -518,16 +529,29 @@
 
             <!-- 7. Calculated Earnings -->
             <ng-container matColumnDef="earnings">
-              <th mat-header-cell *matHeaderCellDef>Earnings Preview</th>
+              <th mat-header-cell *matHeaderCellDef>{{ isFinalized() ? 'Final Earnings' : 'Earnings Preview' }}</th>
               <td mat-cell *matCellDef="let row">
                 @if (row.attendanceType === 'NOT_WORKED') {
                   <span class="zero-amount">{{ row.currencySymbol || currencySymbol() }}0.00</span>
                 } @else if (row.attendanceType === 'HOURLY' && row.hoursError) {
                   <span class="dash muted">—</span>
                 } @else if (row.calculatedAmount !== null && row.calculatedAmount !== undefined) {
-                  <strong class="earnings-cell-amount">
-                    {{ row.currencySymbol || currencySymbol() }}{{ row.calculatedAmount | number: "1.2-2" }}
-                  </strong>
+                  @if (isFinalized()) {
+                    <a
+                      class="earnings-link"
+                      [routerLink]="['/labor/workers', row.workerId, 'payments']"
+                      matTooltip="View in Worker Earnings Ledger"
+                    >
+                      <strong class="earnings-cell-amount text-success">
+                        {{ row.currencySymbol || currencySymbol() }}{{ row.calculatedAmount | number: "1.2-2" }}
+                      </strong>
+                      <mat-icon class="link-icon">open_in_new</mat-icon>
+                    </a>
+                  } @else {
+                    <strong class="earnings-cell-amount">
+                      {{ row.currencySymbol || currencySymbol() }}{{ row.calculatedAmount | number: "1.2-2" }}
+                    </strong>
+                  }
                 } @else {
                   <span class="dash muted">Calculating…</span>
                 }
@@ -580,6 +604,16 @@
                     matTooltip="View attendance details"
                   >
                     <mat-icon>visibility</mat-icon>
+                  </a>
+                }
+                @if (isFinalized() && row.attendanceType !== 'NOT_WORKED') {
+                  <a
+                    mat-icon-button
+                    color="primary"
+                    [routerLink]="['/labor/workers', row.workerId, 'payments']"
+                    matTooltip="View earnings in Worker Earnings Ledger"
+                  >
+                    <mat-icon>payments</mat-icon>
                   </a>
                 }
                 @if (!isFinalized() && canEdit()) {

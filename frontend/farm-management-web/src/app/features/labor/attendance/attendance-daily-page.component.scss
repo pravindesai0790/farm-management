@@ -68,6 +68,7 @@
 .finalized-banner {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 14px;
   padding: 14px 18px;
   border-radius: 8px;
@@ -75,7 +76,7 @@
   border: 1px solid #c2e7ff;
   color: #042449;
 
-  mat-icon {
+  .banner-icon {
     font-size: 24px;
     width: 24px;
     height: 24px;
@@ -83,8 +84,47 @@
     flex-shrink: 0;
   }
 
-  strong { display: block; font-size: 0.95rem; }
-  p { margin: 2px 0 0; font-size: 0.85rem; }
+  .banner-content {
+    flex: 1;
+    strong { display: block; font-size: 0.95rem; }
+    p { margin: 2px 0 0; font-size: 0.85rem; }
+  }
+
+  .banner-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    a { white-space: nowrap; }
+  }
+}
+
+.earnings-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 4px;
+  padding: 2px 4px;
+  transition: background-color 0.15s ease-in-out;
+
+  &:hover {
+    background-color: rgba(27, 122, 54, 0.08);
+    .link-icon {
+      opacity: 1;
+      transform: translate(1px, -1px);
+    }
+  }
+
+  .link-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    color: #1b7a36;
+    opacity: 0.6;
+    transition: all 0.15s ease-in-out;
+  }
 }
 
 .excluded-banner {

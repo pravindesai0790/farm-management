@@ -24,6 +24,7 @@ import { PermissionService } from "../../../core/auth/permission.service";
 import { BreadcrumbService } from "../../../core/breadcrumb/breadcrumb.service";
 import {
   AttendanceDetail,
+  DailyAttendanceSummary,
   formatAttendanceStatus,
   formatAttendanceType,
   getAttendanceTypeBadgeClass,
@@ -35,6 +36,10 @@ import {
   AttendanceEditDialogComponent,
   AttendanceEditDialogData,
 } from "./dialogs/attendance-edit-dialog.component";
+import {
+  AttendanceFinalizeDialogComponent,
+  AttendanceFinalizeDialogData,
+} from "./dialogs/attendance-finalize-dialog.component";
 
 @Component({
   selector: "app-attendance-detail-page",
@@ -163,9 +168,38 @@ export class AttendanceDetailPageComponent implements OnInit {
       return;
     }
 
+    const summary: DailyAttendanceSummary = {
+      totalCount: 1,
+      workedCount: current.attendanceType !== "NOT_WORKED" ? 1 : 0,
+      fullDayCount: current.attendanceType === "FULL_DAY" ? 1 : 0,
+      halfDayCount: current.attendanceType === "HALF_DAY" ? 1 : 0,
+      hourlyCount: current.attendanceType === "HOURLY" ? 1 : 0,
+      notWorkedCount: current.attendanceType === "NOT_WORKED" ? 1 : 0,
+      estimatedEarnings: current.calculatedAmount ?? 0,
+      status: "DRAFT",
+    };
+
+    const dialogRef = this.dialog.open(AttendanceFinalizeDialogComponent, {
+      width: "540px",
+      data: {
+        farmName: current.farmName,
+        attendanceDate: current.attendanceDate,
+        summary,
+        currencySymbol: current.currencySymbol || "₹",
+        totalHours: current.attendanceType === "HOURLY" ? (current.workingHours || 0) : 0,
+      } as AttendanceFinalizeDialogData,
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed: boolean | undefined) => {
+      if (!confirmed) return;
+      this.executeSingleFinalization(current.id);
+    });
+  }
+
+  private executeSingleFinalization(id: string): void {
     this.actionInProgress.set(true);
     this.attendanceService
-      .finalizeSingleAttendance(current.id)
+      .finalizeSingleAttendance(id)
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         finalize(() => this.actionInProgress.set(false)),
@@ -177,10 +211,11 @@ export class AttendanceDetailPageComponent implements OnInit {
             "OK",
             { duration: 4000 },
           );
-          this.load(current.id);
+          this.load(id);
         },
         error: (err) => {
           const msg = getApiErrorMessage(err, "Failed to finalize attendance record.");
+          this.errorMessage.set(msg);
           this.snack.open(msg, "Dismiss", { duration: 5000 });
         },
       });

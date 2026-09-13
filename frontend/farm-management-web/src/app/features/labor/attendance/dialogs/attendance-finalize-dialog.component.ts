@@ -2,9 +2,12 @@ import {
   ChangeDetectionStrategy,
   Component,
   inject,
+  signal,
 } from "@angular/core";
 import { CommonModule } from "@angular/common";
+import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 import {
   MAT_DIALOG_DATA,
   MatDialogModule,
@@ -21,6 +24,7 @@ export interface AttendanceFinalizeDialogData {
   readonly attendanceDate: string;
   readonly summary: DailyAttendanceSummary;
   readonly currencySymbol: string;
+  readonly totalHours?: number;
 }
 
 @Component({
@@ -28,7 +32,9 @@ export interface AttendanceFinalizeDialogData {
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     MatButtonModule,
+    MatCheckboxModule,
     MatDialogModule,
     MatIconModule,
   ],
@@ -47,14 +53,12 @@ export interface AttendanceFinalizeDialogData {
       </div>
 
       <mat-dialog-content class="dialog-content">
-        <div class="warning-alert">
-          <mat-icon>lock</mat-icon>
+        <div class="warning-alert" role="alert">
+          <mat-icon class="warning-icon">warning</mat-icon>
           <div class="warning-text">
-            <strong>Locking Attendance &amp; Posting Earnings</strong>
+            <strong>Finalization Warning</strong>
             <p>
-              Finalizing will permanently lock today's attendance records for {{ data.farmName }}.
-              Authoritative entries will be generated in the Worker Earnings Ledger for all worked labor.
-              This cannot be undone from the daily screen.
+              After finalization, attendance becomes read-only and earnings are created in the Worker Earnings Ledger.
             </p>
           </div>
         </div>
@@ -63,39 +67,59 @@ export interface AttendanceFinalizeDialogData {
           <h3>Daily Attendance Summary</h3>
           <div class="breakdown-grid">
             <div class="breakdown-item">
-              <span class="label">Total Workforce:</span>
-              <strong>{{ data.summary.totalCount }} workers</strong>
+              <span class="label">Farm:</span>
+              <strong>{{ data.farmName }}</strong>
             </div>
             <div class="breakdown-item">
-              <span class="label">Worked Workers:</span>
-              <strong class="text-success">{{ data.summary.workedCount }}</strong>
+              <span class="label">Date:</span>
+              <strong>{{ data.attendanceDate }}</strong>
             </div>
             <div class="breakdown-item">
-              <span class="label">Full Day:</span>
+              <span class="label">Number of Workers:</span>
+              <strong>{{ data.summary.totalCount }} workers ({{ data.summary.workedCount }} worked)</strong>
+            </div>
+            <div class="breakdown-item">
+              <span class="label">Full Day Count:</span>
               <span>{{ data.summary.fullDayCount }}</span>
             </div>
             <div class="breakdown-item">
-              <span class="label">Half Day:</span>
+              <span class="label">Half Day Count:</span>
               <span>{{ data.summary.halfDayCount }}</span>
             </div>
             <div class="breakdown-item">
-              <span class="label">Hourly:</span>
+              <span class="label">Hourly Count:</span>
               <span>{{ data.summary.hourlyCount }}</span>
             </div>
+            @if (data.summary.hourlyCount > 0 && data.totalHours) {
+              <div class="breakdown-item">
+                <span class="label">Total Hours:</span>
+                <strong>{{ data.totalHours | number: "1.1-2" }} hrs</strong>
+              </div>
+            }
             @if (data.summary.notWorkedCount > 0) {
               <div class="breakdown-item">
-                <span class="label">Not Worked:</span>
+                <span class="label">Not Worked Count:</span>
                 <span>{{ data.summary.notWorkedCount }}</span>
               </div>
             }
           </div>
 
           <div class="earnings-highlight">
-            <span class="label">Total Earnings to Ledger:</span>
+            <span class="label">Total Estimated Earnings:</span>
             <span class="earnings-value">
               {{ data.currencySymbol }}{{ data.summary.estimatedEarnings | number: "1.2-2" }}
             </span>
           </div>
+        </div>
+
+        <div class="confirmation-checkbox-wrap">
+          <mat-checkbox
+            [ngModel]="confirmedByUser()"
+            (ngModelChange)="confirmedByUser.set($event)"
+            color="primary"
+          >
+            I understand and confirm that after finalization, attendance becomes read-only and earnings are created in the Worker Earnings Ledger.
+          </mat-checkbox>
         </div>
       </mat-dialog-content>
 
@@ -105,9 +129,10 @@ export interface AttendanceFinalizeDialogData {
           mat-flat-button
           color="primary"
           type="button"
+          [disabled]="!confirmedByUser()"
           (click)="confirm()"
         >
-          <mat-icon>check_circle</mat-icon>
+          <mat-icon>verified</mat-icon>
           Confirm &amp; Finalize
         </button>
       </mat-dialog-actions>
@@ -119,7 +144,7 @@ export interface AttendanceFinalizeDialogData {
         display: flex;
         flex-direction: column;
         width: 100%;
-        max-width: 520px;
+        max-width: 540px;
       }
 
       .dialog-header {
@@ -162,7 +187,7 @@ export interface AttendanceFinalizeDialogData {
       }
 
       .dialog-content {
-        padding: 20px 24px;
+        padding: 20px 24px 12px;
       }
 
       .warning-alert {
@@ -175,7 +200,7 @@ export interface AttendanceFinalizeDialogData {
         color: #795548;
         margin-bottom: 20px;
 
-        mat-icon {
+        .warning-icon {
           color: #f57f17;
           font-size: 24px;
           width: 24px;
@@ -188,12 +213,14 @@ export interface AttendanceFinalizeDialogData {
             display: block;
             margin-bottom: 4px;
             color: #b78103;
+            font-size: 0.95rem;
           }
 
           p {
             margin: 0;
-            font-size: 0.85rem;
-            line-height: 1.4;
+            font-size: 0.88rem;
+            line-height: 1.45;
+            color: #5d4037;
           }
         }
       }
@@ -220,13 +247,10 @@ export interface AttendanceFinalizeDialogData {
           .breakdown-item {
             display: flex;
             justify-content: space-between;
+            gap: 8px;
 
             .label {
               color: #666;
-            }
-
-            .text-success {
-              color: #1b7a36;
             }
           }
         }
@@ -252,6 +276,22 @@ export interface AttendanceFinalizeDialogData {
         }
       }
 
+      .confirmation-checkbox-wrap {
+        margin-top: 16px;
+        padding: 12px 14px;
+        background: #f5f5f5;
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+        font-size: 0.85rem;
+
+        ::ng-deep .mdc-label {
+          font-size: 0.86rem;
+          line-height: 1.4;
+          color: #333;
+          font-weight: 500;
+        }
+      }
+
       .dialog-actions {
         display: flex;
         justify-content: flex-end;
@@ -267,7 +307,11 @@ export class AttendanceFinalizeDialogComponent {
   readonly data = inject<AttendanceFinalizeDialogData>(MAT_DIALOG_DATA);
   private readonly dialogRef = inject(MatDialogRef<AttendanceFinalizeDialogComponent>);
 
+  readonly confirmedByUser = signal<boolean>(false);
+
   confirm(): void {
+    if (!this.confirmedByUser()) return;
     this.dialogRef.close(true);
   }
 }
+

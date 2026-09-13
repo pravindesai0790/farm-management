@@ -141,6 +141,7 @@ export class AttendanceDailyPageComponent implements OnInit {
   readonly isFinalizing = signal<boolean>(false);
   readonly isPreviewing = signal<boolean>(false);
   readonly errorMessage = signal<string | null>(null);
+  readonly apiError = signal<unknown>(null);
   readonly hasUnsavedChanges = signal<boolean>(false);
 
   // Filter Form for Top Bar
@@ -325,6 +326,7 @@ export class AttendanceDailyPageComponent implements OnInit {
 
     this.isLoading.set(true);
     this.errorMessage.set(null);
+    this.apiError.set(null);
     this.hasUnsavedChanges.set(false);
     this.lastCopiedExcludedWorkers.set([]);
 
@@ -913,13 +915,18 @@ export class AttendanceDailyPageComponent implements OnInit {
       return;
     }
 
+    const totalHours = this.rows()
+      .filter((r) => r.attendanceType === "HOURLY" && r.workingHours && r.workingHours > 0)
+      .reduce((sum, r) => sum + (r.workingHours || 0), 0);
+
     const dialogRef = this.dialog.open(AttendanceFinalizeDialogComponent, {
-      width: "520px",
+      width: "540px",
       data: {
         farmName: farm.name,
         attendanceDate: this.formattedDate(),
         summary: this.summary(),
         currencySymbol: this.currencySymbol(),
+        totalHours,
       } as AttendanceFinalizeDialogData,
     });
 
@@ -948,6 +955,7 @@ export class AttendanceDailyPageComponent implements OnInit {
 
     this.isFinalizing.set(true);
     this.errorMessage.set(null);
+    this.apiError.set(null);
 
     // If there are unsaved changes, save batch first then finalize
     const saveFirst$ = this.hasUnsavedChanges()
@@ -975,6 +983,7 @@ export class AttendanceDailyPageComponent implements OnInit {
           },
           error: (err) => {
             this.isFinalizing.set(false);
+            this.apiError.set(err);
             this.errorMessage.set(
               getApiErrorMessage(err, "Failed to save draft before finalization."),
             );
@@ -1005,6 +1014,7 @@ export class AttendanceDailyPageComponent implements OnInit {
           this.loadDailyAttendance();
         },
         error: (err) => {
+          this.apiError.set(err);
           this.errorMessage.set(
             getApiErrorMessage(err, "Failed to finalize attendance."),
           );
