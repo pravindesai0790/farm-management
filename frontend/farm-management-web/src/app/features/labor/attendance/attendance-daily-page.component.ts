@@ -109,7 +109,6 @@ export class AttendanceDailyPageComponent implements OnInit {
     "wageRate",
     "earnings",
     "status",
-    "notes",
     "actions",
   ];
 
