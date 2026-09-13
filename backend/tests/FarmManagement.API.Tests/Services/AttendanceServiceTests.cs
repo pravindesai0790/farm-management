@@ -528,6 +528,36 @@ public sealed class AttendanceServiceTests
     }
 
     [Fact]
+    public async Task GetDailySummaryAsync_ReturnsCorrectSummary()
+    {
+        var store = new FakeAttendanceStore();
+        var farm = CreateFarm();
+        store.Farms.Add(farm);
+
+        var date = new DateOnly(2026, 9, 12);
+        var w1 = CreateWorker(firstName: "Worker1");
+        var w2 = CreateWorker(firstName: "Worker2");
+
+        store.Workers.AddRange([w1, w2]);
+
+        var att1 = LaborAttendance.CreateDraft(_organizationId, farm.Id, w1.Id, date, AttendanceType.FullDay, _userId, null, 500m, 500m);
+        var att2 = LaborAttendance.CreateDraft(_organizationId, farm.Id, w2.Id, date, AttendanceType.HalfDay, _userId, null, 250m, 250m);
+
+        store.Attendances.AddRange([att1, att2]);
+
+        var service = CreateService(store);
+        var summary = await service.GetDailySummaryAsync(CreateActor(), farm.Id, date);
+
+        Assert.Equal(2, summary.TotalCount);
+        Assert.Equal(2, summary.WorkedCount);
+        Assert.Equal(1, summary.FullDayCount);
+        Assert.Equal(1, summary.HalfDayCount);
+        Assert.Equal(0, summary.HourlyCount);
+        Assert.Equal(0, summary.NotWorkedCount);
+        Assert.Equal(750m, summary.EstimatedEarnings);
+    }
+
+    [Fact]
     public async Task GetDailyAttendanceAsync_WhenAllFinalized_ReturnsFinalizedStatus()
     {
         var store = new FakeAttendanceStore();

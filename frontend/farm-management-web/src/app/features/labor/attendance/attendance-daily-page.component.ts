@@ -387,6 +387,7 @@ export class AttendanceDailyPageComponent implements OnInit {
   }
 
   // Live Wage Preview & Grid Editing logic
+  // Live Wage Preview & Grid Editing logic
   onAttendanceTypeChange(row: AttendanceGridRow, newType: AttendanceType): void {
     if (this.isFinalized()) return;
     row.attendanceType = newType;
@@ -398,22 +399,17 @@ export class AttendanceDailyPageComponent implements OnInit {
       row.hoursError = null;
       row.calculatedRate = null;
       row.calculatedAmount = 0;
-      this.recalculateLocalCounts();
-      // No wage preview required for NOT_WORKED
     } else if (newType === "HOURLY") {
       if (!row.workingHours || row.workingHours <= 0) {
         row.workingHours = 8;
       }
       row.hoursError = null;
-      this.recalculateLocalCounts();
-      this.previewTrigger$.next();
     } else {
       // FULL_DAY or HALF_DAY
       row.workingHours = null;
       row.hoursError = null;
-      this.recalculateLocalCounts();
-      this.previewTrigger$.next();
     }
+    this.previewTrigger$.next();
   }
 
   onHoursInput(row: AttendanceGridRow, event: Event): void {
@@ -427,7 +423,7 @@ export class AttendanceDailyPageComponent implements OnInit {
       row.calculatedAmount = null;
       row.isModified = true;
       this.hasUnsavedChanges.set(true);
-      this.recalculateLocalCounts();
+      this.previewTrigger$.next();
       return;
     }
 
@@ -438,7 +434,7 @@ export class AttendanceDailyPageComponent implements OnInit {
       row.calculatedAmount = null;
       row.isModified = true;
       this.hasUnsavedChanges.set(true);
-      this.recalculateLocalCounts();
+      this.previewTrigger$.next();
       return;
     }
 
@@ -448,7 +444,7 @@ export class AttendanceDailyPageComponent implements OnInit {
       row.calculatedAmount = null;
       row.isModified = true;
       this.hasUnsavedChanges.set(true);
-      this.recalculateLocalCounts();
+      this.previewTrigger$.next();
       return;
     }
 
@@ -457,7 +453,6 @@ export class AttendanceDailyPageComponent implements OnInit {
     row.hoursError = null;
     row.isModified = true;
     this.hasUnsavedChanges.set(true);
-    this.recalculateLocalCounts();
     this.previewTrigger$.next();
   }
 
@@ -478,13 +473,11 @@ export class AttendanceDailyPageComponent implements OnInit {
     const updated = this.rows().filter((r) => r.workerId !== row.workerId);
     this.rows.set(updated);
     this.hasUnsavedChanges.set(true);
-    this.recalculateLocalCounts();
 
     if (updated.length > 0) {
       this.previewTrigger$.next();
     } else {
-      this.summary.update((s) => ({
-        ...s,
+      this.summary.set({
         totalCount: 0,
         workedCount: 0,
         fullDayCount: 0,
@@ -492,50 +485,9 @@ export class AttendanceDailyPageComponent implements OnInit {
         hourlyCount: 0,
         notWorkedCount: 0,
         estimatedEarnings: 0,
-      }));
+        status: this.summary().status,
+      });
     }
-  }
-
-  private recalculateLocalCounts(): void {
-    const list = this.rows();
-    let full = 0;
-    let half = 0;
-    let hourly = 0;
-    let notWorked = 0;
-    let totalEarnings = 0;
-
-    for (const r of list) {
-      switch (r.attendanceType) {
-        case "FULL_DAY":
-          full++;
-          if (r.calculatedAmount) totalEarnings += r.calculatedAmount;
-          break;
-        case "HALF_DAY":
-          half++;
-          if (r.calculatedAmount) totalEarnings += r.calculatedAmount;
-          break;
-        case "HOURLY":
-          hourly++;
-          if (r.calculatedAmount && !r.hoursError) totalEarnings += r.calculatedAmount;
-          break;
-        case "NOT_WORKED":
-          notWorked++;
-          break;
-      }
-    }
-
-    const worked = full + half + hourly;
-
-    this.summary.update((s) => ({
-      ...s,
-      totalCount: list.length,
-      workedCount: worked,
-      fullDayCount: full,
-      halfDayCount: half,
-      hourlyCount: hourly,
-      notWorkedCount: notWorked,
-      estimatedEarnings: totalEarnings,
-    }));
   }
 
   private runWagePreview(): void {
@@ -545,32 +497,17 @@ export class AttendanceDailyPageComponent implements OnInit {
 
     if (list.length === 0 || !date) return;
 
-    // Filter out NOT_WORKED (no wage preview required) and invalid HOURLY rows
-    const previewableRows = list.filter((r) => {
-      if (r.attendanceType === "NOT_WORKED") return false;
-      if (r.attendanceType === "HOURLY") {
-        return (
-          r.workingHours !== null &&
-          r.workingHours !== undefined &&
-          r.workingHours > 0 &&
-          r.workingHours <= 24 &&
-          !r.hoursError
-        );
-      }
-      return true;
-    });
-
-    if (previewableRows.length === 0) {
-      this.recalculateLocalCounts();
-      return;
-    }
-
     this.isPreviewing.set(true);
 
-    const items = previewableRows.map((r) => ({
+    const items = list.map((r) => ({
       workerId: r.workerId,
       attendanceType: r.attendanceType,
-      workingHours: r.attendanceType === "HOURLY" ? r.workingHours : null,
+      workingHours:
+        r.attendanceType === "HOURLY"
+          ? r.workingHours && r.workingHours > 0 && r.workingHours <= 24 && !r.hoursError
+            ? r.workingHours
+            : null
+          : null,
     }));
 
     this.attendanceService
@@ -611,7 +548,18 @@ export class AttendanceDailyPageComponent implements OnInit {
           });
 
           this.rows.set(updatedRows);
-          this.recalculateLocalCounts();
+
+          // Update summary directly from authoritative backend preview batch aggregates
+          this.summary.set({
+            totalCount: previewRes.totalCount,
+            workedCount: previewRes.workedCount,
+            fullDayCount: previewRes.fullDayCount,
+            halfDayCount: previewRes.halfDayCount,
+            hourlyCount: previewRes.hourlyCount,
+            notWorkedCount: previewRes.notWorkedCount,
+            estimatedEarnings: previewRes.totalEstimatedEarnings,
+            status: this.summary().status,
+          });
 
           if (previewRes.items.length > 0 && previewRes.items[0].currencySymbol) {
             this.currencySymbol.set(previewRes.items[0].currencySymbol);
@@ -674,7 +622,6 @@ export class AttendanceDailyPageComponent implements OnInit {
 
         this.rows.set(currentRows);
         this.hasUnsavedChanges.set(true);
-        this.recalculateLocalCounts();
         this.previewTrigger$.next();
 
         this.snack.open(
@@ -748,7 +695,6 @@ export class AttendanceDailyPageComponent implements OnInit {
 
         this.rows.set(currentRows);
         this.hasUnsavedChanges.set(true);
-        this.recalculateLocalCounts();
         this.previewTrigger$.next();
 
         this.snack.open(

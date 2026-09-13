@@ -73,6 +73,32 @@ public sealed class AttendanceController(
         return Ok(result);
     }
 
+    [HttpGet("summary")]
+    [Authorize(Policy = "Permission:Attendance.View")]
+    public async Task<ActionResult<DailyAttendanceSummaryResponse>> GetDailySummary(
+        [FromQuery] Guid farmId,
+        [FromQuery] DateOnly? date = null,
+        [FromQuery] DateOnly? attendanceDate = null,
+        CancellationToken cancellationToken = default)
+    {
+        var effectiveDate = date ?? attendanceDate;
+        if (!effectiveDate.HasValue || effectiveDate.Value == default)
+        {
+            throw new ValidationException("Validation failed.", new Dictionary<string, string[]>
+            {
+                ["attendanceDate"] = ["Attendance date is required."]
+            });
+        }
+
+        var result = await attendanceService.GetDailySummaryAsync(
+            GetUserContext(),
+            farmId,
+            effectiveDate.Value,
+            cancellationToken);
+
+        return Ok(result);
+    }
+
     [HttpGet("history")]
     [Authorize(Policy = "Permission:Attendance.View")]
     public async Task<ActionResult<PagedResponse<AttendanceRecordResponse>>> GetHistory(

@@ -17,6 +17,7 @@ import {
   CopyPreviousDayPreviewResponse,
   CreateDraftAttendanceRequest,
   DailyAttendanceResponse,
+  DailyAttendanceSummary,
   FinalizeAttendanceRequest,
   FinalizeAttendanceResponse,
   SaveDailyDraftAttendanceBatchRequest,
@@ -38,6 +39,20 @@ export class AttendanceService {
 
     return this.http.get<DailyAttendanceResponse>(
       `${this.api}/attendance/daily`,
+      { params },
+    );
+  }
+
+  getDailySummary(
+    farmId: string,
+    date: string,
+  ): Observable<DailyAttendanceSummary> {
+    const params = new HttpParams()
+      .set("farmId", farmId)
+      .set("date", date);
+
+    return this.http.get<DailyAttendanceSummary>(
+      `${this.api}/attendance/summary`,
       { params },
     );
   }

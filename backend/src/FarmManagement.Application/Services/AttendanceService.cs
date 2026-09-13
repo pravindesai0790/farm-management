@@ -129,6 +129,16 @@ public sealed class AttendanceService(
             Records: mappedRecords);
     }
 
+    public async Task<DailyAttendanceSummaryResponse> GetDailySummaryAsync(
+        AttendanceActor actor,
+        Guid farmId,
+        DateOnly attendanceDate,
+        CancellationToken cancellationToken = default)
+    {
+        var daily = await GetDailyAttendanceAsync(actor, farmId, attendanceDate, cancellationToken);
+        return daily.Summary;
+    }
+
     public async Task<PagedResponse<AttendanceRecordResponse>> GetAttendanceHistoryAsync(
         AttendanceActor actor,
         AttendanceHistoryQuery query,

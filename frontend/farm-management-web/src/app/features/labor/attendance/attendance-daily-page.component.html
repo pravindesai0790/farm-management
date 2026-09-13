@@ -273,18 +273,20 @@
       </mat-card>
 
       <!-- 5. Not Worked Count -->
-      <mat-card class="stat-card">
-        <mat-card-content>
-          <div class="stat-icon-wrap icon-not-worked">
-            <mat-icon>event_busy</mat-icon>
-          </div>
-          <div class="stat-info">
-            <span class="stat-label">Not Worked</span>
-            <span class="stat-value">{{ summary().notWorkedCount }}</span>
-            <small class="stat-subtext">No earnings generated</small>
-          </div>
-        </mat-card-content>
-      </mat-card>
+      @if (summary().notWorkedCount > 0) {
+        <mat-card class="stat-card">
+          <mat-card-content>
+            <div class="stat-icon-wrap icon-not-worked">
+              <mat-icon>event_busy</mat-icon>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Not Worked</span>
+              <span class="stat-value">{{ summary().notWorkedCount }}</span>
+              <small class="stat-subtext">No earnings generated</small>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      }
 
       <!-- 6. Estimated / Finalized Earnings -->
       <mat-card class="stat-card stat-earnings">
