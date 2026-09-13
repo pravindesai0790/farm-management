@@ -35,7 +35,9 @@ import {
   AttendanceGridRow,
   AttendanceRecord,
   AttendanceType,
+  CopyPreviousDayAttendanceResponse,
   DailyAttendanceSummary,
+  ExcludedWorkerInfo,
   SaveDailyDraftAttendanceBatchRequest,
   formatAttendanceStatus,
   formatAttendanceType,
@@ -57,7 +59,6 @@ import {
 import {
   AttendanceCopyPreviousDayDialogComponent,
   AttendanceCopyPreviousDayDialogData,
-  AttendanceCopyPreviousDayResult,
 } from "./dialogs/attendance-copy-previous-day-dialog.component";
 import {
   AttendanceFinalizeDialogComponent,
@@ -132,6 +133,7 @@ export class AttendanceDailyPageComponent implements OnInit {
     finalizedAt?: string | null;
     finalizedBy?: string | null;
   } | null>(null);
+  readonly lastCopiedExcludedWorkers = signal<ExcludedWorkerInfo[]>([]);
 
   // Status & Progress Signals
   readonly isLoading = signal<boolean>(false);
@@ -324,6 +326,7 @@ export class AttendanceDailyPageComponent implements OnInit {
     this.isLoading.set(true);
     this.errorMessage.set(null);
     this.hasUnsavedChanges.set(false);
+    this.lastCopiedExcludedWorkers.set([]);
 
     this.attendanceService
       .getDailyAttendance(farmId, date)
@@ -758,16 +761,19 @@ export class AttendanceDailyPageComponent implements OnInit {
   // Top Action: Copy Previous Day
   openCopyPreviousDayDialog(): void {
     const farm = this.selectedFarm();
-    if (!farm) return;
+    if (!farm || this.isFinalized()) return;
 
     const dialogRef = this.dialog.open(
       AttendanceCopyPreviousDayDialogComponent,
       {
-        width: "540px",
+        width: "680px",
+        maxWidth: "95vw",
         data: {
           farmId: farm.id,
           farmName: farm.name,
           targetDate: this.formattedDate(),
+          currentDraftCount: this.rows().length,
+          hasUnsavedChanges: this.hasUnsavedChanges(),
         } as AttendanceCopyPreviousDayDialogData,
       },
     );
@@ -775,77 +781,45 @@ export class AttendanceDailyPageComponent implements OnInit {
     dialogRef
       .afterClosed()
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((result: AttendanceCopyPreviousDayResult | undefined) => {
-        if (!result || result.sourceRecords.length === 0) return;
+      .subscribe((result: CopyPreviousDayAttendanceResponse | undefined) => {
+        if (!result) return;
 
-        // Fetch eligible workers for current date to ensure none are copied if no longer eligible
-        this.attendanceService
-          .getEligibleWorkers(farm.id, this.formattedDate(), null, 1, 100)
-          .pipe(takeUntilDestroyed(this.destroyRef))
-          .subscribe({
-            next: (eligibleRes) => {
-              const eligibleIds = new Set(
-                (eligibleRes.items || []).map((e) => e.workerId),
-              );
-              const eligibleWorkerMap = new Map(
-                (eligibleRes.items || []).map((e) => [e.workerId, e]),
-              );
+        const updatedRows: AttendanceGridRow[] = (
+          result.dailyAttendance.records || []
+        ).map((r) => ({
+          id: r.id,
+          workerId: r.workerId,
+          workerDisplayName: r.workerDisplayName,
+          workerFirstName: r.workerFirstName,
+          workerLastName: r.workerLastName,
+          gender: r.gender,
+          mobileNumber: null,
+          laborCategoryName: r.laborCategoryName,
+          contractorName: null,
+          employmentType: r.employmentType,
+          attendanceType: (r.attendanceType as AttendanceType) || "FULL_DAY",
+          workingHours: r.workingHours,
+          calculatedRate: r.calculatedRate,
+          calculatedAmount: r.calculatedAmount,
+          currencySymbol: r.currencySymbol || this.currencySymbol(),
+          status: "DRAFT",
+          notes: r.notes,
+          isModified: false,
+        }));
 
-              const newRows: AttendanceGridRow[] = [];
-              let skippedCount = 0;
+        this.rows.set(updatedRows);
+        this.summary.set(result.dailyAttendance.summary);
+        this.hasUnsavedChanges.set(false);
+        this.lastCopiedExcludedWorkers.set(
+          result.excludedWorkers ? [...result.excludedWorkers] : [],
+        );
 
-              for (const src of result.sourceRecords) {
-                if (!eligibleIds.has(src.workerId)) {
-                  skippedCount++;
-                  continue;
-                }
+        let message = `Copied ${result.copiedCount} worker(s) from ${result.sourceDate} into today's draft.`;
+        if (result.excludedCount > 0) {
+          message += ` (${result.excludedCount} worker(s) excluded due to ineligibility)`;
+        }
 
-                const eligibleInfo = eligibleWorkerMap.get(src.workerId);
-
-                newRows.push({
-                  workerId: src.workerId,
-                  workerDisplayName: src.workerDisplayName,
-                  workerFirstName: src.workerFirstName,
-                  workerLastName: src.workerLastName,
-                  gender: src.gender,
-                  mobileNumber: eligibleInfo?.mobileNumber || null,
-                  laborCategoryName:
-                    src.laborCategoryName || eligibleInfo?.laborCategoryName || null,
-                  contractorName: eligibleInfo?.contractorName || null,
-                  employmentType: src.employmentType,
-                  attendanceType:
-                    (src.attendanceType as AttendanceType) || "FULL_DAY",
-                  workingHours: src.workingHours,
-                  calculatedRate: null,
-                  calculatedAmount: null,
-                  currencySymbol: this.currencySymbol(),
-                  status: "DRAFT",
-                  notes: src.notes,
-                  isModified: true,
-                });
-              }
-
-              this.rows.set(newRows);
-              this.hasUnsavedChanges.set(true);
-              this.recalculateLocalCounts();
-              this.previewTrigger$.next();
-
-              let message = `Copied ${newRows.length} worker(s) from ${result.sourceDate}.`;
-              if (skippedCount > 0) {
-                message += ` (${skippedCount} worker(s) excluded because they are no longer assigned to this farm today)`;
-              }
-
-              this.snack.open(message, "Close", { duration: 5000 });
-            },
-            error: (err) => {
-              this.errorMessage.set(
-                getApiErrorMessage(
-                  err,
-                  "Failed to verify eligibility while copying roster.",
-                ),
-              );
-            },
-          });
+        this.snack.open(message, "Close", { duration: 6000 });
       });
   }
 

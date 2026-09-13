@@ -10,6 +10,9 @@ import {
   AttendanceWagePreviewBatchResponse,
   AttendanceWagePreviewRequest,
   AttendanceWagePreviewResponse,
+  CopyPreviousDayAttendanceRequest,
+  CopyPreviousDayAttendanceResponse,
+  CopyPreviousDayPreviewResponse,
   CreateDraftAttendanceRequest,
   DailyAttendanceResponse,
   FinalizeAttendanceRequest,
@@ -124,6 +127,34 @@ export class AttendanceService {
     return this.http.post<AttendanceRecord>(
       `${this.api}/attendance/${id}/finalize`,
       {},
+    );
+  }
+
+  previewCopyPreviousDay(
+    farmId: string,
+    targetDate: string,
+    sourceDate?: string | null,
+  ): Observable<CopyPreviousDayPreviewResponse> {
+    let params = new HttpParams()
+      .set("farmId", farmId)
+      .set("targetDate", targetDate);
+
+    if (sourceDate && sourceDate.trim()) {
+      params = params.set("sourceDate", sourceDate.trim());
+    }
+
+    return this.http.get<CopyPreviousDayPreviewResponse>(
+      `${this.api}/attendance/copy-previous-day/preview`,
+      { params },
+    );
+  }
+
+  copyPreviousDay(
+    request: CopyPreviousDayAttendanceRequest,
+  ): Observable<CopyPreviousDayAttendanceResponse> {
+    return this.http.post<CopyPreviousDayAttendanceResponse>(
+      `${this.api}/attendance/copy-previous-day`,
+      request,
     );
   }
 }

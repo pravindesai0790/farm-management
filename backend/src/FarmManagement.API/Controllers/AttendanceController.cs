@@ -191,6 +191,48 @@ public sealed class AttendanceController(
         return Ok(result);
     }
 
+    [HttpGet("copy-previous-day/preview")]
+    [Authorize(Policy = "Permission:Attendance.View")]
+    public async Task<ActionResult<CopyPreviousDayPreviewResponse>> PreviewCopyPreviousDay(
+        [FromQuery] Guid farmId,
+        [FromQuery] DateOnly? targetDate = null,
+        [FromQuery] DateOnly? date = null,
+        [FromQuery] DateOnly? sourceDate = null,
+        CancellationToken cancellationToken = default)
+    {
+        var effectiveTargetDate = targetDate ?? date;
+        if (!effectiveTargetDate.HasValue || effectiveTargetDate.Value == default)
+        {
+            throw new ValidationException("Validation failed.", new Dictionary<string, string[]>
+            {
+                ["targetDate"] = ["Target attendance date is required."]
+            });
+        }
+
+        var result = await attendanceService.PreviewCopyPreviousDayAsync(
+            GetUserContext(),
+            farmId,
+            effectiveTargetDate.Value,
+            sourceDate,
+            cancellationToken);
+
+        return Ok(result);
+    }
+
+    [HttpPost("copy-previous-day")]
+    [Authorize(Policy = "Permission:Attendance.Create")]
+    public async Task<ActionResult<CopyPreviousDayAttendanceResponse>> CopyPreviousDay(
+        [FromBody] CopyPreviousDayAttendanceRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await attendanceService.CopyPreviousDayAsync(
+            GetUserContext(),
+            request,
+            cancellationToken);
+
+        return Ok(result);
+    }
+
     private AttendanceActor GetUserContext() =>
         UserContextHelper.GetUserContext<AttendanceActor>(User);
 }

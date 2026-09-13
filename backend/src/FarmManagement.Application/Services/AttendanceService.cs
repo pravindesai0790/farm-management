@@ -904,6 +904,460 @@ public sealed class AttendanceService(
         return record ?? throw new ResourceNotFoundException("The finalized attendance record was not found.");
     }
 
+    public async Task<CopyPreviousDayPreviewResponse> PreviewCopyPreviousDayAsync(
+        AttendanceActor actor,
+        Guid farmId,
+        DateOnly targetDate,
+        DateOnly? sourceDate = null,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+
+        if (farmId == Guid.Empty)
+        {
+            throw Validation("farmId", "Farm is required.");
+        }
+
+        if (targetDate == default)
+        {
+            throw Validation("targetDate", "Target attendance date is required.");
+        }
+
+        var farm = await store.FindFarmAsync(farmId, actor.OrganizationId, cancellationToken);
+        if (farm is null)
+        {
+            throw new ResourceNotFoundException("The farm was not found.");
+        }
+
+        if (!farm.IsActive)
+        {
+            throw Validation("farmId", "Cannot access attendance for an inactive farm.");
+        }
+
+        DateOnly resolvedSourceDate;
+        if (sourceDate.HasValue && sourceDate.Value != default)
+        {
+            if (sourceDate.Value >= targetDate)
+            {
+                throw Validation("sourceDate", "Source date must be prior to target date.");
+            }
+            resolvedSourceDate = sourceDate.Value;
+        }
+        else
+        {
+            var prevDate = await store.FindPreviousAttendanceDateAsync(actor.OrganizationId, farmId, targetDate, cancellationToken);
+            if (!prevDate.HasValue)
+            {
+                throw Validation("sourceDate", $"No prior attendance roster was found for {farm.Name} prior to {targetDate:yyyy-MM-dd}.");
+            }
+            resolvedSourceDate = prevDate.Value;
+        }
+
+        var sourceRecords = await store.ListDailyAttendanceAsync(
+            actor.OrganizationId,
+            farmId,
+            resolvedSourceDate,
+            cancellationToken);
+
+        if (sourceRecords.Count == 0)
+        {
+            throw Validation("sourceDate", $"No attendance records found for {farm.Name} on {resolvedSourceDate:yyyy-MM-dd}.");
+        }
+
+        var sourceSummary = BuildDailyAttendanceSummary(sourceRecords);
+
+        var targetRecords = await store.ListDailyAttendanceAsync(
+            actor.OrganizationId,
+            farmId,
+            targetDate,
+            cancellationToken);
+
+        var targetIsFinalized = targetRecords.Any(r => r.Status == AttendanceStatus.Finalized);
+        var targetHasExistingRecords = targetRecords.Count > 0;
+        var targetExistingRecordCount = targetRecords.Count;
+
+        var workerItems = new List<CopyPreviousDayPreviewWorkerItem>();
+        var excludedList = new List<ExcludedWorkerInfo>();
+
+        foreach (var src in sourceRecords)
+        {
+            var (isEligible, reason) = await EvaluateWorkerEligibilityAsync(
+                actor.OrganizationId,
+                src.WorkerId,
+                farmId,
+                targetDate,
+                cancellationToken);
+
+            decimal? provRate = null;
+            decimal? provAmount = null;
+
+            if (isEligible && src.AttendanceType != AttendanceType.NotWorked)
+            {
+                try
+                {
+                    var quantity = src.AttendanceType == AttendanceType.Hourly ? (src.WorkingHours ?? 1m) : 1m;
+                    var previewResult = await earningsIntegration.CalculateAttendanceEarningsAsync(
+                        new EarningsActor(actor.UserId, actor.OrganizationId),
+                        new CalculateAttendanceEarningsRequest(
+                            WorkerId: src.WorkerId,
+                            AttendanceDate: targetDate,
+                            AttendanceType: FormatAttendanceType(src.AttendanceType),
+                            Quantity: quantity),
+                        cancellationToken);
+
+                    provRate = previewResult.WageRate;
+                    provAmount = previewResult.GrossAmount;
+                }
+                catch
+                {
+                    // Fall back to uncalculated provisional amount if rate resolution is pending
+                }
+            }
+
+            var item = new CopyPreviousDayPreviewWorkerItem(
+                WorkerId: src.WorkerId,
+                DisplayName: src.Worker?.DisplayName ?? string.Empty,
+                FirstName: src.Worker?.FirstName ?? string.Empty,
+                LastName: src.Worker?.LastName,
+                Gender: src.Worker != null ? src.Worker.Gender.ToString().ToUpperInvariant() : string.Empty,
+                MobileNumber: src.Worker?.MobileNumber,
+                LaborCategoryName: src.Worker?.LaborCategory?.Name,
+                ContractorName: src.Worker?.Contractor?.Name,
+                EmploymentType: src.Worker != null ? ConvertEmploymentTypeToString(src.Worker.EmploymentType) : string.Empty,
+                AttendanceType: FormatAttendanceType(src.AttendanceType),
+                WorkingHours: src.WorkingHours,
+                Notes: src.Notes,
+                IsEligible: isEligible,
+                IneligibilityReason: reason,
+                ProvisionalRate: provRate,
+                ProvisionalAmount: provAmount);
+
+            workerItems.Add(item);
+
+            if (!isEligible)
+            {
+                excludedList.Add(new ExcludedWorkerInfo(
+                    src.WorkerId,
+                    src.Worker?.DisplayName ?? src.WorkerId.ToString(),
+                    reason ?? "Worker is not eligible for attendance on target date."));
+            }
+        }
+
+        var eligibleCount = workerItems.Count(w => w.IsEligible);
+        var excludedCount = excludedList.Count;
+
+        return new CopyPreviousDayPreviewResponse(
+            FarmId: farmId,
+            FarmName: farm.Name,
+            SourceDate: resolvedSourceDate,
+            TargetDate: targetDate,
+            TotalSourceCount: sourceRecords.Count,
+            EligibleCount: eligibleCount,
+            ExcludedCount: excludedCount,
+            TargetHasExistingRecords: targetHasExistingRecords,
+            TargetExistingRecordCount: targetExistingRecordCount,
+            TargetIsFinalized: targetIsFinalized,
+            SourceSummary: sourceSummary,
+            Workers: workerItems,
+            ExcludedWorkers: excludedList);
+    }
+
+    public async Task<CopyPreviousDayAttendanceResponse> CopyPreviousDayAsync(
+        AttendanceActor actor,
+        CopyPreviousDayAttendanceRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (request.FarmId == Guid.Empty)
+        {
+            throw Validation("farmId", "Farm is required.");
+        }
+
+        if (request.TargetDate == default)
+        {
+            throw Validation("targetDate", "Target attendance date is required.");
+        }
+
+        var farm = await store.FindFarmAsync(request.FarmId, actor.OrganizationId, cancellationToken);
+        if (farm is null)
+        {
+            throw new ResourceNotFoundException("The farm was not found.");
+        }
+
+        if (!farm.IsActive)
+        {
+            throw Validation("farmId", "Cannot record attendance for an inactive farm.");
+        }
+
+        DateOnly resolvedSourceDate;
+        if (request.SourceDate.HasValue && request.SourceDate.Value != default)
+        {
+            if (request.SourceDate.Value >= request.TargetDate)
+            {
+                throw Validation("sourceDate", "Source date must be prior to target date.");
+            }
+            resolvedSourceDate = request.SourceDate.Value;
+        }
+        else
+        {
+            var prevDate = await store.FindPreviousAttendanceDateAsync(actor.OrganizationId, request.FarmId, request.TargetDate, cancellationToken);
+            if (!prevDate.HasValue)
+            {
+                throw Validation("sourceDate", $"No prior attendance roster was found for {farm.Name} prior to {request.TargetDate:yyyy-MM-dd}.");
+            }
+            resolvedSourceDate = prevDate.Value;
+        }
+
+        var sourceRecords = await store.ListDailyAttendanceAsync(
+            actor.OrganizationId,
+            request.FarmId,
+            resolvedSourceDate,
+            cancellationToken);
+
+        if (sourceRecords.Count == 0)
+        {
+            throw Validation("sourceDate", $"No attendance records found for {farm.Name} on {resolvedSourceDate:yyyy-MM-dd}.");
+        }
+
+        var workersToConsider = sourceRecords.AsEnumerable();
+        if (request.WorkerIds is not null && request.WorkerIds.Count > 0)
+        {
+            var selectedSet = request.WorkerIds.ToHashSet();
+            workersToConsider = workersToConsider.Where(s => selectedSet.Contains(s.WorkerId));
+        }
+
+        var selectedList = workersToConsider.ToList();
+        if (selectedList.Count == 0)
+        {
+            throw Validation("workerIds", "None of the selected workers match the source attendance roster.");
+        }
+
+        return await store.ExecuteInTransactionAsync(async ct =>
+        {
+            var existingTargetRecords = await store.ListDailyAttendanceTrackedAsync(
+                actor.OrganizationId,
+                request.FarmId,
+                request.TargetDate,
+                ct);
+
+            if (existingTargetRecords.Any(r => r.Status == AttendanceStatus.Finalized))
+            {
+                throw Validation("status", $"Attendance for {request.TargetDate:yyyy-MM-dd} is already finalized and cannot be overwritten or modified.");
+            }
+
+            if (existingTargetRecords.Count > 0 && !request.OverwriteExistingDraft)
+            {
+                throw Validation("overwriteExistingDraft", $"Target date already has an existing draft attendance roster with {existingTargetRecords.Count} record(s). Confirmation is required to overwrite.");
+            }
+
+            if (request.OverwriteExistingDraft && existingTargetRecords.Count > 0)
+            {
+                foreach (var existing in existingTargetRecords)
+                {
+                    store.RemoveAttendance(existing);
+                }
+            }
+
+            var excludedWorkers = new List<ExcludedWorkerInfo>();
+            var eligibleToCopy = new List<(LaborAttendance Source, Worker Worker)>();
+
+            foreach (var src in selectedList)
+            {
+                var (isEligible, reason) = await EvaluateWorkerEligibilityAsync(
+                    actor.OrganizationId,
+                    src.WorkerId,
+                    request.FarmId,
+                    request.TargetDate,
+                    ct);
+
+                if (!isEligible)
+                {
+                    excludedWorkers.Add(new ExcludedWorkerInfo(
+                        src.WorkerId,
+                        src.Worker?.DisplayName ?? src.WorkerId.ToString(),
+                        reason ?? "Worker is not eligible on target date."));
+                }
+                else
+                {
+                    var worker = await store.FindWorkerWithAssignmentAsync(
+                        actor.OrganizationId,
+                        src.WorkerId,
+                        request.FarmId,
+                        request.TargetDate,
+                        ct);
+
+                    if (worker is not null)
+                    {
+                        eligibleToCopy.Add((src, worker));
+                    }
+                }
+            }
+
+            if (eligibleToCopy.Count == 0)
+            {
+                throw Validation("workers", $"None of the {selectedList.Count} worker(s) from {resolvedSourceDate:yyyy-MM-dd} could be copied. All were excluded due to ineligibility.");
+            }
+
+            foreach (var (src, worker) in eligibleToCopy)
+            {
+                decimal? calculatedRate = null;
+                decimal? calculatedAmount = 0m;
+                Guid? currencyId = null;
+
+                if (src.AttendanceType != AttendanceType.NotWorked)
+                {
+                    var quantity = src.AttendanceType == AttendanceType.Hourly ? (src.WorkingHours ?? 1m) : 1m;
+                    try
+                    {
+                        var previewResult = await earningsIntegration.CalculateAttendanceEarningsAsync(
+                            new EarningsActor(actor.UserId, actor.OrganizationId),
+                            new CalculateAttendanceEarningsRequest(
+                                WorkerId: src.WorkerId,
+                                AttendanceDate: request.TargetDate,
+                                AttendanceType: FormatAttendanceType(src.AttendanceType),
+                                Quantity: quantity),
+                            ct);
+
+                        calculatedRate = previewResult.WageRate;
+                        calculatedAmount = previewResult.GrossAmount;
+                        currencyId = previewResult.CurrencyId;
+                    }
+                    catch
+                    {
+                        calculatedRate = null;
+                        calculatedAmount = 0m;
+                    }
+                }
+
+                var draft = LaborAttendance.CreateDraft(
+                    organizationId: actor.OrganizationId,
+                    farmId: request.FarmId,
+                    workerId: src.WorkerId,
+                    attendanceDate: request.TargetDate,
+                    attendanceType: src.AttendanceType,
+                    createdBy: actor.UserId,
+                    workingHours: src.AttendanceType == AttendanceType.Hourly ? src.WorkingHours : null,
+                    calculatedRate: calculatedRate,
+                    calculatedAmount: calculatedAmount,
+                    currencyId: currencyId,
+                    notes: src.Notes);
+
+                store.AddAttendance(draft);
+            }
+
+            await store.SaveChangesAsync(ct);
+
+            var targetDaily = await store.ListDailyAttendanceAsync(
+                actor.OrganizationId,
+                request.FarmId,
+                request.TargetDate,
+                ct);
+
+            var summary = BuildDailyAttendanceSummary(targetDaily);
+            var mappedRecords = targetDaily.Select(r => MapToResponse(r, farm.Name)).ToArray();
+
+            var dailyAttendanceResponse = new DailyAttendanceResponse(
+                FarmId: farm.Id,
+                FarmName: farm.Name,
+                AttendanceDate: request.TargetDate,
+                Summary: summary,
+                Records: mappedRecords);
+
+            return new CopyPreviousDayAttendanceResponse(
+                FarmId: farm.Id,
+                FarmName: farm.Name,
+                SourceDate: resolvedSourceDate,
+                TargetDate: request.TargetDate,
+                TotalSourceWorkers: sourceRecords.Count,
+                CopiedCount: eligibleToCopy.Count,
+                ExcludedCount: excludedWorkers.Count,
+                ExcludedWorkers: excludedWorkers,
+                DailyAttendance: dailyAttendanceResponse);
+        }, cancellationToken);
+    }
+
+    private async Task<(bool IsEligible, string? Reason)> EvaluateWorkerEligibilityAsync(
+        Guid organizationId,
+        Guid workerId,
+        Guid farmId,
+        DateOnly targetDate,
+        CancellationToken cancellationToken)
+    {
+        var worker = await store.FindWorkerWithDetailsAsync(organizationId, workerId, cancellationToken);
+        if (worker is null)
+        {
+            return (false, "Worker record was not found in the organization.");
+        }
+
+        if (!worker.IsActive)
+        {
+            return (false, "Worker is deactivated.");
+        }
+
+        if (worker.JoiningDate.HasValue && worker.JoiningDate.Value > targetDate)
+        {
+            return (false, $"Worker has not joined yet (joining date is {worker.JoiningDate.Value:yyyy-MM-dd}).");
+        }
+
+        if (worker.LeavingDate.HasValue && worker.LeavingDate.Value < targetDate)
+        {
+            return (false, $"Worker left organization on {worker.LeavingDate.Value:yyyy-MM-dd}.");
+        }
+
+        var matchingAssignment = worker.FarmAssignments.FirstOrDefault(a =>
+            a.OrganizationId == organizationId &&
+            a.FarmId == farmId &&
+            a.IsActive &&
+            a.AssignedFrom <= targetDate &&
+            (!a.AssignedTo.HasValue || a.AssignedTo.Value >= targetDate));
+
+        if (matchingAssignment is null)
+        {
+            var anyFarmAssignment = worker.FarmAssignments
+                .Where(a => a.OrganizationId == organizationId && a.FarmId == farmId)
+                .OrderByDescending(a => a.AssignedFrom)
+                .FirstOrDefault();
+
+            if (anyFarmAssignment is null)
+            {
+                return (false, "Worker is not assigned to this farm.");
+            }
+
+            if (!anyFarmAssignment.IsActive)
+            {
+                return (false, "Worker's assignment to this farm is deactivated.");
+            }
+
+            if (anyFarmAssignment.AssignedTo.HasValue && anyFarmAssignment.AssignedTo.Value < targetDate)
+            {
+                return (false, $"Worker's farm assignment expired on {anyFarmAssignment.AssignedTo.Value:yyyy-MM-dd}.");
+            }
+
+            if (anyFarmAssignment.AssignedFrom > targetDate)
+            {
+                return (false, $"Worker's farm assignment begins on {anyFarmAssignment.AssignedFrom:yyyy-MM-dd}.");
+            }
+
+            return (false, "Worker does not have an active assignment to this farm for the target date.");
+        }
+
+        var existingAttendance = await store.FindAttendanceByWorkerAndDateAsync(
+            organizationId,
+            workerId,
+            targetDate,
+            cancellationToken);
+
+        if (existingAttendance is not null && existingAttendance.FarmId != farmId)
+        {
+            var otherFarmName = existingAttendance.Farm?.Name ?? "another farm";
+            return (false, $"Worker already has attendance recorded at {otherFarmName} on {targetDate:yyyy-MM-dd}.");
+        }
+
+        return (true, null);
+    }
+
     private static DailyAttendanceSummaryResponse BuildDailyAttendanceSummary(IReadOnlyList<LaborAttendance> records)
     {
         var totalCount = records.Count;

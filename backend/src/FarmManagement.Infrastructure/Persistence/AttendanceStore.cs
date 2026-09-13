@@ -166,6 +166,32 @@ public sealed class AttendanceStore(ApplicationDbContext dbContext) : IAttendanc
                          (!a.AssignedTo.HasValue || a.AssignedTo.Value >= attendanceDate)),
                 cancellationToken);
 
+    public Task<Worker?> FindWorkerWithDetailsAsync(
+        Guid organizationId,
+        Guid workerId,
+        CancellationToken cancellationToken = default) =>
+        dbContext.Workers
+            .Include(w => w.LaborCategory)
+            .Include(w => w.Contractor)
+            .Include(w => w.FarmAssignments)
+            .SingleOrDefaultAsync(
+                w => w.Id == workerId && w.OrganizationId == organizationId,
+                cancellationToken);
+
+    public async Task<DateOnly?> FindPreviousAttendanceDateAsync(
+        Guid organizationId,
+        Guid farmId,
+        DateOnly targetDate,
+        CancellationToken cancellationToken = default) =>
+        await dbContext.LaborAttendances
+            .Where(a =>
+                a.OrganizationId == organizationId &&
+                a.FarmId == farmId &&
+                a.AttendanceDate < targetDate)
+            .Select(a => (DateOnly?)a.AttendanceDate)
+            .OrderByDescending(d => d)
+            .FirstOrDefaultAsync(cancellationToken);
+
     public void AddAttendance(LaborAttendance attendance) =>
         dbContext.LaborAttendances.Add(attendance);
 

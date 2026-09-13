@@ -181,6 +181,67 @@ export interface FinalizeAttendanceResponse {
   readonly records: readonly AttendanceRecord[];
 }
 
+export interface ExcludedWorkerInfo {
+  readonly workerId: string;
+  readonly displayName: string;
+  readonly reason: string;
+}
+
+export interface CopyPreviousDayPreviewWorkerItem {
+  readonly workerId: string;
+  readonly displayName: string;
+  readonly firstName: string;
+  readonly lastName?: string | null;
+  readonly gender: string;
+  readonly mobileNumber?: string | null;
+  readonly laborCategoryName?: string | null;
+  readonly contractorName?: string | null;
+  readonly employmentType: string;
+  readonly attendanceType: AttendanceType | string;
+  readonly workingHours?: number | null;
+  readonly notes?: string | null;
+  readonly isEligible: boolean;
+  readonly ineligibilityReason?: string | null;
+  readonly provisionalRate?: number | null;
+  readonly provisionalAmount?: number | null;
+}
+
+export interface CopyPreviousDayPreviewResponse {
+  readonly farmId: string;
+  readonly farmName: string;
+  readonly sourceDate: string;
+  readonly targetDate: string;
+  readonly totalSourceCount: number;
+  readonly eligibleCount: number;
+  readonly excludedCount: number;
+  readonly targetHasExistingRecords: boolean;
+  readonly targetExistingRecordCount: number;
+  readonly targetIsFinalized: boolean;
+  readonly sourceSummary?: DailyAttendanceSummary | null;
+  readonly workers: readonly CopyPreviousDayPreviewWorkerItem[];
+  readonly excludedWorkers: readonly ExcludedWorkerInfo[];
+}
+
+export interface CopyPreviousDayAttendanceRequest {
+  readonly farmId: string;
+  readonly targetDate: string;
+  readonly sourceDate?: string | null;
+  readonly workerIds?: readonly string[] | null;
+  readonly overwriteExistingDraft?: boolean;
+}
+
+export interface CopyPreviousDayAttendanceResponse {
+  readonly farmId: string;
+  readonly farmName: string;
+  readonly sourceDate: string;
+  readonly targetDate: string;
+  readonly totalSourceWorkers: number;
+  readonly copiedCount: number;
+  readonly excludedCount: number;
+  readonly excludedWorkers: readonly ExcludedWorkerInfo[];
+  readonly dailyAttendance: DailyAttendanceResponse;
+}
+
 export interface AttendanceGridRow {
   readonly id?: string | null;
   readonly workerId: string;

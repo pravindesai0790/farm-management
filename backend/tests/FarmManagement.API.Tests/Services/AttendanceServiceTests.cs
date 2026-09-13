@@ -1511,6 +1511,309 @@ public sealed class AttendanceServiceTests
 
     #endregion
 
+    #region Copy Previous Day Tests
+
+    [Fact]
+    public async Task PreviewCopyPreviousDayAsync_WhenFarmNotFound_ThrowsResourceNotFoundException()
+    {
+        var store = new FakeAttendanceStore();
+        var service = CreateService(store);
+
+        await Assert.ThrowsAsync<ResourceNotFoundException>(() =>
+            service.PreviewCopyPreviousDayAsync(CreateActor(), Guid.NewGuid(), new DateOnly(2026, 9, 13)));
+    }
+
+    [Fact]
+    public async Task PreviewCopyPreviousDayAsync_WhenNoPriorRoster_ThrowsValidationException()
+    {
+        var store = new FakeAttendanceStore();
+        var farm = CreateFarm();
+        store.Farms.Add(farm);
+        var service = CreateService(store);
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(() =>
+            service.PreviewCopyPreviousDayAsync(CreateActor(), farm.Id, new DateOnly(2026, 9, 13)));
+
+        Assert.NotNull(ex.Errors);
+        Assert.True(ex.Errors.ContainsKey("sourceDate"));
+    }
+
+    [Fact]
+    public async Task PreviewCopyPreviousDayAsync_FindsPreviousDate_AndReturnsEligibleAndExcludedWorkers()
+    {
+        var store = new FakeAttendanceStore();
+        var farm = CreateFarm();
+        store.Farms.Add(farm);
+
+        var sourceDate = new DateOnly(2026, 9, 12);
+        var targetDate = new DateOnly(2026, 9, 13);
+
+        // Worker 1: eligible on both days
+        var w1 = CreateWorker(displayName: "Ramesh Patil");
+        AssignWorkerToFarm(w1, farm, new DateOnly(2026, 9, 1));
+        store.Workers.Add(w1);
+
+        // Worker 2: assignment expired on source date
+        var w2 = CreateWorker(displayName: "Sita Sharma", gender: Gender.Female);
+        AssignWorkerToFarm(w2, farm, new DateOnly(2026, 9, 1), assignedTo: sourceDate);
+        store.Workers.Add(w2);
+
+        // Source attendance records
+        var att1 = LaborAttendance.CreateDraft(_organizationId, farm.Id, w1.Id, sourceDate, AttendanceType.FullDay, _userId, null, 500m, 500m);
+        var att2 = LaborAttendance.CreateDraft(_organizationId, farm.Id, w2.Id, sourceDate, AttendanceType.FullDay, _userId, null, 350m, 350m);
+        store.Attendances.Add(att1);
+        store.Attendances.Add(att2);
+
+        var service = CreateService(store);
+
+        var preview = await service.PreviewCopyPreviousDayAsync(CreateActor(), farm.Id, targetDate);
+
+        Assert.Equal(sourceDate, preview.SourceDate);
+        Assert.Equal(targetDate, preview.TargetDate);
+        Assert.Equal(2, preview.TotalSourceCount);
+        Assert.Equal(1, preview.EligibleCount);
+        Assert.Equal(1, preview.ExcludedCount);
+        Assert.Single(preview.ExcludedWorkers);
+        Assert.Equal(w2.Id, preview.ExcludedWorkers[0].WorkerId);
+        Assert.Contains("expired", preview.ExcludedWorkers[0].Reason, StringComparison.OrdinalIgnoreCase);
+        Assert.False(preview.TargetHasExistingRecords);
+        Assert.False(preview.TargetIsFinalized);
+    }
+
+    [Fact]
+    public async Task CopyPreviousDayAsync_WhenTargetDateIsFinalized_ThrowsValidationException()
+    {
+        var store = new FakeAttendanceStore();
+        var farm = CreateFarm();
+        store.Farms.Add(farm);
+
+        var sourceDate = new DateOnly(2026, 9, 12);
+        var targetDate = new DateOnly(2026, 9, 13);
+
+        var w1 = CreateWorker();
+        AssignWorkerToFarm(w1, farm, new DateOnly(2026, 9, 1));
+        store.Workers.Add(w1);
+
+        var srcAtt = LaborAttendance.CreateDraft(_organizationId, farm.Id, w1.Id, sourceDate, AttendanceType.FullDay, _userId);
+        store.Attendances.Add(srcAtt);
+
+        // Target date already has finalized attendance
+        var tgtFinalized = LaborAttendance.CreateFinalized(_organizationId, farm.Id, w1.Id, targetDate, AttendanceType.FullDay, _userId);
+        store.Attendances.Add(tgtFinalized);
+
+        var service = CreateService(store);
+
+        var request = new CopyPreviousDayAttendanceRequest(farm.Id, targetDate, OverwriteExistingDraft: true);
+        var ex = await Assert.ThrowsAsync<ValidationException>(() =>
+            service.CopyPreviousDayAsync(CreateActor(), request));
+
+        Assert.NotNull(ex.Errors);
+        Assert.True(ex.Errors.ContainsKey("status"));
+    }
+
+    [Fact]
+    public async Task CopyPreviousDayAsync_WhenExistingDraftAndOverwriteFalse_ThrowsValidationException()
+    {
+        var store = new FakeAttendanceStore();
+        var farm = CreateFarm();
+        store.Farms.Add(farm);
+
+        var sourceDate = new DateOnly(2026, 9, 12);
+        var targetDate = new DateOnly(2026, 9, 13);
+
+        var w1 = CreateWorker();
+        AssignWorkerToFarm(w1, farm, new DateOnly(2026, 9, 1));
+        store.Workers.Add(w1);
+
+        var srcAtt = LaborAttendance.CreateDraft(_organizationId, farm.Id, w1.Id, sourceDate, AttendanceType.FullDay, _userId);
+        store.Attendances.Add(srcAtt);
+
+        // Target date has existing draft
+        var tgtDraft = LaborAttendance.CreateDraft(_organizationId, farm.Id, w1.Id, targetDate, AttendanceType.FullDay, _userId);
+        store.Attendances.Add(tgtDraft);
+
+        var service = CreateService(store);
+
+        var request = new CopyPreviousDayAttendanceRequest(farm.Id, targetDate, OverwriteExistingDraft: false);
+        var ex = await Assert.ThrowsAsync<ValidationException>(() =>
+            service.CopyPreviousDayAsync(CreateActor(), request));
+
+        Assert.NotNull(ex.Errors);
+        Assert.True(ex.Errors.ContainsKey("overwriteExistingDraft"));
+    }
+
+    [Fact]
+    public async Task CopyPreviousDayAsync_WhenExistingDraftAndOverwriteTrue_ReplacesDraftWithoutDuplicates()
+    {
+        var store = new FakeAttendanceStore();
+        var farm = CreateFarm();
+        store.Farms.Add(farm);
+
+        var sourceDate = new DateOnly(2026, 9, 12);
+        var targetDate = new DateOnly(2026, 9, 13);
+
+        var w1 = CreateWorker(displayName: "Worker One");
+        var w2 = CreateWorker(displayName: "Worker Two");
+        AssignWorkerToFarm(w1, farm, new DateOnly(2026, 9, 1));
+        AssignWorkerToFarm(w2, farm, new DateOnly(2026, 9, 1));
+        store.Workers.Add(w1);
+        store.Workers.Add(w2);
+
+        // Source attendance: w1 only
+        var srcAtt = LaborAttendance.CreateDraft(_organizationId, farm.Id, w1.Id, sourceDate, AttendanceType.FullDay, _userId);
+        store.Attendances.Add(srcAtt);
+
+        // Target attendance currently has w2 as draft
+        var oldTargetDraft = LaborAttendance.CreateDraft(_organizationId, farm.Id, w2.Id, targetDate, AttendanceType.HalfDay, _userId);
+        store.Attendances.Add(oldTargetDraft);
+
+        var earnings = new FakeAttendanceEarningsIntegration();
+        var service = CreateService(store, earnings);
+
+        var request = new CopyPreviousDayAttendanceRequest(farm.Id, targetDate, OverwriteExistingDraft: true);
+        var result = await service.CopyPreviousDayAsync(CreateActor(), request);
+
+        Assert.Equal(1, result.CopiedCount);
+        Assert.Equal(0, result.ExcludedCount);
+        Assert.Single(result.DailyAttendance.Records);
+        Assert.Equal(w1.Id, result.DailyAttendance.Records[0].WorkerId);
+        Assert.Equal("DRAFT", result.DailyAttendance.Records[0].Status);
+
+        // Old target draft for w2 was replaced
+        Assert.DoesNotContain(store.Attendances, a => a.AttendanceDate == targetDate && a.WorkerId == w2.Id);
+    }
+
+    [Fact]
+    public async Task CopyPreviousDayAsync_CopiesOnlySelectedWorkers_WhenWorkerIdsSpecified()
+    {
+        var store = new FakeAttendanceStore();
+        var farm = CreateFarm();
+        store.Farms.Add(farm);
+
+        var sourceDate = new DateOnly(2026, 9, 12);
+        var targetDate = new DateOnly(2026, 9, 13);
+
+        var w1 = CreateWorker(displayName: "Worker One");
+        var w2 = CreateWorker(displayName: "Worker Two");
+        AssignWorkerToFarm(w1, farm, new DateOnly(2026, 9, 1));
+        AssignWorkerToFarm(w2, farm, new DateOnly(2026, 9, 1));
+        store.Workers.Add(w1);
+        store.Workers.Add(w2);
+
+        // Source attendance has both w1 and w2
+        store.Attendances.Add(LaborAttendance.CreateDraft(_organizationId, farm.Id, w1.Id, sourceDate, AttendanceType.FullDay, _userId));
+        store.Attendances.Add(LaborAttendance.CreateDraft(_organizationId, farm.Id, w2.Id, sourceDate, AttendanceType.Hourly, _userId, workingHours: 6m));
+
+        var earnings = new FakeAttendanceEarningsIntegration();
+        var service = CreateService(store, earnings);
+
+        // Only select w2
+        var request = new CopyPreviousDayAttendanceRequest(farm.Id, targetDate, WorkerIds: [w2.Id]);
+        var result = await service.CopyPreviousDayAsync(CreateActor(), request);
+
+        Assert.Equal(1, result.CopiedCount);
+        Assert.Single(result.DailyAttendance.Records);
+        Assert.Equal(w2.Id, result.DailyAttendance.Records[0].WorkerId);
+        Assert.Equal("HOURLY", result.DailyAttendance.Records[0].AttendanceType);
+        Assert.Equal(6m, result.DailyAttendance.Records[0].WorkingHours);
+    }
+
+    [Fact]
+    public async Task CopyPreviousDayAsync_ExcludesIneligibleWorkers_AndReturnsClearWarningList()
+    {
+        var store = new FakeAttendanceStore();
+        var farm = CreateFarm();
+        store.Farms.Add(farm);
+
+        var sourceDate = new DateOnly(2026, 9, 12);
+        var targetDate = new DateOnly(2026, 9, 13);
+
+        // Worker 1: active and assigned
+        var w1 = CreateWorker(displayName: "Ramesh Patil");
+        AssignWorkerToFarm(w1, farm, new DateOnly(2026, 9, 1));
+        store.Workers.Add(w1);
+
+        // Worker 2: inactive worker
+        var w2 = CreateWorker(displayName: "Sunita Kadam", isActive: false);
+        AssignWorkerToFarm(w2, farm, new DateOnly(2026, 9, 1));
+        store.Workers.Add(w2);
+
+        // Worker 3: farm assignment ended before target date
+        var w3 = CreateWorker(displayName: "Mohan Lal");
+        AssignWorkerToFarm(w3, farm, new DateOnly(2026, 9, 1), assignedTo: sourceDate);
+        store.Workers.Add(w3);
+
+        store.Attendances.Add(LaborAttendance.CreateDraft(_organizationId, farm.Id, w1.Id, sourceDate, AttendanceType.FullDay, _userId));
+        store.Attendances.Add(LaborAttendance.CreateDraft(_organizationId, farm.Id, w2.Id, sourceDate, AttendanceType.FullDay, _userId));
+        store.Attendances.Add(LaborAttendance.CreateDraft(_organizationId, farm.Id, w3.Id, sourceDate, AttendanceType.FullDay, _userId));
+
+        var earnings = new FakeAttendanceEarningsIntegration();
+        var service = CreateService(store, earnings);
+
+        var request = new CopyPreviousDayAttendanceRequest(farm.Id, targetDate);
+        var result = await service.CopyPreviousDayAsync(CreateActor(), request);
+
+        Assert.Equal(1, result.CopiedCount);
+        Assert.Equal(2, result.ExcludedCount);
+        Assert.Equal(2, result.ExcludedWorkers.Count);
+
+        var excludedIds = result.ExcludedWorkers.Select(x => x.WorkerId).ToList();
+        Assert.Contains(w2.Id, excludedIds);
+        Assert.Contains(w3.Id, excludedIds);
+
+        Assert.Single(result.DailyAttendance.Records);
+        Assert.Equal(w1.Id, result.DailyAttendance.Records[0].WorkerId);
+        Assert.Equal("DRAFT", result.DailyAttendance.Records[0].Status);
+    }
+
+    [Fact]
+    public async Task CopyPreviousDayAsync_RecalculatesWagesWithTargetDateRates_AndDoesNotCopyOldLedger()
+    {
+        var store = new FakeAttendanceStore();
+        var farm = CreateFarm();
+        store.Farms.Add(farm);
+
+        var sourceDate = new DateOnly(2026, 9, 12);
+        var targetDate = new DateOnly(2026, 9, 13);
+
+        var w1 = CreateWorker(displayName: "Ramesh Patil");
+        AssignWorkerToFarm(w1, farm, new DateOnly(2026, 9, 1));
+        store.Workers.Add(w1);
+
+        // Source attendance was FINALIZED with old wage rate snapshot of 300m
+        var srcFinalized = LaborAttendance.CreateFinalized(
+            _organizationId, farm.Id, w1.Id, sourceDate, AttendanceType.FullDay, _userId,
+            calculatedRate: 300m, calculatedAmount: 300m);
+        store.Attendances.Add(srcFinalized);
+
+        var earnings = new FakeAttendanceEarningsIntegration
+        {
+            FullDayRate = 550m // New rate on target date
+        };
+        var service = CreateService(store, earnings);
+
+        var request = new CopyPreviousDayAttendanceRequest(farm.Id, targetDate);
+        var result = await service.CopyPreviousDayAsync(CreateActor(), request);
+
+        Assert.Equal(1, result.CopiedCount);
+        var copiedRecord = result.DailyAttendance.Records[0];
+
+        // Status is DRAFT (not FINALIZED!)
+        Assert.Equal("DRAFT", copiedRecord.Status);
+        Assert.Null(copiedRecord.FinalizedAt);
+        Assert.Null(copiedRecord.FinalizedBy);
+
+        // Freshly recalculated rate for target date (550m, not old 300m snapshot)
+        Assert.Equal(550m, copiedRecord.CalculatedRate);
+        Assert.Equal(550m, copiedRecord.CalculatedAmount);
+
+        // Earnings ledger integration was called ONLY for calculation, not for writing ledger entries!
+        Assert.True(earnings.CalculationCallCount >= 1);
+        Assert.Equal(0, earnings.LedgerWriteCallCount);
+    }
+
+    #endregion
+
     #region Fake Store & Integration
 
     private sealed class FakeAttendanceEarningsIntegration : IAttendanceEarningsIntegration
@@ -1760,6 +2063,29 @@ public sealed class AttendanceServiceTests
                     a.AssignedFrom <= attendanceDate &&
                     (!a.AssignedTo.HasValue || a.AssignedTo.Value >= attendanceDate)));
             return Task.FromResult(worker);
+        }
+
+        public Task<Worker?> FindWorkerWithDetailsAsync(
+            Guid organizationId,
+            Guid workerId,
+            CancellationToken cancellationToken = default)
+        {
+            var worker = Workers.FirstOrDefault(w => w.Id == workerId && w.OrganizationId == organizationId);
+            return Task.FromResult(worker);
+        }
+
+        public Task<DateOnly?> FindPreviousAttendanceDateAsync(
+            Guid organizationId,
+            Guid farmId,
+            DateOnly targetDate,
+            CancellationToken cancellationToken = default)
+        {
+            var date = Attendances
+                .Where(a => a.OrganizationId == organizationId && a.FarmId == farmId && a.AttendanceDate < targetDate)
+                .Select(a => (DateOnly?)a.AttendanceDate)
+                .OrderByDescending(d => d)
+                .FirstOrDefault();
+            return Task.FromResult(date);
         }
 
         public void AddAttendance(LaborAttendance attendance) => Attendances.Add(attendance);

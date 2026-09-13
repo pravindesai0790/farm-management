@@ -87,6 +87,54 @@
   p { margin: 2px 0 0; font-size: 0.85rem; }
 }
 
+.excluded-banner {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: #fff3e0;
+  border: 1px solid #ffe0b2;
+  color: #bf360c;
+
+  .excluded-banner-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    flex: 1;
+
+    mat-icon {
+      font-size: 22px;
+      width: 22px;
+      height: 22px;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+
+    strong {
+      display: block;
+      font-size: 0.9rem;
+      margin-bottom: 6px;
+    }
+  }
+
+  .excluded-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .excluded-tag {
+    padding: 3px 8px;
+    background: #ffffff;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    border: 1px solid #ffcc80;
+    color: #d84315;
+  }
+}
+
 .controls-card {
   border-radius: 12px;
 }

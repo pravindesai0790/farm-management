@@ -60,5 +60,17 @@ public interface IAttendanceService
         AttendanceActor actor,
         Guid id,
         CancellationToken cancellationToken = default);
+
+    Task<CopyPreviousDayPreviewResponse> PreviewCopyPreviousDayAsync(
+        AttendanceActor actor,
+        Guid farmId,
+        DateOnly targetDate,
+        DateOnly? sourceDate = null,
+        CancellationToken cancellationToken = default);
+
+    Task<CopyPreviousDayAttendanceResponse> CopyPreviousDayAsync(
+        AttendanceActor actor,
+        CopyPreviousDayAttendanceRequest request,
+        CancellationToken cancellationToken = default);
 }
 

@@ -84,6 +84,28 @@
     </div>
   }
 
+  <!-- Excluded Workers Banner Alert from Copy Previous Day -->
+  @if (lastCopiedExcludedWorkers().length > 0) {
+    <div class="excluded-banner">
+      <div class="excluded-banner-content">
+        <mat-icon color="warn">warning</mat-icon>
+        <div>
+          <strong>{{ lastCopiedExcludedWorkers().length }} worker(s) from the previous day's roster were excluded:</strong>
+          <div class="excluded-tags">
+            @for (ex of lastCopiedExcludedWorkers(); track ex.workerId) {
+              <span class="excluded-tag">
+                <strong>{{ ex.displayName }}</strong> &mdash; {{ ex.reason }}
+              </span>
+            }
+          </div>
+        </div>
+      </div>
+      <button mat-icon-button type="button" (click)="lastCopiedExcludedWorkers.set([])" matTooltip="Dismiss">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  }
+
   <!-- Top Controls Card -->
   <mat-card class="controls-card">
     <mat-card-content>

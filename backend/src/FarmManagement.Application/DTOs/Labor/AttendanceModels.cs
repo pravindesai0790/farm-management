@@ -158,3 +158,59 @@ public sealed record FinalizeAttendanceResponse(
     DailyAttendanceSummaryResponse Summary,
     IReadOnlyList<AttendanceRecordResponse> Records);
 
+public sealed record ExcludedWorkerInfo(
+    Guid WorkerId,
+    string DisplayName,
+    string Reason);
+
+public sealed record CopyPreviousDayPreviewWorkerItem(
+    Guid WorkerId,
+    string DisplayName,
+    string FirstName,
+    string? LastName,
+    string Gender,
+    string? MobileNumber,
+    string? LaborCategoryName,
+    string? ContractorName,
+    string EmploymentType,
+    string AttendanceType,
+    decimal? WorkingHours,
+    string? Notes,
+    bool IsEligible,
+    string? IneligibilityReason,
+    decimal? ProvisionalRate,
+    decimal? ProvisionalAmount);
+
+public sealed record CopyPreviousDayPreviewResponse(
+    Guid FarmId,
+    string FarmName,
+    DateOnly SourceDate,
+    DateOnly TargetDate,
+    int TotalSourceCount,
+    int EligibleCount,
+    int ExcludedCount,
+    bool TargetHasExistingRecords,
+    int TargetExistingRecordCount,
+    bool TargetIsFinalized,
+    DailyAttendanceSummaryResponse? SourceSummary,
+    IReadOnlyList<CopyPreviousDayPreviewWorkerItem> Workers,
+    IReadOnlyList<ExcludedWorkerInfo> ExcludedWorkers);
+
+public sealed record CopyPreviousDayAttendanceRequest(
+    Guid FarmId,
+    DateOnly TargetDate,
+    DateOnly? SourceDate = null,
+    IReadOnlyList<Guid>? WorkerIds = null,
+    bool OverwriteExistingDraft = false);
+
+public sealed record CopyPreviousDayAttendanceResponse(
+    Guid FarmId,
+    string FarmName,
+    DateOnly SourceDate,
+    DateOnly TargetDate,
+    int TotalSourceWorkers,
+    int CopiedCount,
+    int ExcludedCount,
+    IReadOnlyList<ExcludedWorkerInfo> ExcludedWorkers,
+    DailyAttendanceResponse DailyAttendance);
+

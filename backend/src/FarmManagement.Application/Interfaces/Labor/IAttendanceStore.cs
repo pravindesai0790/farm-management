@@ -56,6 +56,17 @@ public interface IAttendanceStore
         DateOnly attendanceDate,
         CancellationToken cancellationToken = default);
 
+    Task<Worker?> FindWorkerWithDetailsAsync(
+        Guid organizationId,
+        Guid workerId,
+        CancellationToken cancellationToken = default);
+
+    Task<DateOnly?> FindPreviousAttendanceDateAsync(
+        Guid organizationId,
+        Guid farmId,
+        DateOnly targetDate,
+        CancellationToken cancellationToken = default);
+
     void AddAttendance(LaborAttendance attendance);
 
     void RemoveAttendance(LaborAttendance attendance);
