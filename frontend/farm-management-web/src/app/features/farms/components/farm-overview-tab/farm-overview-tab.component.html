@@ -1,0 +1,226 @@
+<div class="overview-grid">
+  <!-- Left Column (7 cols): Active Season Cycles & Land Allocation Breakdown -->
+  <div class="main-column">
+    
+    <!-- Active Season Cycles -->
+    <mat-card class="section-card">
+      <mat-card-header class="section-header">
+        <mat-card-title class="card-title">
+          <mat-icon class="title-icon icon-emerald">sync</mat-icon>
+          Current Season Active Cycles
+        </mat-card-title>
+        <button mat-button color="primary" class="header-action" (click)="selectTab.emit('plantations')">
+          View all plantations →
+        </button>
+      </mat-card-header>
+
+      <mat-card-content>
+        @if (activeCycles().length === 0) {
+          <div class="empty-state">
+            <mat-icon>event_busy</mat-icon>
+            <p>No active crop cycles recorded for the current season.</p>
+            @if (permissionService.has("Plantation.Create")) {
+              <a mat-stroked-button color="primary" [routerLink]="['/plantations/new']" [queryParams]="{ farmId: farmId() }">
+                <mat-icon>add</mat-icon> Start New Cycle
+              </a>
+            }
+          </div>
+        } @else {
+          <div class="cycle-list">
+            @for (cycle of activeCycles(); track cycle.cycleId) {
+              <div class="cycle-item">
+                <div class="cycle-top">
+                  <div class="cycle-title-group">
+                    <span class="crop-badge">{{ cycle.cropName }}</span>
+                    <strong>{{ cycle.farmAreaName }}</strong>
+                    @if (cycle.varietyName) {
+                      <span class="variety-chip">{{ cycle.varietyName }}</span>
+                    }
+                  </div>
+                  <span class="cycle-status-pill">
+                    {{ cycle.status }} ({{ cycle.progressPercentage || 0 }}%)
+                  </span>
+                </div>
+
+                <div class="cycle-meta">
+                  <span>Cycle: <strong>{{ cycle.cycleCode }}</strong></span>
+                  <span>Area: <strong>{{ cycle.allocatedArea }} {{ cycle.areaUnitSymbol }}</strong></span>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="progress-bar-wrapper">
+                  <div class="progress-track">
+                    <div
+                      class="progress-fill"
+                      [style.width.%]="cycle.progressPercentage || 0"
+                    ></div>
+                  </div>
+                </div>
+
+                <div class="cycle-footer">
+                  <span>Started: <strong>{{ cycle.startDate | date: "mediumDate" }}</strong></span>
+                  @if (cycle.expectedEndDate) {
+                    <span>Harvest Target: <strong>{{ cycle.expectedEndDate | date: "mediumDate" }}</strong></span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Crop Allocation & Utilization Breakdown -->
+    <mat-card class="section-card">
+      <mat-card-header class="section-header">
+        <mat-card-title class="card-title">
+          <mat-icon class="title-icon icon-purple">bar_chart</mat-icon>
+          Crop Allocation Breakdown
+        </mat-card-title>
+        <button mat-button color="primary" class="header-action" (click)="selectTab.emit('plots')">
+          View plot map →
+        </button>
+      </mat-card-header>
+
+      <mat-card-content>
+        @if (cropAllocations().length === 0) {
+          <p class="muted">No crop allocation data currently recorded.</p>
+        } @else {
+          <!-- Segmented Bar -->
+          <div class="stacked-bar">
+            @for (crop of cropAllocationPercentages(); track crop.cropId) {
+              <div
+                class="stacked-bar-segment"
+                [style.width.%]="crop.percentageOfAllocated"
+                [style.background-color]="crop.color"
+                [matTooltip]="crop.cropName + ': ' + crop.totalAllocatedArea + ' ' + crop.areaUnitSymbol + ' (' + crop.percentageOfAllocated + '%)'"
+              ></div>
+            }
+          </div>
+
+          <!-- Legend list -->
+          <div class="legend-grid">
+            @for (crop of cropAllocationPercentages(); track crop.cropId) {
+              <div class="legend-item">
+                <span class="legend-color-dot" [style.background-color]="crop.color"></span>
+                <span class="legend-label">{{ crop.cropName }}</span>
+                <span class="legend-val">
+                  <strong>{{ crop.totalAllocatedArea }} {{ crop.areaUnitSymbol }}</strong>
+                  ({{ crop.percentageOfAllocated }}%)
+                </span>
+              </div>
+            }
+          </div>
+        }
+      </mat-card-content>
+    </mat-card>
+
+  </div>
+
+  <!-- Right Column (5 cols): Live Field Operations & Labor Turnout -->
+  <div class="side-column">
+    
+    <!-- Today's Field Activity Stream -->
+    <mat-card class="section-card">
+      <mat-card-header class="section-header">
+        <mat-card-title class="card-title">
+          <mat-icon class="title-icon icon-blue">notifications_active</mat-icon>
+          Today's Field Activities
+        </mat-card-title>
+        @if (permissionService.has("LaborActivity.Create")) {
+          <a mat-flat-button color="primary" class="compact-btn" [routerLink]="['/labor-activities/new']" [queryParams]="{ farmId: farmId() }">
+            <mat-icon>add</mat-icon> Log
+          </a>
+        }
+      </mat-card-header>
+
+      <mat-card-content>
+        @if (todayActivities().length === 0) {
+          <div class="empty-state compact">
+            <mat-icon>checklist_rtl</mat-icon>
+            <p>No field activities logged for today.</p>
+            <button mat-button color="primary" (click)="selectTab.emit('activities')">
+              View Activity History
+            </button>
+          </div>
+        } @else {
+          <div class="activity-feed">
+            @for (activity of todayActivities(); track activity.id) {
+              <div class="activity-feed-item">
+                <div class="feed-header">
+                  <span class="status-chip" [class]="getActivityStatusClass(activity.status)">
+                    {{ getActivityStatusLabel(activity.status) }}
+                  </span>
+                  <span class="feed-time">{{ activity.activityDate | date: "shortTime" }}</span>
+                </div>
+
+                <h4 class="activity-name">{{ activity.activityType.name }}</h4>
+                <p class="activity-target">
+                  @if (activity.farmArea) {
+                    Plot: <strong>{{ activity.farmArea.name }}</strong>
+                  }
+                  @if (activity.plantation) {
+                    · {{ activity.plantation.name }}
+                  }
+                </p>
+
+                <div class="feed-footer">
+                  <span class="workers-tag">
+                    <mat-icon>event</mat-icon>
+                    {{ activity.activityDate | date: "mediumDate" }}
+                  </span>
+                  <a [routerLink]="['/labor-activities', activity.id]" class="details-link">
+                    Details →
+                  </a>
+                </div>
+              </div>
+            }
+          </div>
+
+          <div class="card-footer-link">
+            <button mat-button color="primary" (click)="selectTab.emit('activities')">
+              View all field activity logs →
+            </button>
+          </div>
+        }
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Workforce & Labor Turnout Widget -->
+    @if (labor(); as l) {
+      <mat-card class="section-card">
+        <mat-card-header class="section-header">
+          <mat-card-title class="card-title">
+            <mat-icon class="title-icon icon-amber">badge</mat-icon>
+            Today's Workforce
+          </mat-card-title>
+          <span class="status-pill-small" [class.finalized]="l.todayStatus === 'FINALIZED'">
+            {{ l.todayStatus }}
+          </span>
+        </mat-card-header>
+
+        <mat-card-content>
+          <div class="labor-stats-grid">
+            <div class="labor-stat-box">
+              <span class="stat-num">{{ l.workedWorkersCount }}</span>
+              <span class="stat-lbl">Present</span>
+            </div>
+            <div class="labor-stat-box">
+              <span class="stat-num">{{ l.assignedWorkersCount }}</span>
+              <span class="stat-lbl">Assigned</span>
+            </div>
+            <div class="labor-stat-box highlight">
+              <span class="stat-num">{{ l.totalWorkingHours | number: "1.0-1" }}h</span>
+              <span class="stat-lbl">Total Hours</span>
+            </div>
+          </div>
+
+          <p class="wages-line">
+            Daily Wage Expense: <strong>{{ l.currencySymbol }}{{ l.todayWageExpense | number: "1.2-2" }}</strong>
+          </p>
+        </mat-card-content>
+      </mat-card>
+    }
+
+  </div>
+</div>

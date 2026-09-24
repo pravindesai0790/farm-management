@@ -1,0 +1,87 @@
+<div class="farm-header-card">
+  <div class="header-main">
+    <div class="header-info">
+      <nav class="breadcrumb-nav" aria-label="Breadcrumbs">
+        <a routerLink="/farms" class="back-link">
+          <mat-icon>arrow_back</mat-icon> Back to Farms
+        </a>
+      </nav>
+
+      <div class="tags-row">
+        <span class="code-badge">{{ farm().code }}</span>
+        <span class="status-chip" [class.status-inactive]="!farm().isActive">
+          <span class="status-dot"></span>
+          {{ farm().isActive ? "Active Farm" : "Inactive" }}
+        </span>
+        <span class="meta-chip">
+          <mat-icon>home_work</mat-icon>
+          {{ farm().ownershipTypeName }}
+        </span>
+        @if (farm().city || farm().state) {
+          <span class="meta-chip">
+            <mat-icon>location_on</mat-icon>
+            {{ farm().city }}{{ farm().city && farm().state ? ', ' : '' }}{{ farm().state }}
+          </span>
+        }
+      </div>
+
+      <h1 class="farm-title">{{ farm().name }}</h1>
+      <p class="farm-description">
+        {{ farm().description || "Multi-crop farm management and operational hub" }}
+      </p>
+    </div>
+
+    <div class="header-side">
+      @if (currentSeason(); as season) {
+        <div class="season-badge" matTooltip="Active crop cycle season">
+          <mat-icon>wb_sunny</mat-icon>
+          <div class="season-details">
+            <span class="season-label">Current Season</span>
+            <strong class="season-value">{{ season }}</strong>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="header-actions-bar">
+    <div class="action-buttons">
+      @if (permissionService.has("LaborActivity.Create")) {
+        <a
+          mat-stroked-button
+          [routerLink]="['/labor-activities/new']"
+          [queryParams]="{ farmId: farm().id }"
+        >
+          <mat-icon>add_task</mat-icon> Log Activity
+        </a>
+      }
+      @if (permissionService.has("FarmArea.Create")) {
+        <a
+          mat-stroked-button
+          [routerLink]="['/farm-areas/new']"
+          [queryParams]="{ farmId: farm().id }"
+        >
+          <mat-icon>add</mat-icon> New Area
+        </a>
+      }
+      @if (permissionService.has("Plantation.Create")) {
+        <a
+          mat-stroked-button
+          [routerLink]="['/plantations/new']"
+          [queryParams]="{ farmId: farm().id }"
+        >
+          <mat-icon>spa</mat-icon> Plant Crop
+        </a>
+      }
+      @if (permissionService.has("Farm.Update")) {
+        <a
+          mat-flat-button
+          color="primary"
+          [routerLink]="['/farms', farm().id, 'edit']"
+        >
+          <mat-icon>edit</mat-icon> Edit Farm
+        </a>
+      }
+    </div>
+  </div>
+</div>

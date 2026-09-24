@@ -1,0 +1,108 @@
+<div class="kpi-grid">
+  <!-- KPI 1: Land Utilization -->
+  <mat-card class="kpi-card">
+    <mat-card-content>
+      <div class="kpi-header">
+        <span class="kpi-label">Land Utilization</span>
+        <div class="kpi-icon kpi-icon-land">
+          <mat-icon>pie_chart</mat-icon>
+        </div>
+      </div>
+      <div class="kpi-value-row">
+        <span class="kpi-value">{{ kpi().utilizationPercentage }}<span class="kpi-unit">%</span></span>
+        <span class="kpi-subbadge">{{ kpi().allocatedArea | number: "1.1-2" }} / {{ kpi().totalArea | number: "1.1-2" }} {{ kpi().areaUnitSymbol }}</span>
+      </div>
+      <div class="progress-bar-track">
+        <div
+          class="progress-bar-fill"
+          [style.width.%]="kpi().utilizationPercentage"
+        ></div>
+      </div>
+      <div class="kpi-footer font-medium">
+        <span>{{ kpi().availableArea | number: "1.1-2" }} {{ kpi().areaUnitSymbol }} available</span>
+        <span>{{ kpi().totalAreas }} Plots</span>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- KPI 2: Active Plantations & Crops -->
+  <mat-card class="kpi-card">
+    <mat-card-content>
+      <div class="kpi-header">
+        <span class="kpi-label">Active Plantations</span>
+        <div class="kpi-icon kpi-icon-plantations">
+          <mat-icon>spa</mat-icon>
+        </div>
+      </div>
+      <div class="kpi-value-row">
+        <span class="kpi-value">{{ kpi().activePlantationsCount }}</span>
+        <span class="kpi-status-badge">Active</span>
+      </div>
+      <p class="kpi-crop-summary">
+        {{ topCropNames() }}
+      </p>
+      <div class="kpi-footer">
+        <span>+{{ kpi().plannedPlantationsCount }} planned in pipeline</span>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- KPI 3: Growing Cycles -->
+  <mat-card class="kpi-card">
+    <mat-card-content>
+      <div class="kpi-header">
+        <span class="kpi-label">Growing Cycles</span>
+        <div class="kpi-icon kpi-icon-cycles">
+          <mat-icon>event_repeat</mat-icon>
+        </div>
+      </div>
+      <div class="kpi-value-row">
+        <span class="kpi-value">{{ kpi().activeCyclesCount }}</span>
+        <span class="kpi-subtext-inline">Cycles Running</span>
+      </div>
+      <p class="kpi-season-text">
+        Season: <strong>{{ season() || "Current" }}</strong>
+      </p>
+      <div class="kpi-footer">
+        <span>Active stage monitoring</span>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- KPI 4: Today's Farm Activity & Workforce -->
+  <mat-card class="kpi-card">
+    <mat-card-content>
+      <div class="kpi-header">
+        <span class="kpi-label">Workforce & Operations</span>
+        <div class="kpi-icon kpi-icon-labor">
+          <mat-icon>engineering</mat-icon>
+        </div>
+      </div>
+      @if (labor(); as l) {
+        <div class="kpi-value-row">
+          <span class="kpi-value">{{ l.workedWorkersCount }}</span>
+          <span class="kpi-subtext-inline">/ {{ l.assignedWorkersCount }} Workers</span>
+        </div>
+        <div class="progress-bar-track">
+          <div
+            class="progress-bar-fill labor-fill"
+            [style.width.%]="laborTurnoutPercentage()"
+          ></div>
+        </div>
+        <div class="kpi-footer">
+          <span>Turnout: <strong>{{ laborTurnoutPercentage() }}%</strong></span>
+          <span>{{ activitiesCount() }} Field Tasks Today</span>
+        </div>
+      } @else {
+        <div class="kpi-value-row">
+          <span class="kpi-value">{{ activitiesCount() }}</span>
+          <span class="kpi-subtext-inline">Tasks Logged Today</span>
+        </div>
+        <p class="kpi-season-text">Operational monitoring</p>
+        <div class="kpi-footer">
+          <span>Real-time field activity</span>
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+</div>

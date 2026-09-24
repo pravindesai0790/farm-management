@@ -1,0 +1,245 @@
+:host {
+  display: block;
+}
+
+.areas-container-card {
+  border: 1px solid var(--app-border, #dce5de);
+  border-radius: 16px;
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+
+  mat-card-content {
+    padding: 24px;
+  }
+}
+
+.tab-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+
+  h3 {
+    font-family: Georgia, serif;
+    font-size: 1.25rem;
+    color: var(--app-ink, #1c2a22);
+    margin: 0 0 4px 0;
+  }
+
+  p {
+    font-size: 0.875rem;
+    color: var(--app-muted, #65746a);
+    margin: 0;
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 16px;
+  color: var(--app-muted, #65746a);
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    color: #a5b4ab;
+    margin-bottom: 12px;
+  }
+
+  p {
+    font-size: 0.95rem;
+    margin: 0 0 16px 0;
+  }
+}
+
+.plots-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.plot-card {
+  border: 1px solid var(--app-border, #dce5de);
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+
+  &:hover {
+    border-color: var(--app-primary, #2f6f4e);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  }
+
+  &.fallow-card {
+    border-style: dashed;
+    border-color: #c5d5ca;
+    background: #fafcfa;
+  }
+}
+
+.plot-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+
+  .plot-code {
+    font-size: 0.7rem;
+    font-family: monospace;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--app-muted, #65746a);
+  }
+
+  .plot-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--app-ink, #1c2a22);
+    margin: 2px 0 0 0;
+  }
+
+  .plot-type {
+    font-size: 0.75rem;
+    color: var(--app-muted, #65746a);
+  }
+
+  .plot-size-badge {
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 8px;
+    background: #f6f8f5;
+    border: 1px solid #e2e8e2;
+    color: var(--app-ink, #1c2a22);
+  }
+}
+
+.plot-body {
+  margin-bottom: 16px;
+}
+
+.crop-status-box {
+  padding: 10px 12px;
+  border-radius: 10px;
+
+  &.active-crop {
+    background: #f3e5f5;
+    border: 1px solid #e1bee7;
+  }
+
+  &.fallow {
+    background: #f5f5f5;
+    border: 1px solid #e0e0e0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: var(--app-muted, #65746a);
+
+    .fallow-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: #757575;
+    }
+  }
+
+  .crop-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+
+    .crop-title {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #4a148c;
+
+      mat-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+      }
+    }
+
+    .variety-chip {
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: #ffffff;
+      color: #7b1fa2;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+  }
+
+  .cycle-progress-line {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: #6a1b9a;
+
+    strong {
+      color: #4a148c;
+    }
+
+    .progress-val {
+      font-weight: 700;
+    }
+
+    .status-tag {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #2e7d32;
+    }
+  }
+}
+
+.plot-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 10px;
+  border-top: 1px solid #edf2ee;
+
+  .view-link {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--app-primary, #2f6f4e);
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .plant-btn {
+    font-size: 0.75rem;
+    height: 28px;
+    line-height: 28px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .plots-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .plots-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tab-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}

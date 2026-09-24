@@ -1,0 +1,123 @@
+<mat-card class="areas-container-card">
+  <mat-card-content>
+    <div class="tab-header">
+      <div>
+        <h3>Physical Plots & Growing Areas ({{ areas().length }})</h3>
+        <p>Visual plot allocation breakdown, active crops, and available land.</p>
+      </div>
+      @if (permissionService.has("FarmArea.Create")) {
+        <a
+          mat-stroked-button
+          color="primary"
+          [routerLink]="['/farm-areas/new']"
+          [queryParams]="{ farmId: farmId() }"
+        >
+          <mat-icon>add</mat-icon> Add area
+        </a>
+      }
+    </div>
+
+    @if (areas().length === 0) {
+      <div class="empty-state">
+        <mat-icon>grid_off</mat-icon>
+        <p>No physical farm areas or plots have been created yet.</p>
+        @if (permissionService.has("FarmArea.Create")) {
+          <a
+            mat-flat-button
+            color="primary"
+            [routerLink]="['/farm-areas/new']"
+            [queryParams]="{ farmId: farmId() }"
+          >
+            <mat-icon>add</mat-icon> Create First Plot
+          </a>
+        }
+      </div>
+    } @else {
+      <div class="plots-grid">
+        @for (area of areas(); track area.id) {
+          @let areaPlantations = getAreaPlantations(area.id);
+          @let activeCycle = getAreaActiveCycle(area.name);
+          @let isFallow = areaPlantations.length === 0 && !activeCycle;
+
+          <div
+            class="plot-card"
+            [class.fallow-card]="isFallow"
+          >
+            <div class="plot-card-header">
+              <div>
+                <span class="plot-code">{{ area.code }}</span>
+                <h4 class="plot-name">{{ area.name }}</h4>
+                <small class="plot-type">
+                  {{ area.parentFarmAreaId ? "Sub-area" : "Farm Area" }}
+                </small>
+              </div>
+              <span class="plot-size-badge">
+                {{ area.totalArea }} {{ area.areaUnitSymbol }}
+              </span>
+            </div>
+
+            <div class="plot-body">
+              @if (activeCycle) {
+                <div class="crop-status-box active-crop">
+                  <div class="crop-row">
+                    <span class="crop-title">
+                      <mat-icon>spa</mat-icon>
+                      {{ activeCycle.cropName }}
+                    </span>
+                    @if (activeCycle.varietyName) {
+                      <span class="variety-chip">{{ activeCycle.varietyName }}</span>
+                    }
+                  </div>
+                  <div class="cycle-progress-line">
+                    <span>Cycle: <strong>{{ activeCycle.cycleCode }}</strong></span>
+                    <span class="progress-val">{{ activeCycle.progressPercentage || 0 }}%</span>
+                  </div>
+                </div>
+              } @else if (areaPlantations.length > 0) {
+                <div class="crop-status-box active-crop">
+                  @for (p of areaPlantations; track p.id) {
+                    <div class="crop-row">
+                      <span class="crop-title">
+                        <mat-icon>spa</mat-icon>
+                        {{ p.cropName }}
+                      </span>
+                      @if (p.varietyName) {
+                        <span class="variety-chip">{{ p.varietyName }}</span>
+                      }
+                    </div>
+                    <div class="cycle-progress-line">
+                      <span>Allocated: <strong>{{ p.allocatedArea }} {{ p.areaUnitSymbol }}</strong></span>
+                      <span class="status-tag">{{ p.status }}</span>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <div class="crop-status-box fallow">
+                  <mat-icon class="fallow-icon">nature</mat-icon>
+                  <span>Fallow · Available for Planting</span>
+                </div>
+              }
+            </div>
+
+            <div class="plot-footer">
+              <a [routerLink]="['/farm-areas', area.id]" class="view-link">
+                View Plot Details →
+              </a>
+              @if (isFallow && permissionService.has("Plantation.Create")) {
+                <a
+                  mat-button
+                  color="primary"
+                  class="plant-btn"
+                  [routerLink]="['/plantations/new']"
+                  [queryParams]="{ farmId: farmId(), farmAreaId: area.id }"
+                >
+                  + Plant Crop
+                </a>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </mat-card-content>
+</mat-card>
