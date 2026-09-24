@@ -20,6 +20,11 @@ public sealed class CropCycleConfiguration : IEntityTypeConfiguration<CropCycle>
         builder.HasOne(cycle => cycle.CancellationReason).WithMany().HasForeignKey(cycle => cycle.CancellationReasonId)
             .HasConstraintName("fk_crop_cycle_cancellation_reason").OnDelete(DeleteBehavior.Restrict);
         builder.Property(cycle => cycle.PlantationId).HasColumnName("plantation_id").IsRequired();
+
+        builder.Property(cycle => cycle.LifecycleTemplateId).HasColumnName("lifecycle_template_id");
+        builder.HasOne(cycle => cycle.LifecycleTemplate).WithMany().HasForeignKey(cycle => cycle.LifecycleTemplateId)
+            .HasConstraintName("fk_crop_cycle_lifecycle_template").OnDelete(DeleteBehavior.Restrict);
+
         builder.Property(cycle => cycle.CycleCode).HasColumnName("cycle_code").HasMaxLength(50).IsRequired();
         builder.Property(cycle => cycle.CycleName).HasColumnName("cycle_name").HasMaxLength(200).IsRequired();
         builder.Property(cycle => cycle.SeasonYear).HasColumnName("season_year").IsRequired();
@@ -37,9 +42,18 @@ public sealed class CropCycleConfiguration : IEntityTypeConfiguration<CropCycle>
         builder.Property(cycle => cycle.CreatedBy).HasColumnName("created_by").IsRequired();
         builder.Property(cycle => cycle.UpdatedAt).HasColumnName("updated_at");
         builder.Property(cycle => cycle.UpdatedBy).HasColumnName("updated_by");
+
+        builder.HasMany(cycle => cycle.Stages)
+            .WithOne(stage => stage.CropCycle)
+            .HasForeignKey(stage => stage.CropCycleId)
+            .HasConstraintName("fk_crop_cycle_stage_crop_cycle")
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.HasIndex(cycle => new { cycle.OrganizationId, cycle.CycleCode })
             .HasDatabaseName("ux_crop_cycle_organization_code").IsUnique();
         builder.HasIndex(cycle => new { cycle.PlantationId, cycle.Status })
             .HasDatabaseName("ix_crop_cycles_plantation_status");
+        builder.HasIndex(cycle => cycle.LifecycleTemplateId)
+            .HasDatabaseName("ix_crop_cycles_lifecycle_template_id");
     }
 }

@@ -19,7 +19,8 @@ public sealed class CropCycle
         string? seasonName,
         DateOnly plannedStartDate,
         DateOnly? expectedEndDate,
-        Guid createdBy)
+        Guid createdBy,
+        Guid? lifecycleTemplateId = null)
     {
         if (organizationId == Guid.Empty) throw new ArgumentException("An organization is required.", nameof(organizationId));
         if (plantationId == Guid.Empty) throw new ArgumentException("A plantation is required.", nameof(plantationId));
@@ -31,6 +32,7 @@ public sealed class CropCycle
             throw new ArgumentException("The expected end date cannot be before the planned start date.", nameof(expectedEndDate));
         }
         if (createdBy == Guid.Empty) throw new ArgumentException("A user is required.", nameof(createdBy));
+        if (lifecycleTemplateId == Guid.Empty) throw new ArgumentException("A lifecycle template ID cannot be empty.", nameof(lifecycleTemplateId));
 
         Id = Guid.NewGuid();
         OrganizationId = organizationId;
@@ -42,6 +44,7 @@ public sealed class CropCycle
         PlannedStartDate = plannedStartDate;
         ExpectedEndDate = expectedEndDate;
         Status = CropCycleStatus.Planned;
+        LifecycleTemplateId = lifecycleTemplateId;
         CreatedAt = DateTimeOffset.UtcNow;
         CreatedBy = createdBy;
     }
@@ -49,6 +52,7 @@ public sealed class CropCycle
     public Guid Id { get; private set; }
     public Guid OrganizationId { get; private set; }
     public Guid PlantationId { get; private set; }
+    public Guid? LifecycleTemplateId { get; private set; }
     public string CycleCode { get; private set; }
     public string CycleName { get; private set; }
     public int SeasonYear { get; private set; }
@@ -68,6 +72,8 @@ public sealed class CropCycle
     public Organization? Organization { get; private set; }
     public CropPlantation? Plantation { get; private set; }
     public PlantationEndReason? CancellationReason { get; private set; }
+    public CropLifecycleTemplate? LifecycleTemplate { get; private set; }
+    public ICollection<CropCycleStage> Stages { get; private set; } = new List<CropCycleStage>();
 
     public bool Cancel(
         DateOnly cancellationDate,
@@ -92,6 +98,22 @@ public sealed class CropCycle
         return true;
     }
 
+    public void SetLifecycleTemplate(Guid? lifecycleTemplateId, DateTimeOffset now, Guid updatedBy)
+    {
+        if (Status != CropCycleStatus.Planned)
+        {
+            throw new InvalidOperationException("The lifecycle template can only be changed while the crop cycle is planned.");
+        }
+        if (lifecycleTemplateId == Guid.Empty)
+        {
+            throw new ArgumentException("A lifecycle template ID cannot be empty.", nameof(lifecycleTemplateId));
+        }
+        EnsureUpdatedBy(updatedBy);
+        LifecycleTemplateId = lifecycleTemplateId;
+        UpdatedAt = now;
+        UpdatedBy = updatedBy;
+    }
+
     public void Update(
         Guid plantationId,
         string cycleCode,
@@ -101,7 +123,8 @@ public sealed class CropCycle
         DateOnly plannedStartDate,
         DateOnly? expectedEndDate,
         DateTimeOffset now,
-        Guid updatedBy)
+        Guid updatedBy,
+        Guid? lifecycleTemplateId)
     {
         if (Status != CropCycleStatus.Planned)
         {
@@ -110,6 +133,10 @@ public sealed class CropCycle
         if (plantationId == Guid.Empty)
         {
             throw new ArgumentException("A plantation is required.", nameof(plantationId));
+        }
+        if (lifecycleTemplateId == Guid.Empty)
+        {
+            throw new ArgumentException("A lifecycle template ID cannot be empty.", nameof(lifecycleTemplateId));
         }
 
         ValidateValues(cycleCode, cycleName, seasonYear, plannedStartDate, expectedEndDate, updatedBy);
@@ -120,9 +147,22 @@ public sealed class CropCycle
         SeasonName = string.IsNullOrWhiteSpace(seasonName) ? null : seasonName.Trim();
         PlannedStartDate = plannedStartDate;
         ExpectedEndDate = expectedEndDate;
+        LifecycleTemplateId = lifecycleTemplateId;
         UpdatedAt = now;
         UpdatedBy = updatedBy;
     }
+
+    public void Update(
+        Guid plantationId,
+        string cycleCode,
+        string cycleName,
+        int seasonYear,
+        string? seasonName,
+        DateOnly plannedStartDate,
+        DateOnly? expectedEndDate,
+        DateTimeOffset now,
+        Guid updatedBy) =>
+        Update(plantationId, cycleCode, cycleName, seasonYear, seasonName, plannedStartDate, expectedEndDate, now, updatedBy, LifecycleTemplateId);
 
     public bool Start(DateOnly actualStartDate, DateTimeOffset now, Guid updatedBy)
     {

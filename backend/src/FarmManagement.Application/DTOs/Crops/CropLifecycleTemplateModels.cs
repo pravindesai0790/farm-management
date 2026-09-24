@@ -3,9 +3,9 @@ namespace FarmManagement.Application.DTOs.Crops;
 public sealed record CropLifecycleStageResponse(
     Guid Id,
     Guid LifecycleTemplateId,
-    string StageCode,
     string StageName,
     int SequenceNumber,
+    int? ExpectedDurationDays,
     string? Description,
     bool IsActive);
 
@@ -39,13 +39,13 @@ public sealed record UpdateCropLifecycleTemplateRequest(
     bool IsDefault = false);
 
 public sealed record CreateCropLifecycleStageRequest(
-    string? StageCode,
     string? StageName,
     int SequenceNumber,
+    int? ExpectedDurationDays,
     string? Description);
 
 public sealed record UpdateCropLifecycleStageRequest(
-    string? StageCode,
     string? StageName,
     int SequenceNumber,
+    int? ExpectedDurationDays,
     string? Description);

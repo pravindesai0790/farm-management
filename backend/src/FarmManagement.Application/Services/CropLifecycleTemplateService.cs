@@ -164,9 +164,9 @@ public sealed class CropLifecycleTemplateService(ICropLifecycleTemplateStore sto
         var values = ReadStageValues(request);
         await EnsureSequenceIsAvailableAsync(template, values.SequenceNumber, null, cancellationToken);
 
-        var stage = new CropLifecycleStage(template.Id, values.StageCode, values.StageName, values.SequenceNumber, values.Description);
+        var stage = new CropLifecycleStage(template.Id, values.StageName, values.SequenceNumber, values.ExpectedDurationDays, values.Description);
         store.Add(stage);
-        AddAudit(actor, stage, "CropLifecycleStage.Created", new { stage.StageCode, stage.StageName, stage.SequenceNumber }, ipAddress);
+        AddAudit(actor, stage, "CropLifecycleStage.Created", new { stage.StageName, stage.SequenceNumber, stage.ExpectedDurationDays }, ipAddress);
         await store.SaveChangesAsync(cancellationToken);
         return ToResponse(stage);
     }
@@ -187,12 +187,12 @@ public sealed class CropLifecycleTemplateService(ICropLifecycleTemplateStore sto
         var values = ReadStageValues(request);
         await EnsureSequenceIsAvailableAsync(template, values.SequenceNumber, stage.Id, cancellationToken);
 
-        var previous = new { stage.StageCode, stage.StageName, stage.SequenceNumber, stage.IsActive };
-        stage.Update(values.StageCode, values.StageName, values.SequenceNumber, values.Description);
+        var previous = new { stage.StageName, stage.SequenceNumber, stage.ExpectedDurationDays, stage.IsActive };
+        stage.Update(values.StageName, values.SequenceNumber, values.ExpectedDurationDays, values.Description);
         AddAudit(actor, stage, "CropLifecycleStage.Updated", new
         {
             previous,
-            current = new { stage.StageCode, stage.StageName, stage.SequenceNumber }
+            current = new { stage.StageName, stage.SequenceNumber, stage.ExpectedDurationDays }
         }, ipAddress);
         await store.SaveChangesAsync(cancellationToken);
         return ToResponse(stage);
@@ -354,7 +354,7 @@ public sealed class CropLifecycleTemplateService(ICropLifecycleTemplateStore sto
             template.Stages.OrderBy(stage => stage.SequenceNumber).Select(ToResponse).ToArray());
 
     private static CropLifecycleStageResponse ToResponse(CropLifecycleStage stage) =>
-        new(stage.Id, stage.LifecycleTemplateId, stage.StageCode, stage.StageName, stage.SequenceNumber, stage.Description, stage.IsActive);
+        new(stage.Id, stage.LifecycleTemplateId, stage.StageName, stage.SequenceNumber, stage.ExpectedDurationDays, stage.Description, stage.IsActive);
 
     private static TemplateValues ReadTemplateValues(CreateCropLifecycleTemplateRequest? request) =>
         request is null
@@ -378,22 +378,21 @@ public sealed class CropLifecycleTemplateService(ICropLifecycleTemplateStore sto
     private static StageValues ReadStageValues(CreateCropLifecycleStageRequest? request) =>
         request is null
             ? throw Validation("request", "A request body is required.")
-            : ReadStageValues(request.StageCode, request.StageName, request.SequenceNumber, request.Description);
+            : ReadStageValues(request.StageName, request.SequenceNumber, request.ExpectedDurationDays, request.Description);
 
     private static StageValues ReadStageValues(UpdateCropLifecycleStageRequest? request) =>
         request is null
             ? throw Validation("request", "A request body is required.")
-            : ReadStageValues(request.StageCode, request.StageName, request.SequenceNumber, request.Description);
+            : ReadStageValues(request.StageName, request.SequenceNumber, request.ExpectedDurationDays, request.Description);
 
-    private static StageValues ReadStageValues(string? stageCode, string? stageName, int sequenceNumber, string? description)
+    private static StageValues ReadStageValues(string? stageName, int sequenceNumber, int? expectedDurationDays, string? description)
     {
-        if (string.IsNullOrWhiteSpace(stageCode)) throw Validation("stageCode", "Stage code is required.");
-        if (stageCode.Trim().Length > 50) throw Validation("stageCode", "Stage code cannot exceed 50 characters.");
         if (string.IsNullOrWhiteSpace(stageName)) throw Validation("stageName", "Stage name is required.");
         if (stageName.Trim().Length > 150) throw Validation("stageName", "Stage name cannot exceed 150 characters.");
         if (sequenceNumber <= 0) throw Validation("sequenceNumber", "Sequence number must be greater than zero.");
+        if (expectedDurationDays is <= 0) throw Validation("expectedDurationDays", "Expected duration days must be greater than zero.");
         if (description?.Trim().Length > 2000) throw Validation("description", "Description cannot exceed 2000 characters.");
-        return new(stageCode.Trim().ToUpperInvariant(), stageName.Trim(), sequenceNumber, NormalizeOptional(description));
+        return new(stageName.Trim(), sequenceNumber, expectedDurationDays, NormalizeOptional(description));
     }
 
     private static string? NormalizeOptional(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
@@ -424,5 +423,5 @@ public sealed class CropLifecycleTemplateService(ICropLifecycleTemplateStore sto
         new("Validation failed", new Dictionary<string, string[]> { [fieldName] = [message] });
 
     private sealed record TemplateValues(Guid CropId, string Name, string? Description, bool IsDefault);
-    private sealed record StageValues(string StageCode, string StageName, int SequenceNumber, string? Description);
+    private sealed record StageValues(string StageName, int SequenceNumber, int? ExpectedDurationDays, string? Description);
 }

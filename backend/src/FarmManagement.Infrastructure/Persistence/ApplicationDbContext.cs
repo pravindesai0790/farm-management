@@ -45,6 +45,8 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
 
     public DbSet<CropCycle> CropCycles => Set<CropCycle>();
 
+    public DbSet<CropCycleStage> CropCycleStages => Set<CropCycleStage>();
+
     public DbSet<LaborActivityType> LaborActivityTypes => Set<LaborActivityType>();
 
     public DbSet<LaborActivity> LaborActivities => Set<LaborActivity>();
