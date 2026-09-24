@@ -36,12 +36,11 @@ public sealed class WorkerFarmAssignmentServiceTests
         return worker;
     }
 
-    private Farm CreateFarm(Guid? organizationId = null, bool isActive = true, string code = "F-01")
+    private Farm CreateFarm(Guid? organizationId = null, bool isActive = true, string name = "Green Valley Farm")
     {
         var farm = new Farm(
             organizationId ?? _organizationId,
-            code,
-            "Green Valley Farm",
+            name,
             _ownershipTypeId,
             _userId);
 
@@ -81,8 +80,8 @@ public sealed class WorkerFarmAssignmentServiceTests
         var store = new FakeWorkerFarmAssignmentStore();
         var service = new WorkerFarmAssignmentService(store);
         var worker = CreateWorker();
-        var farm1 = CreateFarm(code: "F-01");
-        var farm2 = CreateFarm(code: "F-02");
+        var farm1 = CreateFarm(name: "Farm 1");
+        var farm2 = CreateFarm(name: "Farm 2");
         store.Workers.Add(worker);
         store.Farms.Add(farm1);
         store.Farms.Add(farm2);

@@ -25,7 +25,7 @@
           <mat-option value="">All Farms (Organization View)</mat-option>
           @for (farm of farms(); track farm.id) {
             <mat-option [value]="farm.id">
-              {{ farm.name }} ({{ farm.code }})
+              {{ farm.name }}
             </mat-option>
           }
         </mat-select>
@@ -553,7 +553,6 @@
                       <tr>
                         <td class="farm-cell">
                           <strong>{{ fs.farmName }}</strong>
-                          <span class="code-sub">{{ fs.farmCode }}</span>
                         </td>
                         <td>
                           <strong>{{ fs.assignedCount }}</strong> active workers
@@ -622,7 +621,6 @@
                     <tr>
                       <td class="farm-cell">
                         <strong>{{ f.farmName }}</strong>
-                        <span class="code-sub">{{ f.farmCode }}</span>
                       </td>
                       <td>
                         <strong>{{ f.totalArea | number: "1.1-2" }}</strong> {{ f.areaUnitSymbol }}

@@ -6,7 +6,6 @@ public sealed record WorkerFarmAssignmentResponse(
     Guid WorkerId,
     string WorkerName,
     Guid FarmId,
-    string FarmCode,
     string FarmName,
     DateOnly AssignedFrom,
     DateOnly? AssignedTo,

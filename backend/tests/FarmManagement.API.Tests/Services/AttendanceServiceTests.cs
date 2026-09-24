@@ -23,12 +23,11 @@ public sealed class AttendanceServiceTests
         FakeAttendanceEarningsIntegration? earnings = null) =>
         new(store, earnings ?? new FakeAttendanceEarningsIntegration());
 
-    private Farm CreateFarm(Guid? organizationId = null, bool isActive = true, string code = "F-01")
+    private Farm CreateFarm(Guid? organizationId = null, bool isActive = true, string name = "Green Valley Farm")
     {
         var farm = new Farm(
             organizationId ?? _organizationId,
-            code,
-            "Green Valley Farm",
+            name,
             _ownershipTypeId,
             _userId);
 
@@ -245,7 +244,7 @@ public sealed class AttendanceServiceTests
     {
         var store = new FakeAttendanceStore();
         var farm = CreateFarm();
-        var otherFarm = CreateFarm(code: "F-02");
+        var otherFarm = CreateFarm(name: "Other Farm");
         store.Farms.Add(farm);
         store.Farms.Add(otherFarm);
 
@@ -1603,8 +1602,8 @@ public sealed class AttendanceServiceTests
     public async Task FinalizeAttendanceAsync_WhenWorkerHasExistingAttendanceInAnotherFarm_ThrowsValidationException()
     {
         var store = new FakeAttendanceStore();
-        var farm1 = CreateFarm(code: "F-01");
-        var farm2 = CreateFarm(code: "F-02");
+        var farm1 = CreateFarm(name: "Farm 1");
+        var farm2 = CreateFarm(name: "Farm 2");
         var worker = CreateWorker();
         var date = new DateOnly(2026, 9, 12);
         AssignWorkerToFarm(worker, farm1, new DateOnly(2026, 1, 1));

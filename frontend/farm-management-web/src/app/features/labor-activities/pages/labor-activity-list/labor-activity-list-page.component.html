@@ -43,7 +43,7 @@
         <mat-select [value]="farmId()" (valueChange)="onFarmChange($event)">
           <mat-option value="">All farms</mat-option>
           @for (farm of farms(); track farm.id) {
-            <mat-option [value]="farm.id">{{ farm.name }} ({{ farm.code }})</mat-option>
+            <mat-option [value]="farm.id">{{ farm.name }}</mat-option>
           }
         </mat-select>
       </mat-form-field>

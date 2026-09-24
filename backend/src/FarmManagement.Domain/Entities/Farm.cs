@@ -4,14 +4,12 @@ public sealed class Farm
 {
     private Farm()
     {
-        Code = string.Empty;
         Name = string.Empty;
         WorkerAssignments = [];
     }
 
     public Farm(
         Guid organizationId,
-        string code,
         string name,
         Guid ownershipTypeId,
         Guid createdBy,
@@ -33,7 +31,6 @@ public sealed class Farm
             throw new ArgumentException("An organization is required.", nameof(organizationId));
         }
 
-        ValidateCode(code);
         ValidateName(name);
         ValidateOwnershipType(ownershipTypeId);
         ValidateArea(totalArea, areaUnitId);
@@ -45,7 +42,6 @@ public sealed class Farm
 
         Id = Guid.NewGuid();
         OrganizationId = organizationId;
-        Code = NormalizeCode(code);
         Name = name.Trim();
         OwnershipTypeId = ownershipTypeId;
         TotalArea = totalArea;
@@ -69,8 +65,6 @@ public sealed class Farm
     public Guid Id { get; private set; }
 
     public Guid OrganizationId { get; private set; }
-
-    public string Code { get; private set; }
 
     public string Name { get; private set; }
 
@@ -119,7 +113,6 @@ public sealed class Farm
     public ICollection<WorkerFarmAssignment> WorkerAssignments { get; private set; }
 
     public void Update(
-        string code,
         string name,
         Guid ownershipTypeId,
         decimal? totalArea,
@@ -137,13 +130,11 @@ public sealed class Farm
         DateTimeOffset now,
         Guid updatedBy)
     {
-        ValidateCode(code);
         ValidateName(name);
         ValidateOwnershipType(ownershipTypeId);
         ValidateArea(totalArea, areaUnitId);
         ValidateCoordinates(latitude, longitude);
 
-        Code = NormalizeCode(code);
         Name = name.Trim();
         OwnershipTypeId = ownershipTypeId;
         TotalArea = totalArea;
@@ -188,14 +179,6 @@ public sealed class Farm
         return true;
     }
 
-    private static void ValidateCode(string value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new ArgumentException("A farm code is required.", nameof(value));
-        }
-    }
-
     private static void ValidateName(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -237,8 +220,6 @@ public sealed class Farm
             throw new ArgumentOutOfRangeException(nameof(longitude), "Longitude must be between -180 and 180.");
         }
     }
-
-    private static string NormalizeCode(string value) => value.Trim().ToUpperInvariant();
 
     private static string? NormalizeOptional(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();

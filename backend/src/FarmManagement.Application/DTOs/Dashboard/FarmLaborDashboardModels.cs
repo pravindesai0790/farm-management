@@ -15,7 +15,6 @@ public sealed record DailyLaborTrendDto(
 public sealed record FarmLaborStatusSummaryDto(
     Guid FarmId,
     string FarmName,
-    string FarmCode,
     int AssignedCount,
     int WorkedCount,
     decimal TodayWageExpense,

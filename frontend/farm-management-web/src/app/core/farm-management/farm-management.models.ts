@@ -40,7 +40,6 @@ export type CycleCancellationReason = PlantationEndReason;
 
 export interface Farm {
   id: string;
-  code: string;
   name: string;
   description: string | null;
   ownershipTypeId: string;
@@ -69,7 +68,6 @@ export interface Farm {
 export interface FarmArea {
   id: string;
   farmId: string;
-  farmCode: string;
   farmName: string;
   parentFarmAreaId: string | null;
   code: string;
@@ -133,7 +131,6 @@ export interface CropVariety {
 export interface Plantation {
   id: string;
   farmId: string;
-  farmCode: string;
   farmName: string;
   farmAreaId: string;
   farmAreaCode: string;
@@ -171,7 +168,6 @@ export interface CropCycle {
   id: string;
   plantationId: string;
   plantationName: string;
-  farmCode: string | null;
   farmName: string | null;
   farmAreaCode: string | null;
   farmAreaName: string | null;
@@ -273,7 +269,6 @@ export interface ActiveCycleSummary {
 
 export interface FarmUtilizationSummary {
   farmId: string;
-  farmCode: string;
   farmName: string;
   totalArea: number;
   allocatedArea: number;
@@ -298,7 +293,6 @@ export interface DailyLaborTrend {
 export interface FarmLaborStatusSummary {
   farmId: string;
   farmName: string;
-  farmCode: string;
   assignedCount: number;
   workedCount: number;
   todayWageExpense: number;

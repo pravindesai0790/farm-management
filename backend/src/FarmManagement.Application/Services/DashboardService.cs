@@ -231,7 +231,6 @@ public sealed class DashboardService(IDashboardStore store) : IDashboardService
 
                 return new FarmUtilizationSummaryDto(
                     FarmId: f.Id,
-                    FarmCode: f.Code,
                     FarmName: f.Name,
                     TotalArea: farmTotal,
                     AllocatedArea: farmAllocated,

@@ -2,7 +2,6 @@ namespace FarmManagement.Application.DTOs.Farms;
 
 public sealed record FarmResponse(
     Guid Id,
-    string Code,
     string Name,
     string? Description,
     Guid OwnershipTypeId,
@@ -29,7 +28,6 @@ public sealed record FarmResponse(
     Guid? UpdatedBy);
 
 public sealed record CreateFarmRequest(
-    string? Code,
     string? Name,
     string? Description,
     Guid? OwnershipTypeId,
@@ -46,7 +44,6 @@ public sealed record CreateFarmRequest(
     decimal? Longitude);
 
 public sealed record UpdateFarmRequest(
-    string? Code,
     string? Name,
     string? Description,
     Guid? OwnershipTypeId,

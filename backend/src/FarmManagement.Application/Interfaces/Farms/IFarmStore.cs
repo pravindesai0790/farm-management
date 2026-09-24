@@ -23,12 +23,6 @@ public interface IFarmStore
         Guid organizationId,
         CancellationToken cancellationToken = default);
 
-    Task<bool> CodeExistsAsync(
-        Guid organizationId,
-        string code,
-        Guid? excludingFarmId = null,
-        CancellationToken cancellationToken = default);
-
     Task<FarmOwnershipType?> FindOwnershipTypeAsync(
         Guid ownershipTypeId,
         CancellationToken cancellationToken = default);

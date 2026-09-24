@@ -52,7 +52,6 @@ export class FarmEditorPageComponent implements OnInit {
   readonly units = signal<readonly any[]>([]);
   readonly ownershipTypes = signal<readonly any[]>([]);
   readonly form = this.fb.group({
-    code: ["", [Validators.required, Validators.maxLength(50)]],
     name: ["", [Validators.required, Validators.maxLength(200)]],
     description: [""],
     ownershipTypeId: ["", [Validators.required]],
@@ -79,7 +78,6 @@ export class FarmEditorPageComponent implements OnInit {
           this.ownershipTypes.set(r.ownership);
           if (r.farm)
             this.form.patchValue({
-              code: r.farm.code,
               name: r.farm.name,
               description: r.farm.description ?? "",
               ownershipTypeId: r.farm.ownershipTypeId,

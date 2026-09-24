@@ -14,14 +14,6 @@
       <form [formGroup]="form" (ngSubmit)="submit()">
         <div class="form-grid">
           <mat-form-field appearance="outline">
-            <mat-label>Code</mat-label>
-            <input matInput formControlName="code" />
-            @if (form.controls.code.hasError("required")) {
-              <mat-error>Code is required.</mat-error>
-            }
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
             <mat-label>Name</mat-label>
             <input matInput formControlName="name" />
             @if (form.controls.name.hasError("required")) {

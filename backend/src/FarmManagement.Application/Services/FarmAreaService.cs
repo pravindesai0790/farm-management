@@ -354,7 +354,6 @@ public sealed class FarmAreaService(IFarmAreaStore store) : IFarmAreaService
         new(
             farmArea.Id,
             farmArea.FarmId,
-            farm?.Code ?? farmArea.Farm?.Code ?? string.Empty,
             farm?.Name ?? farmArea.Farm?.Name ?? string.Empty,
             farmArea.ParentFarmAreaId,
             farmArea.Code,

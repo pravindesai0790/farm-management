@@ -17,7 +17,7 @@
         <mat-select [value]="selectedFarmId()" (valueChange)="onFarmChange($event)">
           <mat-option value="">All farms</mat-option>
           @for (farm of farms(); track farm.id) {
-            <mat-option [value]="farm.id">{{ farm.name }} ({{ farm.code }})</mat-option>
+            <mat-option [value]="farm.id">{{ farm.name }}</mat-option>
           }
         </mat-select>
       </mat-form-field>
@@ -45,9 +45,6 @@
             <th mat-header-cell *matHeaderCellDef>Farm</th>
             <td mat-cell *matCellDef="let area">
               <strong>{{ area.farmName || farmNames()[area.farmId] || "—" }}</strong>
-              @if (area.farmCode) {
-                <small>{{ area.farmCode }}</small>
-              }
             </td>
           </ng-container>
 

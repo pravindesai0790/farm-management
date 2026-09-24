@@ -8,7 +8,6 @@
       </nav>
 
       <div class="tags-row">
-        <span class="code-badge">{{ farm().code }}</span>
         <span class="status-chip" [class.status-inactive]="!farm().isActive">
           <span class="status-dot"></span>
           {{ farm().isActive ? "Active Farm" : "Inactive" }}

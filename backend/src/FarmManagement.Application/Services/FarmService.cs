@@ -61,14 +61,8 @@ public sealed class FarmService(IFarmStore store) : IFarmService
         var values = ReadValues(request);
         await ValidateReferencesAsync(actor, values.OwnershipTypeId, values.TotalArea, values.AreaUnitId, cancellationToken);
 
-        if (await store.CodeExistsAsync(actor.OrganizationId, values.Code, cancellationToken: cancellationToken))
-        {
-            throw new ConflictException("A farm with this code already exists in the organization.");
-        }
-
         var farm = new Farm(
             actor.OrganizationId,
-            values.Code,
             values.Name,
             values.OwnershipTypeId,
             actor.UserId,
@@ -86,7 +80,7 @@ public sealed class FarmService(IFarmStore store) : IFarmService
             values.Longitude);
 
         store.Add(farm);
-        AddAudit(actor, farm, "Farm.Created", new { farm.Code, farm.Name }, ipAddress);
+        AddAudit(actor, farm, "Farm.Created", new { farm.Name }, ipAddress);
         await store.SaveChangesAsync(cancellationToken);
         return ToResponse(farm);
     }
@@ -104,14 +98,8 @@ public sealed class FarmService(IFarmStore store) : IFarmService
         var values = ReadValues(request);
         await ValidateReferencesAsync(actor, values.OwnershipTypeId, values.TotalArea, values.AreaUnitId, cancellationToken);
 
-        if (await store.CodeExistsAsync(actor.OrganizationId, values.Code, farm.Id, cancellationToken))
-        {
-            throw new ConflictException("A farm with this code already exists in the organization.");
-        }
-
-        var previous = new { farm.Code, farm.Name, farm.OwnershipTypeId, farm.TotalArea, farm.AreaUnitId, farm.IsActive };
+        var previous = new { farm.Name, farm.OwnershipTypeId, farm.TotalArea, farm.AreaUnitId, farm.IsActive };
         farm.Update(
-            values.Code,
             values.Name,
             values.OwnershipTypeId,
             values.TotalArea,
@@ -129,7 +117,7 @@ public sealed class FarmService(IFarmStore store) : IFarmService
             DateTimeOffset.UtcNow,
             actor.UserId);
 
-        AddAudit(actor, farm, "Farm.Updated", new { previous, current = new { farm.Code, farm.Name, farm.OwnershipTypeId, farm.TotalArea, farm.AreaUnitId } }, ipAddress);
+        AddAudit(actor, farm, "Farm.Updated", new { previous, current = new { farm.Name, farm.OwnershipTypeId, farm.TotalArea, farm.AreaUnitId } }, ipAddress);
         await store.SaveChangesAsync(cancellationToken);
         return ToResponse(farm);
     }
@@ -206,7 +194,6 @@ public sealed class FarmService(IFarmStore store) : IFarmService
     private static FarmResponse ToResponse(Farm farm) =>
         new(
             farm.Id,
-            farm.Code,
             farm.Name,
             farm.Description,
             farm.OwnershipTypeId,
@@ -233,16 +220,16 @@ public sealed class FarmService(IFarmStore store) : IFarmService
             farm.UpdatedBy);
 
     private static FarmValues ReadValues(CreateFarmRequest request) =>
-        ReadValues(request.Code, request.Name, request.Description, request.OwnershipTypeId, request.TotalArea, request.AreaUnitId, request.AddressLine1, request.AddressLine2, request.City, request.District, request.State, request.Country, request.PostalCode, request.Latitude, request.Longitude);
+        ReadValues(request.Name, request.Description, request.OwnershipTypeId, request.TotalArea, request.AreaUnitId, request.AddressLine1, request.AddressLine2, request.City, request.District, request.State, request.Country, request.PostalCode, request.Latitude, request.Longitude);
 
     private static FarmValues ReadValues(UpdateFarmRequest request) =>
-        ReadValues(request.Code, request.Name, request.Description, request.OwnershipTypeId, request.TotalArea, request.AreaUnitId, request.AddressLine1, request.AddressLine2, request.City, request.District, request.State, request.Country, request.PostalCode, request.Latitude, request.Longitude);
+        ReadValues(request.Name, request.Description, request.OwnershipTypeId, request.TotalArea, request.AreaUnitId, request.AddressLine1, request.AddressLine2, request.City, request.District, request.State, request.Country, request.PostalCode, request.Latitude, request.Longitude);
 
     private static FarmValues ReadValues(
-        string? code, string? name, string? description, Guid? ownershipTypeId, decimal? totalArea, Guid? areaUnitId,
+        string? name, string? description, Guid? ownershipTypeId, decimal? totalArea, Guid? areaUnitId,
         string? addressLine1, string? addressLine2, string? city, string? district, string? state, string? country,
         string? postalCode, decimal? latitude, decimal? longitude) =>
-        new(code!.Trim().ToUpperInvariant(), name!.Trim(), description, ownershipTypeId!.Value, totalArea, areaUnitId, addressLine1, addressLine2, city, district, state, country, postalCode, latitude, longitude);
+        new(name!.Trim(), description, ownershipTypeId!.Value, totalArea, areaUnitId, addressLine1, addressLine2, city, district, state, country, postalCode, latitude, longitude);
 
     private static void ValidateRequest(CreateFarmRequest? request)
     {
@@ -251,7 +238,7 @@ public sealed class FarmService(IFarmStore store) : IFarmService
             throw Validation("request", "A request body is required.");
         }
 
-        ValidateFields(request.Code, request.Name, request.OwnershipTypeId, request.TotalArea, request.AreaUnitId, request.Latitude, request.Longitude);
+        ValidateFields(request.Name, request.OwnershipTypeId, request.TotalArea, request.AreaUnitId, request.Latitude, request.Longitude);
     }
 
     private static void ValidateRequest(UpdateFarmRequest? request)
@@ -261,13 +248,11 @@ public sealed class FarmService(IFarmStore store) : IFarmService
             throw Validation("request", "A request body is required.");
         }
 
-        ValidateFields(request.Code, request.Name, request.OwnershipTypeId, request.TotalArea, request.AreaUnitId, request.Latitude, request.Longitude);
+        ValidateFields(request.Name, request.OwnershipTypeId, request.TotalArea, request.AreaUnitId, request.Latitude, request.Longitude);
     }
 
-    private static void ValidateFields(string? code, string? name, Guid? ownershipTypeId, decimal? totalArea, Guid? areaUnitId, decimal? latitude, decimal? longitude)
+    private static void ValidateFields(string? name, Guid? ownershipTypeId, decimal? totalArea, Guid? areaUnitId, decimal? latitude, decimal? longitude)
     {
-        if (string.IsNullOrWhiteSpace(code)) throw Validation("code", "Code is required.");
-        if (code.Trim().Length > 50) throw Validation("code", "Code cannot exceed 50 characters.");
         if (string.IsNullOrWhiteSpace(name)) throw Validation("name", "Name is required.");
         if (name.Trim().Length > 200) throw Validation("name", "Name cannot exceed 200 characters.");
         if (ownershipTypeId is null || ownershipTypeId == Guid.Empty) throw Validation("ownershipTypeId", "Ownership type is required.");
@@ -295,7 +280,7 @@ public sealed class FarmService(IFarmStore store) : IFarmService
         new("Validation failed", new Dictionary<string, string[]> { [fieldName] = [message] });
 
     private sealed record FarmValues(
-        string Code, string Name, string? Description, Guid OwnershipTypeId, decimal? TotalArea, Guid? AreaUnitId,
+        string Name, string? Description, Guid OwnershipTypeId, decimal? TotalArea, Guid? AreaUnitId,
         string? AddressLine1, string? AddressLine2, string? City, string? District, string? State, string? Country,
         string? PostalCode, decimal? Latitude, decimal? Longitude);
 }

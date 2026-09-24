@@ -16,7 +16,7 @@
     <form class="filters" [formGroup]="filterForm">
       <mat-form-field appearance="outline">
         <mat-label>Search farms</mat-label>
-        <input matInput formControlName="search" placeholder="Code or name" />
+        <input matInput formControlName="search" placeholder="Search by name" />
       </mat-form-field>
       <mat-form-field appearance="outline">
         <mat-label>Status</mat-label>
@@ -48,7 +48,6 @@
             <th mat-header-cell *matHeaderCellDef>Farm</th>
             <td mat-cell *matCellDef="let farm">
               <strong>{{ farm.name }}</strong>
-              <small>{{ farm.code }}</small>
             </td>
           </ng-container>
 

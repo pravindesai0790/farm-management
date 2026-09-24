@@ -102,7 +102,6 @@ public static class LaborDashboardHelper
             return new FarmLaborStatusSummaryDto(
                 FarmId: f.Id,
                 FarmName: f.Name,
-                FarmCode: f.Code,
                 AssignedCount: assigned,
                 WorkedCount: worked,
                 TodayWageExpense: wages,

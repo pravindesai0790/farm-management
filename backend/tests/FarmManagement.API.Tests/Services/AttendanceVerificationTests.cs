@@ -18,8 +18,8 @@ public sealed class AttendanceVerificationTests
     private AttendanceActor ActorOrgA => new(_userId, _organizationIdA);
     private AttendanceActor ActorOrgB => new(_userId, _organizationIdB);
 
-    private Farm CreateFarm(Guid organizationId, string code = "F-01") =>
-        new(organizationId, code, "Test Farm " + code, _ownershipTypeId, _userId);
+    private Farm CreateFarm(Guid organizationId, string name = "Test Farm") =>
+        new(organizationId, name, _ownershipTypeId, _userId);
 
     private Worker CreateWorker(Guid organizationId, string name = "Worker", Gender gender = Gender.Male) =>
         new(organizationId, name, "Patil", gender, EmploymentType.Permanent, _userId);

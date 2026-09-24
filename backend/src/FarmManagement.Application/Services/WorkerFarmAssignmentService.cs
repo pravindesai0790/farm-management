@@ -297,7 +297,6 @@ public sealed class WorkerFarmAssignmentService(IWorkerFarmAssignmentStore store
             assignment.WorkerId,
             assignment.Worker?.DisplayName ?? string.Empty,
             assignment.FarmId,
-            assignment.Farm?.Code ?? string.Empty,
             assignment.Farm?.Name ?? string.Empty,
             assignment.AssignedFrom,
             assignment.AssignedTo,

@@ -389,7 +389,6 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
             cycle.Id,
             cycle.PlantationId,
             plantation.PlantationName,
-            farm?.Code,
             farm?.Name,
             farmArea?.Code,
             farmArea?.Name,

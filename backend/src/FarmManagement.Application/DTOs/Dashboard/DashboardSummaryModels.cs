@@ -64,7 +64,6 @@ public sealed record ActiveCycleSummaryDto(
 
 public sealed record FarmUtilizationSummaryDto(
     Guid FarmId,
-    string FarmCode,
     string FarmName,
     decimal TotalArea,
     decimal AllocatedArea,

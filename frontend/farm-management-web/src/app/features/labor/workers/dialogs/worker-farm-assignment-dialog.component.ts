@@ -98,12 +98,12 @@ function assignedToAfterAssignedFrom(
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Farm</mat-label>
             @if (isEditing) {
-              <input matInput [value]="data.assignment?.farmName + ' (' + data.assignment?.farmCode + ')'" disabled />
+              <input matInput [value]="data.assignment?.farmName || ''" disabled />
             } @else {
               <mat-select formControlName="farmId">
                 @for (farm of farms(); track farm.id) {
                   <mat-option [value]="farm.id">
-                    {{ farm.name }} ({{ farm.code }})
+                    {{ farm.name }}
                   </mat-option>
                 }
               </mat-select>

@@ -178,7 +178,6 @@ export interface WorkerFarmAssignment {
   readonly workerId: string;
   readonly workerName: string;
   readonly farmId: string;
-  readonly farmCode: string;
   readonly farmName: string;
   readonly assignedFrom: string;
   readonly assignedTo?: string | null;

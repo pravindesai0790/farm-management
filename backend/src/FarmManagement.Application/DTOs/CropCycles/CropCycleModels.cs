@@ -4,7 +4,6 @@ public sealed record CropCycleResponse(
     Guid Id,
     Guid PlantationId,
     string PlantationName,
-    string? FarmCode,
     string? FarmName,
     string? FarmAreaCode,
     string? FarmAreaName,

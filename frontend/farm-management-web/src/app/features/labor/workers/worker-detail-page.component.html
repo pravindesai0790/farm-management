@@ -281,12 +281,11 @@
           } @else {
             <div class="table-wrap">
               <table mat-table [dataSource]="filteredAssignments()" class="assignments-table">
-                <!-- Farm Name & Code -->
+                <!-- Farm Name -->
                 <ng-container matColumnDef="farm">
                   <th mat-header-cell *matHeaderCellDef>Farm</th>
                   <td mat-cell *matCellDef="let a">
                     <strong>{{ a.farmName }}</strong>
-                    <small class="code-badge">{{ a.farmCode }}</small>
                   </td>
                 </ng-container>
 

@@ -17,9 +17,7 @@
             <mat-label>Farm</mat-label>
             <mat-select formControlName="farmId">
               @for (farm of farms(); track farm.id) {
-                <mat-option [value]="farm.id"
-                  >{{ farm.name }} ({{ farm.code }})</mat-option
-                >
+                <mat-option [value]="farm.id">{{ farm.name }}</mat-option>
               }
             </mat-select>
           </mat-form-field>

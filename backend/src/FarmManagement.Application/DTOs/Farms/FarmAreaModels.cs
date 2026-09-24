@@ -3,7 +3,6 @@ namespace FarmManagement.Application.DTOs.Farms;
 public sealed record FarmAreaResponse(
     Guid Id,
     Guid FarmId,
-    string FarmCode,
     string FarmName,
     Guid? ParentFarmAreaId,
     string Code,

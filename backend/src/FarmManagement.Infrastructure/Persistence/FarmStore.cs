@@ -20,7 +20,6 @@ public sealed class FarmStore(ApplicationDbContext dbContext) : IFarmStore
         await BuildQuery(organizationId, search, isActive)
             .AsNoTracking()
             .OrderBy(farm => farm.Name)
-            .ThenBy(farm => farm.Code)
             .ThenBy(farm => farm.Id)
             .Skip(skip)
             .Take(take)
@@ -28,21 +27,6 @@ public sealed class FarmStore(ApplicationDbContext dbContext) : IFarmStore
 
     public Task<Farm?> FindAsync(Guid farmId, Guid organizationId, CancellationToken cancellationToken = default) =>
         BuildQuery(organizationId, null, null).SingleOrDefaultAsync(farm => farm.Id == farmId, cancellationToken);
-
-    public Task<bool> CodeExistsAsync(
-        Guid organizationId,
-        string code,
-        Guid? excludingFarmId = null,
-        CancellationToken cancellationToken = default)
-    {
-        var query = dbContext.Farms.Where(farm => farm.OrganizationId == organizationId && farm.Code == code);
-        if (excludingFarmId is not null)
-        {
-            query = query.Where(farm => farm.Id != excludingFarmId.Value);
-        }
-
-        return query.AnyAsync(cancellationToken);
-    }
 
     public Task<FarmOwnershipType?> FindOwnershipTypeAsync(Guid ownershipTypeId, CancellationToken cancellationToken = default) =>
         dbContext.FarmOwnershipTypes.SingleOrDefaultAsync(item => item.Id == ownershipTypeId, cancellationToken);
@@ -76,9 +60,7 @@ public sealed class FarmStore(ApplicationDbContext dbContext) : IFarmStore
         if (!string.IsNullOrWhiteSpace(search))
         {
             var normalizedSearch = search.Trim().ToLowerInvariant();
-            query = query.Where(farm =>
-                farm.Code.ToLower().Contains(normalizedSearch) ||
-                farm.Name.ToLower().Contains(normalizedSearch));
+            query = query.Where(farm => farm.Name.ToLower().Contains(normalizedSearch));
         }
 
         return query;

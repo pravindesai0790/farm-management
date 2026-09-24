@@ -26,11 +26,6 @@ public sealed class FarmConfiguration : IEntityTypeConfiguration<Farm>
             .HasConstraintName("fk_farm_organization")
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.Property(farm => farm.Code)
-            .HasColumnName("code")
-            .HasMaxLength(50)
-            .IsRequired();
-
         builder.Property(farm => farm.Name)
             .HasColumnName("name")
             .HasMaxLength(200)
@@ -78,8 +73,7 @@ public sealed class FarmConfiguration : IEntityTypeConfiguration<Farm>
         builder.Property(farm => farm.UpdatedAt).HasColumnName("updated_at");
         builder.Property(farm => farm.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(farm => new { farm.OrganizationId, farm.Code })
-            .HasDatabaseName("ux_farm_organization_code")
-            .IsUnique();
+        builder.HasIndex(farm => farm.OrganizationId)
+            .HasDatabaseName("ix_farms_organization_id");
     }
 }
