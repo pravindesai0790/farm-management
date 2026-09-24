@@ -55,7 +55,6 @@ export class FarmAreaEditorPageComponent implements OnInit {
   readonly form = this.fb.group({
     farmId: [this.farmId, [Validators.required]],
     parentFarmAreaId: [null as string | null],
-    code: ["", [Validators.required]],
     name: ["", [Validators.required]],
     description: [""],
     totalArea: [
@@ -85,7 +84,6 @@ export class FarmAreaEditorPageComponent implements OnInit {
             this.form.patchValue({
               farmId: r.area.farmId,
               parentFarmAreaId: r.area.parentFarmAreaId,
-              code: r.area.code,
               name: r.area.name,
               description: r.area.description ?? "",
               totalArea: r.area.totalArea,

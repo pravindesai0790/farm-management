@@ -45,11 +45,6 @@ public sealed class FarmAreaConfiguration : IEntityTypeConfiguration<FarmArea>
             .HasConstraintName("fk_farm_area_parent")
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.Property(area => area.Code)
-            .HasColumnName("code")
-            .HasMaxLength(50)
-            .IsRequired();
-
         builder.Property(area => area.Name)
             .HasColumnName("name")
             .HasMaxLength(200)
@@ -79,9 +74,8 @@ public sealed class FarmAreaConfiguration : IEntityTypeConfiguration<FarmArea>
         builder.Property(area => area.UpdatedAt).HasColumnName("updated_at");
         builder.Property(area => area.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(area => new { area.FarmId, area.Code })
-            .HasDatabaseName("ux_farm_area_farm_code")
-            .IsUnique();
+        builder.HasIndex(area => area.FarmId)
+            .HasDatabaseName("ix_farm_areas_farm_id");
 
         builder.HasIndex(area => area.ParentFarmAreaId)
             .HasDatabaseName("ix_farm_areas_parent_id");

@@ -70,7 +70,6 @@ export interface FarmArea {
   farmId: string;
   farmName: string;
   parentFarmAreaId: string | null;
-  code: string;
   name: string;
   description: string | null;
   totalArea: number;
@@ -133,7 +132,6 @@ export interface Plantation {
   farmId: string;
   farmName: string;
   farmAreaId: string;
-  farmAreaCode: string;
   farmAreaName: string;
   cropId: string;
   cropCode: string;
@@ -169,7 +167,6 @@ export interface CropCycle {
   plantationId: string;
   plantationName: string;
   farmName: string | null;
-  farmAreaCode: string | null;
   farmAreaName: string | null;
   cropName: string;
   cycleCode: string;

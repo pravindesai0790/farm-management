@@ -16,7 +16,6 @@ public sealed class FarmAreaStore(ApplicationDbContext dbContext) : IFarmAreaSto
             .AsNoTracking()
             .OrderBy(area => area.ParentFarmAreaId)
             .ThenBy(area => area.Name)
-            .ThenBy(area => area.Code)
             .ThenBy(area => area.Id)
             .ToListAsync(cancellationToken);
 
@@ -36,7 +35,6 @@ public sealed class FarmAreaStore(ApplicationDbContext dbContext) : IFarmAreaSto
             .OrderBy(area => area.Farm != null ? area.Farm.Name : string.Empty)
             .ThenBy(area => area.ParentFarmAreaId)
             .ThenBy(area => area.Name)
-            .ThenBy(area => area.Code)
             .ThenBy(area => area.Id)
             .Skip(skip)
             .Take(take)
@@ -69,21 +67,6 @@ public sealed class FarmAreaStore(ApplicationDbContext dbContext) : IFarmAreaSto
                     unit.UnitCategory == UnitCategory.Area &&
                     (unit.OrganizationId == null || unit.OrganizationId == organizationId),
             cancellationToken);
-
-    public Task<bool> CodeExistsAsync(
-        Guid farmId,
-        string code,
-        Guid? excludingFarmAreaId = null,
-        CancellationToken cancellationToken = default)
-    {
-        var query = dbContext.FarmAreas.Where(area => area.FarmId == farmId && area.Code == code);
-        if (excludingFarmAreaId is not null)
-        {
-            query = query.Where(area => area.Id != excludingFarmAreaId.Value);
-        }
-
-        return query.AnyAsync(cancellationToken);
-    }
 
     public async Task<IReadOnlyList<FarmArea>> ListActiveChildrenAsync(
         Guid parentFarmAreaId,
@@ -151,7 +134,6 @@ public sealed class FarmAreaStore(ApplicationDbContext dbContext) : IFarmAreaSto
             var pattern = $"%{search.Trim()}%";
             query = query.Where(area =>
                 EF.Functions.ILike(area.Name, pattern) ||
-                EF.Functions.ILike(area.Code, pattern) ||
                 (area.Farm != null && EF.Functions.ILike(area.Farm.Name, pattern)));
         }
 

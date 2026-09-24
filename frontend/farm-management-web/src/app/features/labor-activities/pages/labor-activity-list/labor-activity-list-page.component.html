@@ -54,7 +54,7 @@
         <mat-select [value]="farmAreaId()" (valueChange)="onAreaChange($event)" [disabled]="!farmId()">
           <mat-option value="">All areas</mat-option>
           @for (area of areas(); track area.id) {
-            <mat-option [value]="area.id">{{ area.name }} ({{ area.code }})</mat-option>
+            <mat-option [value]="area.id">{{ area.name }}</mat-option>
           }
         </mat-select>
       </mat-form-field>

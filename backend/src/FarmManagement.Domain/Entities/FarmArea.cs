@@ -4,7 +4,6 @@ public sealed class FarmArea
 {
     private FarmArea()
     {
-        Code = string.Empty;
         Name = string.Empty;
     }
 
@@ -12,7 +11,6 @@ public sealed class FarmArea
         Guid organizationId,
         Guid farmId,
         Guid? parentFarmAreaId,
-        string code,
         string name,
         decimal totalArea,
         Guid areaUnitId,
@@ -21,7 +19,6 @@ public sealed class FarmArea
     {
         ValidateIds(organizationId, farmId, areaUnitId, createdBy);
         ValidateParentId(parentFarmAreaId);
-        ValidateCode(code);
         ValidateName(name);
         ValidateTotalArea(totalArea);
 
@@ -29,7 +26,6 @@ public sealed class FarmArea
         OrganizationId = organizationId;
         FarmId = farmId;
         ParentFarmAreaId = parentFarmAreaId;
-        Code = NormalizeCode(code);
         Name = name.Trim();
         Description = NormalizeOptional(description);
         TotalArea = totalArea;
@@ -46,8 +42,6 @@ public sealed class FarmArea
     public Guid FarmId { get; private set; }
 
     public Guid? ParentFarmAreaId { get; private set; }
-
-    public string Code { get; private set; }
 
     public string Name { get; private set; }
 
@@ -77,7 +71,6 @@ public sealed class FarmArea
 
     public void Update(
         Guid? parentFarmAreaId,
-        string code,
         string name,
         decimal totalArea,
         Guid areaUnitId,
@@ -87,12 +80,10 @@ public sealed class FarmArea
     {
         ValidateIds(OrganizationId, FarmId, areaUnitId, updatedBy);
         ValidateParentId(parentFarmAreaId);
-        ValidateCode(code);
         ValidateName(name);
         ValidateTotalArea(totalArea);
 
         ParentFarmAreaId = parentFarmAreaId;
-        Code = NormalizeCode(code);
         Name = name.Trim();
         Description = NormalizeOptional(description);
         TotalArea = totalArea;
@@ -150,14 +141,6 @@ public sealed class FarmArea
         }
     }
 
-    private static void ValidateCode(string value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new ArgumentException("A farm area code is required.", nameof(value));
-        }
-    }
-
     private static void ValidateName(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -181,8 +164,6 @@ public sealed class FarmArea
             throw new ArgumentException("The parent farm area must be valid.", nameof(value));
         }
     }
-
-    private static string NormalizeCode(string value) => value.Trim().ToUpperInvariant();
 
     private static string? NormalizeOptional(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();

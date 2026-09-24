@@ -5,7 +5,6 @@
 } @else if (area(); as item) {
   <div class="section-heading">
     <a mat-button [routerLink]="['/farms', item.farmId]">← Back to farm</a>
-    <p class="eyebrow">{{ item.code }}</p>
     <h2>{{ item.name }}</h2>
     @if (permissionService.has("FarmArea.Update")) {
       <a mat-stroked-button [routerLink]="['/farm-areas', item.id, 'edit']"

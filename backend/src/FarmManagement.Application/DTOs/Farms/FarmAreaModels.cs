@@ -5,7 +5,6 @@ public sealed record FarmAreaResponse(
     Guid FarmId,
     string FarmName,
     Guid? ParentFarmAreaId,
-    string Code,
     string Name,
     string? Description,
     decimal TotalArea,
@@ -22,7 +21,6 @@ public sealed record FarmAreaResponse(
 public sealed record CreateFarmAreaRequest(
     Guid? FarmId,
     Guid? ParentFarmAreaId,
-    string? Code,
     string? Name,
     string? Description,
     decimal? TotalArea,
@@ -30,7 +28,6 @@ public sealed record CreateFarmAreaRequest(
 
 public sealed record UpdateFarmAreaRequest(
     Guid? ParentFarmAreaId,
-    string? Code,
     string? Name,
     string? Description,
     decimal? TotalArea,

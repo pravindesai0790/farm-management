@@ -5,7 +5,6 @@ public sealed record PlantationResponse(
     Guid FarmId,
     string FarmName,
     Guid FarmAreaId,
-    string FarmAreaCode,
     string FarmAreaName,
     Guid CropId,
     string CropCode,

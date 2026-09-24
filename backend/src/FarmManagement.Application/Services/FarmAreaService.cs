@@ -86,16 +86,10 @@ public sealed class FarmAreaService(IFarmAreaStore store) : IFarmAreaService
         var parent = await ValidateParentAsync(actor, farm, values.ParentFarmAreaId, values.TotalArea, areaUnit, null, cancellationToken);
         await ValidateFarmAllocationAsync(actor, farm, values.TotalArea, areaUnit, null, values.ParentFarmAreaId, cancellationToken);
 
-        if (await store.CodeExistsAsync(farm.Id, values.Code, cancellationToken: cancellationToken))
-        {
-            throw new ConflictException("A farm area with this code already exists in the farm.");
-        }
-
         var farmArea = new FarmArea(
             actor.OrganizationId,
             farm.Id,
             parent?.Id,
-            values.Code,
             values.Name,
             values.TotalArea,
             areaUnit.Id,
@@ -103,7 +97,7 @@ public sealed class FarmAreaService(IFarmAreaStore store) : IFarmAreaService
             values.Description);
 
         store.Add(farmArea);
-        AddAudit(actor, farmArea, "FarmArea.Created", new { farmArea.Code, farmArea.Name, farmArea.ParentFarmAreaId }, ipAddress);
+        AddAudit(actor, farmArea, "FarmArea.Created", new { farmArea.Name, farmArea.ParentFarmAreaId }, ipAddress);
         await store.SaveChangesAsync(cancellationToken);
         return ToResponse(farmArea, farm, areaUnit);
     }
@@ -131,14 +125,8 @@ public sealed class FarmAreaService(IFarmAreaStore store) : IFarmAreaService
         await ValidateOwnChildrenAllocationAsync(farmArea, values.TotalArea, areaUnit, cancellationToken);
         await ValidateFarmAllocationAsync(actor, farm, values.TotalArea, areaUnit, farmArea.Id, values.ParentFarmAreaId, cancellationToken);
 
-        if (await store.CodeExistsAsync(farmArea.FarmId, values.Code, farmArea.Id, cancellationToken))
-        {
-            throw new ConflictException("A farm area with this code already exists in the farm.");
-        }
-
         var previous = new
         {
-            farmArea.Code,
             farmArea.Name,
             farmArea.ParentFarmAreaId,
             farmArea.TotalArea,
@@ -147,7 +135,6 @@ public sealed class FarmAreaService(IFarmAreaStore store) : IFarmAreaService
         };
         farmArea.Update(
             parent?.Id,
-            values.Code,
             values.Name,
             values.TotalArea,
             areaUnit.Id,
@@ -155,7 +142,7 @@ public sealed class FarmAreaService(IFarmAreaStore store) : IFarmAreaService
             DateTimeOffset.UtcNow,
             actor.UserId);
 
-        AddAudit(actor, farmArea, "FarmArea.Updated", new { previous, current = new { farmArea.Code, farmArea.Name, farmArea.ParentFarmAreaId, farmArea.TotalArea, farmArea.AreaUnitId } }, ipAddress);
+        AddAudit(actor, farmArea, "FarmArea.Updated", new { previous, current = new { farmArea.Name, farmArea.ParentFarmAreaId, farmArea.TotalArea, farmArea.AreaUnitId } }, ipAddress);
         await store.SaveChangesAsync(cancellationToken);
         return ToResponse(farmArea, farm, areaUnit);
     }
@@ -356,7 +343,6 @@ public sealed class FarmAreaService(IFarmAreaStore store) : IFarmAreaService
             farmArea.FarmId,
             farm?.Name ?? farmArea.Farm?.Name ?? string.Empty,
             farmArea.ParentFarmAreaId,
-            farmArea.Code,
             farmArea.Name,
             farmArea.Description,
             farmArea.TotalArea,
@@ -380,10 +366,10 @@ public sealed class FarmAreaService(IFarmAreaStore store) : IFarmAreaService
         unit ?? throw new InvalidOperationException("The farm area references a missing area unit.");
 
     private static FarmAreaValues ReadValues(CreateFarmAreaRequest request) =>
-        new(request.ParentFarmAreaId, request.Code!.Trim().ToUpperInvariant(), request.Name!.Trim(), request.Description, request.TotalArea!.Value, request.AreaUnitId!.Value);
+        new(request.ParentFarmAreaId, request.Name!.Trim(), request.Description, request.TotalArea!.Value, request.AreaUnitId!.Value);
 
     private static FarmAreaValues ReadValues(UpdateFarmAreaRequest request) =>
-        new(request.ParentFarmAreaId, request.Code!.Trim().ToUpperInvariant(), request.Name!.Trim(), request.Description, request.TotalArea!.Value, request.AreaUnitId!.Value);
+        new(request.ParentFarmAreaId, request.Name!.Trim(), request.Description, request.TotalArea!.Value, request.AreaUnitId!.Value);
 
     private static void ValidateRequest(CreateFarmAreaRequest? request)
     {
@@ -393,7 +379,7 @@ public sealed class FarmAreaService(IFarmAreaStore store) : IFarmAreaService
         }
 
         if (request.FarmId is null || request.FarmId == Guid.Empty) throw Validation("farmId", "Farm is required.");
-        ValidateFields(request.Code, request.Name, request.TotalArea, request.AreaUnitId, request.ParentFarmAreaId);
+        ValidateFields(request.Name, request.TotalArea, request.AreaUnitId, request.ParentFarmAreaId);
     }
 
     private static void ValidateRequest(UpdateFarmAreaRequest? request)
@@ -403,13 +389,11 @@ public sealed class FarmAreaService(IFarmAreaStore store) : IFarmAreaService
             throw Validation("request", "A request body is required.");
         }
 
-        ValidateFields(request.Code, request.Name, request.TotalArea, request.AreaUnitId, request.ParentFarmAreaId);
+        ValidateFields(request.Name, request.TotalArea, request.AreaUnitId, request.ParentFarmAreaId);
     }
 
-    private static void ValidateFields(string? code, string? name, decimal? totalArea, Guid? areaUnitId, Guid? parentFarmAreaId)
+    private static void ValidateFields(string? name, decimal? totalArea, Guid? areaUnitId, Guid? parentFarmAreaId)
     {
-        if (string.IsNullOrWhiteSpace(code)) throw Validation("code", "Code is required.");
-        if (code.Trim().Length > 50) throw Validation("code", "Code cannot exceed 50 characters.");
         if (string.IsNullOrWhiteSpace(name)) throw Validation("name", "Name is required.");
         if (name.Trim().Length > 200) throw Validation("name", "Name cannot exceed 200 characters.");
         if (totalArea is null or <= 0) throw Validation("totalArea", "Total area must be greater than zero.");
@@ -435,7 +419,6 @@ public sealed class FarmAreaService(IFarmAreaStore store) : IFarmAreaService
 
     private sealed record FarmAreaValues(
         Guid? ParentFarmAreaId,
-        string Code,
         string Name,
         string? Description,
         decimal TotalArea,

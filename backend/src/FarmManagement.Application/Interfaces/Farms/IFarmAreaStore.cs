@@ -39,12 +39,6 @@ public interface IFarmAreaStore
         Guid organizationId,
         CancellationToken cancellationToken = default);
 
-    Task<bool> CodeExistsAsync(
-        Guid farmId,
-        string code,
-        Guid? excludingFarmAreaId = null,
-        CancellationToken cancellationToken = default);
-
     Task<IReadOnlyList<FarmArea>> ListActiveChildrenAsync(
         Guid parentFarmAreaId,
         Guid? excludingFarmAreaId = null,
