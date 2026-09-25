@@ -59,7 +59,7 @@ export class FarmAreasPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.service
-      .listFarms(1, 100, "", null)
+      .listFarms(1, 100, "", true)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (farms) => {

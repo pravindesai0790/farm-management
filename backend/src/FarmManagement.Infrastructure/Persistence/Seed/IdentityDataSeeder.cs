@@ -285,6 +285,27 @@ public sealed class IdentityDataSeeder(
         new("Grapes", "MANIK_CHAMAN", "Manik Chaman")
     ];
 
+    private static readonly IReadOnlyList<SeedLifecycleTemplate> SeedLifecycleTemplates =
+    [
+        new(
+            CropName: "Grapes",
+            Name: "Grape Standard Lifecycle",
+            Description: "Standard lifecycle for grape production.",
+            IsDefault: true,
+            Stages:
+            [
+                new("Dormancy", 1, 30, "Vine dormancy period."),
+                new("Pruning", 2, 15, "Vine pruning and canopy preparation."),
+                new("Bud Break", 3, 10, "Initial vine bud emergence."),
+                new("Shoot Development", 4, 20, "Shoot elongation and foliage development."),
+                new("Flowering", 5, 7, "Vine flowering and bloom stage."),
+                new("Fruit Set", 6, 10, "Berry formation and initial fruit set."),
+                new("Berry Development", 7, 30, "Berry growth and cluster development."),
+                new("Ripening", 8, 25, "Berry veraison and sugar accumulation."),
+                new("Harvest", 9, 15, "Fruit harvesting stage.")
+            ])
+    ];
+
     private static readonly IReadOnlyList<SeedPlantationEndReason> SeedPlantationEndReasons =
     [
         new("HARVEST_COMPLETED", "Harvest Completed"),
@@ -333,8 +354,24 @@ public sealed class IdentityDataSeeder(
     {
         var initialAdmin = ReadInitialAdminConfiguration();
 
-        await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+        var isRelational = dbContext.Database.ProviderName?.Contains("InMemory", StringComparison.OrdinalIgnoreCase) != true;
 
+        if (isRelational)
+        {
+            await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+            await SeedCoreAsync(initialAdmin, cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        }
+        else
+        {
+            await SeedCoreAsync(initialAdmin, cancellationToken);
+        }
+
+        logger.LogInformation("Identity data seeding completed.");
+    }
+
+    private async Task SeedCoreAsync(InitialAdminConfiguration? initialAdmin, CancellationToken cancellationToken)
+    {
         var organization = await SeedOrganizationAsync(cancellationToken);
         var roles = await SeedRolesAsync(cancellationToken);
         var permissions = await SeedPermissionsAsync(cancellationToken);
@@ -345,15 +382,13 @@ public sealed class IdentityDataSeeder(
         await SeedFarmOwnershipTypesAsync(cancellationToken);
         await SeedCropsAsync(cancellationToken);
         await SeedCropVarietiesAsync(cancellationToken);
+        await SeedCropLifecycleTemplatesAsync(cancellationToken);
         await SeedPlantationEndReasonsAsync(cancellationToken);
         await SeedLaborActivityTypesAsync(cancellationToken);
         await SeedLaborCategoriesAsync(cancellationToken);
         await SeedInitialSuperAdminAsync(organization, roles["SuperAdmin"], initialAdmin, cancellationToken);
 
         await dbContext.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
-
-        logger.LogInformation("Identity data seeding completed.");
     }
 
     private async Task SeedCurrenciesAsync(CancellationToken cancellationToken)
@@ -464,6 +499,93 @@ public sealed class IdentityDataSeeder(
                     code: seedVariety.Code,
                     name: seedVariety.Name,
                     isSystem: true));
+            }
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task SeedCropLifecycleTemplatesAsync(CancellationToken cancellationToken)
+    {
+        foreach (var seedTemplate in SeedLifecycleTemplates)
+        {
+            var crop = await dbContext.Crops.FirstOrDefaultAsync(
+                item => item.IsSystem && item.OrganizationId == null && (item.Name == seedTemplate.CropName || item.Name == "Grape"),
+                cancellationToken);
+
+            if (crop is null)
+            {
+                crop = new Crop(
+                    organizationId: null,
+                    name: seedTemplate.CropName,
+                    cropType: "FRUIT",
+                    cropDurationType: "PERENNIAL",
+                    isSystem: true);
+
+                dbContext.Crops.Add(crop);
+                await dbContext.SaveChangesAsync(cancellationToken);
+            }
+
+            var existingTemplate = await dbContext.CropLifecycleTemplates
+                .Include(t => t.Stages)
+                .FirstOrDefaultAsync(
+                    t => t.IsSystem &&
+                         t.OrganizationId == null &&
+                         t.CropId == crop.Id &&
+                         t.Name == seedTemplate.Name,
+                    cancellationToken);
+
+            if (existingTemplate is null)
+            {
+                var hasDefault = await dbContext.CropLifecycleTemplates
+                    .AnyAsync(
+                        t => t.CropId == crop.Id &&
+                             t.OrganizationId == null &&
+                             t.IsDefault,
+                        cancellationToken);
+
+                var template = new CropLifecycleTemplate(
+                    organizationId: null,
+                    cropId: crop.Id,
+                    name: seedTemplate.Name,
+                    isDefault: !hasDefault && seedTemplate.IsDefault,
+                    isSystem: true,
+                    description: seedTemplate.Description);
+
+                dbContext.CropLifecycleTemplates.Add(template);
+
+                foreach (var seedStage in seedTemplate.Stages)
+                {
+                    var stage = new CropLifecycleStage(
+                        lifecycleTemplateId: template.Id,
+                        stageName: seedStage.Name,
+                        sequenceNumber: seedStage.SequenceNumber,
+                        expectedDurationDays: seedStage.ExpectedDurationDays,
+                        description: seedStage.Description);
+
+                    dbContext.CropLifecycleStages.Add(stage);
+                }
+            }
+            else
+            {
+                var existingSequences = existingTemplate.Stages
+                    .Select(s => s.SequenceNumber)
+                    .ToHashSet();
+
+                foreach (var seedStage in seedTemplate.Stages)
+                {
+                    if (!existingSequences.Contains(seedStage.SequenceNumber))
+                    {
+                        var stage = new CropLifecycleStage(
+                            lifecycleTemplateId: existingTemplate.Id,
+                            stageName: seedStage.Name,
+                            sequenceNumber: seedStage.SequenceNumber,
+                            expectedDurationDays: seedStage.ExpectedDurationDays,
+                            description: seedStage.Description);
+
+                        dbContext.CropLifecycleStages.Add(stage);
+                    }
+                }
             }
         }
 
@@ -775,6 +897,19 @@ public sealed class IdentityDataSeeder(
     private sealed record SeedLaborCategory(string Name, string? Description = null);
 
     private sealed record SeedCurrency(string Code, string Name, string Symbol, int DisplayOrder, Guid Id);
+
+    private sealed record SeedLifecycleTemplate(
+        string CropName,
+        string Name,
+        string Description,
+        bool IsDefault,
+        IReadOnlyList<SeedLifecycleStage> Stages);
+
+    private sealed record SeedLifecycleStage(
+        string Name,
+        int SequenceNumber,
+        int? ExpectedDurationDays,
+        string? Description = null);
 
     private sealed record InitialAdminConfiguration(string Email, string Password);
 }
