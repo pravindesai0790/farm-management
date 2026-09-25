@@ -9,6 +9,11 @@ public interface ICropLifecycleTemplateService
 {
     Task<PagedResponse<CropLifecycleTemplateResponse>> ListAsync(
         CropLifecycleTemplateActor actor,
+        CropLifecycleTemplateQuery query,
+        CancellationToken cancellationToken = default);
+
+    Task<PagedResponse<CropLifecycleTemplateResponse>> ListAsync(
+        CropLifecycleTemplateActor actor,
         int page,
         int pageSize,
         Guid? cropId,

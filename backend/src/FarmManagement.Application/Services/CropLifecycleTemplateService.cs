@@ -3,14 +3,18 @@ using FarmManagement.Application.Common.Exceptions;
 using FarmManagement.Application.Common.Models;
 using FarmManagement.Application.DTOs.Crops;
 using FarmManagement.Application.Interfaces.Crops;
+using FarmManagement.Application.Services.Helpers;
 using FarmManagement.Domain.Entities;
 
 namespace FarmManagement.Application.Services;
 
 public sealed class CropLifecycleTemplateService(ICropLifecycleTemplateStore store) : ICropLifecycleTemplateService
 {
-    private const int DefaultPageSize = 20;
-    private const int MaximumPageSize = 100;
+    public Task<PagedResponse<CropLifecycleTemplateResponse>> ListAsync(
+        CropLifecycleTemplateActor actor,
+        CropLifecycleTemplateQuery query,
+        CancellationToken cancellationToken = default) =>
+        ListAsync(actor, query.Page, query.PageSize, query.CropId, query.IsActive, cancellationToken);
 
     public async Task<PagedResponse<CropLifecycleTemplateResponse>> ListAsync(
         CropLifecycleTemplateActor actor,
@@ -21,9 +25,9 @@ public sealed class CropLifecycleTemplateService(ICropLifecycleTemplateStore sto
         CancellationToken cancellationToken = default)
     {
         ValidateActor(actor);
-        pageSize = NormalizePageSize(pageSize);
-        if (page < 1) throw Validation("page", "Page must be at least 1.");
-        if (cropId == Guid.Empty) throw Validation("cropId", "Crop must be valid.");
+        pageSize = CropLifecycleTemplateValidationHelper.NormalizePageSize(pageSize);
+        if (page < 1) throw CropLifecycleTemplateValidationHelper.Validation("page", "Page must be at least 1.");
+        if (cropId == Guid.Empty) throw CropLifecycleTemplateValidationHelper.Validation("cropId", "Crop must be valid.");
 
         if (cropId is not null)
         {
@@ -40,7 +44,7 @@ public sealed class CropLifecycleTemplateService(ICropLifecycleTemplateStore sto
             cancellationToken);
 
         return new PagedResponse<CropLifecycleTemplateResponse>(
-            templates.Select(ToResponse).ToArray(), page, pageSize, totalCount);
+            templates.Select(t => ToResponse(t)).ToArray(), page, pageSize, totalCount);
     }
 
     public async Task<CropLifecycleTemplateResponse> GetAsync(
@@ -70,8 +74,10 @@ public sealed class CropLifecycleTemplateService(ICropLifecycleTemplateStore sto
         CancellationToken cancellationToken = default)
     {
         ValidateActor(actor);
-        var values = ReadTemplateValues(request);
+        var values = CropLifecycleTemplateValidationHelper.ReadTemplateValues(request);
+        var batchStages = CropLifecycleTemplateValidationHelper.ReadBatchStageValues(request.Stages);
         var crop = await FindActiveCropOrThrowAsync(actor, values.CropId, cancellationToken);
+
         var template = new CropLifecycleTemplate(
             actor.OrganizationId,
             crop.Id,
@@ -92,9 +98,23 @@ public sealed class CropLifecycleTemplateService(ICropLifecycleTemplateStore sto
         }
 
         store.Add(template);
-        AddAudit(actor, template, "CropLifecycleTemplate.Created", new { template.Name, template.CropId }, ipAddress);
+
+        foreach (var stageValues in batchStages)
+        {
+            var stage = new CropLifecycleStage(
+                template.Id,
+                stageValues.StageName,
+                stageValues.SequenceNumber,
+                stageValues.ExpectedDurationDays,
+                stageValues.Description);
+
+            store.Add(stage);
+            template.Stages.Add(stage);
+        }
+
+        AddAudit(actor, template, "CropLifecycleTemplate.Created", new { template.Name, template.CropId, StageCount = batchStages.Count }, ipAddress);
         await store.SaveChangesAsync(cancellationToken);
-        return ToResponse(template);
+        return ToResponse(template, crop.Name);
     }
 
     public async Task<CropLifecycleTemplateResponse> UpdateAsync(
@@ -107,7 +127,13 @@ public sealed class CropLifecycleTemplateService(ICropLifecycleTemplateStore sto
         ValidateActor(actor);
         var template = await FindTemplateOrThrowAsync(actor, templateId, cancellationToken);
         EnsureCanModify(template.IsSystem, actor);
-        var values = ReadTemplateValues(request);
+        var values = CropLifecycleTemplateValidationHelper.ReadTemplateValues(request);
+
+        if (!template.IsActive && values.IsDefault)
+        {
+            throw CropLifecycleTemplateValidationHelper.Validation("isDefault", "An inactive template cannot be set as the default template.");
+        }
+
         var crop = await FindActiveCropOrThrowAsync(actor, values.CropId, cancellationToken);
         if (template.IsSystem && !crop.IsSystem)
         {
@@ -133,7 +159,7 @@ public sealed class CropLifecycleTemplateService(ICropLifecycleTemplateStore sto
             current = new { template.CropId, template.Name, template.IsDefault }
         }, ipAddress);
         await store.SaveChangesAsync(cancellationToken);
-        return ToResponse(template);
+        return ToResponse(template, crop.Name);
     }
 
     public Task<bool> ActivateAsync(
@@ -161,7 +187,7 @@ public sealed class CropLifecycleTemplateService(ICropLifecycleTemplateStore sto
         var template = await FindTemplateOrThrowAsync(actor, templateId, cancellationToken);
         EnsureCanModify(template.IsSystem, actor);
         EnsureTemplateIsActive(template);
-        var values = ReadStageValues(request);
+        var values = CropLifecycleTemplateValidationHelper.ReadStageValues(request);
         await EnsureSequenceIsAvailableAsync(template, values.SequenceNumber, null, cancellationToken);
 
         var stage = new CropLifecycleStage(template.Id, values.StageName, values.SequenceNumber, values.ExpectedDurationDays, values.Description);
@@ -184,7 +210,7 @@ public sealed class CropLifecycleTemplateService(ICropLifecycleTemplateStore sto
         EnsureCanModify(template.IsSystem, actor);
         EnsureTemplateIsActive(template);
         var stage = FindStageOrThrow(template, stageId);
-        var values = ReadStageValues(request);
+        var values = CropLifecycleTemplateValidationHelper.ReadStageValues(request);
         await EnsureSequenceIsAvailableAsync(template, values.SequenceNumber, stage.Id, cancellationToken);
 
         var previous = new { stage.StageName, stage.SequenceNumber, stage.ExpectedDurationDays, stage.IsActive };
@@ -224,6 +250,12 @@ public sealed class CropLifecycleTemplateService(ICropLifecycleTemplateStore sto
         ValidateActor(actor);
         var template = await FindTemplateOrThrowAsync(actor, templateId, cancellationToken);
         EnsureCanModify(template.IsSystem, actor);
+
+        if (!active && template.IsDefault)
+        {
+            throw CropLifecycleTemplateValidationHelper.Validation("isActive", "A default lifecycle template cannot be deactivated. Designate another active template as default first.");
+        }
+
         var changed = active
             ? template.Activate(DateTimeOffset.UtcNow, actor.UserId)
             : template.Deactivate(DateTimeOffset.UtcNow, actor.UserId);
@@ -278,7 +310,7 @@ public sealed class CropLifecycleTemplateService(ICropLifecycleTemplateStore sto
         CancellationToken cancellationToken)
     {
         var crop = await FindCropOrThrowAsync(actor, cropId, cancellationToken);
-        if (!crop.IsActive) throw Validation("cropId", "The crop was not found or is inactive.");
+        if (!crop.IsActive) throw CropLifecycleTemplateValidationHelper.Validation("cropId", "The crop was not found or is inactive.");
         return crop;
     }
 
@@ -302,7 +334,7 @@ public sealed class CropLifecycleTemplateService(ICropLifecycleTemplateStore sto
 
     private static void EnsureTemplateIsActive(CropLifecycleTemplate template)
     {
-        if (!template.IsActive) throw Validation("templateId", "The lifecycle template is inactive.");
+        if (!template.IsActive) throw CropLifecycleTemplateValidationHelper.Validation("templateId", "The lifecycle template is inactive.");
     }
 
     private void AddAudit(
@@ -335,12 +367,12 @@ public sealed class CropLifecycleTemplateService(ICropLifecycleTemplateStore sto
             details: details is null ? null : JsonSerializer.SerializeToDocument(details),
             ipAddress: ipAddress));
 
-    private static CropLifecycleTemplateResponse ToResponse(CropLifecycleTemplate template) =>
+    private static CropLifecycleTemplateResponse ToResponse(CropLifecycleTemplate template, string? cropName = null) =>
         new(
             template.Id,
             template.OrganizationId,
             template.CropId,
-            template.Crop.Name,
+            cropName ?? template.Crop?.Name ?? string.Empty,
             template.Name,
             template.Description,
             template.IsDefault,
@@ -354,53 +386,6 @@ public sealed class CropLifecycleTemplateService(ICropLifecycleTemplateStore sto
 
     private static CropLifecycleStageResponse ToResponse(CropLifecycleStage stage) =>
         new(stage.Id, stage.LifecycleTemplateId, stage.StageName, stage.SequenceNumber, stage.ExpectedDurationDays, stage.Description, stage.IsActive);
-
-    private static TemplateValues ReadTemplateValues(CreateCropLifecycleTemplateRequest? request) =>
-        request is null
-            ? throw Validation("request", "A request body is required.")
-            : ReadTemplateValues(request.CropId, request.Name, request.Description, request.IsDefault);
-
-    private static TemplateValues ReadTemplateValues(UpdateCropLifecycleTemplateRequest? request) =>
-        request is null
-            ? throw Validation("request", "A request body is required.")
-            : ReadTemplateValues(request.CropId, request.Name, request.Description, request.IsDefault);
-
-    private static TemplateValues ReadTemplateValues(Guid? cropId, string? name, string? description, bool isDefault)
-    {
-        if (cropId is null || cropId == Guid.Empty) throw Validation("cropId", "Crop is required.");
-        if (string.IsNullOrWhiteSpace(name)) throw Validation("name", "Name is required.");
-        if (name.Trim().Length > 150) throw Validation("name", "Name cannot exceed 150 characters.");
-        if (description?.Trim().Length > 2000) throw Validation("description", "Description cannot exceed 2000 characters.");
-        return new(cropId.Value, name.Trim(), NormalizeOptional(description), isDefault);
-    }
-
-    private static StageValues ReadStageValues(CreateCropLifecycleStageRequest? request) =>
-        request is null
-            ? throw Validation("request", "A request body is required.")
-            : ReadStageValues(request.StageName, request.SequenceNumber, request.ExpectedDurationDays, request.Description);
-
-    private static StageValues ReadStageValues(UpdateCropLifecycleStageRequest? request) =>
-        request is null
-            ? throw Validation("request", "A request body is required.")
-            : ReadStageValues(request.StageName, request.SequenceNumber, request.ExpectedDurationDays, request.Description);
-
-    private static StageValues ReadStageValues(string? stageName, int sequenceNumber, int? expectedDurationDays, string? description)
-    {
-        if (string.IsNullOrWhiteSpace(stageName)) throw Validation("stageName", "Stage name is required.");
-        if (stageName.Trim().Length > 150) throw Validation("stageName", "Stage name cannot exceed 150 characters.");
-        if (sequenceNumber <= 0) throw Validation("sequenceNumber", "Sequence number must be greater than zero.");
-        if (expectedDurationDays is <= 0) throw Validation("expectedDurationDays", "Expected duration days must be greater than zero.");
-        if (description?.Trim().Length > 2000) throw Validation("description", "Description cannot exceed 2000 characters.");
-        return new(stageName.Trim(), sequenceNumber, expectedDurationDays, NormalizeOptional(description));
-    }
-
-    private static string? NormalizeOptional(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-
-    private static int NormalizePageSize(int value) => value == 0
-        ? DefaultPageSize
-        : value is < 1 or > MaximumPageSize
-            ? throw Validation("pageSize", $"Page size must be between 1 and {MaximumPageSize}.")
-            : value;
 
     private static void EnsureCanModify(bool isSystem, CropLifecycleTemplateActor actor)
     {
@@ -417,10 +402,4 @@ public sealed class CropLifecycleTemplateService(ICropLifecycleTemplateStore sto
             throw new UnauthorizedAccessException("The access token does not contain a valid user scope.");
         }
     }
-
-    private static ValidationException Validation(string fieldName, string message) =>
-        new("Validation failed", new Dictionary<string, string[]> { [fieldName] = [message] });
-
-    private sealed record TemplateValues(Guid CropId, string Name, string? Description, bool IsDefault);
-    private sealed record StageValues(string StageName, int SequenceNumber, int? ExpectedDurationDays, string? Description);
 }

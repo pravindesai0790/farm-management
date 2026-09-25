@@ -1,5 +1,11 @@
 namespace FarmManagement.Application.DTOs.Crops;
 
+public sealed record CropLifecycleTemplateQuery(
+    int Page = 1,
+    int PageSize = 20,
+    Guid? CropId = null,
+    bool? IsActive = null);
+
 public sealed record CropLifecycleStageResponse(
     Guid Id,
     Guid LifecycleTemplateId,
@@ -29,7 +35,8 @@ public sealed record CreateCropLifecycleTemplateRequest(
     Guid? CropId,
     string? Name,
     string? Description,
-    bool IsDefault = false);
+    bool IsDefault = false,
+    IReadOnlyList<CreateCropLifecycleStageRequest>? Stages = null);
 
 public sealed record UpdateCropLifecycleTemplateRequest(
     Guid? CropId,

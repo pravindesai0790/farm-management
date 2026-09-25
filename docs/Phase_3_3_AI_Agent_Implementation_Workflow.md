@@ -274,6 +274,13 @@ Rules:
 - use existing audit infrastructure
 - use existing authorization.
 
+Follow coding rules: 
+- Do reuse code if requirement meet. 
+- Maintain code standerd. 
+- Create DTO with required properties only.
+- Create helper class if and keep commom code if exist. don't duplicate logic.
+- If API endpoint request parameter grows more than 4 than create object and use it
+
 Use project route conventions rather than blindly copying the suggested routes.
 ```
 

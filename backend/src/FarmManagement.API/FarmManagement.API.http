@@ -98,5 +98,40 @@ GET {{FarmManagement.API_HostAddress}}/api/labor/farms/{{farmId}}/workers
 Accept: application/json
 Authorization: Bearer {{token}}
 
+###
+# Crop Lifecycle Templates
+@cropId = 00000000-0000-0000-0000-000000000000
+@templateId = 00000000-0000-0000-0000-000000000000
 
+GET {{FarmManagement.API_HostAddress}}/api/crop-lifecycle-templates?page=1&pageSize=20
+Accept: application/json
+Authorization: Bearer {{token}}
 
+###
+GET {{FarmManagement.API_HostAddress}}/api/crop-lifecycle-templates/{{templateId}}
+Accept: application/json
+Authorization: Bearer {{token}}
+
+###
+POST {{FarmManagement.API_HostAddress}}/api/crop-lifecycle-templates
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "cropId": "{{cropId}}",
+  "name": "Standard Grape Lifecycle",
+  "description": "Standard 9-stage lifecycle for grape cultivation",
+  "isDefault": true,
+  "stages": [
+    { "stageName": "Dormancy", "sequenceNumber": 1, "expectedDurationDays": 30, "description": "Vine dormancy" },
+    { "stageName": "Pruning", "sequenceNumber": 2, "expectedDurationDays": 15, "description": "Pruning" }
+  ]
+}
+
+###
+PATCH {{FarmManagement.API_HostAddress}}/api/crop-lifecycle-templates/{{templateId}}/activate
+Authorization: Bearer {{token}}
+
+###
+PATCH {{FarmManagement.API_HostAddress}}/api/crop-lifecycle-templates/{{templateId}}/deactivate
+Authorization: Bearer {{token}}

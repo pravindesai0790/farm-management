@@ -15,12 +15,9 @@ public sealed class CropLifecycleTemplatesController(ICropLifecycleTemplateServi
     [HttpGet]
     [Authorize(Policy = "Permission:CropLifecycleTemplate.View")]
     public async Task<ActionResult<PagedResponse<CropLifecycleTemplateResponse>>> List(
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20,
-        [FromQuery] Guid? cropId = null,
-        [FromQuery] bool? isActive = null,
+        [FromQuery] CropLifecycleTemplateQuery query,
         CancellationToken cancellationToken = default) =>
-        Ok(await lifecycleService.ListAsync(GetUserContext(), page, pageSize, cropId, isActive, cancellationToken));
+        Ok(await lifecycleService.ListAsync(GetUserContext(), query, cancellationToken));
 
     [HttpGet("{id:guid}")]
     [Authorize(Policy = "Permission:CropLifecycleTemplate.View")]
@@ -54,6 +51,7 @@ public sealed class CropLifecycleTemplatesController(ICropLifecycleTemplateServi
         Ok(await lifecycleService.UpdateAsync(GetUserContext(), id, request, GetIpAddress(), cancellationToken));
 
     [HttpPatch("{id:guid}/activate")]
+    [HttpPost("{id:guid}/activate")]
     [Authorize(Policy = "Permission:CropLifecycleTemplate.Activate")]
     public async Task<IActionResult> Activate(Guid id, CancellationToken cancellationToken)
     {
@@ -62,6 +60,7 @@ public sealed class CropLifecycleTemplatesController(ICropLifecycleTemplateServi
     }
 
     [HttpPatch("{id:guid}/deactivate")]
+    [HttpPost("{id:guid}/deactivate")]
     [Authorize(Policy = "Permission:CropLifecycleTemplate.Deactivate")]
     public async Task<IActionResult> Deactivate(Guid id, CancellationToken cancellationToken)
     {
@@ -90,6 +89,7 @@ public sealed class CropLifecycleTemplatesController(ICropLifecycleTemplateServi
         Ok(await lifecycleService.UpdateStageAsync(GetUserContext(), templateId, stageId, request, GetIpAddress(), cancellationToken));
 
     [HttpPatch("{templateId:guid}/stages/{stageId:guid}/activate")]
+    [HttpPost("{templateId:guid}/stages/{stageId:guid}/activate")]
     [Authorize(Policy = "Permission:CropLifecycleTemplate.Activate")]
     public async Task<IActionResult> ActivateStage(Guid templateId, Guid stageId, CancellationToken cancellationToken)
     {
@@ -98,6 +98,7 @@ public sealed class CropLifecycleTemplatesController(ICropLifecycleTemplateServi
     }
 
     [HttpPatch("{templateId:guid}/stages/{stageId:guid}/deactivate")]
+    [HttpPost("{templateId:guid}/stages/{stageId:guid}/deactivate")]
     [Authorize(Policy = "Permission:CropLifecycleTemplate.Deactivate")]
     public async Task<IActionResult> DeactivateStage(Guid templateId, Guid stageId, CancellationToken cancellationToken)
     {
