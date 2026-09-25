@@ -141,7 +141,6 @@ export interface Plantation {
   varietyName: string | null;
   lifecycleTemplateId: string | null;
   lifecycleTemplateName: string | null;
-  plantationCode: string;
   plantationName: string;
   allocatedArea: number;
   areaUnitId: string;

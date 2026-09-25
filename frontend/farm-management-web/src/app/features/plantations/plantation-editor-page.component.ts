@@ -87,7 +87,6 @@ export class PlantationEditorPageComponent implements OnInit {
     farmAreaId: [null as string | null, [Validators.required]],
     cropId: [null as string | null, [Validators.required]],
     varietyId: [null as string | null],
-    plantationCode: ["", [Validators.required]],
     plantationName: ["", [Validators.required]],
     allocatedArea: [
       null as number | null,
@@ -145,7 +144,6 @@ export class PlantationEditorPageComponent implements OnInit {
               farmAreaId: r.plantation.farmAreaId,
               cropId: r.plantation.cropId,
               varietyId: r.plantation.varietyId,
-              plantationCode: r.plantation.plantationCode,
               plantationName: r.plantation.plantationName,
               allocatedArea: r.plantation.allocatedArea,
               areaUnitId: r.plantation.areaUnitId,

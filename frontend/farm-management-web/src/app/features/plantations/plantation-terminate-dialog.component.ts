@@ -25,7 +25,6 @@ import { formatDateOnly } from "../../core/utils/date.utils";
 
 export interface PlantationTerminateDialogData {
   plantationId: string;
-  plantationCode: string;
   plantationName: string;
 }
 
@@ -54,7 +53,7 @@ export interface PlantationTerminateDialogResult {
     <h2 mat-dialog-title>Terminate Plantation</h2>
     <mat-dialog-content>
       <p class="dialog-description">
-        Terminating <strong>{{ data.plantationName }}</strong> ({{ data.plantationCode }})
+        Terminating <strong>{{ data.plantationName }}</strong>
         will conclude operations for this plot and release the allocated area.
       </p>
 

@@ -6,7 +6,6 @@ public sealed class CropPlantation
 {
     private CropPlantation()
     {
-        PlantationCode = string.Empty;
         PlantationName = string.Empty;
     }
 
@@ -17,7 +16,6 @@ public sealed class CropPlantation
         Guid cropId,
         Guid? varietyId,
         Guid? lifecycleTemplateId,
-        string plantationCode,
         string plantationName,
         decimal allocatedArea,
         Guid areaUnitId,
@@ -28,7 +26,6 @@ public sealed class CropPlantation
         ValidateIds(organizationId, farmId, farmAreaId, cropId, areaUnitId, createdBy);
         ValidateOptionalId(varietyId, nameof(varietyId));
         ValidateOptionalId(lifecycleTemplateId, nameof(lifecycleTemplateId));
-        ValidateText(plantationCode, "A plantation code is required.", nameof(plantationCode));
         ValidateText(plantationName, "A plantation name is required.", nameof(plantationName));
         ValidateArea(allocatedArea);
         ValidateDates(plantingDate, expectedEndDate);
@@ -40,7 +37,6 @@ public sealed class CropPlantation
         CropId = cropId;
         VarietyId = varietyId;
         LifecycleTemplateId = lifecycleTemplateId;
-        PlantationCode = plantationCode.Trim().ToUpperInvariant();
         PlantationName = plantationName.Trim();
         AllocatedArea = allocatedArea;
         AreaUnitId = areaUnitId;
@@ -59,7 +55,6 @@ public sealed class CropPlantation
     public Guid CropId { get; private set; }
     public Guid? VarietyId { get; private set; }
     public Guid? LifecycleTemplateId { get; private set; }
-    public string PlantationCode { get; private set; }
     public string PlantationName { get; private set; }
     public decimal AllocatedArea { get; private set; }
     public Guid AreaUnitId { get; private set; }
@@ -89,7 +84,6 @@ public sealed class CropPlantation
         Guid cropId,
         Guid? varietyId,
         Guid? lifecycleTemplateId,
-        string plantationCode,
         string plantationName,
         decimal allocatedArea,
         Guid areaUnitId,
@@ -101,7 +95,6 @@ public sealed class CropPlantation
         ValidateIds(OrganizationId, FarmId, farmAreaId, cropId, areaUnitId, updatedBy);
         ValidateOptionalId(varietyId, nameof(varietyId));
         ValidateOptionalId(lifecycleTemplateId, nameof(lifecycleTemplateId));
-        ValidateText(plantationCode, "A plantation code is required.", nameof(plantationCode));
         ValidateText(plantationName, "A plantation name is required.", nameof(plantationName));
         ValidateArea(allocatedArea);
         ValidateDates(plantingDate, expectedEndDate);
@@ -110,7 +103,6 @@ public sealed class CropPlantation
         CropId = cropId;
         VarietyId = varietyId;
         LifecycleTemplateId = lifecycleTemplateId;
-        PlantationCode = plantationCode.Trim().ToUpperInvariant();
         PlantationName = plantationName.Trim();
         AllocatedArea = allocatedArea;
         AreaUnitId = areaUnitId;

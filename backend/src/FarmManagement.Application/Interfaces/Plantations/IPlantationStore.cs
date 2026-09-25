@@ -35,7 +35,6 @@ public interface IPlantationStore
     Task<CropLifecycleTemplate?> FindLifecycleTemplateAsync(Guid templateId, Guid organizationId, CancellationToken cancellationToken = default);
     Task<PlantationEndReason?> FindEndReasonAsync(Guid endReasonId, Guid organizationId, CancellationToken cancellationToken = default);
     Task<Unit?> FindAreaUnitAsync(Guid unitId, Guid organizationId, CancellationToken cancellationToken = default);
-    Task<bool> CodeExistsAsync(Guid organizationId, string code, Guid? excludingPlantationId = null, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<CropPlantation>> ListActiveAllocationsAsync(Guid farmAreaId, Guid? excludingPlantationId = null, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<FarmArea>> ListActiveChildrenAsync(Guid parentFarmAreaId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<CropCycle>> CancelActiveCyclesAsync(

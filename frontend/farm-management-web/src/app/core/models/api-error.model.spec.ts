@@ -11,7 +11,7 @@ describe('api-error.model', () => {
         message: 'Validation failed',
         errors: {
           allocatedArea: ['Allocated area exceeds available area (0 ha).'],
-          plantationCode: ['Plantation code already exists.'],
+          plantationName: ['Plantation name is required.'],
         },
       },
     };
@@ -19,7 +19,7 @@ describe('api-error.model', () => {
     const messages = getApiValidationMessages(errorResponse);
     expect(messages).toEqual([
       'Allocated area exceeds available area (0 ha).',
-      'Plantation code already exists.',
+      'Plantation name is required.',
     ]);
   });
 

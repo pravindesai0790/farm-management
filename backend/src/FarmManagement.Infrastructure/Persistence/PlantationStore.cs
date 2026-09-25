@@ -20,7 +20,6 @@ public sealed class PlantationStore(ApplicationDbContext dbContext) : IPlantatio
         await BuildQuery(organizationId, farmId, farmAreaId, status, cropId, availableForSeasonYear, currentPlantationId)
             .AsNoTracking()
             .OrderBy(plantation => plantation.PlantationName)
-            .ThenBy(plantation => plantation.PlantationCode)
             .ThenBy(plantation => plantation.Id)
             .ToListAsync(cancellationToken);
 
@@ -41,7 +40,6 @@ public sealed class PlantationStore(ApplicationDbContext dbContext) : IPlantatio
         var items = await query
             .AsNoTracking()
             .OrderBy(plantation => plantation.PlantationName)
-            .ThenBy(plantation => plantation.PlantationCode)
             .ThenBy(plantation => plantation.Id)
             .Skip(skip)
             .Take(take)
@@ -102,19 +100,6 @@ public sealed class PlantationStore(ApplicationDbContext dbContext) : IPlantatio
             unit => unit.Id == unitId && unit.IsActive && unit.UnitCategory == UnitCategory.Area &&
                     (unit.OrganizationId == null || unit.OrganizationId == organizationId),
             cancellationToken);
-
-    public Task<bool> CodeExistsAsync(
-        Guid organizationId, string code, Guid? excludingPlantationId = null, CancellationToken cancellationToken = default)
-    {
-        var query = dbContext.CropPlantations.Where(plantation =>
-            plantation.OrganizationId == organizationId && plantation.PlantationCode == code);
-        if (excludingPlantationId is not null)
-        {
-            query = query.Where(plantation => plantation.Id != excludingPlantationId.Value);
-        }
-
-        return query.AnyAsync(cancellationToken);
-    }
 
     public async Task<IReadOnlyList<CropPlantation>> ListActiveAllocationsAsync(
         Guid farmAreaId,

@@ -135,7 +135,6 @@ export class PlantationDetailPageComponent implements OnInit {
     const dialogRef = this.dialog.open(PlantationTerminateDialogComponent, {
       data: {
         plantationId: p.id,
-        plantationCode: p.plantationCode,
         plantationName: p.plantationName,
       },
       width: "500px",

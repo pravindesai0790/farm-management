@@ -30,7 +30,6 @@ public sealed class CropPlantationConfiguration : IEntityTypeConfiguration<CropP
         builder.Property(plantation => plantation.LifecycleTemplateId).HasColumnName("lifecycle_template_id");
         builder.HasOne(plantation => plantation.LifecycleTemplate).WithMany().HasForeignKey(plantation => plantation.LifecycleTemplateId)
             .HasConstraintName("fk_plantation_lifecycle").OnDelete(DeleteBehavior.Restrict);
-        builder.Property(plantation => plantation.PlantationCode).HasColumnName("plantation_code").HasMaxLength(50).IsRequired();
         builder.Property(plantation => plantation.PlantationName).HasColumnName("plantation_name").HasMaxLength(200).IsRequired();
         builder.Property(plantation => plantation.AllocatedArea).HasColumnName("allocated_area").HasPrecision(18, 4).IsRequired();
         builder.Property(plantation => plantation.AreaUnitId).HasColumnName("area_unit_id").IsRequired();
@@ -51,8 +50,8 @@ public sealed class CropPlantationConfiguration : IEntityTypeConfiguration<CropP
         builder.Property(plantation => plantation.CreatedBy).HasColumnName("created_by").IsRequired();
         builder.Property(plantation => plantation.UpdatedAt).HasColumnName("updated_at");
         builder.Property(plantation => plantation.UpdatedBy).HasColumnName("updated_by");
-        builder.HasIndex(plantation => new { plantation.OrganizationId, plantation.PlantationCode })
-            .HasDatabaseName("ux_plantation_organization_code").IsUnique();
+        builder.HasIndex(plantation => plantation.OrganizationId)
+            .HasDatabaseName("ix_crop_plantations_organization_id");
         builder.HasIndex(plantation => new { plantation.FarmAreaId, plantation.Status })
             .HasDatabaseName("ix_plantations_area_status");
     }

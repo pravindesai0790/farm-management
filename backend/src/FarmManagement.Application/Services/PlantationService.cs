@@ -72,7 +72,6 @@ public sealed class PlantationService(IPlantationStore store) : IPlantationServi
             ValidateAllocation(area, values.AllocatedArea, references.AreaUnit,
                 await store.ListActiveAllocationsAsync(area.Id, cancellationToken: transactionCancellationToken),
                 await store.ListActiveChildrenAsync(area.Id, transactionCancellationToken));
-            await EnsureCodeIsAvailableAsync(actor, values.PlantationCode, null, transactionCancellationToken);
 
             // Planned plantations do not consume area. The allocation is checked again atomically when activated.
             var plantation = new CropPlantation(
@@ -82,7 +81,6 @@ public sealed class PlantationService(IPlantationStore store) : IPlantationServi
                 references.Crop.Id,
                 references.Variety?.Id,
                 references.LifecycleTemplate?.Id,
-                values.PlantationCode,
                 values.PlantationName,
                 values.AllocatedArea,
                 references.AreaUnit.Id,
@@ -91,7 +89,7 @@ public sealed class PlantationService(IPlantationStore store) : IPlantationServi
                 actor.UserId);
 
             store.Add(plantation);
-            AddAudit(actor, plantation, "Plantation.Created", new { plantation.PlantationCode, plantation.PlantationName, plantation.AllocatedArea, Status = plantation.Status.ToString().ToUpperInvariant() }, ipAddress);
+            AddAudit(actor, plantation, "Plantation.Created", new { plantation.PlantationName, plantation.AllocatedArea, Status = plantation.Status.ToString().ToUpperInvariant() }, ipAddress);
             await store.SaveChangesAsync(transactionCancellationToken);
             return ToResponse(plantation, area.Farm, area, references.Crop, references.Variety, references.LifecycleTemplate, references.AreaUnit, null);
         }, cancellationToken);
@@ -122,17 +120,16 @@ public sealed class PlantationService(IPlantationStore store) : IPlantationServi
                 throw Validation("farmAreaId", "The farm area must belong to the plantation's farm.");
             }
             var references = await ValidateReferencesAsync(actor, area, values, transactionCancellationToken);
-            await EnsureCodeIsAvailableAsync(actor, values.PlantationCode, current.Id, transactionCancellationToken);
 
             ValidateAllocation(area, values.AllocatedArea, references.AreaUnit,
                 await store.ListActiveAllocationsAsync(area.Id, current.Status == PlantationStatus.Active ? current.Id : null, transactionCancellationToken),
                 await store.ListActiveChildrenAsync(area.Id, transactionCancellationToken));
 
-            var previous = new { current.FarmAreaId, current.CropId, current.VarietyId, current.PlantationCode, current.AllocatedArea, current.AreaUnitId, current.Status };
+            var previous = new { current.FarmAreaId, current.CropId, current.VarietyId, current.AllocatedArea, current.AreaUnitId, current.Status };
             current.Update(area.Id, references.Crop.Id, references.Variety?.Id, references.LifecycleTemplate?.Id,
-                values.PlantationCode, values.PlantationName, values.AllocatedArea, references.AreaUnit.Id,
+                values.PlantationName, values.AllocatedArea, references.AreaUnit.Id,
                 values.PlantingDate, values.ExpectedEndDate, DateTimeOffset.UtcNow, actor.UserId);
-            AddAudit(actor, current, "Plantation.Updated", new { previous, current = new { current.FarmAreaId, current.CropId, current.VarietyId, current.PlantationCode, current.AllocatedArea, current.AreaUnitId, current.Status } }, ipAddress);
+            AddAudit(actor, current, "Plantation.Updated", new { previous, current = new { current.FarmAreaId, current.CropId, current.VarietyId, current.AllocatedArea, current.AreaUnitId, current.Status } }, ipAddress);
             await store.SaveChangesAsync(transactionCancellationToken);
             return ToResponse(current, current.Farm ?? area.Farm, area, references.Crop, references.Variety, references.LifecycleTemplate, references.AreaUnit, current.EndReason);
         }, cancellationToken);
@@ -304,14 +301,6 @@ public sealed class PlantationService(IPlantationStore store) : IPlantationServi
         await store.FindAreaUnitAsync(areaUnitId, actor.OrganizationId, cancellationToken)
             ?? throw Validation("areaUnitId", "The area unit was not found or is inactive.");
 
-    private async Task EnsureCodeIsAvailableAsync(PlantationActor actor, string code, Guid? excludingId, CancellationToken cancellationToken)
-    {
-        if (await store.CodeExistsAsync(actor.OrganizationId, code, excludingId, cancellationToken))
-        {
-            throw new ConflictException("A plantation with this code already exists in the organization.");
-        }
-    }
-
     private void ValidateAllocation(FarmArea area, decimal allocatedArea, Unit areaUnit, IReadOnlyList<CropPlantation> activePlantations, IReadOnlyList<FarmArea> activeChildren)
     {
         var totalBaseArea = ToBaseArea(area.TotalArea, RequireAreaUnit(area.AreaUnit));
@@ -359,32 +348,30 @@ public sealed class PlantationService(IPlantationStore store) : IPlantationServi
         new(
             plantation.Id, plantation.FarmId, farm?.Name ?? area.Farm?.Name ?? string.Empty, plantation.FarmAreaId, area.Name, plantation.CropId, crop.Code, crop.Name,
             plantation.VarietyId, variety?.Code, variety?.Name, plantation.LifecycleTemplateId, lifecycleTemplate?.Name,
-            plantation.PlantationCode, plantation.PlantationName, plantation.AllocatedArea, plantation.AreaUnitId,
+            plantation.PlantationName, plantation.AllocatedArea, plantation.AreaUnitId,
             areaUnit.Code, areaUnit.Name, areaUnit.Symbol, plantation.PlantingDate, plantation.ExpectedEndDate,
             plantation.ActualEndDate, plantation.Status.ToString().ToUpperInvariant(), plantation.EndReasonId, endReason?.Code, endReason?.Name,
             plantation.EndNotes, plantation.IsActive, plantation.CreatedAt, plantation.CreatedBy, plantation.UpdatedAt, plantation.UpdatedBy);
 
     private static PlantationValues ReadValues(CreatePlantationRequest? request) =>
-        request is null ? throw Validation("request", "A request body is required.") : ReadValues(request.FarmAreaId, request.CropId, request.VarietyId, request.LifecycleTemplateId, request.PlantationCode, request.PlantationName, request.AllocatedArea, request.AreaUnitId, request.PlantingDate, request.ExpectedEndDate);
+        request is null ? throw Validation("request", "A request body is required.") : ReadValues(request.FarmAreaId, request.CropId, request.VarietyId, request.LifecycleTemplateId, request.PlantationName, request.AllocatedArea, request.AreaUnitId, request.PlantingDate, request.ExpectedEndDate);
 
     private static PlantationValues ReadValues(UpdatePlantationRequest? request) =>
-        request is null ? throw Validation("request", "A request body is required.") : ReadValues(request.FarmAreaId, request.CropId, request.VarietyId, request.LifecycleTemplateId, request.PlantationCode, request.PlantationName, request.AllocatedArea, request.AreaUnitId, request.PlantingDate, request.ExpectedEndDate);
+        request is null ? throw Validation("request", "A request body is required.") : ReadValues(request.FarmAreaId, request.CropId, request.VarietyId, request.LifecycleTemplateId, request.PlantationName, request.AllocatedArea, request.AreaUnitId, request.PlantingDate, request.ExpectedEndDate);
 
-    private static PlantationValues ReadValues(Guid? farmAreaId, Guid? cropId, Guid? varietyId, Guid? lifecycleTemplateId, string? code, string? name, decimal? allocatedArea, Guid? areaUnitId, DateOnly? plantingDate, DateOnly? expectedEndDate)
+    private static PlantationValues ReadValues(Guid? farmAreaId, Guid? cropId, Guid? varietyId, Guid? lifecycleTemplateId, string? name, decimal? allocatedArea, Guid? areaUnitId, DateOnly? plantingDate, DateOnly? expectedEndDate)
     {
         if (farmAreaId is null || farmAreaId == Guid.Empty) throw Validation("farmAreaId", "Farm area is required.");
         if (cropId is null || cropId == Guid.Empty) throw Validation("cropId", "Crop is required.");
         if (varietyId == Guid.Empty) throw Validation("varietyId", "The variety must be valid.");
         if (lifecycleTemplateId == Guid.Empty) throw Validation("lifecycleTemplateId", "The lifecycle template must be valid.");
-        if (string.IsNullOrWhiteSpace(code)) throw Validation("plantationCode", "Plantation code is required.");
-        if (code.Trim().Length > 50) throw Validation("plantationCode", "Plantation code cannot exceed 50 characters.");
         if (string.IsNullOrWhiteSpace(name)) throw Validation("plantationName", "Plantation name is required.");
         if (name.Trim().Length > 200) throw Validation("plantationName", "Plantation name cannot exceed 200 characters.");
         if (allocatedArea is null or <= 0) throw Validation("allocatedArea", "Allocated area must be greater than zero.");
         if (areaUnitId is null || areaUnitId == Guid.Empty) throw Validation("areaUnitId", "Area unit is required.");
         if (plantingDate is null) throw Validation("plantingDate", "Planting date is required.");
         if (expectedEndDate is not null && expectedEndDate < plantingDate) throw Validation("expectedEndDate", "Expected end date cannot be before planting date.");
-        return new PlantationValues(farmAreaId.Value, cropId.Value, varietyId, lifecycleTemplateId, code.Trim().ToUpperInvariant(), name.Trim(), allocatedArea.Value, areaUnitId.Value, plantingDate.Value, expectedEndDate);
+        return new PlantationValues(farmAreaId.Value, cropId.Value, varietyId, lifecycleTemplateId, name.Trim(), allocatedArea.Value, areaUnitId.Value, plantingDate.Value, expectedEndDate);
     }
 
     private static decimal ToBaseArea(decimal value, Unit unit) => value * (unit.ConversionFactor ?? throw new InvalidOperationException($"Area unit '{unit.Code}' has no conversion factor."));
@@ -401,6 +388,6 @@ public sealed class PlantationService(IPlantationStore store) : IPlantationServi
             ? throw Validation("pageSize", $"Page size must be between 1 and {MaximumPageSize}.")
             : pageSize;
 
-    private sealed record PlantationValues(Guid FarmAreaId, Guid CropId, Guid? VarietyId, Guid? LifecycleTemplateId, string PlantationCode, string PlantationName, decimal AllocatedArea, Guid AreaUnitId, DateOnly PlantingDate, DateOnly? ExpectedEndDate);
+    private sealed record PlantationValues(Guid FarmAreaId, Guid CropId, Guid? VarietyId, Guid? LifecycleTemplateId, string PlantationName, decimal AllocatedArea, Guid AreaUnitId, DateOnly PlantingDate, DateOnly? ExpectedEndDate);
     private sealed record PlantationReferences(Crop Crop, CropVariety? Variety, CropLifecycleTemplate? LifecycleTemplate, Unit AreaUnit);
 }
