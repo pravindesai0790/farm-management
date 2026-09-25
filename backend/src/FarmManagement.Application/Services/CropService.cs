@@ -41,14 +41,13 @@ public sealed class CropService(ICropStore store) : ICropService
     {
         ValidateActor(actor);
         var values = ReadValues(request);
-        await EnsureCropCodeIsAvailableAsync(actor, values.Code, null, cancellationToken);
 
         var crop = new Crop(
-            actor.OrganizationId, values.Code, values.Name, values.CropType, values.CropDurationType,
+            actor.OrganizationId, values.Name, values.CropType, values.CropDurationType,
             scientificName: values.ScientificName, description: values.Description, createdBy: actor.UserId);
 
         store.Add(crop);
-        AddAudit(actor, crop, "Crop.Created", new { crop.Code, crop.Name }, ipAddress);
+        AddAudit(actor, crop, "Crop.Created", new { crop.Name }, ipAddress);
         await store.SaveChangesAsync(cancellationToken);
         return ToResponse(crop);
     }
@@ -60,12 +59,11 @@ public sealed class CropService(ICropStore store) : ICropService
         var crop = await FindCropOrThrowAsync(actor, cropId, cancellationToken);
         EnsureCanModify(crop.IsSystem, actor);
         var values = ReadValues(request);
-        await EnsureCropCodeIsAvailableAsync(actor, values.Code, crop.Id, cancellationToken);
 
-        var previous = new { crop.Code, crop.Name, crop.CropType, crop.CropDurationType, crop.IsActive };
-        crop.Update(values.Code, values.Name, values.CropType, values.CropDurationType,
+        var previous = new { crop.Name, crop.CropType, crop.CropDurationType, crop.IsActive };
+        crop.Update(values.Name, values.CropType, values.CropDurationType,
             values.ScientificName, values.Description, DateTimeOffset.UtcNow, actor.UserId);
-        AddAudit(actor, crop, "Crop.Updated", new { previous, current = new { crop.Code, crop.Name, crop.CropType, crop.CropDurationType } }, ipAddress);
+        AddAudit(actor, crop, "Crop.Updated", new { previous, current = new { crop.Name, crop.CropType, crop.CropDurationType } }, ipAddress);
         await store.SaveChangesAsync(cancellationToken);
         return ToResponse(crop);
     }
@@ -189,14 +187,6 @@ public sealed class CropService(ICropStore store) : ICropService
             : await store.FindVarietyAsync(varietyId, actor.OrganizationId, cancellationToken)
                 ?? throw new ResourceNotFoundException("The crop variety was not found.");
 
-    private async Task EnsureCropCodeIsAvailableAsync(CropActor actor, string code, Guid? excludingCropId, CancellationToken cancellationToken)
-    {
-        if (await store.CropCodeExistsAsync(actor.OrganizationId, code, excludingCropId, cancellationToken))
-        {
-            throw new ConflictException("A crop with this code already exists in the available crop catalog.");
-        }
-    }
-
     private void AddAudit(CropActor actor, Crop crop, string action, object? details, string? ipAddress) =>
         store.AddAuditLog(new AuditLog(action, crop.OrganizationId ?? actor.OrganizationId, actor.UserId,
             entityType: "Crop", entityId: crop.Id,
@@ -208,27 +198,25 @@ public sealed class CropService(ICropStore store) : ICropService
             details: details is null ? null : JsonSerializer.SerializeToDocument(details), ipAddress: ipAddress));
 
     private static CropResponse ToResponse(Crop crop) =>
-        new(crop.Id, crop.OrganizationId, crop.Code, crop.Name, crop.ScientificName, crop.CropType,
+        new(crop.Id, crop.OrganizationId, crop.Name, crop.ScientificName, crop.CropType,
             crop.CropDurationType, crop.Description, crop.IsSystem, crop.IsActive, crop.CreatedAt,
             crop.CreatedBy, crop.UpdatedAt, crop.UpdatedBy);
 
     private static CropVarietyResponse ToResponse(CropVariety variety, Crop? crop = null) =>
-        new(variety.Id, variety.OrganizationId, variety.CropId, (crop ?? variety.Crop)?.Code ?? string.Empty,
-            (crop ?? variety.Crop)?.Name ?? string.Empty, variety.Code, variety.Name, variety.Description,
+        new(variety.Id, variety.OrganizationId, variety.CropId, (crop ?? variety.Crop)?.Name ?? string.Empty,
+            variety.Code, variety.Name, variety.Description,
             variety.IsSystem, variety.IsActive, variety.CreatedAt, variety.CreatedBy, variety.UpdatedAt, variety.UpdatedBy);
 
     private static CropValues ReadValues(CreateCropRequest? request) =>
         request is null ? throw Validation("request", "A request body is required.") : ReadValues(
-            request.Code, request.Name, request.ScientificName, request.CropType, request.CropDurationType, request.Description);
+            request.Name, request.ScientificName, request.CropType, request.CropDurationType, request.Description);
 
     private static CropValues ReadValues(UpdateCropRequest? request) =>
         request is null ? throw Validation("request", "A request body is required.") : ReadValues(
-            request.Code, request.Name, request.ScientificName, request.CropType, request.CropDurationType, request.Description);
+            request.Name, request.ScientificName, request.CropType, request.CropDurationType, request.Description);
 
-    private static CropValues ReadValues(string? code, string? name, string? scientificName, string? cropType, string? cropDurationType, string? description)
+    private static CropValues ReadValues(string? name, string? scientificName, string? cropType, string? cropDurationType, string? description)
     {
-        if (string.IsNullOrWhiteSpace(code)) throw Validation("code", "Code is required.");
-        if (code.Trim().Length > 50) throw Validation("code", "Code cannot exceed 50 characters.");
         if (string.IsNullOrWhiteSpace(name)) throw Validation("name", "Name is required.");
         if (name.Trim().Length > 150) throw Validation("name", "Name cannot exceed 150 characters.");
         if (scientificName?.Trim().Length > 200) throw Validation("scientificName", "Scientific name cannot exceed 200 characters.");
@@ -238,7 +226,7 @@ public sealed class CropService(ICropStore store) : ICropService
         var normalizedDuration = cropDurationType.Trim().ToUpperInvariant();
         if (!CropDurationTypes.Contains(normalizedDuration)) throw Validation("cropDurationType", "Crop duration type is invalid.");
         if (description?.Trim().Length > 2000) throw Validation("description", "Description cannot exceed 2000 characters.");
-        return new(code.Trim().ToUpperInvariant(), name.Trim(), NormalizeOptional(scientificName), cropType.Trim(), normalizedDuration, NormalizeOptional(description));
+        return new(name.Trim(), NormalizeOptional(scientificName), cropType.Trim(), normalizedDuration, NormalizeOptional(description));
     }
 
     private static VarietyValues ReadValues(CreateCropVarietyRequest? request) =>
@@ -280,6 +268,6 @@ public sealed class CropService(ICropStore store) : ICropService
     private static ValidationException Validation(string fieldName, string message) =>
         new("Validation failed", new Dictionary<string, string[]> { [fieldName] = [message] });
 
-    private sealed record CropValues(string Code, string Name, string? ScientificName, string CropType, string CropDurationType, string? Description);
+    private sealed record CropValues(string Name, string? ScientificName, string CropType, string CropDurationType, string? Description);
     private sealed record VarietyValues(Guid CropId, string Code, string Name, string? Description);
 }

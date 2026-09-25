@@ -270,19 +270,19 @@ public sealed class IdentityDataSeeder(
 
     private static readonly IReadOnlyList<SeedCrop> SeedCrops =
     [
-        new("GRAPES", "Grapes", "FRUIT", "PERENNIAL"),
-        new("TOMATO", "Tomato", "VEGETABLE", "ANNUAL"),
-        new("CHILI", "Chili", "VEGETABLE", "SEASONAL"),
-        new("MANGO", "Mango", "FRUIT", "PERENNIAL"),
-        new("BANANA", "Banana", "FRUIT", "PERENNIAL")
+        new("Grapes", "FRUIT", "PERENNIAL"),
+        new("Tomato", "VEGETABLE", "ANNUAL"),
+        new("Chili", "VEGETABLE", "SEASONAL"),
+        new("Mango", "FRUIT", "PERENNIAL"),
+        new("Banana", "FRUIT", "PERENNIAL")
     ];
 
     private static readonly IReadOnlyList<SeedCropVariety> SeedCropVarieties =
     [
-        new("GRAPES", "THOMPSON_SEEDLESS", "Thompson Seedless"),
-        new("GRAPES", "SHARAD_SEEDLESS", "Sharad Seedless"),
-        new("GRAPES", "SONAKA", "Sonaka"),
-        new("GRAPES", "MANIK_CHAMAN", "Manik Chaman")
+        new("Grapes", "THOMPSON_SEEDLESS", "Thompson Seedless"),
+        new("Grapes", "SHARAD_SEEDLESS", "Sharad Seedless"),
+        new("Grapes", "SONAKA", "Sonaka"),
+        new("Grapes", "MANIK_CHAMAN", "Manik Chaman")
     ];
 
     private static readonly IReadOnlyList<SeedPlantationEndReason> SeedPlantationEndReasons =
@@ -429,13 +429,12 @@ public sealed class IdentityDataSeeder(
         foreach (var seedCrop in SeedCrops)
         {
             var exists = await dbContext.Crops.AnyAsync(
-                crop => crop.IsSystem && crop.OrganizationId == null && crop.Code == seedCrop.Code,
+                crop => crop.IsSystem && crop.OrganizationId == null && crop.Name == seedCrop.Name,
                 cancellationToken);
             if (!exists)
             {
                 dbContext.Crops.Add(new Crop(
                     organizationId: null,
-                    code: seedCrop.Code,
                     name: seedCrop.Name,
                     cropType: seedCrop.CropType,
                     cropDurationType: seedCrop.DurationType,
@@ -451,7 +450,7 @@ public sealed class IdentityDataSeeder(
         foreach (var seedVariety in SeedCropVarieties)
         {
             var crop = await dbContext.Crops.SingleAsync(
-                item => item.IsSystem && item.OrganizationId == null && item.Code == seedVariety.CropCode,
+                item => item.IsSystem && item.OrganizationId == null && item.Name == seedVariety.CropName,
                 cancellationToken);
             var exists = await dbContext.CropVarieties.AnyAsync(
                 variety => variety.IsSystem && variety.OrganizationId == null &&
@@ -761,9 +760,9 @@ public sealed class IdentityDataSeeder(
 
     private sealed record SeedFarmOwnershipType(string Code, string Name);
 
-    private sealed record SeedCrop(string Code, string Name, string CropType, string DurationType);
+    private sealed record SeedCrop(string Name, string CropType, string DurationType);
 
-    private sealed record SeedCropVariety(string CropCode, string Code, string Name);
+    private sealed record SeedCropVariety(string CropName, string Code, string Name);
 
     private sealed record SeedPlantationEndReason(string Code, string Name);
 

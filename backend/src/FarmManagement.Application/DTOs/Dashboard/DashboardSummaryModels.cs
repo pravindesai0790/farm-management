@@ -27,7 +27,6 @@ public sealed record KpiSummaryDto(
 public sealed record CropAllocationSummaryDto(
     Guid CropId,
     string CropName,
-    string CropCode,
     decimal TotalAllocatedArea,
     string AreaUnitSymbol,
     decimal PercentageOfAllocated,

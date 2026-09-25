@@ -14,7 +14,6 @@ public sealed class CropStore(ApplicationDbContext dbContext) : ICropStore
         await BuildCropQuery(organizationId, search, isActive)
             .AsNoTracking()
             .OrderBy(crop => crop.Name)
-            .ThenBy(crop => crop.Code)
             .ThenBy(crop => crop.Id)
             .Skip(skip)
             .Take(take)
@@ -22,16 +21,6 @@ public sealed class CropStore(ApplicationDbContext dbContext) : ICropStore
 
     public Task<Crop?> FindCropAsync(Guid cropId, Guid organizationId, CancellationToken cancellationToken = default) =>
         BuildCropQuery(organizationId, null, null).SingleOrDefaultAsync(crop => crop.Id == cropId, cancellationToken);
-
-    public Task<bool> CropCodeExistsAsync(
-        Guid organizationId, string code, Guid? excludingCropId = null, CancellationToken cancellationToken = default)
-    {
-        var query = dbContext.Crops.Where(crop =>
-            (crop.IsSystem && crop.OrganizationId == null) || crop.OrganizationId == organizationId);
-        query = query.Where(crop => crop.Code == code);
-        if (excludingCropId is not null) query = query.Where(crop => crop.Id != excludingCropId.Value);
-        return query.AnyAsync(cancellationToken);
-    }
 
     public Task<int> CountVarietiesAsync(Guid organizationId, Guid cropId, bool? isActive, CancellationToken cancellationToken = default) =>
         BuildVarietyQuery(organizationId, cropId, isActive).CountAsync(cancellationToken);
@@ -74,7 +63,7 @@ public sealed class CropStore(ApplicationDbContext dbContext) : ICropStore
         if (!string.IsNullOrWhiteSpace(search))
         {
             var normalizedSearch = search.Trim().ToLowerInvariant();
-            query = query.Where(crop => crop.Code.ToLower().Contains(normalizedSearch) || crop.Name.ToLower().Contains(normalizedSearch));
+            query = query.Where(crop => crop.Name.ToLower().Contains(normalizedSearch));
         }
         return query;
     }

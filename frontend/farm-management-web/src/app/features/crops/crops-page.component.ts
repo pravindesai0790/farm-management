@@ -50,7 +50,7 @@ export class CropsPageComponent implements OnInit {
   private readonly snack = inject(MatSnackBar);
   private readonly destroyRef = inject(DestroyRef);
   readonly permissionService = inject(PermissionService);
-  readonly columns = ["code", "name", "type", "status", "actions"];
+  readonly columns = ["name", "type", "status", "actions"];
   readonly crops = signal<readonly Crop[]>([]);
   readonly totalCount = signal(0);
   readonly pageIndex = signal(0);

@@ -340,7 +340,6 @@ public sealed class CropLifecycleTemplateService(ICropLifecycleTemplateStore sto
             template.Id,
             template.OrganizationId,
             template.CropId,
-            template.Crop.Code,
             template.Crop.Name,
             template.Name,
             template.Description,

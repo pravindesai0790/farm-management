@@ -35,21 +35,16 @@
     } @else {
       <div class="table-wrap">
         <table mat-table [dataSource]="crops()">
-          <ng-container matColumnDef="code">
-            <th mat-header-cell *matHeaderCellDef>Code</th>
+          <ng-container matColumnDef="name">
+            <th mat-header-cell *matHeaderCellDef>Crop</th>
             <td mat-cell *matCellDef="let crop">
-              <strong>{{ crop.code }}</strong>
+              <strong>{{ crop.name }}</strong>
               <small>
                 <span class="system-label">{{
                   crop.isSystem ? "System" : "Organization"
                 }}</span>
               </small>
             </td>
-          </ng-container>
-
-          <ng-container matColumnDef="name">
-            <th mat-header-cell *matHeaderCellDef>Crop</th>
-            <td mat-cell *matCellDef="let crop">{{ crop.name }}</td>
           </ng-container>
 
           <ng-container matColumnDef="type">

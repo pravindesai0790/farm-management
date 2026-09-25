@@ -3,7 +3,6 @@ namespace FarmManagement.Application.DTOs.Crops;
 public sealed record CropResponse(
     Guid Id,
     Guid? OrganizationId,
-    string Code,
     string Name,
     string? ScientificName,
     string CropType,
@@ -17,7 +16,6 @@ public sealed record CropResponse(
     Guid? UpdatedBy);
 
 public sealed record CreateCropRequest(
-    string? Code,
     string? Name,
     string? ScientificName,
     string? CropType,
@@ -25,7 +23,6 @@ public sealed record CreateCropRequest(
     string? Description);
 
 public sealed record UpdateCropRequest(
-    string? Code,
     string? Name,
     string? ScientificName,
     string? CropType,
@@ -36,7 +33,6 @@ public sealed record CropVarietyResponse(
     Guid Id,
     Guid? OrganizationId,
     Guid CropId,
-    string CropCode,
     string CropName,
     string Code,
     string Name,

@@ -49,7 +49,6 @@ export class CropEditorPageComponent implements OnInit {
   readonly isSubmitting = signal(false);
   readonly errorMessage = signal<unknown>(null);
   readonly form = this.fb.nonNullable.group({
-    code: ["", [Validators.required]],
     name: ["", [Validators.required]],
     scientificName: [""],
     cropType: ["GENERAL", [Validators.required]],
@@ -67,7 +66,6 @@ export class CropEditorPageComponent implements OnInit {
         next: (r) => {
           if (r)
             this.form.patchValue({
-              code: r.code,
               name: r.name,
               scientificName: r.scientificName ?? "",
               cropType: r.cropType,

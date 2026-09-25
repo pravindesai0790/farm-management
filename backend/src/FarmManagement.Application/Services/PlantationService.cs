@@ -346,7 +346,7 @@ public sealed class PlantationService(IPlantationStore store) : IPlantationServi
 
     private static PlantationResponse ToResponse(CropPlantation plantation, Farm? farm, FarmArea area, Crop crop, CropVariety? variety, CropLifecycleTemplate? lifecycleTemplate, Unit areaUnit, PlantationEndReason? endReason) =>
         new(
-            plantation.Id, plantation.FarmId, farm?.Name ?? area.Farm?.Name ?? string.Empty, plantation.FarmAreaId, area.Name, plantation.CropId, crop.Code, crop.Name,
+            plantation.Id, plantation.FarmId, farm?.Name ?? area.Farm?.Name ?? string.Empty, plantation.FarmAreaId, area.Name, plantation.CropId, crop.Name,
             plantation.VarietyId, variety?.Code, variety?.Name, plantation.LifecycleTemplateId, lifecycleTemplate?.Name,
             plantation.PlantationName, plantation.AllocatedArea, plantation.AreaUnitId,
             areaUnit.Code, areaUnit.Name, areaUnit.Symbol, plantation.PlantingDate, plantation.ExpectedEndDate,

@@ -98,7 +98,6 @@ export interface FarmAreaOption extends FarmArea {
 export interface Crop {
   id: string;
   organizationId: string | null;
-  code: string;
   name: string;
   scientificName: string | null;
   cropType: string;
@@ -115,7 +114,6 @@ export interface CropVariety {
   id: string;
   organizationId: string | null;
   cropId: string;
-  cropCode: string;
   cropName: string;
   code: string;
   name: string;
@@ -134,7 +132,6 @@ export interface Plantation {
   farmAreaId: string;
   farmAreaName: string;
   cropId: string;
-  cropCode: string;
   cropName: string;
   varietyId: string | null;
   varietyCode: string | null;
@@ -190,7 +187,6 @@ export interface LifecycleTemplate {
   id: string;
   organizationId: string | null;
   cropId: string;
-  cropCode: string;
   cropName: string;
   name: string;
   description: string | null;
@@ -236,7 +232,6 @@ export interface VarietyAllocationSummary {
 export interface CropAllocationSummary {
   cropId: string;
   cropName: string;
-  cropCode: string;
   totalAllocatedArea: number;
   areaUnitSymbol: string;
   percentageOfAllocated: number;

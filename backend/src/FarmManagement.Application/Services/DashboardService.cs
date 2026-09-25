@@ -92,7 +92,6 @@ public sealed class DashboardService(IDashboardStore store) : IDashboardService
             {
                 var first = cg.First();
                 var cropName = first.Crop?.Name ?? "Unknown Crop";
-                var cropCode = first.Crop?.Code ?? "";
                 var cropArea = Math.Round(
                     cg.Sum(p => ConvertArea(p.AllocatedArea, p.AreaUnit, targetUnit)),
                     2,
@@ -130,7 +129,6 @@ public sealed class DashboardService(IDashboardStore store) : IDashboardService
                 return new CropAllocationSummaryDto(
                     CropId: cg.Key,
                     CropName: cropName,
-                    CropCode: cropCode,
                     TotalAllocatedArea: cropArea,
                     AreaUnitSymbol: targetSymbol,
                     PercentageOfAllocated: cropPct,

@@ -13,7 +13,6 @@ public sealed record CropLifecycleTemplateResponse(
     Guid Id,
     Guid? OrganizationId,
     Guid CropId,
-    string CropCode,
     string CropName,
     string Name,
     string? Description,
