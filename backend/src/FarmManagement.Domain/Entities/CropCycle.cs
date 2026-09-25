@@ -6,14 +6,12 @@ public sealed class CropCycle
 {
     private CropCycle()
     {
-        CycleCode = string.Empty;
         CycleName = string.Empty;
     }
 
     public CropCycle(
         Guid organizationId,
         Guid plantationId,
-        string cycleCode,
         string cycleName,
         int seasonYear,
         string? seasonName,
@@ -24,7 +22,6 @@ public sealed class CropCycle
     {
         if (organizationId == Guid.Empty) throw new ArgumentException("An organization is required.", nameof(organizationId));
         if (plantationId == Guid.Empty) throw new ArgumentException("A plantation is required.", nameof(plantationId));
-        if (string.IsNullOrWhiteSpace(cycleCode)) throw new ArgumentException("A cycle code is required.", nameof(cycleCode));
         if (string.IsNullOrWhiteSpace(cycleName)) throw new ArgumentException("A cycle name is required.", nameof(cycleName));
         if (seasonYear <= 0) throw new ArgumentOutOfRangeException(nameof(seasonYear), "Season year must be greater than zero.");
         if (expectedEndDate is not null && expectedEndDate < plannedStartDate)
@@ -37,7 +34,6 @@ public sealed class CropCycle
         Id = Guid.NewGuid();
         OrganizationId = organizationId;
         PlantationId = plantationId;
-        CycleCode = cycleCode.Trim().ToUpperInvariant();
         CycleName = cycleName.Trim();
         SeasonYear = seasonYear;
         SeasonName = string.IsNullOrWhiteSpace(seasonName) ? null : seasonName.Trim();
@@ -53,7 +49,6 @@ public sealed class CropCycle
     public Guid OrganizationId { get; private set; }
     public Guid PlantationId { get; private set; }
     public Guid? LifecycleTemplateId { get; private set; }
-    public string CycleCode { get; private set; }
     public string CycleName { get; private set; }
     public int SeasonYear { get; private set; }
     public string? SeasonName { get; private set; }
@@ -116,7 +111,6 @@ public sealed class CropCycle
 
     public void Update(
         Guid plantationId,
-        string cycleCode,
         string cycleName,
         int seasonYear,
         string? seasonName,
@@ -139,9 +133,8 @@ public sealed class CropCycle
             throw new ArgumentException("A lifecycle template ID cannot be empty.", nameof(lifecycleTemplateId));
         }
 
-        ValidateValues(cycleCode, cycleName, seasonYear, plannedStartDate, expectedEndDate, updatedBy);
+        ValidateValues(cycleName, seasonYear, plannedStartDate, expectedEndDate, updatedBy);
         PlantationId = plantationId;
-        CycleCode = cycleCode.Trim().ToUpperInvariant();
         CycleName = cycleName.Trim();
         SeasonYear = seasonYear;
         SeasonName = string.IsNullOrWhiteSpace(seasonName) ? null : seasonName.Trim();
@@ -154,7 +147,6 @@ public sealed class CropCycle
 
     public void Update(
         Guid plantationId,
-        string cycleCode,
         string cycleName,
         int seasonYear,
         string? seasonName,
@@ -162,7 +154,7 @@ public sealed class CropCycle
         DateOnly? expectedEndDate,
         DateTimeOffset now,
         Guid updatedBy) =>
-        Update(plantationId, cycleCode, cycleName, seasonYear, seasonName, plannedStartDate, expectedEndDate, now, updatedBy, LifecycleTemplateId);
+        Update(plantationId, cycleName, seasonYear, seasonName, plannedStartDate, expectedEndDate, now, updatedBy, LifecycleTemplateId);
 
     public bool Start(DateOnly actualStartDate, DateTimeOffset now, Guid updatedBy)
     {
@@ -222,14 +214,12 @@ public sealed class CropCycle
     }
 
     private static void ValidateValues(
-        string cycleCode,
         string cycleName,
         int seasonYear,
         DateOnly plannedStartDate,
         DateOnly? expectedEndDate,
         Guid updatedBy)
     {
-        if (string.IsNullOrWhiteSpace(cycleCode)) throw new ArgumentException("A cycle code is required.", nameof(cycleCode));
         if (string.IsNullOrWhiteSpace(cycleName)) throw new ArgumentException("A cycle name is required.", nameof(cycleName));
         if (seasonYear <= 0) throw new ArgumentOutOfRangeException(nameof(seasonYear), "Season year must be greater than zero.");
         if (expectedEndDate is not null && expectedEndDate < plannedStartDate)

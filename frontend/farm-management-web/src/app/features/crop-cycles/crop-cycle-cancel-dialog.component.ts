@@ -28,7 +28,6 @@ import { formatDateOnly } from "../../core/utils/date.utils";
 
 export interface CropCycleCancelDialogData {
   cycleId: string;
-  cycleCode: string;
   cycleName: string;
 }
 
@@ -55,7 +54,7 @@ export interface CropCycleCancelDialogResult {
     <h2 mat-dialog-title>Cancel Crop Cycle</h2>
     <mat-dialog-content>
       <p class="dialog-description">
-        Cancelling <strong>{{ data.cycleName }}</strong> ({{ data.cycleCode }})
+        Cancelling <strong>{{ data.cycleName }}</strong>
         will stop active production tracking for this season.
       </p>
 

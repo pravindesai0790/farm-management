@@ -45,12 +45,6 @@ public interface ICropCycleStore
         Guid organizationId,
         CancellationToken cancellationToken = default);
 
-    Task<bool> CodeExistsAsync(
-        Guid organizationId,
-        string cycleCode,
-        Guid? excludingCycleId = null,
-        CancellationToken cancellationToken = default);
-
     Task<bool> HasActiveCycleAsync(
         Guid plantationId,
         Guid? excludingCycleId = null,

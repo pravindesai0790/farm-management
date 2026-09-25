@@ -95,22 +95,6 @@ public sealed class CropCycleStore(ApplicationDbContext dbContext) : ICropCycleS
                       ((reason.IsSystem && reason.OrganizationId == null) || reason.OrganizationId == organizationId),
             cancellationToken);
 
-    public Task<bool> CodeExistsAsync(
-        Guid organizationId,
-        string cycleCode,
-        Guid? excludingCycleId = null,
-        CancellationToken cancellationToken = default)
-    {
-        var query = dbContext.CropCycles.Where(cycle =>
-            cycle.OrganizationId == organizationId && cycle.CycleCode == cycleCode);
-        if (excludingCycleId is not null)
-        {
-            query = query.Where(cycle => cycle.Id != excludingCycleId.Value);
-        }
-
-        return query.AnyAsync(cancellationToken);
-    }
-
     public Task<bool> HasActiveCycleAsync(
         Guid plantationId,
         Guid? excludingCycleId = null,

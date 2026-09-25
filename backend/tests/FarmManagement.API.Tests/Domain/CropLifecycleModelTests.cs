@@ -77,7 +77,6 @@ public sealed class CropLifecycleModelTests
         var cycle = new CropCycle(
             organizationId: _organizationId,
             plantationId: _plantationId,
-            cycleCode: "CC-2026-01",
             cycleName: "2026 Table Grapes",
             seasonYear: 2026,
             seasonName: "Spring 2026",
@@ -97,7 +96,6 @@ public sealed class CropLifecycleModelTests
         var cycle = new CropCycle(
             organizationId: _organizationId,
             plantationId: _plantationId,
-            cycleCode: "CC-2026-02",
             cycleName: "2026 Draft Cycle",
             seasonYear: 2026,
             seasonName: "Kharif",
@@ -114,7 +112,6 @@ public sealed class CropLifecycleModelTests
         var cycle = new CropCycle(
             organizationId: _organizationId,
             plantationId: _plantationId,
-            cycleCode: "CC-2026-03",
             cycleName: "Planned Cycle",
             seasonYear: 2026,
             seasonName: null,
@@ -137,7 +134,6 @@ public sealed class CropLifecycleModelTests
         var cycle = new CropCycle(
             organizationId: _organizationId,
             plantationId: _plantationId,
-            cycleCode: "CC-2026-04",
             cycleName: "Started Cycle",
             seasonYear: 2026,
             seasonName: null,

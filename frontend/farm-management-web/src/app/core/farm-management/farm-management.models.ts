@@ -165,7 +165,6 @@ export interface CropCycle {
   farmName: string | null;
   farmAreaName: string | null;
   cropName: string;
-  cycleCode: string;
   cycleName: string;
   seasonYear: number;
   seasonName: string | null;
@@ -240,7 +239,6 @@ export interface CropAllocationSummary {
 
 export interface ActiveCycleSummary {
   cycleId: string;
-  cycleCode: string;
   cycleName: string;
   seasonYear: number;
   seasonName: string | null;

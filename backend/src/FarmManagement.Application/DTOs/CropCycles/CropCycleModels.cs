@@ -7,7 +7,6 @@ public sealed record CropCycleResponse(
     string? FarmName,
     string? FarmAreaName,
     string CropName,
-    string CycleCode,
     string CycleName,
     int SeasonYear,
     string? SeasonName,
@@ -18,7 +17,6 @@ public sealed record CropCycleResponse(
 
 public sealed record CreateCropCycleRequest(
     Guid? PlantationId,
-    string? CycleCode,
     string? CycleName,
     int? SeasonYear,
     string? SeasonName,
@@ -27,7 +25,6 @@ public sealed record CreateCropCycleRequest(
 
 public sealed record UpdateCropCycleRequest(
     Guid? PlantationId,
-    string? CycleCode,
     string? CycleName,
     int? SeasonYear,
     string? SeasonName,

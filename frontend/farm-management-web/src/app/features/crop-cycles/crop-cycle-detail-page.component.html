@@ -6,7 +6,7 @@
   <div class="section-heading">
     <div>
       <a mat-button routerLink="/crop-cycles">← Back to cycles</a>
-      <p class="eyebrow">{{ c.cycleCode }} · {{ c.seasonYear }}</p>
+      <p class="eyebrow">Season {{ c.seasonYear }}</p>
       <h2>{{ c.cycleName }}</h2>
       <p>{{ c.farmName ? c.farmName + ' › ' : '' }}{{ c.farmAreaName ? c.farmAreaName + ' › ' : '' }}{{ c.plantationName }} ({{ c.cropName }})</p>
     </div>

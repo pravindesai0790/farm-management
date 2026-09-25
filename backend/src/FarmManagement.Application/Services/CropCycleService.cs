@@ -73,7 +73,6 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
                 ?? throw new ResourceNotFoundException("The plantation was not found.");
             EnsureCanCreateForPlantation(plantation);
             ValidateDates(values.PlannedStartDate, values.ExpectedEndDate, plantation);
-            await EnsureCodeIsAvailableAsync(actor, values.CycleCode, null, transactionCancellationToken);
 
             if (await store.HasCycleForSeasonAsync(values.PlantationId, values.SeasonYear, null, transactionCancellationToken))
             {
@@ -83,7 +82,6 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
             var cycle = new CropCycle(
                 actor.OrganizationId,
                 plantation.Id,
-                values.CycleCode,
                 values.CycleName,
                 values.SeasonYear,
                 values.SeasonName,
@@ -95,7 +93,6 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
             AddAudit(actor, cycle, "CropCycle.Created", new
             {
                 cycle.PlantationId,
-                cycle.CycleCode,
                 cycle.CycleName,
                 cycle.SeasonYear,
                 cycle.Status
@@ -130,7 +127,6 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
                 ?? throw new ResourceNotFoundException("The plantation was not found.");
             EnsureCanCreateForPlantation(plantation);
             ValidateDates(values.PlannedStartDate, values.ExpectedEndDate, plantation);
-            await EnsureCodeIsAvailableAsync(actor, values.CycleCode, cycle.Id, transactionCancellationToken);
 
             if (await store.HasCycleForSeasonAsync(targetPlantationId, values.SeasonYear, cycle.Id, transactionCancellationToken))
             {
@@ -140,7 +136,6 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
             var previous = new
             {
                 cycle.PlantationId,
-                cycle.CycleCode,
                 cycle.CycleName,
                 cycle.SeasonYear,
                 cycle.SeasonName,
@@ -149,7 +144,6 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
             };
             cycle.Update(
                 targetPlantationId,
-                values.CycleCode,
                 values.CycleName,
                 values.SeasonYear,
                 values.SeasonName,
@@ -163,7 +157,6 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
                 current = new
                 {
                     cycle.PlantationId,
-                    cycle.CycleCode,
                     cycle.CycleName,
                     cycle.SeasonYear,
                     cycle.SeasonName,
@@ -296,18 +289,6 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
             : await store.FindAsync(cycleId, actor.OrganizationId, cancellationToken)
                 ?? throw new ResourceNotFoundException("The crop cycle was not found.");
 
-    private async Task EnsureCodeIsAvailableAsync(
-        CropCycleActor actor,
-        string code,
-        Guid? excludingId,
-        CancellationToken cancellationToken)
-    {
-        if (await store.CodeExistsAsync(actor.OrganizationId, code, excludingId, cancellationToken))
-        {
-            throw new ConflictException("A crop cycle with this code already exists in the organization.");
-        }
-    }
-
     private static void EnsureCanCreateForPlantation(CropPlantation plantation)
     {
         if (plantation.Status is PlantationStatus.Terminated or PlantationStatus.Archived)
@@ -392,7 +373,6 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
             farm?.Name,
             farmArea?.Name,
             crop.Name,
-            cycle.CycleCode,
             cycle.CycleName,
             cycle.SeasonYear,
             cycle.SeasonName,
@@ -405,28 +385,25 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
     private static CreateValues ReadValues(CreateCropCycleRequest? request)
     {
         if (request is null) throw Validation("request", "A request body is required.");
-        return ReadValues(request.PlantationId, request.CycleCode, request.CycleName, request.SeasonYear,
+        return ReadValues(request.PlantationId, request.CycleName, request.SeasonYear,
             request.SeasonName, request.PlannedStartDate, request.ExpectedEndDate);
     }
 
     private static CreateValues ReadValues(UpdateCropCycleRequest? request)
     {
         if (request is null) throw Validation("request", "A request body is required.");
-        return ReadValues(request.PlantationId, request.CycleCode, request.CycleName, request.SeasonYear,
+        return ReadValues(request.PlantationId, request.CycleName, request.SeasonYear,
             request.SeasonName, request.PlannedStartDate, request.ExpectedEndDate);
     }
 
     private static CreateValues ReadValues(
         Guid? plantationId,
-        string? cycleCode,
         string? cycleName,
         int? seasonYear,
         string? seasonName,
         DateOnly? plannedStartDate,
         DateOnly? expectedEndDate)
     {
-        if (string.IsNullOrWhiteSpace(cycleCode)) throw Validation("cycleCode", "Cycle code is required.");
-        if (cycleCode.Trim().Length > 50) throw Validation("cycleCode", "Cycle code cannot exceed 50 characters.");
         if (string.IsNullOrWhiteSpace(cycleName)) throw Validation("cycleName", "Cycle name is required.");
         if (cycleName.Trim().Length > 200) throw Validation("cycleName", "Cycle name cannot exceed 200 characters.");
         if (seasonYear is null or <= 0) throw Validation("seasonYear", "Season year must be greater than zero.");
@@ -439,7 +416,6 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
 
         return new CreateValues(
             plantationId ?? Guid.Empty,
-            cycleCode.Trim().ToUpperInvariant(),
             cycleName.Trim(),
             seasonYear.Value,
             string.IsNullOrWhiteSpace(seasonName) ? null : seasonName.Trim(),
@@ -465,7 +441,6 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
 
     private sealed record CreateValues(
         Guid PlantationId,
-        string CycleCode,
         string CycleName,
         int SeasonYear,
         string? SeasonName,

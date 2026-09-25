@@ -25,7 +25,6 @@ public sealed class CropCycleConfiguration : IEntityTypeConfiguration<CropCycle>
         builder.HasOne(cycle => cycle.LifecycleTemplate).WithMany().HasForeignKey(cycle => cycle.LifecycleTemplateId)
             .HasConstraintName("fk_crop_cycle_lifecycle_template").OnDelete(DeleteBehavior.Restrict);
 
-        builder.Property(cycle => cycle.CycleCode).HasColumnName("cycle_code").HasMaxLength(50).IsRequired();
         builder.Property(cycle => cycle.CycleName).HasColumnName("cycle_name").HasMaxLength(200).IsRequired();
         builder.Property(cycle => cycle.SeasonYear).HasColumnName("season_year").IsRequired();
         builder.Property(cycle => cycle.SeasonName).HasColumnName("season_name").HasMaxLength(100);
@@ -49,8 +48,8 @@ public sealed class CropCycleConfiguration : IEntityTypeConfiguration<CropCycle>
             .HasConstraintName("fk_crop_cycle_stage_crop_cycle")
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(cycle => new { cycle.OrganizationId, cycle.CycleCode })
-            .HasDatabaseName("ux_crop_cycle_organization_code").IsUnique();
+        builder.HasIndex(cycle => cycle.OrganizationId)
+            .HasDatabaseName("ix_crop_cycles_organization_id");
         builder.HasIndex(cycle => new { cycle.PlantationId, cycle.Status })
             .HasDatabaseName("ix_crop_cycles_plantation_status");
         builder.HasIndex(cycle => cycle.LifecycleTemplateId)

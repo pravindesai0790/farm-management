@@ -43,7 +43,6 @@ public sealed record VarietyAllocationSummaryDto(
 
 public sealed record ActiveCycleSummaryDto(
     Guid CycleId,
-    string CycleCode,
     string CycleName,
     int SeasonYear,
     string? SeasonName,

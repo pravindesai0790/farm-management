@@ -182,7 +182,6 @@ public sealed class DashboardService(IDashboardStore store) : IDashboardService
 
                 return new ActiveCycleSummaryDto(
                     CycleId: c.Id,
-                    CycleCode: c.CycleCode,
                     CycleName: c.CycleName,
                     SeasonYear: c.SeasonYear,
                     SeasonName: c.SeasonName,

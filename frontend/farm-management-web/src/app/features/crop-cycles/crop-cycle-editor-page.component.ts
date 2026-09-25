@@ -61,7 +61,6 @@ export class CropCycleEditorPageComponent implements OnInit {
 
   readonly form = this.fb.group({
     plantationId: [null as string | null, [Validators.required]],
-    cycleCode: ["", [Validators.required]],
     cycleName: ["", [Validators.required]],
     seasonYear: [new Date().getFullYear(), [Validators.required]],
     seasonName: [""],
@@ -82,7 +81,6 @@ export class CropCycleEditorPageComponent implements OnInit {
             this.initialPlantationId = cycle.plantationId;
             this.form.patchValue({
               plantationId: cycle.plantationId,
-              cycleCode: cycle.cycleCode,
               cycleName: cycle.cycleName,
               seasonYear: cycle.seasonYear,
               seasonName: cycle.seasonName ?? "",
@@ -164,7 +162,6 @@ export class CropCycleEditorPageComponent implements OnInit {
     const v = this.form.getRawValue();
     const payload = {
       plantationId: v.plantationId,
-      cycleCode: v.cycleCode,
       cycleName: v.cycleName,
       seasonYear: v.seasonYear,
       seasonName: v.seasonName,

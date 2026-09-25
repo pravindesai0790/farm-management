@@ -1052,8 +1052,6 @@ CREATE TABLE crop_cycles
 
     plantation_id UUID NOT NULL,
 
-    cycle_code VARCHAR(50) NOT NULL,
-
     cycle_name VARCHAR(200) NOT NULL,
 
     season_year INTEGER NOT NULL,
@@ -1090,10 +1088,7 @@ CREATE TABLE crop_cycles
 
     CONSTRAINT fk_crop_cycle_cancellation_reason
         FOREIGN KEY (cancellation_reason_id)
-        REFERENCES plantation_end_reasons(id),
-
-    CONSTRAINT ux_crop_cycle_code
-        UNIQUE (organization_id, cycle_code)
+        REFERENCES plantation_end_reasons(id)
 );
 ```
 

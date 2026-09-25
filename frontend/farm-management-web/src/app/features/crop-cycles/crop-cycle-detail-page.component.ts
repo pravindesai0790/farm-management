@@ -144,7 +144,6 @@ export class CropCycleDetailPageComponent implements OnInit {
     const dialogRef = this.dialog.open(CropCycleCancelDialogComponent, {
       data: {
         cycleId: cycle.id,
-        cycleCode: cycle.cycleCode,
         cycleName: cycle.cycleName,
       },
       width: "480px",
