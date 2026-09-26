@@ -303,10 +303,21 @@ export class FarmManagementService {
       request,
     );
   }
-  listLifecycleTemplates(page = 1, pageSize = 100): Observable<LifecycleList> {
+  listLifecycleTemplates(
+    cropId?: string,
+    page = 1,
+    pageSize = 100,
+  ): Observable<LifecycleList> {
+    let params = new HttpParams()
+      .set("page", page)
+      .set("pageSize", pageSize)
+      .set("isActive", true);
+    if (cropId) {
+      params = params.set("cropId", cropId);
+    }
     return this.http.get<LifecycleList>(
       `${this.api}/crop-lifecycle-templates`,
-      { params: { page, pageSize, isActive: true } },
+      { params },
     );
   }
 

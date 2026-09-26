@@ -19,7 +19,10 @@ import { MatSnackBar } from "@angular/material/snack-bar";
 import { ActivatedRoute, Router, RouterLink } from "@angular/router";
 import { debounceTime, distinctUntilChanged, finalize } from "rxjs";
 import { FarmManagementService } from "../../core/farm-management/farm-management.service";
-import { Plantation } from "../../core/farm-management/farm-management.models";
+import {
+  LifecycleTemplate,
+  Plantation,
+} from "../../core/farm-management/farm-management.models";
 import { ErrorAlertComponent } from "../../shared/components/error-alert/error-alert.component";
 import { formatDateOnly, parseDateOnly } from "../../core/utils/date.utils";
 
@@ -53,11 +56,17 @@ export class CropCycleEditorPageComponent implements OnInit {
   readonly id = this.route.snapshot.paramMap.get("id");
   readonly isLoading = signal(true);
   readonly isLoadingPlantations = signal(false);
+  readonly isLoadingLifecycleTemplates = signal(false);
   readonly isSubmitting = signal(false);
+  readonly isStarted = signal(false);
   readonly errorMessage = signal<unknown>(null);
   readonly plantations = signal<readonly Plantation[]>([]);
+  readonly lifecycleTemplates = signal<readonly LifecycleTemplate[]>([]);
+  readonly currentCropId = signal<string | null>(null);
+  readonly assignedTemplateName = signal<string | null>(null);
 
   private initialPlantationId: string | null = null;
+  private isEditingExistingCycle = false;
 
   readonly form = this.fb.group({
     plantationId: [null as string | null, [Validators.required]],
@@ -66,10 +75,12 @@ export class CropCycleEditorPageComponent implements OnInit {
     seasonName: [""],
     plannedStartDate: [null as Date | null, [Validators.required]],
     expectedEndDate: [null as Date | null],
+    lifecycleTemplateId: [null as string | null],
   });
 
   ngOnInit(): void {
     if (this.id) {
+      this.isEditingExistingCycle = true;
       this.service
         .getCycle(this.id)
         .pipe(
@@ -79,6 +90,13 @@ export class CropCycleEditorPageComponent implements OnInit {
         .subscribe({
           next: (cycle) => {
             this.initialPlantationId = cycle.plantationId;
+            const started = cycle.status !== "PLANNED";
+            this.isStarted.set(started);
+            if (started) {
+              this.form.get("lifecycleTemplateId")?.disable();
+            }
+
+            this.assignedTemplateName.set(cycle.lifecycleTemplateName ?? null);
             this.form.patchValue({
               plantationId: cycle.plantationId,
               cycleName: cycle.cycleName,
@@ -86,9 +104,15 @@ export class CropCycleEditorPageComponent implements OnInit {
               seasonName: cycle.seasonName ?? "",
               plannedStartDate: parseDateOnly(cycle.plannedStartDate),
               expectedEndDate: parseDateOnly(cycle.expectedEndDate),
+              lifecycleTemplateId: cycle.lifecycleTemplateId ?? null,
             });
+
             this.loadPlantations(cycle.seasonYear, cycle.plantationId);
-            this.listenToSeasonYearChanges();
+            if (cycle.cropId) {
+              this.currentCropId.set(cycle.cropId);
+              this.loadLifecycleTemplates(cycle.cropId, cycle.lifecycleTemplateId);
+            }
+            this.listenToFormChanges();
           },
           error: (e) => this.errorMessage.set(e),
         });
@@ -97,8 +121,15 @@ export class CropCycleEditorPageComponent implements OnInit {
       const initialYear =
         this.form.get("seasonYear")?.value ?? new Date().getFullYear();
       this.loadPlantations(initialYear);
-      this.listenToSeasonYearChanges();
+      this.listenToFormChanges();
     }
+  }
+
+  private listenToFormChanges(): void {
+    this.listenToSeasonYearChanges();
+    this.listenToPlantationChanges();
+    this.listenToTemplateChanges();
+    this.listenToPlannedStartDateChanges();
   }
 
   private listenToSeasonYearChanges(): void {
@@ -116,6 +147,68 @@ export class CropCycleEditorPageComponent implements OnInit {
             parsedYear,
             this.id ? this.initialPlantationId : undefined,
           );
+        }
+      });
+  }
+
+  private listenToPlantationChanges(): void {
+    this.form
+      .get("plantationId")
+      ?.valueChanges.pipe(
+        takeUntilDestroyed(this.destroyRef),
+        distinctUntilChanged(),
+      )
+      .subscribe((plantationId) => {
+        if (!plantationId) {
+          this.currentCropId.set(null);
+          this.lifecycleTemplates.set([]);
+          if (!this.isEditingExistingCycle) {
+            this.form.patchValue({ lifecycleTemplateId: null });
+          }
+          return;
+        }
+
+        const selectedPlantation = this.plantations().find(
+          (p) => p.id === plantationId,
+        );
+
+        if (selectedPlantation && selectedPlantation.cropId) {
+          const cropIdChanged = selectedPlantation.cropId !== this.currentCropId();
+          this.currentCropId.set(selectedPlantation.cropId);
+          if (cropIdChanged || this.lifecycleTemplates().length === 0) {
+            const currentSelectedTplId = this.form.get("lifecycleTemplateId")?.value;
+            this.loadLifecycleTemplates(selectedPlantation.cropId, currentSelectedTplId);
+          }
+        }
+      });
+  }
+
+  private listenToTemplateChanges(): void {
+    this.form
+      .get("lifecycleTemplateId")
+      ?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((templateId) => {
+        if (!templateId) {
+          return;
+        }
+        const template = this.lifecycleTemplates().find((t) => t.id === templateId);
+        if (template) {
+          this.updateExpectedEndDateFromTemplate(template);
+        }
+      });
+  }
+
+  private listenToPlannedStartDateChanges(): void {
+    this.form
+      .get("plannedStartDate")
+      ?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        const templateId = this.form.get("lifecycleTemplateId")?.value;
+        if (templateId) {
+          const template = this.lifecycleTemplates().find((t) => t.id === templateId);
+          if (template) {
+            this.updateExpectedEndDateFromTemplate(template);
+          }
         }
       });
   }
@@ -144,12 +237,89 @@ export class CropCycleEditorPageComponent implements OnInit {
         next: (r) => {
           this.plantations.set(r.items);
           const selected = this.form.get("plantationId")?.value;
-          if (selected && !r.items.some((p) => p.id === selected)) {
-            this.form.patchValue({ plantationId: null });
+          if (selected) {
+            const p = r.items.find((item) => item.id === selected);
+            if (p && p.cropId) {
+              if (p.cropId !== this.currentCropId()) {
+                this.currentCropId.set(p.cropId);
+                const tplId = this.form.get("lifecycleTemplateId")?.value;
+                this.loadLifecycleTemplates(p.cropId, tplId);
+              }
+            } else if (!p) {
+              this.form.patchValue({ plantationId: null });
+            }
           }
         },
         error: (e) => this.errorMessage.set(e),
       });
+  }
+
+  private loadLifecycleTemplates(
+    cropId: string,
+    preselectedTemplateId?: string | null,
+  ): void {
+    this.isLoadingLifecycleTemplates.set(true);
+    this.service
+      .listLifecycleTemplates(cropId, 1, 100)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.isLoadingLifecycleTemplates.set(false)),
+      )
+      .subscribe({
+        next: (res) => {
+          this.lifecycleTemplates.set(res.items);
+          if (preselectedTemplateId) {
+            this.form.patchValue({ lifecycleTemplateId: preselectedTemplateId });
+          } else if (!this.id) {
+            // New cycle creation: automatically select active default template when available
+            const defaultTemplate = res.items.find(
+              (t) => t.isActive && t.isDefault,
+            );
+            if (defaultTemplate) {
+              this.form.patchValue({ lifecycleTemplateId: defaultTemplate.id });
+              this.updateExpectedEndDateFromTemplate(defaultTemplate);
+            } else {
+              this.form.patchValue({ lifecycleTemplateId: null });
+            }
+          }
+        },
+        error: (e) => this.errorMessage.set(e),
+      });
+  }
+
+  private updateExpectedEndDateFromTemplate(template: LifecycleTemplate): void {
+    const startDate = this.form.get("plannedStartDate")?.value;
+    if (!startDate) {
+      return;
+    }
+    const durationDays = this.getTemplateDuration(template);
+    if (durationDays !== null && durationDays > 0) {
+      const calculatedEnd = new Date(startDate.getTime());
+      calculatedEnd.setDate(calculatedEnd.getDate() + durationDays);
+      this.form.patchValue({ expectedEndDate: calculatedEnd });
+    }
+  }
+
+  private getTemplateDuration(
+    template: LifecycleTemplate | null | undefined,
+  ): number | null {
+    if (!template || !template.stages || template.stages.length === 0) {
+      return null;
+    }
+    const activeStages = template.stages.filter((s) => s.isActive);
+    if (activeStages.length === 0) {
+      return null;
+    }
+    const hasUnknownDuration = activeStages.some(
+      (s) => s.expectedDurationDays == null || s.expectedDurationDays <= 0,
+    );
+    if (hasUnknownDuration) {
+      return null;
+    }
+    return activeStages.reduce(
+      (sum, s) => sum + (s.expectedDurationDays ?? 0),
+      0,
+    );
   }
 
   submit(): void {
@@ -167,6 +337,7 @@ export class CropCycleEditorPageComponent implements OnInit {
       seasonName: v.seasonName,
       plannedStartDate: formatDateOnly(v.plannedStartDate) ?? "",
       expectedEndDate: formatDateOnly(v.expectedEndDate),
+      lifecycleTemplateId: v.lifecycleTemplateId || null,
     };
     const request = this.id
       ? this.service.updateCycle(this.id, payload)

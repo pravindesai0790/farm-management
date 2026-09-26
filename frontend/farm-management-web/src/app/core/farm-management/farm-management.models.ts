@@ -164,6 +164,7 @@ export interface CropCycle {
   plantationName: string;
   farmName: string | null;
   farmAreaName: string | null;
+  cropId?: string;
   cropName: string;
   cycleName: string;
   seasonYear: number;
@@ -172,6 +173,8 @@ export interface CropCycle {
   actualStartDate: string | null;
   expectedEndDate: string | null;
   status: string;
+  lifecycleTemplateId?: string | null;
+  lifecycleTemplateName?: string | null;
 }
 export interface LifecycleStage {
   id: string;

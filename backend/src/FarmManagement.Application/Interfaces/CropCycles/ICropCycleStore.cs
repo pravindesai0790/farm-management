@@ -45,6 +45,11 @@ public interface ICropCycleStore
         Guid organizationId,
         CancellationToken cancellationToken = default);
 
+    Task<CropLifecycleTemplate?> FindLifecycleTemplateAsync(
+        Guid templateId,
+        Guid organizationId,
+        CancellationToken cancellationToken = default);
+
     Task<bool> HasActiveCycleAsync(
         Guid plantationId,
         Guid? excludingCycleId = null,

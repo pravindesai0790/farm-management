@@ -82,6 +82,9 @@
             <td mat-cell *matCellDef="let c">
               <strong>{{ c.cycleName }}</strong>
               <small>Season {{ c.seasonYear }}</small>
+              @if (c.lifecycleTemplateName) {
+                <small class="template-name">{{ c.lifecycleTemplateName }}</small>
+              }
             </td>
           </ng-container>
 

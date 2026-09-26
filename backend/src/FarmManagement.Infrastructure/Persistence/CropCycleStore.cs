@@ -73,6 +73,7 @@ public sealed class CropCycleStore(ApplicationDbContext dbContext) : ICropCycleS
             .Include(cycle => cycle.Plantation)
                 .ThenInclude(plantation => plantation!.FarmArea)
             .Include(cycle => cycle.CancellationReason)
+            .Include(cycle => cycle.LifecycleTemplate)
             .SingleOrDefaultAsync(cancellationToken);
 
     public Task<CropPlantation?> LockPlantationAsync(
@@ -94,6 +95,17 @@ public sealed class CropCycleStore(ApplicationDbContext dbContext) : ICropCycleS
             reason => reason.Id == reasonId && reason.IsActive &&
                       ((reason.IsSystem && reason.OrganizationId == null) || reason.OrganizationId == organizationId),
             cancellationToken);
+
+    public Task<CropLifecycleTemplate?> FindLifecycleTemplateAsync(
+        Guid templateId,
+        Guid organizationId,
+        CancellationToken cancellationToken = default) =>
+        dbContext.CropLifecycleTemplates
+            .Include(template => template.Stages)
+            .SingleOrDefaultAsync(
+                template => template.Id == templateId &&
+                            ((template.IsSystem && template.OrganizationId == null) || template.OrganizationId == organizationId),
+                cancellationToken);
 
     public Task<bool> HasActiveCycleAsync(
         Guid plantationId,
@@ -169,6 +181,7 @@ public sealed class CropCycleStore(ApplicationDbContext dbContext) : ICropCycleS
             .Include(cycle => cycle.Plantation)
                 .ThenInclude(plantation => plantation!.FarmArea)
             .Include(cycle => cycle.CancellationReason)
+            .Include(cycle => cycle.LifecycleTemplate)
             .Where(cycle => cycle.OrganizationId == organizationId);
 
         if (farmId is not null) query = query.Where(cycle => cycle.Plantation!.FarmId == farmId.Value);

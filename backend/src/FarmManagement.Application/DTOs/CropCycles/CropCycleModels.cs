@@ -6,6 +6,7 @@ public sealed record CropCycleResponse(
     string PlantationName,
     string? FarmName,
     string? FarmAreaName,
+    Guid CropId,
     string CropName,
     string CycleName,
     int SeasonYear,
@@ -13,7 +14,9 @@ public sealed record CropCycleResponse(
     DateOnly PlannedStartDate,
     DateOnly? ActualStartDate,
     DateOnly? ExpectedEndDate,
-    string Status);
+    string Status,
+    Guid? LifecycleTemplateId = null,
+    string? LifecycleTemplateName = null);
 
 public sealed record CreateCropCycleRequest(
     Guid? PlantationId,
@@ -21,7 +24,8 @@ public sealed record CreateCropCycleRequest(
     int? SeasonYear,
     string? SeasonName,
     DateOnly? PlannedStartDate,
-    DateOnly? ExpectedEndDate);
+    DateOnly? ExpectedEndDate,
+    Guid? LifecycleTemplateId = null);
 
 public sealed record UpdateCropCycleRequest(
     Guid? PlantationId,
@@ -29,7 +33,8 @@ public sealed record UpdateCropCycleRequest(
     int? SeasonYear,
     string? SeasonName,
     DateOnly? PlannedStartDate,
-    DateOnly? ExpectedEndDate);
+    DateOnly? ExpectedEndDate,
+    Guid? LifecycleTemplateId = null);
 
 public sealed record StartCropCycleRequest(DateOnly? StartDate);
 

@@ -72,7 +72,28 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
             var plantation = await store.LockPlantationAsync(values.PlantationId, actor.OrganizationId, transactionCancellationToken)
                 ?? throw new ResourceNotFoundException("The plantation was not found.");
             EnsureCanCreateForPlantation(plantation);
-            ValidateDates(values.PlannedStartDate, values.ExpectedEndDate, plantation);
+
+            CropLifecycleTemplate? template = null;
+            if (values.LifecycleTemplateId is not null)
+            {
+                if (values.LifecycleTemplateId.Value == Guid.Empty)
+                {
+                    throw Validation("lifecycleTemplateId", "A lifecycle template ID cannot be empty.");
+                }
+                template = await store.FindLifecycleTemplateAsync(values.LifecycleTemplateId.Value, actor.OrganizationId, transactionCancellationToken)
+                    ?? throw Validation("lifecycleTemplateId", "The selected lifecycle template was not found.");
+                if (!template.IsActive)
+                {
+                    throw Validation("lifecycleTemplateId", "The selected lifecycle template is inactive.");
+                }
+                if (template.CropId != plantation.CropId)
+                {
+                    throw Validation("lifecycleTemplateId", "The lifecycle template does not match the plantation crop.");
+                }
+            }
+
+            var calculatedExpectedEndDate = values.ExpectedEndDate ?? CalculateExpectedEndDate(values.PlannedStartDate, template);
+            ValidateDates(values.PlannedStartDate, calculatedExpectedEndDate, plantation);
 
             if (await store.HasCycleForSeasonAsync(values.PlantationId, values.SeasonYear, null, transactionCancellationToken))
             {
@@ -86,8 +107,9 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
                 values.SeasonYear,
                 values.SeasonName,
                 values.PlannedStartDate,
-                values.ExpectedEndDate,
-                actor.UserId);
+                calculatedExpectedEndDate,
+                actor.UserId,
+                template?.Id);
 
             store.Add(cycle);
             AddAudit(actor, cycle, "CropCycle.Created", new
@@ -95,10 +117,11 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
                 cycle.PlantationId,
                 cycle.CycleName,
                 cycle.SeasonYear,
-                cycle.Status
+                cycle.Status,
+                cycle.LifecycleTemplateId
             }, ipAddress);
             await store.SaveChangesAsync(transactionCancellationToken);
-            return ToResponse(cycle, plantation);
+            return ToResponse(cycle, plantation, template);
         }, cancellationToken);
     }
 
@@ -126,7 +149,28 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
             var plantation = await store.LockPlantationAsync(targetPlantationId, actor.OrganizationId, transactionCancellationToken)
                 ?? throw new ResourceNotFoundException("The plantation was not found.");
             EnsureCanCreateForPlantation(plantation);
-            ValidateDates(values.PlannedStartDate, values.ExpectedEndDate, plantation);
+
+            CropLifecycleTemplate? template = null;
+            if (values.LifecycleTemplateId is not null)
+            {
+                if (values.LifecycleTemplateId.Value == Guid.Empty)
+                {
+                    throw Validation("lifecycleTemplateId", "A lifecycle template ID cannot be empty.");
+                }
+                template = await store.FindLifecycleTemplateAsync(values.LifecycleTemplateId.Value, actor.OrganizationId, transactionCancellationToken)
+                    ?? throw Validation("lifecycleTemplateId", "The selected lifecycle template was not found.");
+                if (!template.IsActive)
+                {
+                    throw Validation("lifecycleTemplateId", "The selected lifecycle template is inactive.");
+                }
+                if (template.CropId != plantation.CropId)
+                {
+                    throw Validation("lifecycleTemplateId", "The lifecycle template does not match the plantation crop.");
+                }
+            }
+
+            var calculatedExpectedEndDate = values.ExpectedEndDate ?? CalculateExpectedEndDate(values.PlannedStartDate, template);
+            ValidateDates(values.PlannedStartDate, calculatedExpectedEndDate, plantation);
 
             if (await store.HasCycleForSeasonAsync(targetPlantationId, values.SeasonYear, cycle.Id, transactionCancellationToken))
             {
@@ -140,7 +184,8 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
                 cycle.SeasonYear,
                 cycle.SeasonName,
                 cycle.PlannedStartDate,
-                cycle.ExpectedEndDate
+                cycle.ExpectedEndDate,
+                cycle.LifecycleTemplateId
             };
             cycle.Update(
                 targetPlantationId,
@@ -148,9 +193,10 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
                 values.SeasonYear,
                 values.SeasonName,
                 values.PlannedStartDate,
-                values.ExpectedEndDate,
+                calculatedExpectedEndDate,
                 DateTimeOffset.UtcNow,
-                actor.UserId);
+                actor.UserId,
+                values.LifecycleTemplateId);
             AddAudit(actor, cycle, "CropCycle.Updated", new
             {
                 previous,
@@ -161,11 +207,12 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
                     cycle.SeasonYear,
                     cycle.SeasonName,
                     cycle.PlannedStartDate,
-                    cycle.ExpectedEndDate
+                    cycle.ExpectedEndDate,
+                    cycle.LifecycleTemplateId
                 }
             }, ipAddress);
             await store.SaveChangesAsync(transactionCancellationToken);
-            return ToResponse(cycle, plantation);
+            return ToResponse(cycle, plantation, template);
         }, cancellationToken);
     }
 
@@ -289,6 +336,17 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
             : await store.FindAsync(cycleId, actor.OrganizationId, cancellationToken)
                 ?? throw new ResourceNotFoundException("The crop cycle was not found.");
 
+    private static DateOnly? CalculateExpectedEndDate(DateOnly plannedStartDate, CropLifecycleTemplate? template)
+    {
+        if (template is null || template.Stages.Count == 0) return null;
+        var activeStages = template.Stages.Where(s => s.IsActive).ToList();
+        if (activeStages.Count == 0) return null;
+        if (activeStages.Any(s => s.ExpectedDurationDays is null or <= 0)) return null;
+
+        var totalDays = activeStages.Sum(s => s.ExpectedDurationDays!.Value);
+        return totalDays > 0 ? plannedStartDate.AddDays(totalDays) : null;
+    }
+
     private static void EnsureCanCreateForPlantation(CropPlantation plantation)
     {
         if (plantation.Status is PlantationStatus.Terminated or PlantationStatus.Archived)
@@ -361,17 +419,19 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
     private static CropCycleResponse ToResponse(CropCycle cycle) =>
         ToResponse(cycle, cycle.Plantation ?? throw new InvalidOperationException("A crop cycle references a missing plantation."));
 
-    private static CropCycleResponse ToResponse(CropCycle cycle, CropPlantation plantation)
+    private static CropCycleResponse ToResponse(CropCycle cycle, CropPlantation plantation, CropLifecycleTemplate? template = null)
     {
         var crop = plantation.Crop ?? throw new InvalidOperationException("A crop cycle references a plantation with a missing crop.");
         var farm = plantation.Farm;
         var farmArea = plantation.FarmArea;
+        var lifecycleTemplate = cycle.LifecycleTemplate ?? template;
         return new CropCycleResponse(
             cycle.Id,
             cycle.PlantationId,
             plantation.PlantationName,
             farm?.Name,
             farmArea?.Name,
+            crop.Id,
             crop.Name,
             cycle.CycleName,
             cycle.SeasonYear,
@@ -379,21 +439,23 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
             cycle.PlannedStartDate,
             cycle.ActualStartDate,
             cycle.ExpectedEndDate,
-            cycle.Status.ToString().ToUpperInvariant());
+            cycle.Status.ToString().ToUpperInvariant(),
+            cycle.LifecycleTemplateId,
+            lifecycleTemplate?.Name);
     }
 
     private static CreateValues ReadValues(CreateCropCycleRequest? request)
     {
         if (request is null) throw Validation("request", "A request body is required.");
         return ReadValues(request.PlantationId, request.CycleName, request.SeasonYear,
-            request.SeasonName, request.PlannedStartDate, request.ExpectedEndDate);
+            request.SeasonName, request.PlannedStartDate, request.ExpectedEndDate, request.LifecycleTemplateId);
     }
 
     private static CreateValues ReadValues(UpdateCropCycleRequest? request)
     {
         if (request is null) throw Validation("request", "A request body is required.");
         return ReadValues(request.PlantationId, request.CycleName, request.SeasonYear,
-            request.SeasonName, request.PlannedStartDate, request.ExpectedEndDate);
+            request.SeasonName, request.PlannedStartDate, request.ExpectedEndDate, request.LifecycleTemplateId);
     }
 
     private static CreateValues ReadValues(
@@ -402,7 +464,8 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
         int? seasonYear,
         string? seasonName,
         DateOnly? plannedStartDate,
-        DateOnly? expectedEndDate)
+        DateOnly? expectedEndDate,
+        Guid? lifecycleTemplateId)
     {
         if (string.IsNullOrWhiteSpace(cycleName)) throw Validation("cycleName", "Cycle name is required.");
         if (cycleName.Trim().Length > 200) throw Validation("cycleName", "Cycle name cannot exceed 200 characters.");
@@ -420,7 +483,8 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
             seasonYear.Value,
             string.IsNullOrWhiteSpace(seasonName) ? null : seasonName.Trim(),
             plannedStartDate.Value,
-            expectedEndDate);
+            expectedEndDate,
+            lifecycleTemplateId);
     }
 
     private static void ValidateActor(CropCycleActor actor)
@@ -445,5 +509,6 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
         int SeasonYear,
         string? SeasonName,
         DateOnly PlannedStartDate,
-        DateOnly? ExpectedEndDate);
+        DateOnly? ExpectedEndDate,
+        Guid? LifecycleTemplateId);
 }

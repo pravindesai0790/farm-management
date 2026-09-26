@@ -60,6 +60,30 @@
           </mat-form-field>
 
           <mat-form-field appearance="outline">
+            <mat-label>Lifecycle template</mat-label>
+            <mat-select formControlName="lifecycleTemplateId">
+              <mat-option [value]="null">None (Draft without template)</mat-option>
+              @for (t of lifecycleTemplates(); track t.id) {
+                <mat-option [value]="t.id">
+                  {{ t.name }}{{ t.isDefault ? ' (Default)' : '' }}
+                </mat-option>
+              }
+              @if (assignedTemplateName() && form.get('lifecycleTemplateId')?.value && !lifecycleTemplates().length) {
+                <mat-option [value]="form.get('lifecycleTemplateId')?.value">
+                  {{ assignedTemplateName() }}
+                </mat-option>
+              }
+            </mat-select>
+            @if (isLoadingLifecycleTemplates()) {
+              <mat-hint>Loading lifecycle templates…</mat-hint>
+            } @else if (isStarted()) {
+              <mat-hint>Template locked because cycle has started</mat-hint>
+            } @else if (!form.get('plantationId')?.value) {
+              <mat-hint>Select a plantation to view active templates</mat-hint>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
             <mat-label>Expected end</mat-label>
             <input
               matInput
