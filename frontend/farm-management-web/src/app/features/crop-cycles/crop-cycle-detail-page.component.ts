@@ -11,15 +11,20 @@ import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
 import { MatDialog, MatDialogModule } from "@angular/material/dialog";
+import { MatIconModule } from "@angular/material/icon";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { MatSnackBar } from "@angular/material/snack-bar";
-import { ActivatedRoute, Router, RouterLink } from "@angular/router";
-import { FarmManagementService } from "../../core/farm-management/farm-management.service";
-import { CropCycle } from "../../core/farm-management/farm-management.models";
+import { MatTabsModule } from "@angular/material/tabs";
+import { ActivatedRoute, RouterLink } from "@angular/router";
+import { catchError, forkJoin, of } from "rxjs";
 import { PermissionService } from "../../core/auth/permission.service";
 import { BreadcrumbService } from "../../core/breadcrumb/breadcrumb.service";
+import { CropCycle, CropCycleLifecycle } from "../../core/farm-management/farm-management.models";
+import { FarmManagementService } from "../../core/farm-management/farm-management.service";
 import { getApiErrorMessage } from "../../core/models/api-error.model";
+import { CropCycleLifecycleTabComponent } from "./components/crop-cycle-lifecycle-tab/crop-cycle-lifecycle-tab.component";
 import { CropCycleCancelDialogComponent } from "./crop-cycle-cancel-dialog.component";
+
 @Component({
   selector: "app-crop-cycle-detail-page",
   standalone: true,
@@ -28,8 +33,11 @@ import { CropCycleCancelDialogComponent } from "./crop-cycle-cancel-dialog.compo
     MatButtonModule,
     MatCardModule,
     MatDialogModule,
+    MatIconModule,
     MatProgressSpinnerModule,
+    MatTabsModule,
     RouterLink,
+    CropCycleLifecycleTabComponent,
   ],
   templateUrl: "./crop-cycle-detail-page.component.html",
   styleUrl: "./crop-cycle-detail-page.component.scss",
@@ -42,21 +50,34 @@ export class CropCycleDetailPageComponent implements OnInit {
   private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
   private readonly breadcrumbService = inject(BreadcrumbService);
+
   readonly permissionService = inject(PermissionService);
   readonly id = this.route.snapshot.paramMap.get("id")!;
   readonly cycle = signal<CropCycle | null>(null);
+  readonly lifecycle = signal<CropCycleLifecycle | null>(null);
   readonly isLoading = signal(true);
+  readonly isLifecycleLoading = signal(false);
+  readonly selectedTabIndex = signal<number>(0);
+
   ngOnInit(): void {
     this.load();
   }
+
   load(): void {
-    this.service
-      .getCycle(this.id)
+    this.isLoading.set(true);
+    this.isLifecycleLoading.set(true);
+
+    forkJoin({
+      cycle: this.service.getCycle(this.id),
+      lifecycle: this.service.getCycleLifecycle(this.id).pipe(catchError(() => of(null))),
+    })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (r) => {
+        next: ({ cycle: r, lifecycle: lc }) => {
           this.cycle.set(r);
+          this.lifecycle.set(lc);
           this.breadcrumbService.setEntityName(r.id, r.cycleName);
+
           this.service.getPlantation(r.plantationId).subscribe({
             next: (p) => {
               const cachedFarmName = this.breadcrumbService.getEntityName(p.farmId);
@@ -95,9 +116,11 @@ export class CropCycleDetailPageComponent implements OnInit {
             },
           });
           this.isLoading.set(false);
+          this.isLifecycleLoading.set(false);
         },
         error: (e) => {
           this.isLoading.set(false);
+          this.isLifecycleLoading.set(false);
           this.snack.open(
             getApiErrorMessage(e, "Cycle could not be loaded."),
             "Dismiss",
@@ -106,9 +129,15 @@ export class CropCycleDetailPageComponent implements OnInit {
         },
       });
   }
+
+  onTabChange(index: number): void {
+    this.selectedTabIndex.set(index);
+  }
+
   today(): string {
     return new Date().toISOString().slice(0, 10);
   }
+
   run(action: "start" | "harvest" | "complete"): void {
     const request =
       action === "start"
@@ -129,15 +158,19 @@ export class CropCycleDetailPageComponent implements OnInit {
         ),
     });
   }
+
   start(): void {
     this.run("start");
   }
+
   harvest(): void {
     this.run("harvest");
   }
+
   complete(): void {
     this.run("complete");
   }
+
   cancel(): void {
     const cycle = this.cycle();
     if (!cycle) return;

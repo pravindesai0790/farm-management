@@ -6,6 +6,7 @@ import { PagedResponse } from "../models/paged-response.model";
 import {
   Crop,
   CropCycle,
+  CropCycleLifecycle,
   CropList,
   CropVariety,
   CycleCancellationReason,
@@ -274,6 +275,9 @@ export class FarmManagementService {
   }
   getCycle(id: string): Observable<CropCycle> {
     return this.http.get<CropCycle>(`${this.api}/crop-cycles/${id}`);
+  }
+  getCycleLifecycle(id: string): Observable<CropCycleLifecycle> {
+    return this.http.get<CropCycleLifecycle>(`${this.api}/crop-cycles/${id}/lifecycle`);
   }
   createCycle(request: object): Observable<CropCycle> {
     return this.http.post<CropCycle>(`${this.api}/crop-cycles`, request);

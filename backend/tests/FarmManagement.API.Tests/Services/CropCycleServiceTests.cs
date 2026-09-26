@@ -473,6 +473,93 @@ public sealed class CropCycleServiceTests
         Assert.Null(stage3.PlannedEndDate);
     }
 
+    [Fact]
+    public async Task GetLifecycleAsync_WithStartedCycle_ReturnsSnapshottedStagesAndProgress()
+    {
+        var store = new FakeCropCycleStore();
+        var crop = CreateCrop(_organizationId, "Grape");
+        var plantation = CreatePlantation(store, _organizationId, crop);
+        var template = CreateTemplate(store, _organizationId, crop.Id, "Grape Template");
+        AddStage(template, "Dormancy", 1, 30);
+        AddStage(template, "Pruning", 2, 15);
+
+        var plannedStart = new DateOnly(2026, 4, 1);
+        var cycle = new CropCycle(_organizationId, plantation.Id, "Started Cycle", 2026, null, plannedStart, null, _userId, template.Id);
+        store.Cycles.Add(cycle);
+
+        var service = new CropCycleService(store);
+        await service.StartAsync(CreateActor(), cycle.Id, new StartCropCycleRequest(plannedStart), "127.0.0.1");
+
+        var lifecycle = await service.GetLifecycleAsync(CreateActor(), cycle.Id);
+
+        Assert.NotNull(lifecycle);
+        Assert.Equal(cycle.Id, lifecycle.CropCycleId);
+        Assert.Equal("ACTIVE", lifecycle.OverallStatus);
+        Assert.True(lifecycle.HasGeneratedStages);
+        Assert.Equal("Dormancy", lifecycle.CurrentStageName);
+        Assert.Equal(1, lifecycle.CurrentStageSequence);
+        Assert.Equal(2, lifecycle.TotalStagesCount);
+        Assert.Equal(0, lifecycle.CompletedStagesCount);
+        Assert.Equal(0, lifecycle.ProgressPercentage);
+        Assert.Equal(2, lifecycle.Stages.Count);
+        Assert.Equal("IN_PROGRESS", lifecycle.Stages[0].Status);
+        Assert.Equal("NOT_STARTED", lifecycle.Stages[1].Status);
+    }
+
+    [Fact]
+    public async Task GetLifecycleAsync_WithPlannedCycleAndTemplate_ReturnsProjectedStages()
+    {
+        var store = new FakeCropCycleStore();
+        var crop = CreateCrop(_organizationId, "Grape");
+        var plantation = CreatePlantation(store, _organizationId, crop);
+        var template = CreateTemplate(store, _organizationId, crop.Id, "Grape Template");
+        AddStage(template, "Dormancy", 1, 30);
+        AddStage(template, "Pruning", 2, 15);
+
+        var plannedStart = new DateOnly(2026, 4, 1);
+        var cycle = new CropCycle(_organizationId, plantation.Id, "Planned Cycle", 2026, null, plannedStart, null, _userId, template.Id);
+        store.Cycles.Add(cycle);
+
+        var service = new CropCycleService(store);
+
+        var lifecycle = await service.GetLifecycleAsync(CreateActor(), cycle.Id);
+
+        Assert.NotNull(lifecycle);
+        Assert.Equal(cycle.Id, lifecycle.CropCycleId);
+        Assert.Equal("PLANNED", lifecycle.OverallStatus);
+        Assert.False(lifecycle.HasGeneratedStages);
+        Assert.Null(lifecycle.CurrentStageName);
+        Assert.Equal(2, lifecycle.TotalStagesCount);
+        Assert.Equal(0, lifecycle.CompletedStagesCount);
+        Assert.Equal(0, lifecycle.ProgressPercentage);
+        Assert.Equal(2, lifecycle.Stages.Count);
+        Assert.Equal(plannedStart, lifecycle.Stages[0].PlannedStartDate);
+        Assert.Equal(new DateOnly(2026, 5, 1), lifecycle.Stages[0].PlannedEndDate);
+        Assert.Equal("NOT_STARTED", lifecycle.Stages[0].Status);
+    }
+
+    [Fact]
+    public async Task GetLifecycleAsync_WithoutTemplate_ReturnsEmptyLifecycle()
+    {
+        var store = new FakeCropCycleStore();
+        var crop = CreateCrop(_organizationId, "Wheat");
+        var plantation = CreatePlantation(store, _organizationId, crop);
+        var cycle = new CropCycle(_organizationId, plantation.Id, "Draft Cycle", 2026, null, new DateOnly(2026, 4, 1), null, _userId, lifecycleTemplateId: null);
+        store.Cycles.Add(cycle);
+
+        var service = new CropCycleService(store);
+
+        var lifecycle = await service.GetLifecycleAsync(CreateActor(), cycle.Id);
+
+        Assert.NotNull(lifecycle);
+        Assert.Equal(cycle.Id, lifecycle.CropCycleId);
+        Assert.Equal("PLANNED", lifecycle.OverallStatus);
+        Assert.False(lifecycle.HasGeneratedStages);
+        Assert.Null(lifecycle.LifecycleTemplateId);
+        Assert.Equal(0, lifecycle.TotalStagesCount);
+        Assert.Empty(lifecycle.Stages);
+    }
+
     private static Crop CreateCrop(Guid organizationId, string name) =>
         new(organizationId, name, "CropType", "PERENNIAL");
 

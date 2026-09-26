@@ -18,6 +18,11 @@ public interface ICropCycleService
         int? seasonYear,
         CancellationToken cancellationToken = default);
 
+    Task<CropCycleLifecycleResponse> GetLifecycleAsync(
+        CropCycleActor actor,
+        Guid cycleId,
+        CancellationToken cancellationToken = default);
+
     Task<CropCycleResponse> GetAsync(
         CropCycleActor actor,
         Guid cycleId,

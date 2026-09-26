@@ -176,6 +176,34 @@ export interface CropCycle {
   lifecycleTemplateId?: string | null;
   lifecycleTemplateName?: string | null;
 }
+export interface CropCycleStage {
+  id: string;
+  cropCycleId: string;
+  lifecycleTemplateStageId: string;
+  stageName: string;
+  sequenceNumber: number;
+  expectedDurationDays: number | null;
+  plannedStartDate: string | null;
+  plannedEndDate: string | null;
+  actualStartDate: string | null;
+  actualEndDate: string | null;
+  status: "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED" | "SKIPPED" | "CANCELLED";
+  notes: string | null;
+}
+export interface CropCycleLifecycle {
+  cropCycleId: string;
+  cycleName: string;
+  overallStatus: string;
+  lifecycleTemplateId: string | null;
+  lifecycleTemplateName: string | null;
+  currentStageName: string | null;
+  currentStageSequence: number | null;
+  totalStagesCount: number;
+  completedStagesCount: number;
+  progressPercentage: number;
+  hasGeneratedStages: boolean;
+  stages: readonly CropCycleStage[];
+}
 export interface LifecycleStage {
   id: string;
   lifecycleTemplateId: string;

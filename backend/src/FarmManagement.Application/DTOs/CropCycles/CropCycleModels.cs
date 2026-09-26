@@ -47,3 +47,32 @@ public sealed record CancelCropCycleRequest(
     Guid? CancellationReasonId,
     string? Notes);
 
+public sealed record CropCycleLifecycleResponse(
+    Guid CropCycleId,
+    string CycleName,
+    string OverallStatus,
+    Guid? LifecycleTemplateId,
+    string? LifecycleTemplateName,
+    string? CurrentStageName,
+    int? CurrentStageSequence,
+    int TotalStagesCount,
+    int CompletedStagesCount,
+    int ProgressPercentage,
+    bool HasGeneratedStages,
+    IReadOnlyList<CropCycleStageResponse> Stages);
+
+public sealed record CropCycleStageResponse(
+    Guid Id,
+    Guid CropCycleId,
+    Guid LifecycleTemplateStageId,
+    string StageName,
+    int SequenceNumber,
+    int? ExpectedDurationDays,
+    DateOnly? PlannedStartDate,
+    DateOnly? PlannedEndDate,
+    DateOnly? ActualStartDate,
+    DateOnly? ActualEndDate,
+    string Status,
+    string? Notes);
+
+

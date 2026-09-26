@@ -11,86 +11,124 @@
       <p>{{ c.farmName ? c.farmName + ' › ' : '' }}{{ c.farmAreaName ? c.farmAreaName + ' › ' : '' }}{{ c.plantationName }} ({{ c.cropName }})</p>
     </div>
     @if (c.status === "PLANNED" && permissionService.has("CropCycle.Update")) {
-      <a mat-stroked-button [routerLink]="['/crop-cycles', c.id, 'edit']"
-        >Edit</a
-      >
+      <a mat-stroked-button [routerLink]="['/crop-cycles', c.id, 'edit']">
+        <mat-icon>edit</mat-icon>Edit
+      </a>
     }
   </div>
 
-  <mat-card>
-    <mat-card-content>
-      <div class="details">
-        <div>
-          <span>Farm</span>
-          <strong>{{ c.farmName || "—" }}</strong>
-        </div>
-        <div>
-          <span>Farm area</span>
-          <strong>{{ c.farmAreaName || "—" }}</strong>
-        </div>
-        <div>
-          <span>Plantation</span>
-          <strong>{{ c.plantationName }}</strong>
-        </div>
-        <div>
-          <span>Crop</span>
-          <strong>{{ c.cropName }}</strong>
-        </div>
-        <div>
-          <span>Lifecycle template</span>
-          <strong>{{ c.lifecycleTemplateName || "None" }}</strong>
-        </div>
-        <div>
-          <span>Status</span>
-          <strong>{{ c.status }}</strong>
-        </div>
-        <div>
-          <span>Planned start</span>
-          <strong>{{ c.plannedStartDate | date: "mediumDate" }}</strong>
-        </div>
-        <div>
-          <span>Actual start</span>
-          <strong>{{
-            c.actualStartDate ? (c.actualStartDate | date: "mediumDate") : "—"
-          }}</strong>
-        </div>
-        <div>
-          <span>Expected end</span>
-          <strong>{{
-            c.expectedEndDate ? (c.expectedEndDate | date: "mediumDate") : "—"
-          }}</strong>
-        </div>
-      </div>
+  <div class="tabs-wrapper">
+    <mat-tab-group
+      [selectedIndex]="selectedTabIndex()"
+      (selectedIndexChange)="onTabChange($event)"
+      animationDuration="200ms"
+      class="cycle-tabs-group"
+    >
+      <!-- Tab 1: Overview -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">info</mat-icon>
+          <span>Overview</span>
+        </ng-template>
 
-      <div class="actions">
-        @if (
-          c.status === "PLANNED" && permissionService.has("CropCycle.Start")
-        ) {
-          <button mat-flat-button color="primary" (click)="start()">
-            Start cycle
-          </button>
-        }
-        @if (
-          c.status === "ACTIVE" && permissionService.has("CropCycle.Complete")
-        ) {
-          <button mat-stroked-button (click)="harvest()">Mark harvested</button>
-        }
-        @if (
-          c.status === "HARVESTED" &&
-          permissionService.has("CropCycle.Complete")
-        ) {
-          <button mat-flat-button color="primary" (click)="complete()">
-            Complete cycle
-          </button>
-        }
-        @if (
-          c.status === "ACTIVE" && permissionService.has("CropCycle.Cancel")
-        ) {
-          <button mat-stroked-button color="warn" (click)="cancel()">
-            Cancel cycle
-          </button>
-        }
-      </div>
-    </mat-card-content>
-  </mat-card>
+        <div class="tab-content">
+          <mat-card>
+            <mat-card-content>
+              <div class="details">
+                <div>
+                  <span>Farm</span>
+                  <strong>{{ c.farmName || "—" }}</strong>
+                </div>
+                <div>
+                  <span>Farm area</span>
+                  <strong>{{ c.farmAreaName || "—" }}</strong>
+                </div>
+                <div>
+                  <span>Plantation</span>
+                  <strong>{{ c.plantationName }}</strong>
+                </div>
+                <div>
+                  <span>Crop</span>
+                  <strong>{{ c.cropName }}</strong>
+                </div>
+                <div>
+                  <span>Lifecycle template</span>
+                  <strong>{{ c.lifecycleTemplateName || "None" }}</strong>
+                </div>
+                <div>
+                  <span>Status</span>
+                  <strong>{{ c.status }}</strong>
+                </div>
+                <div>
+                  <span>Planned start</span>
+                  <strong>{{ c.plannedStartDate | date: "mediumDate" }}</strong>
+                </div>
+                <div>
+                  <span>Actual start</span>
+                  <strong>{{
+                    c.actualStartDate ? (c.actualStartDate | date: "mediumDate") : "—"
+                  }}</strong>
+                </div>
+                <div>
+                  <span>Expected end</span>
+                  <strong>{{
+                    c.expectedEndDate ? (c.expectedEndDate | date: "mediumDate") : "—"
+                  }}</strong>
+                </div>
+              </div>
+
+              <div class="actions">
+                @if (
+                  c.status === "PLANNED" && permissionService.has("CropCycle.Start")
+                ) {
+                  <button mat-flat-button color="primary" (click)="start()">
+                    <mat-icon>play_arrow</mat-icon>Start cycle
+                  </button>
+                }
+                @if (
+                  c.status === "ACTIVE" && permissionService.has("CropCycle.Complete")
+                ) {
+                  <button mat-stroked-button (click)="harvest()">Mark harvested</button>
+                }
+                @if (
+                  c.status === "HARVESTED" &&
+                  permissionService.has("CropCycle.Complete")
+                ) {
+                  <button mat-flat-button color="primary" (click)="complete()">
+                    Complete cycle
+                  </button>
+                }
+                @if (
+                  c.status === "ACTIVE" && permissionService.has("CropCycle.Cancel")
+                ) {
+                  <button mat-stroked-button color="warn" (click)="cancel()">
+                    Cancel cycle
+                  </button>
+                }
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </mat-tab>
+
+      <!-- Tab 2: Lifecycle -->
+      @if (permissionService.has("CropCycle.View")) {
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon class="tab-icon">schema</mat-icon>
+            <span>Lifecycle</span>
+          </ng-template>
+
+          <div class="tab-content">
+            <app-crop-cycle-lifecycle-tab
+              [cycle]="c"
+              [lifecycle]="lifecycle()"
+              [isLoading]="isLifecycleLoading()"
+              (startCycle)="start()"
+            />
+          </div>
+        </mat-tab>
+      }
+    </mat-tab-group>
+  </div>
 }

@@ -1,0 +1,393 @@
+:host {
+  display: block;
+  padding: 1.25rem 0;
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 3rem 0;
+  color: #64748b;
+}
+
+.lifecycle-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Metrics Top Grid */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.metric-card {
+  mat-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+
+.metric-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #64748b;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+
+  .metric-icon {
+    font-size: 1.1rem;
+    width: 1.1rem;
+    height: 1.1rem;
+    color: #2f6f4e;
+  }
+}
+
+.metric-value-row {
+  margin-top: 0.25rem;
+}
+
+.metric-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.highlight-text {
+  color: #2f6f4e;
+}
+
+.text-success {
+  color: #166534;
+}
+
+.text-muted {
+  color: #64748b;
+}
+
+.metric-subtext {
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.template-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #2f6f4e;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  .inline-link-icon {
+    font-size: 0.95rem;
+    width: 0.95rem;
+    height: 0.95rem;
+  }
+}
+
+/* Progress Card */
+.progress-card {
+  .metric-header {
+    justify-content: space-between;
+  }
+
+  .progress-percent-badge {
+    background: #dcfce7;
+    color: #166534;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border-radius: 9999px;
+  }
+
+  .lifecycle-progress-bar {
+    height: 8px;
+    border-radius: 4px;
+    margin-top: 0.5rem;
+  }
+}
+
+/* Alert Banners */
+.alert-banner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: 8px;
+  border-left: 4px solid transparent;
+
+  .alert-icon {
+    font-size: 1.5rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    flex-shrink: 0;
+  }
+
+  .alert-content {
+    flex: 1;
+
+    strong {
+      display: block;
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 0.2rem;
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.875rem;
+    }
+  }
+
+  &.alert-info {
+    background: #f0fdf4;
+    border-left-color: #2f6f4e;
+    color: #14532d;
+
+    .alert-icon {
+      color: #2f6f4e;
+    }
+  }
+
+  &.alert-warning {
+    background: #fffbeb;
+    border-left-color: #d97706;
+    color: #78350f;
+
+    .alert-icon {
+      color: #d97706;
+    }
+  }
+}
+
+/* Status Pills */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.775rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+
+  &.status-not-started {
+    background: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+  }
+
+  &.status-in-progress {
+    background: #dcfce7;
+    color: #15803d;
+    border: 1px solid #86efac;
+  }
+
+  &.status-completed {
+    background: #dcfce7;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+  }
+
+  &.status-skipped {
+    background: #fef3c7;
+    color: #b45309;
+    border: 1px solid #fde68a;
+  }
+
+  &.status-cancelled {
+    background: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fca5a5;
+  }
+}
+
+/* Stages Card & Table */
+.stages-card {
+  .stages-header {
+    margin-bottom: 1rem;
+
+    mat-card-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    mat-card-subtitle {
+      color: #64748b;
+      font-size: 0.875rem;
+    }
+  }
+}
+
+.table-responsive {
+  overflow-x: auto;
+}
+
+.lifecycle-table {
+  width: 100%;
+
+  th {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    background: #f8fafc;
+    padding: 0.75rem 1rem;
+  }
+
+  td {
+    padding: 0.85rem 1rem;
+    vertical-align: middle;
+    color: #334155;
+    font-size: 0.9rem;
+  }
+
+  tr.current-stage-row {
+    background-color: #f0fdf4;
+  }
+}
+
+.sequence-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  color: #334155;
+  font-weight: 700;
+  font-size: 0.85rem;
+
+  &.current-seq {
+    background: #2f6f4e;
+    color: #ffffff;
+  }
+}
+
+.stage-name-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.stage-title {
+  font-weight: 600;
+  color: #0f172a;
+
+  &.current-title {
+    color: #2f6f4e;
+    font-weight: 700;
+  }
+}
+
+.current-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #2f6f4e;
+
+  .pulse-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #2f6f4e;
+    animation: pulse 1.5s infinite;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(47, 111, 78, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(47, 111, 78, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(47, 111, 78, 0);
+  }
+}
+
+.duration-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+
+  .inline-cell-icon {
+    font-size: 0.95rem;
+    width: 0.95rem;
+    height: 0.95rem;
+    color: #64748b;
+  }
+}
+
+.timeline-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+
+  .date-label {
+    font-size: 0.825rem;
+    color: #64748b;
+
+    &.has-actual {
+      color: #0f172a;
+      font-weight: 600;
+    }
+  }
+}
+
+.notes-text {
+  display: block;
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #475569;
+}
+
+.empty-stages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 0;
+  color: #94a3b8;
+
+  .empty-icon {
+    font-size: 2.5rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .alert-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

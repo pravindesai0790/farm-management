@@ -1,0 +1,252 @@
+@if (isLoading) {
+  <div class="loading-state">
+    <mat-spinner diameter="36" />
+    <span>Loading lifecycle progression...</span>
+  </div>
+} @else if (lifecycle) {
+  <div class="lifecycle-container">
+    <!-- Top KPI & Overview Cards -->
+    <div class="metrics-grid">
+      <!-- Card 1: Lifecycle Template -->
+      <mat-card class="metric-card">
+        <mat-card-content>
+          <div class="metric-header">
+            <mat-icon class="metric-icon">schema</mat-icon>
+            <span class="metric-label">Lifecycle Template</span>
+          </div>
+          <div class="metric-value-row">
+            @if (lifecycle.lifecycleTemplateId && permissionService.has("CropLifecycleTemplate.View")) {
+              <a
+                class="template-link"
+                [routerLink]="['/crop-lifecycle-templates', lifecycle.lifecycleTemplateId]"
+                [matTooltip]="'View template details'"
+              >
+                {{ lifecycle.lifecycleTemplateName || 'Assigned Template' }}
+                <mat-icon class="inline-link-icon">open_in_new</mat-icon>
+              </a>
+            } @else {
+              <strong class="metric-value">{{ lifecycle.lifecycleTemplateName || 'None assigned' }}</strong>
+            }
+          </div>
+          <span class="metric-subtext">
+            {{ lifecycle.stages.length }} stage{{ lifecycle.stages.length === 1 ? '' : 's' }} defined
+          </span>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Card 2: Current Stage -->
+      <mat-card class="metric-card">
+        <mat-card-content>
+          <div class="metric-header">
+            <mat-icon class="metric-icon">flag</mat-icon>
+            <span class="metric-label">Current Stage</span>
+          </div>
+          <div class="metric-value-row">
+            @if (lifecycle.currentStageName) {
+              <strong class="metric-value highlight-text">
+                Stage {{ lifecycle.currentStageSequence }}: {{ lifecycle.currentStageName }}
+              </strong>
+            } @else if (cycle?.status === 'COMPLETED') {
+              <strong class="metric-value text-success">All stages completed</strong>
+            } @else if (cycle?.status === 'CANCELLED') {
+              <strong class="metric-value text-muted">Cycle cancelled</strong>
+            } @else {
+              <strong class="metric-value text-muted">Not started</strong>
+            }
+          </div>
+          <span class="metric-subtext">
+            {{ lifecycle.hasGeneratedStages ? 'Execution in progress' : 'Awaiting cycle start' }}
+          </span>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Card 3: Overall Crop Cycle Status -->
+      <mat-card class="metric-card">
+        <mat-card-content>
+          <div class="metric-header">
+            <mat-icon class="metric-icon">info</mat-icon>
+            <span class="metric-label">Cycle Status</span>
+          </div>
+          <div class="metric-value-row">
+            <span class="status-pill" [class]="getStatusClass(lifecycle.overallStatus)">
+              {{ getStatusLabel(lifecycle.overallStatus) }}
+            </span>
+          </div>
+          <span class="metric-subtext">
+            Season {{ cycle?.seasonYear }} ({{ cycle?.cropName }})
+          </span>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Card 4: Lifecycle Progress -->
+      <mat-card class="metric-card progress-card">
+        <mat-card-content>
+          <div class="metric-header">
+            <mat-icon class="metric-icon">donut_large</mat-icon>
+            <span class="metric-label">Progression</span>
+            <span class="progress-percent-badge">{{ lifecycle.progressPercentage }}%</span>
+          </div>
+          <div class="metric-value-row">
+            <strong class="metric-value">
+              {{ lifecycle.completedStagesCount }} of {{ lifecycle.totalStagesCount }} stages completed
+            </strong>
+          </div>
+          <mat-progress-bar
+            mode="determinate"
+            [value]="lifecycle.progressPercentage"
+            class="lifecycle-progress-bar"
+          />
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Banner Alerts / Context Callouts -->
+    @if (!lifecycle.lifecycleTemplateId) {
+      <div class="alert-banner alert-warning">
+        <mat-icon class="alert-icon">warning</mat-icon>
+        <div class="alert-content">
+          <strong>No Lifecycle Template Assigned</strong>
+          <p>Please edit the crop cycle to assign an active lifecycle template before starting.</p>
+        </div>
+        @if (cycle?.status === 'PLANNED' && permissionService.has('CropCycle.Update')) {
+          <a mat-flat-button color="primary" [routerLink]="['/crop-cycles', cycle!.id, 'edit']">
+            Assign Template
+          </a>
+        }
+      </div>
+    } @else if (!lifecycle.hasGeneratedStages && cycle?.status === 'PLANNED') {
+      <div class="alert-banner alert-info">
+        <mat-icon class="alert-icon">info</mat-icon>
+        <div class="alert-content">
+          <strong>Cycle Planned — Projected Stages</strong>
+          <p>The stages shown below are projected planning values from template <em>{{ lifecycle.lifecycleTemplateName }}</em>. Historical snapshot stages will be created upon starting the cycle.</p>
+        </div>
+        @if (permissionService.has('CropCycle.Start')) {
+          <button mat-flat-button color="primary" (click)="onStartCycle()">
+            <mat-icon>play_arrow</mat-icon>Start Cycle
+          </button>
+        }
+      </div>
+    }
+
+    <!-- Stages Timeline Table -->
+    <mat-card class="stages-card">
+      <mat-card-header class="stages-header">
+        <div>
+          <mat-card-title>Lifecycle Growth Stages</mat-card-title>
+          <mat-card-subtitle>
+            Sequential timeline of planned and actual agricultural growth phases.
+          </mat-card-subtitle>
+        </div>
+      </mat-card-header>
+
+      <mat-card-content>
+        @if (!lifecycle.stages || lifecycle.stages.length === 0) {
+          <div class="empty-stages">
+            <mat-icon class="empty-icon">schema</mat-icon>
+            <p>No stages available for this crop cycle.</p>
+          </div>
+        } @else {
+          <div class="table-responsive">
+            <table mat-table [dataSource]="lifecycle.stages" class="lifecycle-table">
+              <!-- Sequence Column -->
+              <ng-container matColumnDef="sequence">
+                <th mat-header-cell *matHeaderCellDef>Seq</th>
+                <td mat-cell *matCellDef="let stage">
+                  <span class="sequence-badge" [class.current-seq]="stage.status === 'IN_PROGRESS'">
+                    {{ stage.sequenceNumber }}
+                  </span>
+                </td>
+              </ng-container>
+
+              <!-- Stage Name Column -->
+              <ng-container matColumnDef="stageName">
+                <th mat-header-cell *matHeaderCellDef>Stage Name</th>
+                <td mat-cell *matCellDef="let stage">
+                  <div class="stage-name-cell">
+                    <span class="stage-title" [class.current-title]="stage.status === 'IN_PROGRESS'">
+                      {{ stage.stageName }}
+                    </span>
+                    @if (stage.status === 'IN_PROGRESS') {
+                      <span class="current-indicator">
+                        <span class="pulse-dot"></span>Current Stage
+                      </span>
+                    }
+                  </div>
+                </td>
+              </ng-container>
+
+              <!-- Status Column -->
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let stage">
+                  <span class="status-pill" [class]="getStatusClass(stage.status)">
+                    {{ getStatusLabel(stage.status) }}
+                  </span>
+                </td>
+              </ng-container>
+
+              <!-- Expected Duration Column -->
+              <ng-container matColumnDef="duration">
+                <th mat-header-cell *matHeaderCellDef>Expected Duration</th>
+                <td mat-cell *matCellDef="let stage">
+                  @if (stage.expectedDurationDays) {
+                    <span class="duration-text">
+                      <mat-icon class="inline-cell-icon">schedule</mat-icon>
+                      {{ stage.expectedDurationDays }} days
+                    </span>
+                  } @else {
+                    <span class="text-muted">—</span>
+                  }
+                </td>
+              </ng-container>
+
+              <!-- Planned Timeline Column -->
+              <ng-container matColumnDef="plannedTimeline">
+                <th mat-header-cell *matHeaderCellDef>Planned Start / End</th>
+                <td mat-cell *matCellDef="let stage">
+                  <div class="timeline-cell">
+                    <span class="date-label">Start: {{ stage.plannedStartDate ? (stage.plannedStartDate | date: 'mediumDate') : '—' }}</span>
+                    <span class="date-label">End: {{ stage.plannedEndDate ? (stage.plannedEndDate | date: 'mediumDate') : '—' }}</span>
+                  </div>
+                </td>
+              </ng-container>
+
+              <!-- Actual Timeline Column -->
+              <ng-container matColumnDef="actualTimeline">
+                <th mat-header-cell *matHeaderCellDef>Actual Start / End</th>
+                <td mat-cell *matCellDef="let stage">
+                  <div class="timeline-cell">
+                    <span class="date-label" [class.has-actual]="stage.actualStartDate">
+                      Start: {{ stage.actualStartDate ? (stage.actualStartDate | date: 'mediumDate') : '—' }}
+                    </span>
+                    <span class="date-label" [class.has-actual]="stage.actualEndDate">
+                      End: {{ stage.actualEndDate ? (stage.actualEndDate | date: 'mediumDate') : '—' }}
+                    </span>
+                  </div>
+                </td>
+              </ng-container>
+
+              <!-- Notes Column -->
+              <ng-container matColumnDef="notes">
+                <th mat-header-cell *matHeaderCellDef>Notes</th>
+                <td mat-cell *matCellDef="let stage">
+                  <span class="notes-text" [matTooltip]="stage.notes || ''">
+                    {{ stage.notes || '—' }}
+                  </span>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+              <tr
+                mat-row
+                *matRowDef="let stage; columns: displayedColumns"
+                [class.current-stage-row]="stage.status === 'IN_PROGRESS'"
+              ></tr>
+            </table>
+          </div>
+        }
+      </mat-card-content>
+    </mat-card>
+  </div>
+}

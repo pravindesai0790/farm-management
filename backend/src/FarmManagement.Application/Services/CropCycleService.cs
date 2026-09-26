@@ -58,6 +58,118 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
         return ToResponse(await FindCycleOrThrowAsync(actor, cycleId, cancellationToken));
     }
 
+    public async Task<CropCycleLifecycleResponse> GetLifecycleAsync(
+        CropCycleActor actor,
+        Guid cycleId,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        var cycle = await FindCycleOrThrowAsync(actor, cycleId, cancellationToken);
+        var stages = await store.GetStagesAsync(cycle.Id, cancellationToken);
+
+        if (stages.Count > 0)
+        {
+            var currentStage = stages.FirstOrDefault(s => s.Status == CropCycleStageStatus.InProgress);
+            var totalCount = stages.Count;
+            var completedCount = stages.Count(s => s.Status == CropCycleStageStatus.Completed);
+            var progressPercentage = totalCount > 0 ? (int)Math.Round((double)completedCount / totalCount * 100) : 0;
+
+            var stageResponses = stages.Select(s => new CropCycleStageResponse(
+                s.Id,
+                s.CropCycleId,
+                s.LifecycleTemplateStageId,
+                s.StageName,
+                s.SequenceNumber,
+                s.ExpectedDurationDays,
+                s.PlannedStartDate,
+                s.PlannedEndDate,
+                s.ActualStartDate,
+                s.ActualEndDate,
+                FormatStageStatus(s.Status),
+                s.Notes
+            )).ToList();
+
+            return new CropCycleLifecycleResponse(
+                cycle.Id,
+                cycle.CycleName,
+                cycle.Status.ToString().ToUpperInvariant(),
+                cycle.LifecycleTemplateId,
+                cycle.LifecycleTemplate?.Name,
+                currentStage?.StageName,
+                currentStage?.SequenceNumber,
+                totalCount,
+                completedCount,
+                progressPercentage,
+                HasGeneratedStages: true,
+                stageResponses);
+        }
+
+        if (cycle.LifecycleTemplateId is not null && cycle.LifecycleTemplateId != Guid.Empty)
+        {
+            var template = await store.FindLifecycleTemplateAsync(cycle.LifecycleTemplateId.Value, actor.OrganizationId, cancellationToken);
+            if (template is not null)
+            {
+                var activeStages = template.Stages
+                    .Where(s => s.IsActive)
+                    .OrderBy(s => s.SequenceNumber)
+                    .ToList();
+
+                if (activeStages.Count > 0)
+                {
+                    var plannedDates = CropCycleLifecycleHelper.CalculateStagePlannedDates(cycle.PlannedStartDate, activeStages);
+                    var projectedStages = new List<CropCycleStageResponse>(activeStages.Count);
+
+                    for (var i = 0; i < activeStages.Count; i++)
+                    {
+                        var s = activeStages[i];
+                        var (pStart, pEnd) = plannedDates[i];
+                        projectedStages.Add(new CropCycleStageResponse(
+                            Guid.Empty,
+                            cycle.Id,
+                            s.Id,
+                            s.StageName,
+                            s.SequenceNumber,
+                            s.ExpectedDurationDays,
+                            pStart,
+                            pEnd,
+                            null,
+                            null,
+                            "NOT_STARTED",
+                            s.Description));
+                    }
+
+                    return new CropCycleLifecycleResponse(
+                        cycle.Id,
+                        cycle.CycleName,
+                        cycle.Status.ToString().ToUpperInvariant(),
+                        cycle.LifecycleTemplateId,
+                        template.Name,
+                        CurrentStageName: null,
+                        CurrentStageSequence: null,
+                        activeStages.Count,
+                        CompletedStagesCount: 0,
+                        ProgressPercentage: 0,
+                        HasGeneratedStages: false,
+                        projectedStages);
+                }
+            }
+        }
+
+        return new CropCycleLifecycleResponse(
+            cycle.Id,
+            cycle.CycleName,
+            cycle.Status.ToString().ToUpperInvariant(),
+            cycle.LifecycleTemplateId,
+            cycle.LifecycleTemplate?.Name,
+            CurrentStageName: null,
+            CurrentStageSequence: null,
+            TotalStagesCount: 0,
+            CompletedStagesCount: 0,
+            ProgressPercentage: 0,
+            HasGeneratedStages: false,
+            Array.Empty<CropCycleStageResponse>());
+    }
+
     public async Task<CropCycleResponse> CreateAsync(
         CropCycleActor actor,
         CreateCropCycleRequest request,
@@ -590,6 +702,16 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
         pageSize == 0 ? DefaultPageSize : pageSize is < 1 or > MaximumPageSize
             ? throw Validation("pageSize", $"Page size must be between 1 and {MaximumPageSize}.")
             : pageSize;
+
+    private static string FormatStageStatus(CropCycleStageStatus status) => status switch
+    {
+        CropCycleStageStatus.NotStarted => "NOT_STARTED",
+        CropCycleStageStatus.InProgress => "IN_PROGRESS",
+        CropCycleStageStatus.Completed => "COMPLETED",
+        CropCycleStageStatus.Skipped => "SKIPPED",
+        CropCycleStageStatus.Cancelled => "CANCELLED",
+        _ => status.ToString().ToUpperInvariant()
+    };
 
     private sealed record CreateValues(
         Guid PlantationId,
