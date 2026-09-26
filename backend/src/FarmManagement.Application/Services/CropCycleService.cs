@@ -3,6 +3,7 @@ using FarmManagement.Application.Common.Exceptions;
 using FarmManagement.Application.Common.Models;
 using FarmManagement.Application.DTOs.CropCycles;
 using FarmManagement.Application.Interfaces.CropCycles;
+using FarmManagement.Application.Services.Helpers;
 using FarmManagement.Domain.Entities;
 using FarmManagement.Domain.Enums;
 
@@ -216,29 +217,124 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
         }, cancellationToken);
     }
 
-    public Task<bool> StartAsync(
+    public async Task<bool> StartAsync(
         CropCycleActor actor,
         Guid cycleId,
         StartCropCycleRequest request,
         string? ipAddress,
-        CancellationToken cancellationToken = default) =>
-        TransitionAsync(actor, cycleId, request, ipAddress, "CropCycle.Started", async (cycle, plantation, now) =>
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        if (request is null || request.StartDate is null)
         {
-            if (request is null || request.StartDate is null) throw Validation("startDate", "Start date is required.");
+            throw Validation("startDate", "Start date is required.");
+        }
+
+        var startDate = request.StartDate.Value;
+
+        return await store.ExecuteInTransactionAsync(async transactionCancellationToken =>
+        {
+            var cycle = await store.LockAsync(cycleId, actor.OrganizationId, transactionCancellationToken)
+                ?? throw new ResourceNotFoundException("The crop cycle was not found.");
+
+            var plantation = await store.LockPlantationAsync(cycle.PlantationId, actor.OrganizationId, transactionCancellationToken)
+                ?? throw new ResourceNotFoundException("The plantation was not found.");
+
+            if (cycle.Status != CropCycleStatus.Planned)
+            {
+                throw new ConflictException("Only a planned crop cycle can be started.");
+            }
+
+            if (await store.HasStagesAsync(cycle.Id, transactionCancellationToken))
+            {
+                throw new ConflictException("The crop cycle already has generated stages.");
+            }
+
             EnsurePlantationIsActive(plantation);
-            if (await store.HasActiveCycleAsync(cycle.PlantationId, cycle.Id, cancellationToken))
+
+            if (await store.HasActiveCycleAsync(cycle.PlantationId, cycle.Id, transactionCancellationToken))
             {
                 throw new ConflictException("The plantation already has an active crop cycle.");
             }
-            EnsureDateIsWithinPlantation(request.StartDate.Value, plantation, "startDate");
-            if (cycle.ExpectedEndDate is not null && request.StartDate.Value > cycle.ExpectedEndDate)
+
+            EnsureDateIsWithinPlantation(startDate, plantation, "startDate");
+
+            if (startDate < cycle.PlannedStartDate)
+            {
+                throw Validation("startDate", "The actual start date cannot be before the planned start date.");
+            }
+
+            if (cycle.ExpectedEndDate is not null && startDate > cycle.ExpectedEndDate)
             {
                 throw Validation("startDate", "The actual start date cannot be after the expected end date.");
             }
-            EnsureTransition(cycle, CropCycleStatus.Planned, "Only a planned crop cycle can be started.");
-            if (!cycle.Start(request.StartDate.Value, now, actor.UserId)) return false;
+
+            if (cycle.LifecycleTemplateId is null || cycle.LifecycleTemplateId == Guid.Empty)
+            {
+                throw Validation("lifecycleTemplateId", "A crop cycle cannot be started without an active lifecycle template.");
+            }
+
+            var template = await store.FindLifecycleTemplateAsync(cycle.LifecycleTemplateId.Value, actor.OrganizationId, transactionCancellationToken);
+
+            var activeStages = CropCycleLifecycleHelper.ValidateAndGetActiveTemplateStages(
+                template,
+                actor.OrganizationId,
+                plantation.CropId);
+
+            var plannedDates = CropCycleLifecycleHelper.CalculateStagePlannedDates(cycle.PlannedStartDate, activeStages);
+
+            var cycleStages = CropCycleLifecycleHelper.CreateSnapshotStages(cycle, activeStages, plannedDates, startDate, actor.UserId);
+
+            foreach (var stage in cycleStages)
+            {
+                cycle.Stages.Add(stage);
+                store.AddStage(stage);
+            }
+
+            var now = DateTimeOffset.UtcNow;
+            if (!cycle.Start(startDate, now, actor.UserId))
+            {
+                return false;
+            }
+
+            var firstStage = cycleStages[0];
+            store.AddAuditLog(new AuditLog(
+                "CropCycleStage.Started",
+                cycle.OrganizationId,
+                actor.UserId,
+                "CropCycleStage",
+                firstStage.Id,
+                JsonSerializer.SerializeToDocument(new
+                {
+                    CropCycleId = cycle.Id,
+                    firstStage.StageName,
+                    firstStage.SequenceNumber,
+                    ActualStartDate = startDate,
+                    Status = "IN_PROGRESS"
+                }),
+                ipAddress));
+
+            store.AddAuditLog(new AuditLog(
+                "CropCycle.Started",
+                cycle.OrganizationId,
+                actor.UserId,
+                "CropCycle",
+                cycle.Id,
+                JsonSerializer.SerializeToDocument(new
+                {
+                    PlantationId = plantation.Id,
+                    PreviousStatus = "PLANNED",
+                    NewStatus = "ACTIVE",
+                    ActualStartDate = startDate,
+                    cycle.LifecycleTemplateId,
+                    StagesGenerated = cycleStages.Count
+                }),
+                ipAddress));
+
+            await store.SaveChangesAsync(transactionCancellationToken);
             return true;
         }, cancellationToken);
+    }
 
     public Task<bool> HarvestAsync(
         CropCycleActor actor,
@@ -336,16 +432,8 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
             : await store.FindAsync(cycleId, actor.OrganizationId, cancellationToken)
                 ?? throw new ResourceNotFoundException("The crop cycle was not found.");
 
-    private static DateOnly? CalculateExpectedEndDate(DateOnly plannedStartDate, CropLifecycleTemplate? template)
-    {
-        if (template is null || template.Stages.Count == 0) return null;
-        var activeStages = template.Stages.Where(s => s.IsActive).ToList();
-        if (activeStages.Count == 0) return null;
-        if (activeStages.Any(s => s.ExpectedDurationDays is null or <= 0)) return null;
-
-        var totalDays = activeStages.Sum(s => s.ExpectedDurationDays!.Value);
-        return totalDays > 0 ? plannedStartDate.AddDays(totalDays) : null;
-    }
+    private static DateOnly? CalculateExpectedEndDate(DateOnly plannedStartDate, CropLifecycleTemplate? template) =>
+        CropCycleLifecycleHelper.CalculateExpectedEndDate(plannedStartDate, template);
 
     private static void EnsureCanCreateForPlantation(CropPlantation plantation)
     {

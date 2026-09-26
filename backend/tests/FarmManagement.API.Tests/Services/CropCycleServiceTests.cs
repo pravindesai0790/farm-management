@@ -187,6 +187,292 @@ public sealed class CropCycleServiceTests
         await Assert.ThrowsAsync<ConflictException>(() => service.UpdateAsync(CreateActor(), cycle.Id, updateRequest, "127.0.0.1"));
     }
 
+    [Fact]
+    public async Task StartAsync_WithValidLifecycleTemplate_GeneratesSnapshotStagesAndSetsCycleActive()
+    {
+        var store = new FakeCropCycleStore();
+        var crop = CreateCrop(_organizationId, "Grape");
+        var plantation = CreatePlantation(store, _organizationId, crop);
+        var template = CreateTemplate(store, _organizationId, crop.Id, "Standard Grape");
+        AddStage(template, "Dormancy", 1, 30);
+        AddStage(template, "Pruning", 2, 15);
+        AddStage(template, "Bud Break", 3, 10);
+
+        var plannedStart = new DateOnly(2026, 4, 1);
+        var cycle = new CropCycle(_organizationId, plantation.Id, "2026 Grape Cycle", 2026, null, plannedStart, null, _userId, template.Id);
+        store.Cycles.Add(cycle);
+
+        var service = new CropCycleService(store);
+        var startRequest = new StartCropCycleRequest(plannedStart);
+
+        var success = await service.StartAsync(CreateActor(), cycle.Id, startRequest, "127.0.0.1");
+
+        Assert.True(success);
+        Assert.Equal(CropCycleStatus.Active, cycle.Status);
+        Assert.Equal(plannedStart, cycle.ActualStartDate);
+
+        Assert.Equal(3, store.Stages.Count);
+
+        var stage1 = store.Stages[0];
+        Assert.Equal("Dormancy", stage1.StageName);
+        Assert.Equal(1, stage1.SequenceNumber);
+        Assert.Equal(30, stage1.ExpectedDurationDays);
+        Assert.Equal(CropCycleStageStatus.InProgress, stage1.Status);
+        Assert.Equal(plannedStart, stage1.ActualStartDate);
+        Assert.Null(stage1.ActualEndDate);
+        Assert.Equal(new DateOnly(2026, 4, 1), stage1.PlannedStartDate);
+        Assert.Equal(new DateOnly(2026, 5, 1), stage1.PlannedEndDate);
+
+        var stage2 = store.Stages[1];
+        Assert.Equal("Pruning", stage2.StageName);
+        Assert.Equal(2, stage2.SequenceNumber);
+        Assert.Equal(15, stage2.ExpectedDurationDays);
+        Assert.Equal(CropCycleStageStatus.NotStarted, stage2.Status);
+        Assert.Null(stage2.ActualStartDate);
+        Assert.Null(stage2.ActualEndDate);
+        Assert.Equal(new DateOnly(2026, 5, 1), stage2.PlannedStartDate);
+        Assert.Equal(new DateOnly(2026, 5, 16), stage2.PlannedEndDate);
+
+        var stage3 = store.Stages[2];
+        Assert.Equal("Bud Break", stage3.StageName);
+        Assert.Equal(3, stage3.SequenceNumber);
+        Assert.Equal(10, stage3.ExpectedDurationDays);
+        Assert.Equal(CropCycleStageStatus.NotStarted, stage3.Status);
+        Assert.Null(stage3.ActualStartDate);
+        Assert.Null(stage3.ActualEndDate);
+        Assert.Equal(new DateOnly(2026, 5, 16), stage3.PlannedStartDate);
+        Assert.Equal(new DateOnly(2026, 5, 26), stage3.PlannedEndDate);
+
+        Assert.Equal(2, store.AuditLogs.Count);
+        Assert.Contains(store.AuditLogs, a => a.Action == "CropCycleStage.Started");
+        Assert.Contains(store.AuditLogs, a => a.Action == "CropCycle.Started");
+    }
+
+    [Fact]
+    public async Task StartAsync_WithoutLifecycleTemplate_ThrowsValidationException()
+    {
+        var store = new FakeCropCycleStore();
+        var crop = CreateCrop(_organizationId, "Wheat");
+        var plantation = CreatePlantation(store, _organizationId, crop);
+        var cycle = new CropCycle(_organizationId, plantation.Id, "Draft Cycle", 2026, null, new DateOnly(2026, 4, 1), null, _userId, lifecycleTemplateId: null);
+        store.Cycles.Add(cycle);
+
+        var service = new CropCycleService(store);
+
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            service.StartAsync(CreateActor(), cycle.Id, new StartCropCycleRequest(new DateOnly(2026, 4, 1)), "127.0.0.1"));
+    }
+
+    [Fact]
+    public async Task StartAsync_WithInactiveTemplate_ThrowsValidationException()
+    {
+        var store = new FakeCropCycleStore();
+        var crop = CreateCrop(_organizationId, "Grape");
+        var plantation = CreatePlantation(store, _organizationId, crop);
+        var template = CreateTemplate(store, _organizationId, crop.Id, "Inactive", isActive: false);
+        AddStage(template, "Dormancy", 1, 30);
+
+        var cycle = new CropCycle(_organizationId, plantation.Id, "Cycle", 2026, null, new DateOnly(2026, 4, 1), null, _userId, template.Id);
+        store.Cycles.Add(cycle);
+
+        var service = new CropCycleService(store);
+
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            service.StartAsync(CreateActor(), cycle.Id, new StartCropCycleRequest(new DateOnly(2026, 4, 1)), "127.0.0.1"));
+    }
+
+    [Fact]
+    public async Task StartAsync_WithTemplateForDifferentCrop_ThrowsValidationException()
+    {
+        var store = new FakeCropCycleStore();
+        var grapeCrop = CreateCrop(_organizationId, "Grape");
+        var wheatCrop = CreateCrop(_organizationId, "Wheat");
+        var plantation = CreatePlantation(store, _organizationId, grapeCrop);
+        var wheatTemplate = CreateTemplate(store, _organizationId, wheatCrop.Id, "Wheat Template");
+        AddStage(wheatTemplate, "Germination", 1, 10);
+
+        var cycle = new CropCycle(_organizationId, plantation.Id, "Grape Cycle", 2026, null, new DateOnly(2026, 4, 1), null, _userId, wheatTemplate.Id);
+        store.Cycles.Add(cycle);
+
+        var service = new CropCycleService(store);
+
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            service.StartAsync(CreateActor(), cycle.Id, new StartCropCycleRequest(new DateOnly(2026, 4, 1)), "127.0.0.1"));
+    }
+
+    [Fact]
+    public async Task StartAsync_WhenTemplateHasNoActiveStages_ThrowsValidationException()
+    {
+        var store = new FakeCropCycleStore();
+        var crop = CreateCrop(_organizationId, "Grape");
+        var plantation = CreatePlantation(store, _organizationId, crop);
+        var template = CreateTemplate(store, _organizationId, crop.Id, "Empty Stages");
+
+        var cycle = new CropCycle(_organizationId, plantation.Id, "Cycle", 2026, null, new DateOnly(2026, 4, 1), null, _userId, template.Id);
+        store.Cycles.Add(cycle);
+
+        var service = new CropCycleService(store);
+
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            service.StartAsync(CreateActor(), cycle.Id, new StartCropCycleRequest(new DateOnly(2026, 4, 1)), "127.0.0.1"));
+    }
+
+    [Fact]
+    public async Task StartAsync_WhenTemplateHasDuplicateSequenceNumbers_ThrowsValidationException()
+    {
+        var store = new FakeCropCycleStore();
+        var crop = CreateCrop(_organizationId, "Grape");
+        var plantation = CreatePlantation(store, _organizationId, crop);
+        var template = CreateTemplate(store, _organizationId, crop.Id, "Dup Seq");
+        AddStage(template, "Stage A", 1, 10);
+        AddStage(template, "Stage B", 1, 15);
+
+        var cycle = new CropCycle(_organizationId, plantation.Id, "Cycle", 2026, null, new DateOnly(2026, 4, 1), null, _userId, template.Id);
+        store.Cycles.Add(cycle);
+
+        var service = new CropCycleService(store);
+
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            service.StartAsync(CreateActor(), cycle.Id, new StartCropCycleRequest(new DateOnly(2026, 4, 1)), "127.0.0.1"));
+    }
+
+    [Fact]
+    public async Task StartAsync_WhenAlreadyActive_ThrowsConflictException()
+    {
+        var store = new FakeCropCycleStore();
+        var crop = CreateCrop(_organizationId, "Grape");
+        var plantation = CreatePlantation(store, _organizationId, crop);
+        var template = CreateTemplate(store, _organizationId, crop.Id, "Standard");
+        AddStage(template, "Stage A", 1, 10);
+
+        var cycle = new CropCycle(_organizationId, plantation.Id, "Active Cycle", 2026, null, new DateOnly(2026, 4, 1), null, _userId, template.Id);
+        cycle.Start(new DateOnly(2026, 4, 1), DateTimeOffset.UtcNow, _userId);
+        store.Cycles.Add(cycle);
+
+        var service = new CropCycleService(store);
+
+        await Assert.ThrowsAsync<ConflictException>(() =>
+            service.StartAsync(CreateActor(), cycle.Id, new StartCropCycleRequest(new DateOnly(2026, 4, 1)), "127.0.0.1"));
+    }
+
+    [Fact]
+    public async Task StartAsync_WhenAlreadyHasStages_ThrowsConflictException()
+    {
+        var store = new FakeCropCycleStore();
+        var crop = CreateCrop(_organizationId, "Grape");
+        var plantation = CreatePlantation(store, _organizationId, crop);
+        var template = CreateTemplate(store, _organizationId, crop.Id, "Standard");
+        var tStage = new CropLifecycleStage(template.Id, "Stage A", 1, 10);
+        template.Stages.Add(tStage);
+
+        var cycle = new CropCycle(_organizationId, plantation.Id, "Cycle", 2026, null, new DateOnly(2026, 4, 1), null, _userId, template.Id);
+        store.Cycles.Add(cycle);
+
+        var existingStage = new CropCycleStage(cycle.Id, tStage.Id, "Stage A", 1, 10, null, null, _userId);
+        store.Stages.Add(existingStage);
+
+        var service = new CropCycleService(store);
+
+        await Assert.ThrowsAsync<ConflictException>(() =>
+            service.StartAsync(CreateActor(), cycle.Id, new StartCropCycleRequest(new DateOnly(2026, 4, 1)), "127.0.0.1"));
+    }
+
+    [Fact]
+    public async Task StartAsync_WhenPlantationHasAnotherActiveCycle_ThrowsConflictException()
+    {
+        var store = new FakeCropCycleStore();
+        var crop = CreateCrop(_organizationId, "Grape");
+        var plantation = CreatePlantation(store, _organizationId, crop);
+        var template = CreateTemplate(store, _organizationId, crop.Id, "Standard");
+        AddStage(template, "Stage A", 1, 10);
+
+        var activeCycle = new CropCycle(_organizationId, plantation.Id, "Cycle 1", 2025, null, new DateOnly(2025, 4, 1), null, _userId, template.Id);
+        activeCycle.Start(new DateOnly(2025, 4, 1), DateTimeOffset.UtcNow, _userId);
+        store.Cycles.Add(activeCycle);
+
+        var plannedCycle = new CropCycle(_organizationId, plantation.Id, "Cycle 2", 2026, null, new DateOnly(2026, 4, 1), null, _userId, template.Id);
+        store.Cycles.Add(plannedCycle);
+
+        var service = new CropCycleService(store);
+
+        await Assert.ThrowsAsync<ConflictException>(() =>
+            service.StartAsync(CreateActor(), plannedCycle.Id, new StartCropCycleRequest(new DateOnly(2026, 4, 1)), "127.0.0.1"));
+    }
+
+    [Fact]
+    public async Task StartAsync_WhenStartDateBeforePlannedStart_ThrowsValidationException()
+    {
+        var store = new FakeCropCycleStore();
+        var crop = CreateCrop(_organizationId, "Grape");
+        var plantation = CreatePlantation(store, _organizationId, crop);
+        var template = CreateTemplate(store, _organizationId, crop.Id, "Standard");
+        AddStage(template, "Stage A", 1, 10);
+
+        var cycle = new CropCycle(_organizationId, plantation.Id, "Cycle", 2026, null, new DateOnly(2026, 4, 1), null, _userId, template.Id);
+        store.Cycles.Add(cycle);
+
+        var service = new CropCycleService(store);
+
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            service.StartAsync(CreateActor(), cycle.Id, new StartCropCycleRequest(new DateOnly(2026, 3, 25)), "127.0.0.1"));
+    }
+
+    [Fact]
+    public async Task StartAsync_WithSystemTemplate_Succeeds()
+    {
+        var store = new FakeCropCycleStore();
+        var crop = CreateCrop(_organizationId, "Grape");
+        var plantation = CreatePlantation(store, _organizationId, crop);
+        var systemTemplate = new CropLifecycleTemplate(null, crop.Id, "System Grape", isDefault: true, isSystem: true, description: null, createdBy: _userIdStatic);
+        AddStage(systemTemplate, "Dormancy", 1, 20);
+        store.Templates.Add(systemTemplate);
+
+        var cycle = new CropCycle(_organizationId, plantation.Id, "System Cycle", 2026, null, new DateOnly(2026, 4, 1), null, _userId, systemTemplate.Id);
+        store.Cycles.Add(cycle);
+
+        var service = new CropCycleService(store);
+        var success = await service.StartAsync(CreateActor(), cycle.Id, new StartCropCycleRequest(new DateOnly(2026, 4, 1)), "127.0.0.1");
+
+        Assert.True(success);
+        Assert.Equal(CropCycleStatus.Active, cycle.Status);
+        Assert.Single(store.Stages);
+    }
+
+    [Fact]
+    public async Task StartAsync_WithNullDurationStage_LeavesDependentPlannedDatesNull()
+    {
+        var store = new FakeCropCycleStore();
+        var crop = CreateCrop(_organizationId, "Grape");
+        var plantation = CreatePlantation(store, _organizationId, crop);
+        var template = CreateTemplate(store, _organizationId, crop.Id, "Template with Null Duration");
+        AddStage(template, "Stage 1", 1, 20);
+        var nullDurationStage = new CropLifecycleStage(template.Id, "Stage 2", 2, null, null);
+        template.Stages.Add(nullDurationStage);
+        AddStage(template, "Stage 3", 3, 15);
+
+        var plannedStart = new DateOnly(2026, 4, 1);
+        var cycle = new CropCycle(_organizationId, plantation.Id, "Null Duration Cycle", 2026, null, plannedStart, null, _userId, template.Id);
+        store.Cycles.Add(cycle);
+
+        var service = new CropCycleService(store);
+        var success = await service.StartAsync(CreateActor(), cycle.Id, new StartCropCycleRequest(plannedStart), "127.0.0.1");
+
+        Assert.True(success);
+        Assert.Equal(3, store.Stages.Count);
+
+        var stage1 = store.Stages[0];
+        Assert.Equal(new DateOnly(2026, 4, 1), stage1.PlannedStartDate);
+        Assert.Equal(new DateOnly(2026, 4, 21), stage1.PlannedEndDate);
+
+        var stage2 = store.Stages[1];
+        Assert.Equal(new DateOnly(2026, 4, 21), stage2.PlannedStartDate);
+        Assert.Null(stage2.PlannedEndDate);
+
+        var stage3 = store.Stages[2];
+        Assert.Null(stage3.PlannedStartDate);
+        Assert.Null(stage3.PlannedEndDate);
+    }
+
     private static Crop CreateCrop(Guid organizationId, string name) =>
         new(organizationId, name, "CropType", "PERENNIAL");
 
@@ -200,6 +486,7 @@ public sealed class CropCycleServiceTests
         var plantation = new CropPlantation(
             organizationId, farm.Id, area.Id, crop.Id, null, null,
             "Plantation 1", 50, unitId, new DateOnly(2025, 1, 1), null, _userIdStatic);
+        plantation.Activate(DateTimeOffset.UtcNow, _userIdStatic);
 
         typeof(CropPlantation).GetProperty("Crop")?.SetValue(plantation, crop);
         typeof(CropPlantation).GetProperty("Farm")?.SetValue(plantation, farm);
@@ -234,6 +521,7 @@ public sealed class CropCycleServiceTests
         public List<CropCycle> Cycles { get; } = [];
         public List<CropPlantation> Plantations { get; } = [];
         public List<CropLifecycleTemplate> Templates { get; } = [];
+        public List<CropCycleStage> Stages { get; } = [];
         public List<AuditLog> AuditLogs { get; } = [];
 
         public Task<IReadOnlyList<CropCycle>> ListAsync(
@@ -266,6 +554,12 @@ public sealed class CropCycleServiceTests
             Task.FromResult(Cycles.Any(c => c.PlantationId == plantationId && c.SeasonYear == seasonYear && c.Status != CropCycleStatus.Cancelled && c.Id != excludingCycleId));
 
         public void Add(CropCycle cycle) => Cycles.Add(cycle);
+        public void AddStage(CropCycleStage stage) => Stages.Add(stage);
+        public Task<bool> HasStagesAsync(Guid cycleId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(Stages.Any(s => s.CropCycleId == cycleId));
+        public Task<IReadOnlyList<CropCycleStage>> GetStagesAsync(Guid cycleId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<CropCycleStage>>(Stages.Where(s => s.CropCycleId == cycleId).OrderBy(s => s.SequenceNumber).ToList());
+
         public void AddAuditLog(AuditLog auditLog) => AuditLogs.Add(auditLog);
         public Task SaveChangesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task<T> ExecuteInTransactionAsync<T>(Func<CancellationToken, Task<T>> operation, CancellationToken cancellationToken = default) => operation(cancellationToken);

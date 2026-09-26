@@ -62,6 +62,9 @@ public interface ICropCycleStore
         CancellationToken cancellationToken = default);
 
     void Add(CropCycle cycle);
+    void AddStage(CropCycleStage stage);
+    Task<bool> HasStagesAsync(Guid cycleId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<CropCycleStage>> GetStagesAsync(Guid cycleId, CancellationToken cancellationToken = default);
     void AddAuditLog(AuditLog auditLog);
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
     Task<T> ExecuteInTransactionAsync<T>(
