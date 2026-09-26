@@ -1,0 +1,132 @@
+<div class="stage-editor-container">
+  <div class="stage-editor-header">
+    <div>
+      <h3>Stages & Sequence</h3>
+      <p class="subtitle">
+        Configure ordered growth stages for this lifecycle template. Drag or use arrows to reorder.
+      </p>
+    </div>
+    <div class="header-actions">
+      <span class="summary-chip" matTooltip="Total expected timeline duration">
+        <mat-icon>schedule</mat-icon>
+        {{ totalDurationDays() }} days (~{{ totalDurationMonths() }} months)
+      </span>
+      @if (editable()) {
+        <button
+          type="button"
+          mat-flat-button
+          color="primary"
+          (click)="addStage.emit()"
+        >
+          <mat-icon>add</mat-icon>Add stage
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (stages().length === 0) {
+    <div class="empty-stages-state">
+      <mat-icon class="empty-icon">schema</mat-icon>
+      <p>No growth stages defined yet.</p>
+      @if (editable()) {
+        <button
+          type="button"
+          mat-stroked-button
+          color="primary"
+          (click)="addStage.emit()"
+        >
+          <mat-icon>add</mat-icon>Add first stage
+        </button>
+      }
+    </div>
+  } @else {
+    <div
+      cdkDropList
+      class="stage-list"
+      [cdkDropListDisabled]="!editable()"
+      (cdkDropListDropped)="onDrop($event)"
+    >
+      @for (stage of stages(); track stage.id || stage.stageName; let i = $index) {
+        <div class="stage-card" cdkDrag [cdkDragDisabled]="!editable()">
+          <div class="stage-left">
+            @if (editable()) {
+              <button
+                type="button"
+                class="drag-handle"
+                cdkDragHandle
+                matTooltip="Drag to reorder stage"
+              >
+                <mat-icon>drag_indicator</mat-icon>
+              </button>
+            }
+            <span class="sequence-badge">#{{ i + 1 }}</span>
+            <div class="stage-details">
+              <div class="stage-name-row">
+                <strong class="stage-name">{{ stage.stageName }}</strong>
+                @if (stage.expectedDurationDays) {
+                  <span class="duration-badge">
+                    <mat-icon>timer</mat-icon>{{ stage.expectedDurationDays }} days
+                  </span>
+                } @else {
+                  <span class="duration-badge no-duration">No duration set</span>
+                }
+                <span
+                  class="status-pill"
+                  [class.status-pill-inactive]="!stage.isActive"
+                >
+                  {{ stage.isActive ? 'Active' : 'Inactive' }}
+                </span>
+              </div>
+              @if (stage.description) {
+                <p class="stage-desc">{{ stage.description }}</p>
+              }
+            </div>
+          </div>
+
+          @if (editable()) {
+            <div class="stage-actions">
+              <div class="reorder-buttons">
+                <button
+                  type="button"
+                  mat-icon-button
+                  [disabled]="i === 0"
+                  (click)="moveUp(i)"
+                  matTooltip="Move stage up"
+                >
+                  <mat-icon>keyboard_arrow_up</mat-icon>
+                </button>
+                <button
+                  type="button"
+                  mat-icon-button
+                  [disabled]="i === stages().length - 1"
+                  (click)="moveDown(i)"
+                  matTooltip="Move stage down"
+                >
+                  <mat-icon>keyboard_arrow_down</mat-icon>
+                </button>
+              </div>
+              <button
+                type="button"
+                mat-icon-button
+                color="primary"
+                (click)="editStage.emit({ stage, index: i })"
+                matTooltip="Edit stage"
+              >
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button
+                type="button"
+                mat-icon-button
+                color="warn"
+                (click)="removeStage.emit(i)"
+                matTooltip="Remove stage"
+              >
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>
