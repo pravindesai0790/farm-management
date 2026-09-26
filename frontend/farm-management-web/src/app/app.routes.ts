@@ -245,6 +245,46 @@ export const routes: Routes = [
           ),
       },
       {
+        path: "crop-lifecycle-templates",
+        title: "Lifecycle templates",
+        canActivate: [permissionGuard],
+        data: { permission: "CropLifecycleTemplate.View" },
+        loadComponent: () =>
+          import(
+            "./features/crop-lifecycle-templates/crop-lifecycle-templates-page.component"
+          ).then((m) => m.CropLifecycleTemplatesPageComponent),
+      },
+      {
+        path: "crop-lifecycle-templates/new",
+        title: "Create lifecycle template",
+        canActivate: [permissionGuard],
+        data: { permission: "CropLifecycleTemplate.Create" },
+        loadComponent: () =>
+          import(
+            "./features/crop-lifecycle-templates/crop-lifecycle-template-editor-page.component"
+          ).then((m) => m.CropLifecycleTemplateEditorPageComponent),
+      },
+      {
+        path: "crop-lifecycle-templates/:id/edit",
+        title: "Edit lifecycle template",
+        canActivate: [permissionGuard],
+        data: { permission: "CropLifecycleTemplate.Update" },
+        loadComponent: () =>
+          import(
+            "./features/crop-lifecycle-templates/crop-lifecycle-template-editor-page.component"
+          ).then((m) => m.CropLifecycleTemplateEditorPageComponent),
+      },
+      {
+        path: "crop-lifecycle-templates/:id",
+        title: "Lifecycle template details",
+        canActivate: [permissionGuard],
+        data: { permission: "CropLifecycleTemplate.View" },
+        loadComponent: () =>
+          import(
+            "./features/crop-lifecycle-templates/crop-lifecycle-template-detail-page.component"
+          ).then((m) => m.CropLifecycleTemplateDetailPageComponent),
+      },
+      {
         path: "plantations",
         title: "Plantations",
         canActivate: [permissionGuard],

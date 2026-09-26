@@ -1,0 +1,168 @@
+<div class="section-heading">
+  <div>
+    <p class="eyebrow">Agronomy</p>
+    <h2>Lifecycle Templates</h2>
+    <p>Define standard agricultural growth stages, sequences, and durations for crops.</p>
+  </div>
+  @if (permissionService.has("CropLifecycleTemplate.Create")) {
+    <a mat-flat-button color="primary" routerLink="/crop-lifecycle-templates/new">
+      <mat-icon>add</mat-icon>Add template
+    </a>
+  }
+</div>
+
+<mat-card>
+  <mat-card-content>
+    <form class="filters" [formGroup]="filterForm">
+      <mat-form-field appearance="outline">
+        <mat-label>Crop</mat-label>
+        <mat-select formControlName="cropId">
+          <mat-option value="all">All Crops</mat-option>
+          @for (crop of crops(); track crop.id) {
+            <mat-option [value]="crop.id">{{ crop.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Status</mat-label>
+        <mat-select formControlName="status">
+          <mat-option value="all">All</mat-option>
+          <mat-option value="active">Active</mat-option>
+          <mat-option value="inactive">Inactive</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </form>
+
+    @if (isLoading()) {
+      <div class="loading-state">
+        <mat-spinner diameter="36" />
+      </div>
+    } @else {
+      <div class="table-wrap">
+        <table mat-table [dataSource]="templates()">
+          <!-- Crop Column -->
+          <ng-container matColumnDef="crop">
+            <th mat-header-cell *matHeaderCellDef>Crop</th>
+            <td mat-cell *matCellDef="let template">
+              <strong>{{ template.cropName }}</strong>
+            </td>
+          </ng-container>
+
+          <!-- Template Name Column -->
+          <ng-container matColumnDef="templateName">
+            <th mat-header-cell *matHeaderCellDef>Template Name</th>
+            <td mat-cell *matCellDef="let template">
+              <div class="template-name-cell">
+                <span class="name-text">{{ template.name }}</span>
+                @if (template.description) {
+                  <small class="description-text">{{ template.description }}</small>
+                }
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Default Column -->
+          <ng-container matColumnDef="default">
+            <th mat-header-cell *matHeaderCellDef>Default</th>
+            <td mat-cell *matCellDef="let template">
+              @if (template.isDefault) {
+                <span class="badge default-badge" matTooltip="Default template for this crop">
+                  <mat-icon>star</mat-icon>Default
+                </span>
+              } @else {
+                <span class="muted-dash">-</span>
+              }
+            </td>
+          </ng-container>
+
+          <!-- System Column -->
+          <ng-container matColumnDef="system">
+            <th mat-header-cell *matHeaderCellDef>System</th>
+            <td mat-cell *matCellDef="let template">
+              <span
+                class="badge"
+                [class.system-badge]="template.isSystem"
+                [class.org-badge]="!template.isSystem"
+              >
+                {{ template.isSystem ? 'System' : 'Organization' }}
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Active Column -->
+          <ng-container matColumnDef="active">
+            <th mat-header-cell *matHeaderCellDef>Active</th>
+            <td mat-cell *matCellDef="let template">
+              <span
+                class="status-pill"
+                [class.status-pill-inactive]="!template.isActive"
+              >
+                {{ template.isActive ? 'Active' : 'Inactive' }}
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Stage Count Column -->
+          <ng-container matColumnDef="stageCount">
+            <th mat-header-cell *matHeaderCellDef>Stage Count</th>
+            <td mat-cell *matCellDef="let template">
+              <span class="stage-count-badge">
+                <mat-icon>schema</mat-icon>{{ template.stages ? template.stages.length : 0 }} stages
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Actions Column -->
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef>Actions</th>
+            <td mat-cell *matCellDef="let template">
+              <a mat-button [routerLink]="['/crop-lifecycle-templates', template.id]">View</a>
+
+              @if (canModify(template) && permissionService.has("CropLifecycleTemplate.Update")) {
+                <a
+                  mat-icon-button
+                  [routerLink]="['/crop-lifecycle-templates', template.id, 'edit']"
+                  matTooltip="Edit template"
+                >
+                  <mat-icon>edit</mat-icon>
+                </a>
+              }
+
+              @if (canModify(template)) {
+                @if (template.isActive && permissionService.has("CropLifecycleTemplate.Deactivate")) {
+                  <button
+                    mat-icon-button
+                    [disabled]="template.isDefault"
+                    (click)="changeStatus(template, false)"
+                    [matTooltip]="template.isDefault ? 'Default template cannot be deactivated' : 'Deactivate template'"
+                  >
+                    <mat-icon>visibility_off</mat-icon>
+                  </button>
+                } @else if (!template.isActive && permissionService.has("CropLifecycleTemplate.Activate")) {
+                  <button
+                    mat-icon-button
+                    (click)="changeStatus(template, true)"
+                    matTooltip="Activate template"
+                  >
+                    <mat-icon>visibility</mat-icon>
+                  </button>
+                }
+              }
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="columns"></tr>
+          <tr mat-row *matRowDef="let row; columns: columns"></tr>
+        </table>
+      </div>
+    }
+
+    <mat-paginator
+      [length]="totalCount()"
+      [pageIndex]="pageIndex()"
+      [pageSize]="pageSize()"
+      (page)="pageChanged($event)"
+    />
+  </mat-card-content>
+</mat-card>

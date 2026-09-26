@@ -240,6 +240,61 @@ public sealed class CropLifecycleTemplateService(ICropLifecycleTemplateStore sto
         CancellationToken cancellationToken = default) =>
         SetStageActiveAsync(actor, templateId, stageId, false, ipAddress, cancellationToken);
 
+    public async Task<IReadOnlyList<CropLifecycleStageResponse>> ReorderStagesAsync(
+        CropLifecycleTemplateActor actor,
+        Guid templateId,
+        ReorderCropLifecycleStagesRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        if (request?.Stages is null || request.Stages.Count == 0)
+        {
+            throw CropLifecycleTemplateValidationHelper.Validation("stages", "Stage reorder request body with stage positions is required.");
+        }
+
+        var template = await FindTemplateOrThrowAsync(actor, templateId, cancellationToken);
+        EnsureCanModify(template.IsSystem, actor);
+        EnsureTemplateIsActive(template);
+
+        var stageMap = template.Stages.ToDictionary(s => s.Id);
+        if (request.Stages.Count != template.Stages.Count || request.Stages.Any(item => !stageMap.ContainsKey(item.StageId)))
+        {
+            throw CropLifecycleTemplateValidationHelper.Validation("stages", "Reorder stage list must include all existing stages for this template.");
+        }
+
+        var sequences = new HashSet<int>();
+        foreach (var item in request.Stages)
+        {
+            if (item.SequenceNumber <= 0)
+            {
+                throw CropLifecycleTemplateValidationHelper.Validation("sequenceNumber", "Sequence numbers must be greater than zero.");
+            }
+            if (!sequences.Add(item.SequenceNumber))
+            {
+                throw CropLifecycleTemplateValidationHelper.Validation("sequenceNumber", $"Duplicate sequence number {item.SequenceNumber} in reorder request.");
+            }
+        }
+
+        // Assign temporary positive offset sequence numbers to avoid unique index violation during EF Core save
+        foreach (var item in request.Stages)
+        {
+            var stage = stageMap[item.StageId];
+            stage.Update(stage.StageName, item.SequenceNumber + 10000, stage.ExpectedDurationDays, stage.Description);
+        }
+
+        foreach (var item in request.Stages)
+        {
+            var stage = stageMap[item.StageId];
+            stage.Update(stage.StageName, item.SequenceNumber, stage.ExpectedDurationDays, stage.Description);
+        }
+
+        AddAudit(actor, template, "CropLifecycleTemplate.StagesReordered", new { StageCount = request.Stages.Count }, ipAddress);
+        await store.SaveChangesAsync(cancellationToken);
+
+        return template.Stages.OrderBy(s => s.SequenceNumber).Select(ToResponse).ToArray();
+    }
+
     private async Task<bool> SetTemplateActiveAsync(
         CropLifecycleTemplateActor actor,
         Guid templateId,

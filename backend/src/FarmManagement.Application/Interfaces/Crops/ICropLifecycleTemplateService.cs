@@ -84,4 +84,11 @@ public interface ICropLifecycleTemplateService
         Guid stageId,
         string? ipAddress,
         CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<CropLifecycleStageResponse>> ReorderStagesAsync(
+        CropLifecycleTemplateActor actor,
+        Guid templateId,
+        ReorderCropLifecycleStagesRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default);
 }

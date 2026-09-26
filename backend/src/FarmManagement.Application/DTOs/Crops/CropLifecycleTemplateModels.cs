@@ -55,3 +55,11 @@ public sealed record UpdateCropLifecycleStageRequest(
     int SequenceNumber,
     int? ExpectedDurationDays,
     string? Description);
+
+public sealed record ReorderCropLifecycleStageItem(
+    Guid StageId,
+    int SequenceNumber);
+
+public sealed record ReorderCropLifecycleStagesRequest(
+    IReadOnlyList<ReorderCropLifecycleStageItem>? Stages);
+

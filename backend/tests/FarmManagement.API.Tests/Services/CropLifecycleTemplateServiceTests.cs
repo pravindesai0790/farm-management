@@ -266,6 +266,42 @@ public sealed class CropLifecycleTemplateServiceTests
         Assert.Equal("My Wheat Life", pagedResult.Items[0].Name);
     }
 
+    [Fact]
+    public async Task ReorderStagesAsync_WithValidRequest_ReordersStagesAndLogsAudit()
+    {
+        var store = new FakeCropLifecycleTemplateStore();
+        var crop = CreateCrop(store, _organizationId, "Grape", isSystem: true);
+        var service = new CropLifecycleTemplateService(store);
+
+        var templateResp = await service.CreateAsync(
+            CreateActor(),
+            new CreateCropLifecycleTemplateRequest(crop.Id, "Reorder Test Life", null, false, new List<CreateCropLifecycleStageRequest>
+            {
+                new("Stage A", 1, 10, null),
+                new("Stage B", 2, 20, null)
+            }),
+            "127.0.0.1");
+
+        var stageA = templateResp.Stages.First(s => s.StageName == "Stage A");
+        var stageB = templateResp.Stages.First(s => s.StageName == "Stage B");
+
+        var reorderReq = new ReorderCropLifecycleStagesRequest(new List<ReorderCropLifecycleStageItem>
+        {
+            new(stageA.Id, 2),
+            new(stageB.Id, 1)
+        });
+
+        var reordered = await service.ReorderStagesAsync(CreateActor(), templateResp.Id, reorderReq, "127.0.0.1");
+
+        Assert.NotNull(reordered);
+        Assert.Equal(2, reordered.Count);
+        Assert.Equal("Stage B", reordered[0].StageName);
+        Assert.Equal(1, reordered[0].SequenceNumber);
+        Assert.Equal("Stage A", reordered[1].StageName);
+        Assert.Equal(2, reordered[1].SequenceNumber);
+    }
+
+
     private static Crop CreateCrop(FakeCropLifecycleTemplateStore store, Guid? organizationId, string name, bool isSystem)
     {
         var cropOrgId = isSystem ? null : organizationId;

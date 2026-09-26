@@ -217,6 +217,13 @@ export class MainLayoutComponent {
           route: "/crops",
           permissions: ["Crop.View"],
         },
+        {
+          id: "crop-lifecycle-templates",
+          label: "Lifecycle templates",
+          icon: "schema",
+          route: "/crop-lifecycle-templates",
+          permissions: ["CropLifecycleTemplate.View"],
+        },
       ],
     },
     {

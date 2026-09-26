@@ -176,9 +176,9 @@ export interface CropCycle {
 export interface LifecycleStage {
   id: string;
   lifecycleTemplateId: string;
-  stageCode: string;
   stageName: string;
   sequenceNumber: number;
+  expectedDurationDays: number | null;
   description: string | null;
   isActive: boolean;
 }

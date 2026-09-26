@@ -106,6 +106,16 @@ public sealed class CropLifecycleTemplatesController(ICropLifecycleTemplateServi
         return NoContent();
     }
 
+    [HttpPut("{templateId:guid}/stages/reorder")]
+    [HttpPost("{templateId:guid}/stages/reorder")]
+    [Authorize(Policy = "Permission:CropLifecycleTemplate.Update")]
+    public async Task<ActionResult<IReadOnlyList<CropLifecycleStageResponse>>> ReorderStages(
+        Guid templateId,
+        [FromBody] ReorderCropLifecycleStagesRequest request,
+        CancellationToken cancellationToken) =>
+        Ok(await lifecycleService.ReorderStagesAsync(GetUserContext(), templateId, request, GetIpAddress(), cancellationToken));
+
+
     private CropLifecycleTemplateActor GetUserContext() => UserContextHelper.GetUserContext<CropLifecycleTemplateActor>(User);
 
     private string? GetIpAddress() => HttpContext.Connection.RemoteIpAddress?.ToString();

@@ -41,6 +41,14 @@
         <strong>{{ item.isActive ? "Active" : "Inactive" }}</strong>
       </mat-card-content>
     </mat-card>
+    <mat-card>
+      <mat-card-content>
+        <span>Lifecycle Templates</span>
+        <a mat-button color="primary" [routerLink]="['/crop-lifecycle-templates']" [queryParams]="{ cropId: item.id }">
+          View templates →
+        </a>
+      </mat-card-content>
+    </mat-card>
   </div>
 
   <mat-card>
