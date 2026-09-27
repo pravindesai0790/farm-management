@@ -371,9 +371,35 @@
 
 .timeline-cell {
   display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
   white-space: nowrap;
+
+  .timeline-dates-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+
+  .btn-edit-dates {
+    width: 28px;
+    height: 28px;
+    line-height: 28px;
+    opacity: 0.7;
+    transition: opacity 0.15s ease-in-out;
+
+    &:hover {
+      opacity: 1;
+      color: #2f6f4e;
+    }
+
+    .icon-sm {
+      font-size: 1.1rem;
+      width: 1.1rem;
+      height: 1.1rem;
+    }
+  }
 
   .date-row {
     font-size: 0.8rem;

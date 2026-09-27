@@ -1,0 +1,97 @@
+<h2 mat-dialog-title class="dialog-header">
+  <mat-icon color="primary" class="header-icon">calendar_month</mat-icon>
+  <span>Edit Planned Dates: Stage {{ data.sequenceNumber }} — {{ data.stageName }}</span>
+</h2>
+
+<mat-dialog-content>
+  <div class="dialog-info-banner">
+    <mat-icon class="banner-icon">info</mat-icon>
+    <span>
+      Planned dates define the scheduled timeline for this stage. Changing planned dates does <strong>not</strong> modify historical actual dates or alter stage status.
+    </span>
+  </div>
+
+  @if (data.actualStartDate || data.actualEndDate) {
+    <div class="historical-actuals-card">
+      <mat-icon class="history-icon">history</mat-icon>
+      <div class="history-content">
+        <span class="history-title">Historical Execution (Read-Only)</span>
+        <span class="history-dates">
+          Start: {{ data.actualStartDate ? (data.actualStartDate | date: 'mediumDate') : '—' }} |
+          End: {{ data.actualEndDate ? (data.actualEndDate | date: 'mediumDate') : '—' }}
+          ({{ data.currentStatus }})
+        </span>
+      </div>
+    </div>
+  }
+
+  <app-error-alert [error]="errorMessage()" />
+
+  <form [formGroup]="form" class="dates-form">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Planned Start Date</mat-label>
+      <input
+        matInput
+        [matDatepicker]="plannedStartDatePicker"
+        formControlName="plannedStartDate"
+        placeholder="Planned start date"
+        required
+      />
+      <mat-datepicker-toggle matIconSuffix [for]="plannedStartDatePicker" />
+      <mat-datepicker #plannedStartDatePicker />
+      @if (form.get('plannedStartDate')?.hasError('required')) {
+        <mat-error>Planned start date is required.</mat-error>
+      }
+      @if (form.hasError('beforePrevStageStart')) {
+        <mat-error>Planned start date cannot be before previous stage ({{ data.prevStageName }}) start date.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Planned End Date</mat-label>
+      <input
+        matInput
+        [matDatepicker]="plannedEndDatePicker"
+        formControlName="plannedEndDate"
+        placeholder="Planned end date"
+      />
+      <mat-datepicker-toggle matIconSuffix [for]="plannedEndDatePicker" />
+      <mat-datepicker #plannedEndDatePicker />
+      @if (form.hasError('beforeStartDate')) {
+        <mat-error>Planned end date cannot be before planned start date.</mat-error>
+      }
+      @if (form.hasError('afterNextStageEnd')) {
+        <mat-error>Planned end date cannot be after next stage ({{ data.nextStageName }}) end date.</mat-error>
+      }
+    </mat-form-field>
+
+    @if (calculatedDurationDays !== null) {
+      <div class="duration-summary">
+        <mat-icon class="duration-icon">schedule</mat-icon>
+        <span>
+          Scheduled Duration: <strong>{{ calculatedDurationDays }} days</strong>
+          @if (data.expectedDurationDays) {
+            <span class="expected-ref">(Template baseline: {{ data.expectedDurationDays }} days)</span>
+          }
+        </span>
+      </div>
+    }
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="dialog-actions">
+  <button mat-button (click)="onCancel()" [disabled]="isSubmitting()">Cancel</button>
+  <button
+    mat-flat-button
+    color="primary"
+    (click)="onSubmit()"
+    [disabled]="isSubmitting() || form.invalid"
+  >
+    @if (isSubmitting()) {
+      <mat-spinner diameter="20" class="spinner-margin" />
+      <span>Saving...</span>
+    } @else {
+      <span>Save Planned Dates</span>
+    }
+  </button>
+</mat-dialog-actions>

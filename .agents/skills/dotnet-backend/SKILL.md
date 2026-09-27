@@ -18,6 +18,7 @@ Use this skill when the user asks to:
 - Design or optimize EF Core data access patterns
 - Add background workers, scheduled jobs, or integration services in C#
 - Improve reliability/performance of a .NET backend service
+- When writing backend code.
 
 ## Your Expertise
 

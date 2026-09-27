@@ -144,6 +144,7 @@ describe("CropCycleLifecycleTabComponent", () => {
     expect(component.canReopen(stage1Completed)).toBeTrue();
     expect(component.canReopen(stage2InProgress)).toBeFalse();
     expect(component.canOverride(stage3NotStarted)).toBeTrue();
+    expect(component.canUpdatePlannedDates(stage2InProgress)).toBeTrue();
     expect(component.hasMenuActions(stage2InProgress)).toBeTrue();
   });
 
@@ -156,6 +157,20 @@ describe("CropCycleLifecycleTabComponent", () => {
     spyOn(component.stageActionCompleted, "emit");
 
     component.openActionDialog(mockLifecycle.stages[1], "complete");
+
+    expect(mockDialog.open).toHaveBeenCalled();
+    expect(component.stageActionCompleted.emit).toHaveBeenCalled();
+  });
+
+  it("should open edit planned dates dialog and emit stageActionCompleted on success", () => {
+    mockPermissionService.has.and.returnValue(true);
+    mockDialog.open.and.returnValue({
+      afterClosed: () => of({ success: true }),
+    } as any);
+
+    spyOn(component.stageActionCompleted, "emit");
+
+    component.openEditPlannedDatesDialog(mockLifecycle.stages[1]);
 
     expect(mockDialog.open).toHaveBeenCalled();
     expect(component.stageActionCompleted.emit).toHaveBeenCalled();

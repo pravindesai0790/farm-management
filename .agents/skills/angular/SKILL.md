@@ -19,6 +19,7 @@ Master modern Angular development with Signals, Standalone Components, Zoneless 
 - Implementing SSR, prerendering, and hydration
 - Optimizing Angular performance
 - Adopting modern Angular patterns and best practices
+- When writing frontend code.
 
 ## Do Not Use This Skill When
 

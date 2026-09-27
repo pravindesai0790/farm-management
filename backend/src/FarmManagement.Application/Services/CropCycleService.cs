@@ -1049,7 +1049,8 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
         ValidateActor(actor);
         if (stageId == Guid.Empty) throw new ResourceNotFoundException("The crop cycle stage was not found.");
         if (request is null) throw Validation("request", "A request body is required.");
-        if (request.PlannedStartDate is not null && request.PlannedEndDate is not null && request.PlannedEndDate < request.PlannedStartDate)
+        if (request.PlannedStartDate is null) throw Validation("plannedStartDate", "Planned start date is required.");
+        if (request.PlannedEndDate is not null && request.PlannedEndDate < request.PlannedStartDate)
         {
             throw Validation("plannedEndDate", "Planned end date cannot be before planned start date.");
         }
@@ -1062,7 +1063,60 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
             var cycle = await store.LockAsync(stage.CropCycleId, actor.OrganizationId, transactionCancellationToken)
                 ?? throw new ResourceNotFoundException("The crop cycle was not found.");
 
+            if (cycle.Status != CropCycleStatus.Active)
+            {
+                throw new ConflictException("Stage planned dates can only be updated for an active crop cycle.");
+            }
+
+            var plantation = await store.LockPlantationAsync(cycle.PlantationId, actor.OrganizationId, transactionCancellationToken)
+                ?? throw new ResourceNotFoundException("The plantation was not found.");
+
+            if (request.PlannedStartDate < plantation.PlantingDate)
+            {
+                throw Validation("plannedStartDate", "The planned start date cannot be before the plantation's planting date.");
+            }
+
+            if (plantation.ActualEndDate is not null && request.PlannedStartDate > plantation.ActualEndDate)
+            {
+                throw Validation("plannedStartDate", "The planned start date cannot be after the plantation termination date.");
+            }
+
+            if (request.PlannedEndDate is not null && plantation.ActualEndDate is not null && request.PlannedEndDate > plantation.ActualEndDate)
+            {
+                throw Validation("plannedEndDate", "The planned end date cannot be after the plantation termination date.");
+            }
+
+            var allStages = await store.GetStagesAsync(cycle.Id, transactionCancellationToken);
+
+            var prevStage = allStages
+                .Where(s => s.SequenceNumber < stage.SequenceNumber)
+                .OrderByDescending(s => s.SequenceNumber)
+                .FirstOrDefault();
+
+            if (prevStage?.PlannedStartDate is not null && request.PlannedStartDate < prevStage.PlannedStartDate)
+            {
+                throw Validation("plannedStartDate", $"The planned start date cannot be before the previous stage ({prevStage.StageName}) planned start date.");
+            }
+
+            var nextStage = allStages
+                .Where(s => s.SequenceNumber > stage.SequenceNumber)
+                .OrderBy(s => s.SequenceNumber)
+                .FirstOrDefault();
+
+            if (nextStage?.PlannedStartDate is not null && request.PlannedStartDate > nextStage.PlannedStartDate)
+            {
+                throw Validation("plannedStartDate", $"The planned start date cannot be after the next stage ({nextStage.StageName}) planned start date.");
+            }
+
+            if (nextStage?.PlannedEndDate is not null && request.PlannedEndDate is not null && request.PlannedEndDate > nextStage.PlannedEndDate)
+            {
+                throw Validation("plannedEndDate", $"The planned end date cannot be after the next stage ({nextStage.StageName}) planned end date.");
+            }
+
             var now = DateTimeOffset.UtcNow;
+            var previousPlannedStart = stage.PlannedStartDate;
+            var previousPlannedEnd = stage.PlannedEndDate;
+
             stage.UpdatePlannedDates(request.PlannedStartDate, request.PlannedEndDate, now, actor.UserId);
 
             store.AddAuditLog(new AuditLog(
@@ -1076,8 +1130,10 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
                     CropCycleId = cycle.Id,
                     stage.StageName,
                     stage.SequenceNumber,
-                    stage.PlannedStartDate,
-                    stage.PlannedEndDate
+                    PreviousPlannedStartDate = previousPlannedStart,
+                    PreviousPlannedEndDate = previousPlannedEnd,
+                    PlannedStartDate = stage.PlannedStartDate,
+                    PlannedEndDate = stage.PlannedEndDate
                 }),
                 ipAddress));
 

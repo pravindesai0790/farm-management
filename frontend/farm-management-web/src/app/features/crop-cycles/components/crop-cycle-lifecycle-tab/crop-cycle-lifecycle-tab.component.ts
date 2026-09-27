@@ -13,6 +13,7 @@ import { RouterLink } from "@angular/router";
 import { PermissionService } from "../../../../core/auth/permission.service";
 import { CropCycle, CropCycleLifecycle, CropCycleStage } from "../../../../core/farm-management/farm-management.models";
 import { CropCycleStageActionDialogComponent, StageActionMode } from "../../dialogs/crop-cycle-stage-action-dialog.component";
+import { CropCycleStagePlannedDatesDialogComponent } from "../../dialogs/crop-cycle-stage-planned-dates-dialog.component";
 
 @Component({
   selector: "app-crop-cycle-lifecycle-tab",
@@ -142,8 +143,15 @@ export class CropCycleLifecycleTabComponent {
     );
   }
 
+  canUpdatePlannedDates(stage: CropCycleStage): boolean {
+    return (
+      this.cycle?.status === "ACTIVE" &&
+      this.permissionService.has("CropCycleLifecycle.UpdateStage")
+    );
+  }
+
   hasMenuActions(stage: CropCycleStage): boolean {
-    return this.canSkip(stage) || this.canOverride(stage);
+    return this.canUpdatePlannedDates(stage) || this.canSkip(stage) || this.canOverride(stage);
   }
 
   hasAnyAction(stage: CropCycleStage): boolean {
@@ -170,6 +178,45 @@ export class CropCycleLifecycleTabComponent {
         nextStageSequence: nextStage?.sequenceNumber,
       },
       width: "500px",
+      disableClose: true,
+    });
+
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result?.success) {
+        this.stageActionCompleted.emit();
+      }
+    });
+  }
+
+  openEditPlannedDatesDialog(stage: CropCycleStage): void {
+    if (this.isLoading || this.isActionProcessing()) return;
+
+    const stages = this.lifecycle?.stages || [];
+    const prevStage = stages
+      .filter((s) => s.sequenceNumber < stage.sequenceNumber)
+      .sort((a, b) => b.sequenceNumber - a.sequenceNumber)[0];
+
+    const nextStage = stages
+      .filter((s) => s.sequenceNumber > stage.sequenceNumber)
+      .sort((a, b) => a.sequenceNumber - b.sequenceNumber)[0];
+
+    const dialogRef = this.dialog.open(CropCycleStagePlannedDatesDialogComponent, {
+      data: {
+        stageId: stage.id,
+        stageName: stage.stageName,
+        sequenceNumber: stage.sequenceNumber,
+        currentStatus: stage.status,
+        plannedStartDate: stage.plannedStartDate,
+        plannedEndDate: stage.plannedEndDate,
+        actualStartDate: stage.actualStartDate,
+        actualEndDate: stage.actualEndDate,
+        expectedDurationDays: stage.expectedDurationDays,
+        prevStageName: prevStage?.stageName,
+        prevStagePlannedStartDate: prevStage?.plannedStartDate,
+        nextStageName: nextStage?.stageName,
+        nextStagePlannedEndDate: nextStage?.plannedEndDate,
+      },
+      width: "520px",
       disableClose: true,
     });
 

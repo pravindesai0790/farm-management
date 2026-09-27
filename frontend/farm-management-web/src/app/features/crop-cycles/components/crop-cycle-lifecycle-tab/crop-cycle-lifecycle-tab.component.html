@@ -207,15 +207,28 @@
                 <th mat-header-cell *matHeaderCellDef class="col-timeline">Planned Timeline</th>
                 <td mat-cell *matCellDef="let stage" class="col-timeline">
                   <div class="timeline-cell">
-                    @if (stage.plannedStartDate) {
-                      <span class="date-row">
-                        <span class="date-label">Start:</span> {{ stage.plannedStartDate | date: 'mediumDate' }}
-                      </span>
-                      <span class="date-row">
-                        <span class="date-label">End:</span> {{ stage.plannedEndDate ? (stage.plannedEndDate | date: 'mediumDate') : '—' }}
-                      </span>
-                    } @else {
-                      <span class="text-muted">—</span>
+                    <div class="timeline-dates-group">
+                      @if (stage.plannedStartDate) {
+                        <span class="date-row">
+                          <span class="date-label">Start:</span> {{ stage.plannedStartDate | date: 'mediumDate' }}
+                        </span>
+                        <span class="date-row">
+                          <span class="date-label">End:</span> {{ stage.plannedEndDate ? (stage.plannedEndDate | date: 'mediumDate') : '—' }}
+                        </span>
+                      } @else {
+                        <span class="text-muted">—</span>
+                      }
+                    </div>
+                    @if (canUpdatePlannedDates(stage)) {
+                      <button
+                        mat-icon-button
+                        class="btn-icon-sm btn-edit-dates"
+                        [disabled]="isLoading || isActionProcessing()"
+                        (click)="openEditPlannedDatesDialog(stage)"
+                        matTooltip="Edit stage planned dates"
+                      >
+                        <mat-icon class="icon-sm">edit_calendar</mat-icon>
+                      </button>
                     }
                   </div>
                 </td>
@@ -227,12 +240,14 @@
                 <td mat-cell *matCellDef="let stage" class="col-timeline">
                   <div class="timeline-cell">
                     @if (stage.actualStartDate || stage.actualEndDate) {
-                      <span class="date-row has-actual">
-                        <span class="date-label">Start:</span> {{ stage.actualStartDate ? (stage.actualStartDate | date: 'mediumDate') : '—' }}
-                      </span>
-                      <span class="date-row has-actual">
-                        <span class="date-label">End:</span> {{ stage.actualEndDate ? (stage.actualEndDate | date: 'mediumDate') : '—' }}
-                      </span>
+                      <div class="timeline-dates-group">
+                        <span class="date-row has-actual">
+                          <span class="date-label">Start:</span> {{ stage.actualStartDate ? (stage.actualStartDate | date: 'mediumDate') : '—' }}
+                        </span>
+                        <span class="date-row has-actual">
+                          <span class="date-label">End:</span> {{ stage.actualEndDate ? (stage.actualEndDate | date: 'mediumDate') : '—' }}
+                        </span>
+                      </div>
                     } @else {
                       <span class="text-muted">—</span>
                     }
@@ -292,6 +307,12 @@
                           <mat-icon>more_vert</mat-icon>
                         </button>
                         <mat-menu #stageMenu="matMenu">
+                          @if (canUpdatePlannedDates(stage)) {
+                            <button mat-menu-item (click)="openEditPlannedDatesDialog(stage)">
+                              <mat-icon>edit_calendar</mat-icon>
+                              <span>Edit Planned Dates</span>
+                            </button>
+                          }
                           @if (canSkip(stage)) {
                             <button mat-menu-item (click)="openActionDialog(stage, 'skip')">
                               <mat-icon class="text-warn">skip_next</mat-icon>
