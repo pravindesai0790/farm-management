@@ -687,6 +687,401 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
             lifecycleTemplateId);
     }
 
+    public async Task<CropCycleStageResponse> GetStageAsync(
+        CropCycleActor actor,
+        Guid stageId,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        if (stageId == Guid.Empty) throw new ResourceNotFoundException("The crop cycle stage was not found.");
+        var stage = await store.FindStageAsync(stageId, actor.OrganizationId, cancellationToken)
+            ?? throw new ResourceNotFoundException("The crop cycle stage was not found.");
+        return CropCycleLifecycleHelper.ToStageResponse(stage);
+    }
+
+    public async Task<CropCycleStageResponse> CompleteStageAsync(
+        CropCycleActor actor,
+        Guid stageId,
+        CompleteCropCycleStageRequest? request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        if (stageId == Guid.Empty) throw new ResourceNotFoundException("The crop cycle stage was not found.");
+
+        return await store.ExecuteInTransactionAsync(async transactionCancellationToken =>
+        {
+            var stage = await store.FindStageAsync(stageId, actor.OrganizationId, transactionCancellationToken)
+                ?? throw new ResourceNotFoundException("The crop cycle stage was not found.");
+
+            var cycle = await store.LockAsync(stage.CropCycleId, actor.OrganizationId, transactionCancellationToken)
+                ?? throw new ResourceNotFoundException("The crop cycle was not found.");
+
+            var plantation = await store.LockPlantationAsync(cycle.PlantationId, actor.OrganizationId, transactionCancellationToken)
+                ?? throw new ResourceNotFoundException("The plantation was not found.");
+
+            if (cycle.Status != CropCycleStatus.Active)
+            {
+                throw new ConflictException("Stages can only be completed for an active crop cycle.");
+            }
+
+            if (stage.Status != CropCycleStageStatus.InProgress)
+            {
+                throw new ConflictException("Only an in-progress stage can be completed.");
+            }
+
+            var actualEndDate = request?.ActualEndDate ?? DateOnly.FromDateTime(DateTime.UtcNow);
+
+            if (stage.ActualStartDate is not null && actualEndDate < stage.ActualStartDate.Value)
+            {
+                throw Validation("actualEndDate", "The actual completion date cannot be before the stage start date.");
+            }
+
+            EnsureDateIsWithinPlantation(actualEndDate, plantation, "actualEndDate");
+
+            var now = DateTimeOffset.UtcNow;
+            stage.Complete(actualEndDate, now, actor.UserId, request?.Notes);
+
+            var allStages = await store.GetStagesAsync(cycle.Id, transactionCancellationToken);
+            var nextStage = CropCycleLifecycleHelper.FindNextEligibleStage(allStages, stage.SequenceNumber);
+
+            if (nextStage is not null)
+            {
+                nextStage.Start(actualEndDate, now, actor.UserId);
+                store.AddAuditLog(new AuditLog(
+                    "CropCycleStage.Started",
+                    cycle.OrganizationId,
+                    actor.UserId,
+                    "CropCycleStage",
+                    nextStage.Id,
+                    JsonSerializer.SerializeToDocument(new
+                    {
+                        CropCycleId = cycle.Id,
+                        nextStage.StageName,
+                        nextStage.SequenceNumber,
+                        ActualStartDate = actualEndDate,
+                        Status = "IN_PROGRESS"
+                    }),
+                    ipAddress));
+            }
+
+            store.AddAuditLog(new AuditLog(
+                "CropCycleStage.Completed",
+                cycle.OrganizationId,
+                actor.UserId,
+                "CropCycleStage",
+                stage.Id,
+                JsonSerializer.SerializeToDocument(new
+                {
+                    CropCycleId = cycle.Id,
+                    stage.StageName,
+                    stage.SequenceNumber,
+                    ActualStartDate = stage.ActualStartDate,
+                    ActualEndDate = actualEndDate,
+                    Status = "COMPLETED",
+                    NextStageId = nextStage?.Id,
+                    NextStageName = nextStage?.StageName
+                }),
+                ipAddress));
+
+            await store.SaveChangesAsync(transactionCancellationToken);
+            return CropCycleLifecycleHelper.ToStageResponse(stage);
+        }, cancellationToken);
+    }
+
+    public async Task<CropCycleStageResponse> SkipStageAsync(
+        CropCycleActor actor,
+        Guid stageId,
+        SkipCropCycleStageRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        if (stageId == Guid.Empty) throw new ResourceNotFoundException("The crop cycle stage was not found.");
+        if (request is null || string.IsNullOrWhiteSpace(request.Reason))
+        {
+            throw Validation("reason", "A reason is required to skip a stage.");
+        }
+
+        return await store.ExecuteInTransactionAsync(async transactionCancellationToken =>
+        {
+            var stage = await store.FindStageAsync(stageId, actor.OrganizationId, transactionCancellationToken)
+                ?? throw new ResourceNotFoundException("The crop cycle stage was not found.");
+
+            var cycle = await store.LockAsync(stage.CropCycleId, actor.OrganizationId, transactionCancellationToken)
+                ?? throw new ResourceNotFoundException("The crop cycle was not found.");
+
+            var plantation = await store.LockPlantationAsync(cycle.PlantationId, actor.OrganizationId, transactionCancellationToken)
+                ?? throw new ResourceNotFoundException("The plantation was not found.");
+
+            if (cycle.Status != CropCycleStatus.Active)
+            {
+                throw new ConflictException("Stages can only be skipped for an active crop cycle.");
+            }
+
+            if (stage.Status is CropCycleStageStatus.Completed or CropCycleStageStatus.Cancelled)
+            {
+                throw new ConflictException($"A stage in {CropCycleLifecycleHelper.FormatStageStatus(stage.Status)} status cannot be skipped.");
+            }
+
+            var skipDate = request.SkipDate ?? DateOnly.FromDateTime(DateTime.UtcNow);
+            EnsureDateIsWithinPlantation(skipDate, plantation, "skipDate");
+
+            var wasInProgress = stage.Status == CropCycleStageStatus.InProgress;
+            var now = DateTimeOffset.UtcNow;
+
+            stage.Skip(request.Reason.Trim(), now, actor.UserId, wasInProgress ? skipDate : null);
+
+            var allStages = await store.GetStagesAsync(cycle.Id, transactionCancellationToken);
+            CropCycleStage? nextStage = null;
+
+            if (wasInProgress)
+            {
+                nextStage = CropCycleLifecycleHelper.FindNextEligibleStage(allStages, stage.SequenceNumber);
+                if (nextStage is not null)
+                {
+                    nextStage.Start(skipDate, now, actor.UserId);
+                    store.AddAuditLog(new AuditLog(
+                        "CropCycleStage.Started",
+                        cycle.OrganizationId,
+                        actor.UserId,
+                        "CropCycleStage",
+                        nextStage.Id,
+                        JsonSerializer.SerializeToDocument(new
+                        {
+                            CropCycleId = cycle.Id,
+                            nextStage.StageName,
+                            nextStage.SequenceNumber,
+                            ActualStartDate = skipDate,
+                            Status = "IN_PROGRESS"
+                        }),
+                        ipAddress));
+                }
+            }
+
+            store.AddAuditLog(new AuditLog(
+                "CropCycleStage.Skipped",
+                cycle.OrganizationId,
+                actor.UserId,
+                "CropCycleStage",
+                stage.Id,
+                JsonSerializer.SerializeToDocument(new
+                {
+                    CropCycleId = cycle.Id,
+                    stage.StageName,
+                    stage.SequenceNumber,
+                    Reason = request.Reason.Trim(),
+                    WasInProgress = wasInProgress,
+                    SkipDate = skipDate,
+                    Status = "SKIPPED",
+                    NextStageId = nextStage?.Id
+                }),
+                ipAddress));
+
+            await store.SaveChangesAsync(transactionCancellationToken);
+            return CropCycleLifecycleHelper.ToStageResponse(stage);
+        }, cancellationToken);
+    }
+
+    public async Task<CropCycleStageResponse> ReopenStageAsync(
+        CropCycleActor actor,
+        Guid stageId,
+        ReopenCropCycleStageRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        if (stageId == Guid.Empty) throw new ResourceNotFoundException("The crop cycle stage was not found.");
+        if (request is null || string.IsNullOrWhiteSpace(request.Reason))
+        {
+            throw Validation("reason", "A reason is required to reopen a stage.");
+        }
+
+        return await store.ExecuteInTransactionAsync(async transactionCancellationToken =>
+        {
+            var stage = await store.FindStageAsync(stageId, actor.OrganizationId, transactionCancellationToken)
+                ?? throw new ResourceNotFoundException("The crop cycle stage was not found.");
+
+            var cycle = await store.LockAsync(stage.CropCycleId, actor.OrganizationId, transactionCancellationToken)
+                ?? throw new ResourceNotFoundException("The crop cycle was not found.");
+
+            var plantation = await store.LockPlantationAsync(cycle.PlantationId, actor.OrganizationId, transactionCancellationToken)
+                ?? throw new ResourceNotFoundException("The plantation was not found.");
+
+            if (cycle.Status != CropCycleStatus.Active)
+            {
+                throw new ConflictException("Stages can only be reopened for an active crop cycle.");
+            }
+
+            if (stage.Status is not (CropCycleStageStatus.Completed or CropCycleStageStatus.Skipped))
+            {
+                throw new ConflictException($"Only a completed or skipped stage can be reopened. Current status is {CropCycleLifecycleHelper.FormatStageStatus(stage.Status)}.");
+            }
+
+            var now = DateTimeOffset.UtcNow;
+            var defaultStart = cycle.ActualStartDate ?? DateOnly.FromDateTime(DateTime.UtcNow);
+            stage.Reopen(request.Reason.Trim(), now, actor.UserId, defaultStart);
+
+            var allStages = await store.GetStagesAsync(cycle.Id, transactionCancellationToken);
+            var reconciled = CropCycleLifecycleHelper.ReconcileSubsequentStages(stage, allStages, now, actor.UserId);
+
+            store.AddAuditLog(new AuditLog(
+                "CropCycleStage.Reopened",
+                cycle.OrganizationId,
+                actor.UserId,
+                "CropCycleStage",
+                stage.Id,
+                JsonSerializer.SerializeToDocument(new
+                {
+                    CropCycleId = cycle.Id,
+                    stage.StageName,
+                    stage.SequenceNumber,
+                    Reason = request.Reason.Trim(),
+                    Status = "IN_PROGRESS",
+                    ReconciledStagesCount = reconciled.Count,
+                    ReconciledStages = reconciled
+                }),
+                ipAddress));
+
+            await store.SaveChangesAsync(transactionCancellationToken);
+            return CropCycleLifecycleHelper.ToStageResponse(stage);
+        }, cancellationToken);
+    }
+
+    public async Task<CropCycleStageResponse> OverrideStageAsync(
+        CropCycleActor actor,
+        Guid stageId,
+        OverrideCropCycleStageRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        if (stageId == Guid.Empty) throw new ResourceNotFoundException("The crop cycle stage was not found.");
+        if (request is null || string.IsNullOrWhiteSpace(request.Reason))
+        {
+            throw Validation("reason", "An override reason is required.");
+        }
+
+        var newStatus = CropCycleLifecycleHelper.ParseStageStatus(request.TargetStatus);
+
+        if (newStatus == CropCycleStageStatus.Completed && request.ActualEndDate is null && request.ActualStartDate is null)
+        {
+            throw Validation("actualEndDate", "Actual end date is required when overriding to COMPLETED.");
+        }
+        if (request.ActualStartDate is not null && request.ActualEndDate is not null && request.ActualEndDate < request.ActualStartDate)
+        {
+            throw Validation("actualEndDate", "Actual end date cannot be before actual start date.");
+        }
+
+        return await store.ExecuteInTransactionAsync(async transactionCancellationToken =>
+        {
+            var stage = await store.FindStageAsync(stageId, actor.OrganizationId, transactionCancellationToken)
+                ?? throw new ResourceNotFoundException("The crop cycle stage was not found.");
+
+            var cycle = await store.LockAsync(stage.CropCycleId, actor.OrganizationId, transactionCancellationToken)
+                ?? throw new ResourceNotFoundException("The crop cycle was not found.");
+
+            var plantation = await store.LockPlantationAsync(cycle.PlantationId, actor.OrganizationId, transactionCancellationToken)
+                ?? throw new ResourceNotFoundException("The plantation was not found.");
+
+            if (cycle.Status != CropCycleStatus.Active)
+            {
+                throw new ConflictException("Stages can only be overridden for an active crop cycle.");
+            }
+
+            if (request.ActualStartDate is not null) EnsureDateIsWithinPlantation(request.ActualStartDate.Value, plantation, "actualStartDate");
+            if (request.ActualEndDate is not null) EnsureDateIsWithinPlantation(request.ActualEndDate.Value, plantation, "actualEndDate");
+
+            var now = DateTimeOffset.UtcNow;
+            var allStages = await store.GetStagesAsync(cycle.Id, transactionCancellationToken);
+
+            var reconciled = new List<object>();
+            if (newStatus == CropCycleStageStatus.InProgress)
+            {
+                foreach (var other in allStages.Where(s => s.Id != stage.Id && s.Status == CropCycleStageStatus.InProgress))
+                {
+                    var prevStatus = other.Status.ToString().ToUpperInvariant();
+                    other.ResetToNotStarted($"[Reconciled due to override of Stage {stage.SequenceNumber}]", now, actor.UserId);
+                    reconciled.Add(new { other.Id, other.StageName, other.SequenceNumber, PreviousStatus = prevStatus });
+                }
+            }
+
+            var previousStatus = stage.Status.ToString().ToUpperInvariant();
+            stage.Override(newStatus, request.ActualStartDate, request.ActualEndDate, request.Reason.Trim(), now, actor.UserId);
+
+            store.AddAuditLog(new AuditLog(
+                "CropCycleStage.Overridden",
+                cycle.OrganizationId,
+                actor.UserId,
+                "CropCycleStage",
+                stage.Id,
+                JsonSerializer.SerializeToDocument(new
+                {
+                    CropCycleId = cycle.Id,
+                    stage.StageName,
+                    stage.SequenceNumber,
+                    PreviousStatus = previousStatus,
+                    NewStatus = newStatus.ToString().ToUpperInvariant(),
+                    stage.ActualStartDate,
+                    stage.ActualEndDate,
+                    Reason = request.Reason.Trim(),
+                    ReconciledStagesCount = reconciled.Count,
+                    ReconciledStages = reconciled
+                }),
+                ipAddress));
+
+            await store.SaveChangesAsync(transactionCancellationToken);
+            return CropCycleLifecycleHelper.ToStageResponse(stage);
+        }, cancellationToken);
+    }
+
+    public async Task<CropCycleStageResponse> UpdateStagePlannedDatesAsync(
+        CropCycleActor actor,
+        Guid stageId,
+        UpdateCropCycleStagePlannedDatesRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        if (stageId == Guid.Empty) throw new ResourceNotFoundException("The crop cycle stage was not found.");
+        if (request is null) throw Validation("request", "A request body is required.");
+        if (request.PlannedStartDate is not null && request.PlannedEndDate is not null && request.PlannedEndDate < request.PlannedStartDate)
+        {
+            throw Validation("plannedEndDate", "Planned end date cannot be before planned start date.");
+        }
+
+        return await store.ExecuteInTransactionAsync(async transactionCancellationToken =>
+        {
+            var stage = await store.FindStageAsync(stageId, actor.OrganizationId, transactionCancellationToken)
+                ?? throw new ResourceNotFoundException("The crop cycle stage was not found.");
+
+            var cycle = await store.LockAsync(stage.CropCycleId, actor.OrganizationId, transactionCancellationToken)
+                ?? throw new ResourceNotFoundException("The crop cycle was not found.");
+
+            var now = DateTimeOffset.UtcNow;
+            stage.UpdatePlannedDates(request.PlannedStartDate, request.PlannedEndDate, now, actor.UserId);
+
+            store.AddAuditLog(new AuditLog(
+                "CropCycleStage.PlannedDatesUpdated",
+                cycle.OrganizationId,
+                actor.UserId,
+                "CropCycleStage",
+                stage.Id,
+                JsonSerializer.SerializeToDocument(new
+                {
+                    CropCycleId = cycle.Id,
+                    stage.StageName,
+                    stage.SequenceNumber,
+                    stage.PlannedStartDate,
+                    stage.PlannedEndDate
+                }),
+                ipAddress));
+
+            await store.SaveChangesAsync(transactionCancellationToken);
+            return CropCycleLifecycleHelper.ToStageResponse(stage);
+        }, cancellationToken);
+    }
+
     private static void ValidateActor(CropCycleActor actor)
     {
         if (actor.UserId == Guid.Empty || actor.OrganizationId == Guid.Empty)

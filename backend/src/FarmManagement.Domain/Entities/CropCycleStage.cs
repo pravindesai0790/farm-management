@@ -101,7 +101,7 @@ public sealed class CropCycleStage
         return true;
     }
 
-    public bool Skip(string reason, DateTimeOffset now, Guid updatedBy)
+    public bool Skip(string reason, DateTimeOffset now, Guid updatedBy, DateOnly? actualEndDate = null)
     {
         if (string.IsNullOrWhiteSpace(reason))
         {
@@ -111,16 +111,24 @@ public sealed class CropCycleStage
         {
             return false;
         }
+        if (actualEndDate is not null && ActualStartDate is not null && actualEndDate < ActualStartDate.Value)
+        {
+            throw new ArgumentException("The actual completion date cannot be before the stage start date.", nameof(actualEndDate));
+        }
         EnsureUpdatedBy(updatedBy);
 
         Status = CropCycleStageStatus.Skipped;
+        if (actualEndDate is not null)
+        {
+            ActualEndDate = actualEndDate;
+        }
         Notes = string.IsNullOrWhiteSpace(Notes) ? $"[Skipped] {reason.Trim()}" : $"{Notes}\n[Skipped] {reason.Trim()}";
         UpdatedAt = now;
         UpdatedBy = updatedBy;
         return true;
     }
 
-    public bool Reopen(string reason, DateTimeOffset now, Guid updatedBy)
+    public bool Reopen(string reason, DateTimeOffset now, Guid updatedBy, DateOnly? actualStartDate = null)
     {
         if (string.IsNullOrWhiteSpace(reason))
         {
@@ -133,11 +141,26 @@ public sealed class CropCycleStage
         EnsureUpdatedBy(updatedBy);
 
         Status = CropCycleStageStatus.InProgress;
+        if (ActualStartDate is null && actualStartDate is not null)
+        {
+            ActualStartDate = actualStartDate;
+        }
         ActualEndDate = null;
         Notes = string.IsNullOrWhiteSpace(Notes) ? $"[Reopened] {reason.Trim()}" : $"{Notes}\n[Reopened] {reason.Trim()}";
         UpdatedAt = now;
         UpdatedBy = updatedBy;
         return true;
+    }
+
+    public void ResetToNotStarted(string note, DateTimeOffset now, Guid updatedBy)
+    {
+        EnsureUpdatedBy(updatedBy);
+        Status = CropCycleStageStatus.NotStarted;
+        ActualStartDate = null;
+        ActualEndDate = null;
+        Notes = string.IsNullOrWhiteSpace(Notes) ? note.Trim() : $"{Notes}\n{note.Trim()}";
+        UpdatedAt = now;
+        UpdatedBy = updatedBy;
     }
 
     public bool Override(

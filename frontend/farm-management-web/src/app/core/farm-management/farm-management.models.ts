@@ -204,6 +204,27 @@ export interface CropCycleLifecycle {
   hasGeneratedStages: boolean;
   stages: readonly CropCycleStage[];
 }
+export interface CompleteCropCycleStageRequest {
+  actualEndDate?: string | null;
+  notes?: string | null;
+}
+export interface SkipCropCycleStageRequest {
+  reason: string;
+  skipDate?: string | null;
+}
+export interface ReopenCropCycleStageRequest {
+  reason: string;
+}
+export interface OverrideCropCycleStageRequest {
+  targetStatus: string;
+  actualStartDate?: string | null;
+  actualEndDate?: string | null;
+  reason: string;
+}
+export interface UpdateCropCycleStagePlannedDatesRequest {
+  plannedStartDate?: string | null;
+  plannedEndDate?: string | null;
+}
 export interface LifecycleStage {
   id: string;
   lifecycleTemplateId: string;

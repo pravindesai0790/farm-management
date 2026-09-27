@@ -68,4 +68,44 @@ public interface ICropCycleService
         CancelCropCycleRequest request,
         string? ipAddress,
         CancellationToken cancellationToken = default);
+
+    Task<CropCycleStageResponse> GetStageAsync(
+        CropCycleActor actor,
+        Guid stageId,
+        CancellationToken cancellationToken = default);
+
+    Task<CropCycleStageResponse> CompleteStageAsync(
+        CropCycleActor actor,
+        Guid stageId,
+        CompleteCropCycleStageRequest? request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default);
+
+    Task<CropCycleStageResponse> SkipStageAsync(
+        CropCycleActor actor,
+        Guid stageId,
+        SkipCropCycleStageRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default);
+
+    Task<CropCycleStageResponse> ReopenStageAsync(
+        CropCycleActor actor,
+        Guid stageId,
+        ReopenCropCycleStageRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default);
+
+    Task<CropCycleStageResponse> OverrideStageAsync(
+        CropCycleActor actor,
+        Guid stageId,
+        OverrideCropCycleStageRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default);
+
+    Task<CropCycleStageResponse> UpdateStagePlannedDatesAsync(
+        CropCycleActor actor,
+        Guid stageId,
+        UpdateCropCycleStagePlannedDatesRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default);
 }

@@ -1,4 +1,5 @@
 using FarmManagement.Application.Common.Exceptions;
+using FarmManagement.Application.DTOs.CropCycles;
 using FarmManagement.Domain.Entities;
 using FarmManagement.Domain.Enums;
 
@@ -138,6 +139,83 @@ public static class CropCycleLifecycleHelper
 
         return result;
     }
+
+    public static CropCycleStage? FindNextEligibleStage(IReadOnlyList<CropCycleStage> stages, int currentSequenceNumber) =>
+        stages
+            .Where(s => s.SequenceNumber > currentSequenceNumber && s.Status == CropCycleStageStatus.NotStarted)
+            .OrderBy(s => s.SequenceNumber)
+            .FirstOrDefault();
+
+    public static IReadOnlyList<object> ReconcileSubsequentStages(
+        CropCycleStage targetStage,
+        IReadOnlyList<CropCycleStage> allStages,
+        DateTimeOffset now,
+        Guid userId)
+    {
+        var reconciled = new List<object>();
+
+        foreach (var stage in allStages.Where(s => s.SequenceNumber > targetStage.SequenceNumber))
+        {
+            if (stage.Status is CropCycleStageStatus.InProgress or CropCycleStageStatus.Completed)
+            {
+                var prevStatus = stage.Status.ToString().ToUpperInvariant();
+                stage.ResetToNotStarted($"[Reconciled due to reopening of Stage {targetStage.SequenceNumber}]", now, userId);
+                reconciled.Add(new
+                {
+                    stage.Id,
+                    stage.StageName,
+                    stage.SequenceNumber,
+                    PreviousStatus = prevStatus
+                });
+            }
+        }
+
+        return reconciled;
+    }
+
+    public static CropCycleStageStatus ParseStageStatus(string? statusStr)
+    {
+        if (string.IsNullOrWhiteSpace(statusStr))
+        {
+            throw Validation("targetStatus", "Target status is required.");
+        }
+
+        var normalized = statusStr.Trim().ToUpperInvariant();
+        return normalized switch
+        {
+            "NOT_STARTED" or "NOTSTARTED" => CropCycleStageStatus.NotStarted,
+            "IN_PROGRESS" or "INPROGRESS" => CropCycleStageStatus.InProgress,
+            "COMPLETED" => CropCycleStageStatus.Completed,
+            "SKIPPED" => CropCycleStageStatus.Skipped,
+            "CANCELLED" or "CANCELED" => CropCycleStageStatus.Cancelled,
+            _ => throw Validation("targetStatus", "Target status must be NOT_STARTED, IN_PROGRESS, COMPLETED, SKIPPED, or CANCELLED.")
+        };
+    }
+
+    public static CropCycleStageResponse ToStageResponse(CropCycleStage stage) =>
+        new(
+            stage.Id,
+            stage.CropCycleId,
+            stage.LifecycleTemplateStageId,
+            stage.StageName,
+            stage.SequenceNumber,
+            stage.ExpectedDurationDays,
+            stage.PlannedStartDate,
+            stage.PlannedEndDate,
+            stage.ActualStartDate,
+            stage.ActualEndDate,
+            FormatStageStatus(stage.Status),
+            stage.Notes);
+
+    public static string FormatStageStatus(CropCycleStageStatus status) => status switch
+    {
+        CropCycleStageStatus.NotStarted => "NOT_STARTED",
+        CropCycleStageStatus.InProgress => "IN_PROGRESS",
+        CropCycleStageStatus.Completed => "COMPLETED",
+        CropCycleStageStatus.Skipped => "SKIPPED",
+        CropCycleStageStatus.Cancelled => "CANCELLED",
+        _ => status.ToString().ToUpperInvariant()
+    };
 
     public static ValidationException Validation(string fieldName, string message) =>
         new("Validation failed", new Dictionary<string, string[]> { [fieldName] = [message] });

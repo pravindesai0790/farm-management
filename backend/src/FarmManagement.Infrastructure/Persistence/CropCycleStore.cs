@@ -144,6 +144,12 @@ public sealed class CropCycleStore(ApplicationDbContext dbContext) : ICropCycleS
 
     public void AddStage(CropCycleStage stage) => dbContext.CropCycleStages.Add(stage);
 
+    public Task<CropCycleStage?> FindStageAsync(Guid stageId, Guid organizationId, CancellationToken cancellationToken = default) =>
+        dbContext.CropCycleStages
+            .Include(s => s.CropCycle)
+                .ThenInclude(c => c.Plantation)
+            .SingleOrDefaultAsync(s => s.Id == stageId && s.CropCycle.OrganizationId == organizationId, cancellationToken);
+
     public Task<bool> HasStagesAsync(Guid cycleId, CancellationToken cancellationToken = default) =>
         dbContext.CropCycleStages.AnyAsync(s => s.CropCycleId == cycleId, cancellationToken);
 

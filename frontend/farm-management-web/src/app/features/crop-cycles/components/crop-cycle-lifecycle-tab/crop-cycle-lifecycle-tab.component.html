@@ -151,8 +151,8 @@
             <table mat-table [dataSource]="lifecycle.stages" class="lifecycle-table">
               <!-- Sequence Column -->
               <ng-container matColumnDef="sequence">
-                <th mat-header-cell *matHeaderCellDef>Seq</th>
-                <td mat-cell *matCellDef="let stage">
+                <th mat-header-cell *matHeaderCellDef class="col-seq">Seq</th>
+                <td mat-cell *matCellDef="let stage" class="col-seq">
                   <span class="sequence-badge" [class.current-seq]="stage.status === 'IN_PROGRESS'">
                     {{ stage.sequenceNumber }}
                   </span>
@@ -161,8 +161,8 @@
 
               <!-- Stage Name Column -->
               <ng-container matColumnDef="stageName">
-                <th mat-header-cell *matHeaderCellDef>Stage Name</th>
-                <td mat-cell *matCellDef="let stage">
+                <th mat-header-cell *matHeaderCellDef class="col-name">Stage Name</th>
+                <td mat-cell *matCellDef="let stage" class="col-name">
                   <div class="stage-name-cell">
                     <span class="stage-title" [class.current-title]="stage.status === 'IN_PROGRESS'">
                       {{ stage.stageName }}
@@ -178,9 +178,10 @@
 
               <!-- Status Column -->
               <ng-container matColumnDef="status">
-                <th mat-header-cell *matHeaderCellDef>Status</th>
-                <td mat-cell *matCellDef="let stage">
+                <th mat-header-cell *matHeaderCellDef class="col-status">Status</th>
+                <td mat-cell *matCellDef="let stage" class="col-status">
                   <span class="status-pill" [class]="getStatusClass(stage.status)">
+                    <span class="status-dot"></span>
                     {{ getStatusLabel(stage.status) }}
                   </span>
                 </td>
@@ -188,8 +189,8 @@
 
               <!-- Expected Duration Column -->
               <ng-container matColumnDef="duration">
-                <th mat-header-cell *matHeaderCellDef>Expected Duration</th>
-                <td mat-cell *matCellDef="let stage">
+                <th mat-header-cell *matHeaderCellDef class="col-duration">Expected Duration</th>
+                <td mat-cell *matCellDef="let stage" class="col-duration">
                   @if (stage.expectedDurationDays) {
                     <span class="duration-text">
                       <mat-icon class="inline-cell-icon">schedule</mat-icon>
@@ -203,37 +204,116 @@
 
               <!-- Planned Timeline Column -->
               <ng-container matColumnDef="plannedTimeline">
-                <th mat-header-cell *matHeaderCellDef>Planned Start / End</th>
-                <td mat-cell *matCellDef="let stage">
+                <th mat-header-cell *matHeaderCellDef class="col-timeline">Planned Timeline</th>
+                <td mat-cell *matCellDef="let stage" class="col-timeline">
                   <div class="timeline-cell">
-                    <span class="date-label">Start: {{ stage.plannedStartDate ? (stage.plannedStartDate | date: 'mediumDate') : '—' }}</span>
-                    <span class="date-label">End: {{ stage.plannedEndDate ? (stage.plannedEndDate | date: 'mediumDate') : '—' }}</span>
+                    @if (stage.plannedStartDate) {
+                      <span class="date-row">
+                        <span class="date-label">Start:</span> {{ stage.plannedStartDate | date: 'mediumDate' }}
+                      </span>
+                      <span class="date-row">
+                        <span class="date-label">End:</span> {{ stage.plannedEndDate ? (stage.plannedEndDate | date: 'mediumDate') : '—' }}
+                      </span>
+                    } @else {
+                      <span class="text-muted">—</span>
+                    }
                   </div>
                 </td>
               </ng-container>
 
               <!-- Actual Timeline Column -->
               <ng-container matColumnDef="actualTimeline">
-                <th mat-header-cell *matHeaderCellDef>Actual Start / End</th>
-                <td mat-cell *matCellDef="let stage">
+                <th mat-header-cell *matHeaderCellDef class="col-timeline">Actual Timeline</th>
+                <td mat-cell *matCellDef="let stage" class="col-timeline">
                   <div class="timeline-cell">
-                    <span class="date-label" [class.has-actual]="stage.actualStartDate">
-                      Start: {{ stage.actualStartDate ? (stage.actualStartDate | date: 'mediumDate') : '—' }}
-                    </span>
-                    <span class="date-label" [class.has-actual]="stage.actualEndDate">
-                      End: {{ stage.actualEndDate ? (stage.actualEndDate | date: 'mediumDate') : '—' }}
-                    </span>
+                    @if (stage.actualStartDate || stage.actualEndDate) {
+                      <span class="date-row has-actual">
+                        <span class="date-label">Start:</span> {{ stage.actualStartDate ? (stage.actualStartDate | date: 'mediumDate') : '—' }}
+                      </span>
+                      <span class="date-row has-actual">
+                        <span class="date-label">End:</span> {{ stage.actualEndDate ? (stage.actualEndDate | date: 'mediumDate') : '—' }}
+                      </span>
+                    } @else {
+                      <span class="text-muted">—</span>
+                    }
                   </div>
                 </td>
               </ng-container>
 
               <!-- Notes Column -->
               <ng-container matColumnDef="notes">
-                <th mat-header-cell *matHeaderCellDef>Notes</th>
-                <td mat-cell *matCellDef="let stage">
+                <th mat-header-cell *matHeaderCellDef class="col-notes">Notes</th>
+                <td mat-cell *matCellDef="let stage" class="col-notes">
                   <span class="notes-text" [matTooltip]="stage.notes || ''">
                     {{ stage.notes || '—' }}
                   </span>
+                </td>
+              </ng-container>
+
+              <!-- Actions Column -->
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef class="col-actions">Actions</th>
+                <td mat-cell *matCellDef="let stage" class="col-actions">
+                  @if (cycle?.status === 'ACTIVE') {
+                    <div class="actions-cell">
+                      <!-- Complete Stage Button (Active IN_PROGRESS stage) -->
+                      @if (stage.status === 'IN_PROGRESS' && (permissionService.has('CropCycleLifecycle.UpdateStage') || permissionService.has('CropCycle.Update'))) {
+                        <button
+                          mat-flat-button
+                          color="primary"
+                          class="btn-compact"
+                          (click)="openActionDialog(stage, 'complete')"
+                          matTooltip="Complete current stage and advance"
+                        >
+                          <mat-icon class="btn-icon">check_circle</mat-icon> Complete
+                        </button>
+                      }
+
+                      <!-- Skip Button (For IN_PROGRESS or NOT_STARTED) -->
+                      @if ((stage.status === 'IN_PROGRESS' || stage.status === 'NOT_STARTED') && (permissionService.has('CropCycleLifecycle.SkipStage') || permissionService.has('CropCycle.Update'))) {
+                        <button
+                          mat-button
+                          class="btn-compact btn-subtle-warn"
+                          (click)="openActionDialog(stage, 'skip')"
+                          matTooltip="Skip this stage"
+                        >
+                          <mat-icon class="btn-icon">skip_next</mat-icon> Skip
+                        </button>
+                      }
+
+                      <!-- Reopen Button (For COMPLETED or SKIPPED) -->
+                      @if ((stage.status === 'COMPLETED' || stage.status === 'SKIPPED') && (permissionService.has('CropCycleLifecycle.ReopenStage') || permissionService.has('CropCycle.Update'))) {
+                        <button
+                          mat-button
+                          class="btn-compact btn-subtle-accent"
+                          (click)="openActionDialog(stage, 'reopen')"
+                          matTooltip="Reopen this stage and reconcile timeline"
+                        >
+                          <mat-icon class="btn-icon">restart_alt</mat-icon> Reopen
+                        </button>
+                      }
+
+                      <!-- Overflow Menu Button -->
+                      @if (permissionService.has('CropCycleLifecycle.OverrideStage') || permissionService.has('CropCycle.Update')) {
+                        <button
+                          mat-icon-button
+                          class="btn-icon-sm"
+                          [matMenuTriggerFor]="stageMenu"
+                          matTooltip="Stage options"
+                        >
+                          <mat-icon>more_vert</mat-icon>
+                        </button>
+                        <mat-menu #stageMenu="matMenu">
+                          <button mat-menu-item (click)="openActionDialog(stage, 'override')">
+                            <mat-icon>edit_note</mat-icon>
+                            <span>Override Status / Dates</span>
+                          </button>
+                        </mat-menu>
+                      }
+                    </div>
+                  } @else {
+                    <span class="text-muted">—</span>
+                  }
                 </td>
               </ng-container>
 

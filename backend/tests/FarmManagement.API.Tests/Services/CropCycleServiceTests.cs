@@ -642,6 +642,14 @@ public sealed class CropCycleServiceTests
 
         public void Add(CropCycle cycle) => Cycles.Add(cycle);
         public void AddStage(CropCycleStage stage) => Stages.Add(stage);
+        public Task<CropCycleStage?> FindStageAsync(Guid stageId, Guid organizationId, CancellationToken cancellationToken = default)
+        {
+            var stage = Stages.FirstOrDefault(s => s.Id == stageId);
+            if (stage is null) return Task.FromResult<CropCycleStage?>(null);
+            var cycle = Cycles.FirstOrDefault(c => c.Id == stage.CropCycleId);
+            if (cycle is null || cycle.OrganizationId != organizationId) return Task.FromResult<CropCycleStage?>(null);
+            return Task.FromResult<CropCycleStage?>(stage);
+        }
         public Task<bool> HasStagesAsync(Guid cycleId, CancellationToken cancellationToken = default) =>
             Task.FromResult(Stages.Any(s => s.CropCycleId == cycleId));
         public Task<IReadOnlyList<CropCycleStage>> GetStagesAsync(Guid cycleId, CancellationToken cancellationToken = default) =>

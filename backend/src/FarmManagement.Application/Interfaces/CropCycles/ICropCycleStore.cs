@@ -63,6 +63,7 @@ public interface ICropCycleStore
 
     void Add(CropCycle cycle);
     void AddStage(CropCycleStage stage);
+    Task<CropCycleStage?> FindStageAsync(Guid stageId, Guid organizationId, CancellationToken cancellationToken = default);
     Task<bool> HasStagesAsync(Guid cycleId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<CropCycleStage>> GetStagesAsync(Guid cycleId, CancellationToken cancellationToken = default);
     void AddAuditLog(AuditLog auditLog);

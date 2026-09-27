@@ -4,9 +4,11 @@ import { Observable, map } from "rxjs";
 import { environment } from "../../../environments/environment";
 import { PagedResponse } from "../models/paged-response.model";
 import {
+  CompleteCropCycleStageRequest,
   Crop,
   CropCycle,
   CropCycleLifecycle,
+  CropCycleStage,
   CropList,
   CropVariety,
   CycleCancellationReason,
@@ -22,10 +24,14 @@ import {
   LifecycleTemplate,
   Organization,
   OrganizationListResponse,
+  OverrideCropCycleStageRequest,
   Plantation,
   PlantationEndReason,
   PlantationList,
+  ReopenCropCycleStageRequest,
+  SkipCropCycleStageRequest,
   Unit,
+  UpdateCropCycleStagePlannedDatesRequest,
   VarietyList,
 } from "./farm-management.models";
 
@@ -306,6 +312,24 @@ export class FarmManagementService {
       `${this.api}/crop-cycles/${id}/cancel`,
       request,
     );
+  }
+  getCycleStage(stageId: string): Observable<CropCycleStage> {
+    return this.http.get<CropCycleStage>(`${this.api}/crop-cycle-stages/${stageId}`);
+  }
+  completeCycleStage(stageId: string, request: CompleteCropCycleStageRequest): Observable<CropCycleStage> {
+    return this.http.post<CropCycleStage>(`${this.api}/crop-cycle-stages/${stageId}/complete`, request);
+  }
+  skipCycleStage(stageId: string, request: SkipCropCycleStageRequest): Observable<CropCycleStage> {
+    return this.http.post<CropCycleStage>(`${this.api}/crop-cycle-stages/${stageId}/skip`, request);
+  }
+  reopenCycleStage(stageId: string, request: ReopenCropCycleStageRequest): Observable<CropCycleStage> {
+    return this.http.post<CropCycleStage>(`${this.api}/crop-cycle-stages/${stageId}/reopen`, request);
+  }
+  overrideCycleStage(stageId: string, request: OverrideCropCycleStageRequest): Observable<CropCycleStage> {
+    return this.http.post<CropCycleStage>(`${this.api}/crop-cycle-stages/${stageId}/override`, request);
+  }
+  updateCycleStagePlannedDates(stageId: string, request: UpdateCropCycleStagePlannedDatesRequest): Observable<CropCycleStage> {
+    return this.http.put<CropCycleStage>(`${this.api}/crop-cycle-stages/${stageId}/planned-dates`, request);
   }
   listLifecycleTemplates(
     cropId?: string,

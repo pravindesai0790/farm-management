@@ -75,4 +75,25 @@ public sealed record CropCycleStageResponse(
     string Status,
     string? Notes);
 
+public sealed record CompleteCropCycleStageRequest(
+    DateOnly? ActualEndDate = null,
+    string? Notes = null);
+
+public sealed record SkipCropCycleStageRequest(
+    string? Reason,
+    DateOnly? SkipDate = null);
+
+public sealed record ReopenCropCycleStageRequest(
+    string? Reason);
+
+public sealed record OverrideCropCycleStageRequest(
+    string? TargetStatus,
+    DateOnly? ActualStartDate,
+    DateOnly? ActualEndDate,
+    string? Reason);
+
+public sealed record UpdateCropCycleStagePlannedDatesRequest(
+    DateOnly? PlannedStartDate,
+    DateOnly? PlannedEndDate);
+
 
