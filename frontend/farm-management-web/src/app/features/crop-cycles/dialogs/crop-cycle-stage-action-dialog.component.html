@@ -1,0 +1,173 @@
+<h2 mat-dialog-title class="dialog-header">
+  @switch (data.actionMode) {
+    @case ('complete') {
+      <mat-icon color="primary" class="header-icon">check_circle</mat-icon>
+      <span>Complete Stage {{ data.sequenceNumber }}: {{ data.stageName }}</span>
+    }
+    @case ('skip') {
+      <mat-icon color="warn" class="header-icon">skip_next</mat-icon>
+      <span>Skip Stage {{ data.sequenceNumber }}: {{ data.stageName }}</span>
+    }
+    @case ('reopen') {
+      <mat-icon color="accent" class="header-icon">restart_alt</mat-icon>
+      <span>Reopen Stage {{ data.sequenceNumber }}: {{ data.stageName }}</span>
+    }
+    @case ('override') {
+      <mat-icon color="primary" class="header-icon">edit_note</mat-icon>
+      <span>Override Stage {{ data.sequenceNumber }}: {{ data.stageName }}</span>
+    }
+  }
+</h2>
+
+<mat-dialog-content>
+  <p class="dialog-description">
+    @switch (data.actionMode) {
+      @case ('complete') {
+        Completing this stage will mark it as <strong>COMPLETED</strong>
+        @if (data.nextStageName) {
+          and automatically advance <strong>Stage {{ data.nextStageSequence }}: {{ data.nextStageName }}</strong> to <strong>IN_PROGRESS</strong>.
+        } @else {
+          (this is the final growth stage before harvest).
+        }
+      }
+      @case ('skip') {
+        Skipping this stage requires justification
+        @if (data.nextStageName) {
+          and will automatically advance <strong>Stage {{ data.nextStageSequence }}: {{ data.nextStageName }}</strong> to <strong>IN_PROGRESS</strong>.
+        } @else {
+          (this is the final growth stage before harvest).
+        }
+      }
+      @case ('reopen') {
+        Reopening this stage will set it back to <strong>IN_PROGRESS</strong> and reconcile any subsequent active or completed stages back to <strong>NOT_STARTED</strong>.
+      }
+      @case ('override') {
+        Overriding this stage manually alters its status and actual dates for exceptional agricultural situations.
+      }
+    }
+  </p>
+
+  <app-error-alert [error]="errorMessage()" />
+
+  <form [formGroup]="form" class="action-form">
+    @if (data.actionMode === 'override') {
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Target Status</mat-label>
+        <mat-select formControlName="targetStatus" required>
+          <mat-option value="NOT_STARTED">Not Started</mat-option>
+          <mat-option value="IN_PROGRESS">In Progress</mat-option>
+          <mat-option value="COMPLETED">Completed</mat-option>
+          <mat-option value="SKIPPED">Skipped</mat-option>
+          <mat-option value="CANCELLED">Cancelled</mat-option>
+        </mat-select>
+        @if (form.get('targetStatus')?.hasError('required')) {
+          <mat-error>Target status is required.</mat-error>
+        }
+      </mat-form-field>
+    }
+
+    @if (data.actionMode === 'override') {
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Actual Start Date</mat-label>
+        <input
+          matInput
+          [matDatepicker]="startDatePicker"
+          formControlName="actualStartDate"
+          placeholder="Actual start date"
+        />
+        <mat-datepicker-toggle matIconSuffix [for]="startDatePicker" />
+        <mat-datepicker #startDatePicker />
+      </mat-form-field>
+    }
+
+    @if (data.actionMode === 'complete' || data.actionMode === 'override') {
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Actual Completion Date</mat-label>
+        <input
+          matInput
+          [matDatepicker]="endDatePicker"
+          formControlName="actualEndDate"
+          placeholder="Actual completion date"
+        />
+        <mat-datepicker-toggle matIconSuffix [for]="endDatePicker" />
+        <mat-datepicker #endDatePicker />
+        @if (form.get('actualEndDate')?.hasError('required')) {
+          <mat-error>Actual completion date is required.</mat-error>
+        }
+        @if (form.get('actualEndDate')?.hasError('beforeStartDate')) {
+          <mat-error>Completion date cannot be before actual start date.</mat-error>
+        }
+      </mat-form-field>
+    }
+
+    @if (data.actionMode === 'skip') {
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Skip Date</mat-label>
+        <input
+          matInput
+          [matDatepicker]="skipDatePicker"
+          formControlName="skipDate"
+          placeholder="Skip date"
+        />
+        <mat-datepicker-toggle matIconSuffix [for]="skipDatePicker" />
+        <mat-datepicker #skipDatePicker />
+      </mat-form-field>
+    }
+
+    @if (data.actionMode === 'skip' || data.actionMode === 'reopen' || data.actionMode === 'override') {
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Reason (Mandatory)</mat-label>
+        <textarea
+          matInput
+          rows="3"
+          formControlName="reason"
+          maxLength="500"
+          placeholder="Provide justification for this action..."
+          required
+        ></textarea>
+        @if (form.get('reason')?.hasError('required')) {
+          <mat-error>A reason is required.</mat-error>
+        }
+        @if (form.get('reason')?.hasError('minlength')) {
+          <mat-error>Reason must be at least 3 characters.</mat-error>
+        }
+        @if (form.get('reason')?.hasError('maxlength')) {
+          <mat-error>Reason cannot exceed 500 characters.</mat-error>
+        }
+      </mat-form-field>
+    }
+
+    @if (data.actionMode === 'complete') {
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Notes (Optional)</mat-label>
+        <textarea
+          matInput
+          rows="2"
+          formControlName="notes"
+          maxLength="1000"
+          placeholder="Operational remarks or notes..."
+        ></textarea>
+      </mat-form-field>
+    }
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" [disabled]="isSubmitting()" (click)="onCancel()">
+    Cancel
+  </button>
+  <button
+    mat-flat-button
+    [color]="getButtonColor()"
+    type="button"
+    [disabled]="form.invalid || isSubmitting()"
+    (click)="onSubmit()"
+  >
+    @if (isSubmitting()) {
+      <mat-spinner diameter="18" class="btn-spinner" />
+      <span>Processing...</span>
+    } @else {
+      <span>Confirm {{ getActionButtonText() }}</span>
+    }
+  </button>
+</mat-dialog-actions>

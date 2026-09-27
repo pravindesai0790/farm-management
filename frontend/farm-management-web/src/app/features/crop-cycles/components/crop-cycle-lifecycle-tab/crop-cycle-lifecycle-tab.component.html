@@ -121,7 +121,7 @@
           <strong>Cycle Planned — Projected Stages</strong>
           <p>The stages shown below are projected planning values from template <em>{{ lifecycle.lifecycleTemplateName }}</em>. Historical snapshot stages will be created upon starting the cycle.</p>
         </div>
-        @if (permissionService.has('CropCycle.Start')) {
+        @if (permissionService.has('CropCycleLifecycle.Start')) {
           <button mat-flat-button color="primary" (click)="onStartCycle()">
             <mat-icon>play_arrow</mat-icon>Start Cycle
           </button>
@@ -254,23 +254,25 @@
               <ng-container matColumnDef="actions">
                 <th mat-header-cell *matHeaderCellDef class="col-actions">Actions</th>
                 <td mat-cell *matCellDef="let stage" class="col-actions">
-                  @if (cycle?.status === 'ACTIVE') {
+                  @if (hasAnyAction(stage)) {
                     <div class="actions-cell">
                       <!-- Single Primary Action Button -->
-                      @if (stage.status === 'IN_PROGRESS' && (permissionService.has('CropCycleLifecycle.UpdateStage') || permissionService.has('CropCycle.Update'))) {
+                      @if (canComplete(stage)) {
                         <button
                           mat-flat-button
                           color="primary"
                           class="btn-compact"
+                          [disabled]="isLoading || isActionProcessing()"
                           (click)="openActionDialog(stage, 'complete')"
                           matTooltip="Complete current stage and advance"
                         >
                           <mat-icon class="btn-icon">check_circle</mat-icon> Complete
                         </button>
-                      } @else if (canReopen(stage) && (permissionService.has('CropCycleLifecycle.ReopenStage') || permissionService.has('CropCycle.Update'))) {
+                      } @else if (canReopen(stage)) {
                         <button
                           mat-button
                           class="btn-compact btn-subtle-accent"
+                          [disabled]="isLoading || isActionProcessing()"
                           (click)="openActionDialog(stage, 'reopen')"
                           matTooltip="Reopen this stage and reconcile timeline"
                         >
@@ -279,28 +281,31 @@
                       }
 
                       <!-- Overflow Menu Button -->
-                      <button
-                        mat-icon-button
-                        class="btn-icon-sm"
-                        [matMenuTriggerFor]="stageMenu"
-                        matTooltip="More stage options"
-                      >
-                        <mat-icon>more_vert</mat-icon>
-                      </button>
-                      <mat-menu #stageMenu="matMenu">
-                        @if (stage.status === 'IN_PROGRESS' && (permissionService.has('CropCycleLifecycle.SkipStage') || permissionService.has('CropCycle.Update'))) {
-                          <button mat-menu-item (click)="openActionDialog(stage, 'skip')">
-                            <mat-icon class="text-warn">skip_next</mat-icon>
-                            <span>Skip Stage</span>
-                          </button>
-                        }
-                        @if (permissionService.has('CropCycleLifecycle.OverrideStage') || permissionService.has('CropCycle.Update')) {
-                          <button mat-menu-item (click)="openActionDialog(stage, 'override')">
-                            <mat-icon>edit_note</mat-icon>
-                            <span>Override Status / Dates</span>
-                          </button>
-                        }
-                      </mat-menu>
+                      @if (hasMenuActions(stage)) {
+                        <button
+                          mat-icon-button
+                          class="btn-icon-sm"
+                          [disabled]="isLoading || isActionProcessing()"
+                          [matMenuTriggerFor]="stageMenu"
+                          matTooltip="More stage options"
+                        >
+                          <mat-icon>more_vert</mat-icon>
+                        </button>
+                        <mat-menu #stageMenu="matMenu">
+                          @if (canSkip(stage)) {
+                            <button mat-menu-item (click)="openActionDialog(stage, 'skip')">
+                              <mat-icon class="text-warn">skip_next</mat-icon>
+                              <span>Skip Stage</span>
+                            </button>
+                          }
+                          @if (canOverride(stage)) {
+                            <button mat-menu-item (click)="openActionDialog(stage, 'override')">
+                              <mat-icon>edit_note</mat-icon>
+                              <span>Override Status / Dates</span>
+                            </button>
+                          }
+                        </mat-menu>
+                      }
                     </div>
                   } @else {
                     <span class="text-muted">—</span>

@@ -1,0 +1,54 @@
+.dialog-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 1.25rem 1.5rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+
+  .header-icon {
+    font-size: 1.5rem;
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+}
+
+mat-dialog-content {
+  min-width: 420px;
+  max-width: 520px;
+  padding: 0.5rem 1.5rem 1rem 1.5rem !important;
+
+  .dialog-description {
+    margin-bottom: 1rem;
+    color: #4a5568;
+    font-size: 0.95rem;
+    line-height: 1.5;
+
+    strong {
+      color: #2d3748;
+      font-weight: 600;
+    }
+  }
+
+  .action-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+
+    .full-width {
+      width: 100%;
+    }
+  }
+}
+
+mat-dialog-actions {
+  padding: 1rem 1.5rem;
+  gap: 0.5rem;
+
+  .btn-spinner {
+    display: inline-block;
+    margin-right: 0.5rem;
+  }
+}

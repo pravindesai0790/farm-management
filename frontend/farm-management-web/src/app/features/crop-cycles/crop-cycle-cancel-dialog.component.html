@@ -1,0 +1,69 @@
+<h2 mat-dialog-title>Cancel Crop Cycle</h2>
+
+<mat-dialog-content>
+  <p class="dialog-description">
+    Cancelling <strong>{{ data.cycleName }}</strong> will stop active production tracking for this season.
+  </p>
+
+  @if (isLoadingReasons()) {
+    <div class="loading-reasons">
+      <mat-spinner diameter="32" />
+      <span>Loading cancellation reasons…</span>
+    </div>
+  } @else {
+    <form [formGroup]="form" class="cancel-form">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Cancellation Reason</mat-label>
+        <mat-select formControlName="cancellationReasonId" required>
+          @for (reason of cancellationReasons(); track reason.id) {
+            <mat-option [value]="reason.id">
+              {{ reason.name }}
+            </mat-option>
+          }
+        </mat-select>
+        @if (form.get('cancellationReasonId')?.hasError('required')) {
+          <mat-error>Cancellation reason is required.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Cancellation Date</mat-label>
+        <input
+          matInput
+          [matDatepicker]="cancellationDatePicker"
+          formControlName="cancellationDate"
+          required
+          placeholder="Choose a date"
+        />
+        <mat-datepicker-toggle matIconSuffix [for]="cancellationDatePicker" />
+        <mat-datepicker #cancellationDatePicker />
+        @if (form.get('cancellationDate')?.hasError('required')) {
+          <mat-error>Cancellation date is required.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Notes</mat-label>
+        <textarea
+          matInput
+          rows="3"
+          formControlName="notes"
+          placeholder="Reason details or remarks…"
+        ></textarea>
+      </mat-form-field>
+    </form>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="onCancel()">Back</button>
+  <button
+    mat-flat-button
+    color="warn"
+    type="button"
+    [disabled]="form.invalid || isLoadingReasons()"
+    (click)="onSubmit()"
+  >
+    Confirm Cancellation
+  </button>
+</mat-dialog-actions>

@@ -66,6 +66,13 @@ Use this skill when the user asks to:
    - Response caching
    - Output caching (.NET 8+)
 
+## Follow coding rules: 
+    - Do reuse code if requirement meet. 
+    - Maintain code standard. 
+    - Create DTO with required properties only.
+    - Create helper class if and keep common code if exist. don't duplicate logic.
+    - If API endpoint request parameter grows more than 4 than create object and use it
+
 ## Code Patterns You Follow
 
 ### Minimal API with EF Core

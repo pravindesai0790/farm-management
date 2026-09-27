@@ -60,11 +60,13 @@ export class CropCycleDetailPageComponent implements OnInit {
   readonly selectedTabIndex = signal<number>(0);
 
   ngOnInit(): void {
-    this.load();
+    this.load(false);
   }
 
-  load(): void {
-    this.isLoading.set(true);
+  load(silent = false): void {
+    if (!silent) {
+      this.isLoading.set(true);
+    }
     this.isLifecycleLoading.set(true);
 
     forkJoin({
@@ -130,6 +132,10 @@ export class CropCycleDetailPageComponent implements OnInit {
       });
   }
 
+  refreshLifecycle(): void {
+    this.load(true);
+  }
+
   onTabChange(index: number): void {
     this.selectedTabIndex.set(index);
   }
@@ -148,7 +154,7 @@ export class CropCycleDetailPageComponent implements OnInit {
     request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.snack.open(`Cycle ${action}ed.`, "Dismiss", { duration: 3000 });
-        this.load();
+        this.refreshLifecycle();
       },
       error: (e) =>
         this.snack.open(
@@ -193,7 +199,7 @@ export class CropCycleDetailPageComponent implements OnInit {
           .subscribe({
             next: () => {
               this.snack.open("Cycle cancelled.", "Dismiss", { duration: 3000 });
-              this.load();
+              this.refreshLifecycle();
             },
             error: (e) =>
               this.snack.open(

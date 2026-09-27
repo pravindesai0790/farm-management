@@ -3,11 +3,15 @@ import {
   Component,
   OnInit,
   inject,
+  signal,
 } from "@angular/core";
 import {
+  AbstractControl,
   FormBuilder,
   FormGroup,
   ReactiveFormsModule,
+  ValidationErrors,
+  ValidatorFn,
   Validators,
 } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
@@ -18,9 +22,18 @@ import {
   MatDialogRef,
 } from "@angular/material/dialog";
 import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
+import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { MatSelectModule } from "@angular/material/select";
-import { formatDateOnly } from "../../../core/utils/date.utils";
+import { MatSnackBar } from "@angular/material/snack-bar";
+import { FarmManagementService } from "../../../core/farm-management/farm-management.service";
+import {
+  getApiErrorMessage,
+  getApiValidationErrors,
+} from "../../../core/models/api-error.model";
+import { formatDateOnly, parseDateOnly } from "../../../core/utils/date.utils";
+import { ErrorAlertComponent } from "../../../shared/components/error-alert/error-alert.component";
 
 export type StageActionMode = "complete" | "skip" | "reopen" | "override";
 
@@ -37,13 +50,8 @@ export interface CropCycleStageActionDialogData {
 }
 
 export interface CropCycleStageActionDialogResult {
+  success: boolean;
   actionMode: StageActionMode;
-  actualEndDate?: string | null;
-  actualStartDate?: string | null;
-  skipDate?: string | null;
-  reason?: string;
-  targetStatus?: string;
-  notes?: string;
 }
 
 @Component({
@@ -55,170 +63,14 @@ export interface CropCycleStageActionDialogResult {
     MatButtonModule,
     MatDatepickerModule,
     MatFormFieldModule,
-    MatSelectModule,
+    MatIconModule,
     MatInputModule,
+    MatProgressSpinnerModule,
+    MatSelectModule,
+    ErrorAlertComponent,
   ],
-  template: `
-    <h2 mat-dialog-title>
-      @switch (data.actionMode) {
-        @case ('complete') { Complete Stage {{ data.sequenceNumber }}: {{ data.stageName }} }
-        @case ('skip') { Skip Stage {{ data.sequenceNumber }}: {{ data.stageName }} }
-        @case ('reopen') { Reopen Stage {{ data.sequenceNumber }}: {{ data.stageName }} }
-        @case ('override') { Override Stage {{ data.sequenceNumber }}: {{ data.stageName }} }
-      }
-    </h2>
-
-    <mat-dialog-content>
-      <p class="dialog-description">
-        @switch (data.actionMode) {
-          @case ('complete') {
-            Completing this stage will mark it as <strong>COMPLETED</strong>
-            @if (data.nextStageName) {
-              and automatically start <strong>Stage {{ data.nextStageSequence }}: {{ data.nextStageName }}</strong> as <strong>IN_PROGRESS</strong>.
-            } @else {
-              (this is the final growth stage before harvest).
-            }
-          }
-          @case ('skip') {
-            Skipping this stage requires a reason
-            @if (data.nextStageName) {
-              and will automatically advance <strong>Stage {{ data.nextStageSequence }}: {{ data.nextStageName }}</strong> to <strong>IN_PROGRESS</strong>.
-            } @else {
-              (this is the final growth stage before harvest).
-            }
-          }
-          @case ('reopen') {
-            Reopening this stage will set it back to <strong>IN_PROGRESS</strong> and reconcile any subsequent stages back to <strong>NOT_STARTED</strong>.
-          }
-          @case ('override') {
-            Overriding this stage allows manually setting its status and actual timeline.
-          }
-        }
-      </p>
-
-      <form [formGroup]="form" class="action-form">
-        @if (data.actionMode === 'override') {
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Target Status</mat-label>
-            <mat-select formControlName="targetStatus" required>
-              <mat-option value="NOT_STARTED">Not Started</mat-option>
-              <mat-option value="IN_PROGRESS">In Progress</mat-option>
-              <mat-option value="COMPLETED">Completed</mat-option>
-              <mat-option value="SKIPPED">Skipped</mat-option>
-              <mat-option value="CANCELLED">Cancelled</mat-option>
-            </mat-select>
-            @if (form.get('targetStatus')?.hasError('required')) {
-              <mat-error>Target status is required</mat-error>
-            }
-          </mat-form-field>
-        }
-
-        @if (data.actionMode === 'override') {
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Actual Start Date</mat-label>
-            <input
-              matInput
-              [matDatepicker]="startDatePicker"
-              formControlName="actualStartDate"
-              placeholder="Actual start date"
-            />
-            <mat-datepicker-toggle matIconSuffix [for]="startDatePicker" />
-            <mat-datepicker #startDatePicker />
-          </mat-form-field>
-        }
-
-        @if (data.actionMode === 'complete' || data.actionMode === 'override') {
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Actual Completion Date</mat-label>
-            <input
-              matInput
-              [matDatepicker]="endDatePicker"
-              formControlName="actualEndDate"
-              placeholder="Actual completion date"
-            />
-            <mat-datepicker-toggle matIconSuffix [for]="endDatePicker" />
-            <mat-datepicker #endDatePicker />
-          </mat-form-field>
-        }
-
-        @if (data.actionMode === 'skip') {
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Skip Date</mat-label>
-            <input
-              matInput
-              [matDatepicker]="skipDatePicker"
-              formControlName="skipDate"
-              placeholder="Skip date"
-            />
-            <mat-datepicker-toggle matIconSuffix [for]="skipDatePicker" />
-            <mat-datepicker #skipDatePicker />
-          </mat-form-field>
-        }
-
-        @if (data.actionMode === 'skip' || data.actionMode === 'reopen' || data.actionMode === 'override') {
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Reason (Mandatory)</mat-label>
-            <textarea
-              matInput
-              rows="3"
-              formControlName="reason"
-              required
-              placeholder="Provide justification for this action..."
-            ></textarea>
-            @if (form.get('reason')?.hasError('required')) {
-              <mat-error>A reason is required</mat-error>
-            }
-          </mat-form-field>
-        }
-
-        @if (data.actionMode === 'complete') {
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Notes (Optional)</mat-label>
-            <textarea
-              matInput
-              rows="2"
-              formControlName="notes"
-              placeholder="Operational remarks or notes..."
-            ></textarea>
-          </mat-form-field>
-        }
-      </form>
-    </mat-dialog-content>
-
-    <mat-dialog-actions align="end">
-      <button mat-button type="button" (click)="onCancel()">Cancel</button>
-      <button
-        mat-flat-button
-        [color]="getButtonColor()"
-        type="button"
-        [disabled]="form.invalid"
-        (click)="onSubmit()"
-      >
-        Confirm {{ getActionButtonText() }}
-      </button>
-    </mat-dialog-actions>
-  `,
-  styles: `
-    .dialog-description {
-      margin-bottom: 1rem;
-      color: #4a5568;
-      font-size: 0.95rem;
-      line-height: 1.5;
-    }
-    .action-form {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      min-width: 420px;
-    }
-    .full-width {
-      width: 100%;
-    }
-    mat-dialog-actions {
-      padding: 1rem 1.5rem;
-      gap: 0.5rem;
-    }
-  `,
+  templateUrl: "./crop-cycle-stage-action-dialog.component.html",
+  styleUrl: "./crop-cycle-stage-action-dialog.component.scss",
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CropCycleStageActionDialogComponent implements OnInit {
@@ -227,19 +79,69 @@ export class CropCycleStageActionDialogComponent implements OnInit {
     MatDialogRef<CropCycleStageActionDialogComponent, CropCycleStageActionDialogResult>,
   );
   private readonly fb = inject(FormBuilder);
+  private readonly service = inject(FarmManagementService);
+  private readonly snack = inject(MatSnackBar);
+
+  readonly isSubmitting = signal(false);
+  readonly errorMessage = signal<string | null>(null);
+  readonly validationErrors = signal<Readonly<Record<string, readonly string[]>>>({});
 
   form!: FormGroup;
 
   ngOnInit(): void {
     const today = new Date();
-    this.form = this.fb.group({
-      actualEndDate: [this.data.actualEndDate ? new Date(this.data.actualEndDate) : today],
-      actualStartDate: [this.data.actualStartDate ? new Date(this.data.actualStartDate) : null],
-      skipDate: [today],
-      reason: ["", this.data.actionMode !== "complete" ? [Validators.required] : []],
-      targetStatus: [this.data.currentStatus || "IN_PROGRESS", this.data.actionMode === "override" ? [Validators.required] : []],
-      notes: [""],
-    });
+    const existingStart = this.data.actualStartDate ? parseDateOnly(this.data.actualStartDate) : null;
+    const existingEnd = this.data.actualEndDate ? parseDateOnly(this.data.actualEndDate) : null;
+
+    this.form = this.fb.group(
+      {
+        actualEndDate: [
+          existingEnd ?? today,
+          this.data.actionMode === "complete" ? [Validators.required] : [],
+        ],
+        actualStartDate: [existingStart],
+        skipDate: [today],
+        reason: [
+          "",
+          this.data.actionMode !== "complete"
+            ? [Validators.required, Validators.minLength(3), Validators.maxLength(500)]
+            : [],
+        ],
+        targetStatus: [
+          this.data.currentStatus || "IN_PROGRESS",
+          this.data.actionMode === "override" ? [Validators.required] : [],
+        ],
+        notes: ["", [Validators.maxLength(1000)]],
+      },
+      { validators: [this.dateRangeValidator()] },
+    );
+
+    if (this.data.actionMode === "override") {
+      this.form.get("targetStatus")?.valueChanges.subscribe((status) => {
+        const endDateControl = this.form.get("actualEndDate");
+        if (status === "COMPLETED") {
+          endDateControl?.setValidators([Validators.required]);
+        } else {
+          endDateControl?.clearValidators();
+        }
+        endDateControl?.updateValueAndValidity();
+      });
+    }
+  }
+
+  private dateRangeValidator(): ValidatorFn {
+    return (group: AbstractControl): ValidationErrors | null => {
+      const startVal = group.get("actualStartDate")?.value;
+      const endVal = group.get("actualEndDate")?.value;
+      if (startVal && endVal) {
+        const startDate = startVal instanceof Date ? startVal : parseDateOnly(startVal);
+        const endDate = endVal instanceof Date ? endVal : parseDateOnly(endVal);
+        if (startDate && endDate && endDate < startDate) {
+          return { beforeStartDate: true };
+        }
+      }
+      return null;
+    };
   }
 
   getButtonColor(): "primary" | "warn" | "accent" {
@@ -275,17 +177,72 @@ export class CropCycleStageActionDialogComponent implements OnInit {
   }
 
   onSubmit(): void {
-    if (this.form.invalid) return;
-    const value = this.form.value;
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
 
-    this.dialogRef.close({
-      actionMode: this.data.actionMode,
-      actualEndDate: value.actualEndDate ? formatDateOnly(value.actualEndDate) : null,
-      actualStartDate: value.actualStartDate ? formatDateOnly(value.actualStartDate) : null,
-      skipDate: value.skipDate ? formatDateOnly(value.skipDate) : null,
-      reason: value.reason?.trim() || undefined,
-      targetStatus: value.targetStatus || undefined,
-      notes: value.notes?.trim() || undefined,
+    this.isSubmitting.set(true);
+    this.errorMessage.set(null);
+    this.validationErrors.set({});
+
+    const val = this.form.value;
+    let req;
+
+    switch (this.data.actionMode) {
+      case "complete":
+        req = this.service.completeCycleStage(this.data.stageId, {
+          actualEndDate: val.actualEndDate ? formatDateOnly(val.actualEndDate) : null,
+          notes: val.notes?.trim() || null,
+        });
+        break;
+      case "skip":
+        req = this.service.skipCycleStage(this.data.stageId, {
+          reason: val.reason.trim(),
+          skipDate: val.skipDate ? formatDateOnly(val.skipDate) : null,
+        });
+        break;
+      case "reopen":
+        req = this.service.reopenCycleStage(this.data.stageId, {
+          reason: val.reason.trim(),
+        });
+        break;
+      case "override":
+        req = this.service.overrideCycleStage(this.data.stageId, {
+          targetStatus: val.targetStatus,
+          actualStartDate: val.actualStartDate ? formatDateOnly(val.actualStartDate) : null,
+          actualEndDate: val.actualEndDate ? formatDateOnly(val.actualEndDate) : null,
+          reason: val.reason.trim(),
+        });
+        break;
+    }
+
+    req.subscribe({
+      next: () => {
+        this.isSubmitting.set(false);
+        const actionLabel =
+          this.data.actionMode === "complete"
+            ? "completed"
+            : this.data.actionMode === "skip"
+              ? "skipped"
+              : this.data.actionMode === "reopen"
+                ? "reopened"
+                : "overridden";
+
+        this.snack.open(
+          `Stage "${this.data.stageName}" ${actionLabel} successfully.`,
+          "Dismiss",
+          { duration: 3500 },
+        );
+        this.dialogRef.close({ success: true, actionMode: this.data.actionMode });
+      },
+      error: (err) => {
+        this.isSubmitting.set(false);
+        this.errorMessage.set(
+          getApiErrorMessage(err, "Stage action could not be performed."),
+        );
+        this.validationErrors.set(getApiValidationErrors(err));
+      },
     });
   }
 }

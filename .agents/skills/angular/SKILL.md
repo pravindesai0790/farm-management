@@ -32,6 +32,8 @@ Master modern Angular development with Signals, Standalone Components, Zoneless 
 2. Apply modern patterns (Signals, Standalone, Zoneless)
 3. Implement with proper typing and reactivity
 4. Validate with build and tests
+5. Don't use Inline template and style for component.
+6. Always Follow modern Angular patterns and best practices.
 
 ## Safety
 
