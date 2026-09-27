@@ -748,6 +748,7 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
             if (nextStage is not null)
             {
                 nextStage.Start(actualEndDate, now, actor.UserId);
+                CropCycleLifecycleHelper.EnsureSingleActiveStage(nextStage, allStages, now, actor.UserId);
                 store.AddAuditLog(new AuditLog(
                     "CropCycleStage.Started",
                     cycle.OrganizationId,
@@ -819,44 +820,41 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
                 throw new ConflictException("Stages can only be skipped for an active crop cycle.");
             }
 
-            if (stage.Status is CropCycleStageStatus.Completed or CropCycleStageStatus.Cancelled)
+            if (stage.Status != CropCycleStageStatus.InProgress)
             {
-                throw new ConflictException($"A stage in {CropCycleLifecycleHelper.FormatStageStatus(stage.Status)} status cannot be skipped.");
+                throw new ConflictException($"Only an active stage in IN_PROGRESS status can be skipped. Current status is {CropCycleLifecycleHelper.FormatStageStatus(stage.Status)}.");
             }
 
             var skipDate = request.SkipDate ?? DateOnly.FromDateTime(DateTime.UtcNow);
             EnsureDateIsWithinPlantation(skipDate, plantation, "skipDate");
 
-            var wasInProgress = stage.Status == CropCycleStageStatus.InProgress;
+            var wasInProgress = true;
             var now = DateTimeOffset.UtcNow;
 
-            stage.Skip(request.Reason.Trim(), now, actor.UserId, wasInProgress ? skipDate : null);
+            stage.Skip(request.Reason.Trim(), now, actor.UserId, skipDate);
 
             var allStages = await store.GetStagesAsync(cycle.Id, transactionCancellationToken);
-            CropCycleStage? nextStage = null;
+            CropCycleStage? nextStage = CropCycleLifecycleHelper.FindNextEligibleStage(allStages, stage.SequenceNumber);
 
-            if (wasInProgress)
+            if (nextStage is not null)
             {
-                nextStage = CropCycleLifecycleHelper.FindNextEligibleStage(allStages, stage.SequenceNumber);
-                if (nextStage is not null)
-                {
-                    nextStage.Start(skipDate, now, actor.UserId);
-                    store.AddAuditLog(new AuditLog(
-                        "CropCycleStage.Started",
-                        cycle.OrganizationId,
-                        actor.UserId,
-                        "CropCycleStage",
-                        nextStage.Id,
-                        JsonSerializer.SerializeToDocument(new
-                        {
-                            CropCycleId = cycle.Id,
-                            nextStage.StageName,
-                            nextStage.SequenceNumber,
-                            ActualStartDate = skipDate,
-                            Status = "IN_PROGRESS"
-                        }),
-                        ipAddress));
-                }
+                nextStage.Start(skipDate, now, actor.UserId);
+                CropCycleLifecycleHelper.EnsureSingleActiveStage(nextStage, allStages, now, actor.UserId);
+                store.AddAuditLog(new AuditLog(
+                    "CropCycleStage.Started",
+                    cycle.OrganizationId,
+                    actor.UserId,
+                    "CropCycleStage",
+                    nextStage.Id,
+                    JsonSerializer.SerializeToDocument(new
+                    {
+                        CropCycleId = cycle.Id,
+                        nextStage.StageName,
+                        nextStage.SequenceNumber,
+                        ActualStartDate = skipDate,
+                        Status = "IN_PROGRESS"
+                    }),
+                    ipAddress));
             }
 
             store.AddAuditLog(new AuditLog(
@@ -918,11 +916,17 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
                 throw new ConflictException($"Only a completed or skipped stage can be reopened. Current status is {CropCycleLifecycleHelper.FormatStageStatus(stage.Status)}.");
             }
 
+            var allStages = await store.GetStagesAsync(cycle.Id, transactionCancellationToken);
+            var hasIncompletePriorStages = allStages.Any(s => s.SequenceNumber < stage.SequenceNumber && s.Status is not (CropCycleStageStatus.Completed or CropCycleStageStatus.Skipped));
+            if (hasIncompletePriorStages)
+            {
+                throw new ConflictException($"Cannot reopen Stage {stage.SequenceNumber} because prior stages are not yet completed.");
+            }
+
             var now = DateTimeOffset.UtcNow;
             var defaultStart = cycle.ActualStartDate ?? DateOnly.FromDateTime(DateTime.UtcNow);
             stage.Reopen(request.Reason.Trim(), now, actor.UserId, defaultStart);
 
-            var allStages = await store.GetStagesAsync(cycle.Id, transactionCancellationToken);
             var reconciled = CropCycleLifecycleHelper.ReconcileSubsequentStages(stage, allStages, now, actor.UserId);
 
             store.AddAuditLog(new AuditLog(

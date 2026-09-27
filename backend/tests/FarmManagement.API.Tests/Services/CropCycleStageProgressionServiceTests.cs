@@ -152,6 +152,53 @@ public sealed class CropCycleStageProgressionServiceTests
     }
 
     [Fact]
+    public async Task SkipStageAsync_WhenStageNotStarted_ThrowsConflictException()
+    {
+        var store = new FakeCropCycleStore();
+        var crop = CreateCrop(_organizationId, "Grape");
+        var plantation = CreatePlantation(store, _organizationId, crop);
+        var template = CreateTemplate(store, _organizationId, crop.Id, "Grape Standard");
+        AddStage(template, "Dormancy", 1, 30);
+        AddStage(template, "Pruning", 2, 15);
+
+        var cycle = new CropCycle(_organizationId, plantation.Id, "2026 Cycle", 2026, null, new DateOnly(2026, 4, 1), null, _userId, template.Id);
+        store.Cycles.Add(cycle);
+
+        var service = new CropCycleService(store);
+        await service.StartAsync(CreateActor(), cycle.Id, new StartCropCycleRequest(new DateOnly(2026, 4, 1)), "127.0.0.1");
+
+        var stage2 = (await store.GetStagesAsync(cycle.Id))[1]; // Stage 2 is NOT_STARTED
+
+        await Assert.ThrowsAsync<ConflictException>(() =>
+            service.SkipStageAsync(CreateActor(), stage2.Id, new SkipCropCycleStageRequest("Cannot skip future stage"), "127.0.0.1"));
+    }
+
+    [Fact]
+    public async Task ReopenStageAsync_WhenPriorStageIncomplete_ThrowsConflictException()
+    {
+        var store = new FakeCropCycleStore();
+        var crop = CreateCrop(_organizationId, "Grape");
+        var plantation = CreatePlantation(store, _organizationId, crop);
+        var template = CreateTemplate(store, _organizationId, crop.Id, "Grape Standard");
+        AddStage(template, "Stage 1", 1, 10);
+        AddStage(template, "Stage 2", 2, 10);
+        AddStage(template, "Stage 3", 3, 10);
+
+        var cycle = new CropCycle(_organizationId, plantation.Id, "2026 Cycle", 2026, null, new DateOnly(2026, 4, 1), null, _userId, template.Id);
+        store.Cycles.Add(cycle);
+
+        var service = new CropCycleService(store);
+        await service.StartAsync(CreateActor(), cycle.Id, new StartCropCycleRequest(new DateOnly(2026, 4, 1)), "127.0.0.1");
+
+        var stages = await store.GetStagesAsync(cycle.Id);
+        // Manually force Stage 3 to SKIPPED to test reopening while Stage 1 is IN_PROGRESS
+        stages[2].Skip("Forced skip test", DateTimeOffset.UtcNow, _userId, null);
+
+        await Assert.ThrowsAsync<ConflictException>(() =>
+            service.ReopenStageAsync(CreateActor(), stages[2].Id, new ReopenCropCycleStageRequest("Try reopen Stage 3"), "127.0.0.1"));
+    }
+
+    [Fact]
     public async Task ReopenStageAsync_ReopensCompletedStageAndReconcilesLaterStages()
     {
         var store = new FakeCropCycleStore();

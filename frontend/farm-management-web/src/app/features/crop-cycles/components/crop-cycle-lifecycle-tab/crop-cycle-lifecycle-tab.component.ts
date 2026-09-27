@@ -108,7 +108,22 @@ export class CropCycleLifecycleTabComponent {
     this.startCycle.emit();
   }
 
+  canReopen(stage: CropCycleStage): boolean {
+    if (stage.status !== "COMPLETED" && stage.status !== "SKIPPED") {
+      return false;
+    }
+    if (!this.lifecycle?.stages) return true;
+
+    return this.lifecycle.stages.every(
+      (s) => s.sequenceNumber >= stage.sequenceNumber || s.status === "COMPLETED" || s.status === "SKIPPED"
+    );
+  }
+
   openActionDialog(stage: CropCycleStage, actionMode: StageActionMode): void {
+    const nextStage = this.lifecycle?.stages
+      ?.filter((s) => s.sequenceNumber > stage.sequenceNumber && s.status === "NOT_STARTED")
+      .sort((a, b) => a.sequenceNumber - b.sequenceNumber)[0];
+
     const dialogRef = this.dialog.open(CropCycleStageActionDialogComponent, {
       data: {
         actionMode,
@@ -118,6 +133,8 @@ export class CropCycleLifecycleTabComponent {
         currentStatus: stage.status,
         actualStartDate: stage.actualStartDate,
         actualEndDate: stage.actualEndDate,
+        nextStageName: nextStage?.stageName,
+        nextStageSequence: nextStage?.sequenceNumber,
       },
       width: "480px",
     });

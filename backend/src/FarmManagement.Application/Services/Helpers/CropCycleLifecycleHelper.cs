@@ -154,9 +154,15 @@ public static class CropCycleLifecycleHelper
     {
         var reconciled = new List<object>();
 
-        foreach (var stage in allStages.Where(s => s.SequenceNumber > targetStage.SequenceNumber))
+        foreach (var stage in allStages)
         {
-            if (stage.Status is CropCycleStageStatus.InProgress or CropCycleStageStatus.Completed)
+            if (stage.Id == targetStage.Id) continue;
+
+            var shouldReconcile = (stage.SequenceNumber > targetStage.SequenceNumber &&
+                                  stage.Status is CropCycleStageStatus.InProgress or CropCycleStageStatus.Completed) ||
+                                 (stage.Status == CropCycleStageStatus.InProgress);
+
+            if (shouldReconcile)
             {
                 var prevStatus = stage.Status.ToString().ToUpperInvariant();
                 stage.ResetToNotStarted($"[Reconciled due to reopening of Stage {targetStage.SequenceNumber}]", now, userId);
@@ -171,6 +177,18 @@ public static class CropCycleLifecycleHelper
         }
 
         return reconciled;
+    }
+
+    public static void EnsureSingleActiveStage(
+        CropCycleStage activeStage,
+        IReadOnlyList<CropCycleStage> allStages,
+        DateTimeOffset now,
+        Guid userId)
+    {
+        foreach (var other in allStages.Where(s => s.Id != activeStage.Id && s.Status == CropCycleStageStatus.InProgress))
+        {
+            other.ResetToNotStarted($"[Reconciled due to active Stage {activeStage.SequenceNumber}]", now, userId);
+        }
     }
 
     public static CropCycleStageStatus ParseStageStatus(string? statusStr)

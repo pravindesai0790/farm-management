@@ -32,6 +32,8 @@ export interface CropCycleStageActionDialogData {
   currentStatus: string;
   actualStartDate?: string | null;
   actualEndDate?: string | null;
+  nextStageName?: string | null;
+  nextStageSequence?: number | null;
 }
 
 export interface CropCycleStageActionDialogResult {
@@ -70,16 +72,26 @@ export interface CropCycleStageActionDialogResult {
       <p class="dialog-description">
         @switch (data.actionMode) {
           @case ('complete') {
-            Completing this stage will automatically mark it as <strong>COMPLETED</strong> and advance the next stage to <strong>IN_PROGRESS</strong>.
+            Completing this stage will mark it as <strong>COMPLETED</strong>
+            @if (data.nextStageName) {
+              and automatically start <strong>Stage {{ data.nextStageSequence }}: {{ data.nextStageName }}</strong> as <strong>IN_PROGRESS</strong>.
+            } @else {
+              (this is the final growth stage before harvest).
+            }
           }
           @case ('skip') {
-            Skipping this stage requires a mandatory reason and will advance the next stage to <strong>IN_PROGRESS</strong>.
+            Skipping this stage requires a reason
+            @if (data.nextStageName) {
+              and will automatically advance <strong>Stage {{ data.nextStageSequence }}: {{ data.nextStageName }}</strong> to <strong>IN_PROGRESS</strong>.
+            } @else {
+              (this is the final growth stage before harvest).
+            }
           }
           @case ('reopen') {
-            Reopening this stage will set it back to <strong>IN_PROGRESS</strong> and reconcile any subsequent active or completed stages back to <strong>NOT_STARTED</strong>.
+            Reopening this stage will set it back to <strong>IN_PROGRESS</strong> and reconcile any subsequent stages back to <strong>NOT_STARTED</strong>.
           }
           @case ('override') {
-            Overriding this stage allows manually overriding its status and actual dates.
+            Overriding this stage allows manually setting its status and actual timeline.
           }
         }
       </p>
