@@ -73,6 +73,41 @@
             </td>
           </ng-container>
 
+          <!-- Current Cycle -->
+          <ng-container matColumnDef="currentCycle">
+            <th mat-header-cell *matHeaderCellDef>Current Cycle</th>
+            <td mat-cell *matCellDef="let element">
+              @let cycle = getPlantationCycle(element.id);
+              @if (cycle) {
+                <a [routerLink]="['/crop-cycles', cycle.cycleId]" class="cycle-link">
+                  {{ cycle.cycleName }}
+                </a>
+              } @else {
+                <span class="muted">—</span>
+              }
+            </td>
+          </ng-container>
+
+          <!-- Stage / Progress -->
+          <ng-container matColumnDef="stageProgress">
+            <th mat-header-cell *matHeaderCellDef>Stage & Progress</th>
+            <td mat-cell *matCellDef="let element">
+              @let cycle = getPlantationCycle(element.id);
+              @if (cycle) {
+                <div class="stage-progress-cell">
+                  <div class="mini-bar">
+                    <div class="fill" [style.width.%]="cycle.progressPercentage || 0"></div>
+                  </div>
+                  <span class="stage-text">
+                    {{ cycle.currentStageName || 'In Progress' }} ({{ cycle.progressPercentage || 0 }}%)
+                  </span>
+                </div>
+              } @else {
+                <span class="muted">—</span>
+              }
+            </td>
+          </ng-container>
+
           <!-- Planting Date -->
           <ng-container matColumnDef="plantingDate">
             <th mat-header-cell *matHeaderCellDef>Planted Date</th>

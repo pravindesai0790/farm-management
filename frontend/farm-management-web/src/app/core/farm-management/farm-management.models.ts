@@ -289,6 +289,17 @@ export interface CropAllocationSummary {
   varieties: readonly VarietyAllocationSummary[];
 }
 
+export interface ActiveCycleStageSummary {
+  stageId: string;
+  stageName: string;
+  sequenceNumber: number;
+  status: "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED" | "SKIPPED" | "CANCELLED" | string;
+  plannedStartDate: string | null;
+  plannedEndDate: string | null;
+  actualStartDate: string | null;
+  actualEndDate: string | null;
+}
+
 export interface ActiveCycleSummary {
   cycleId: string;
   cycleName: string;
@@ -306,6 +317,11 @@ export interface ActiveCycleSummary {
   expectedEndDate: string | null;
   progressPercentage: number | null;
   status: string;
+  currentStageName?: string | null;
+  currentStageSequence?: number | null;
+  totalStagesCount?: number;
+  completedStagesCount?: number;
+  stages?: readonly ActiveCycleStageSummary[];
 }
 
 export interface FarmUtilizationSummary {

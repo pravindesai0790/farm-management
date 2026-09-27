@@ -41,6 +41,17 @@ public sealed record VarietyAllocationSummaryDto(
     decimal PercentageOfCrop
 );
 
+public sealed record ActiveCycleStageSummaryDto(
+    Guid StageId,
+    string StageName,
+    int SequenceNumber,
+    string Status,
+    DateOnly? PlannedStartDate,
+    DateOnly? PlannedEndDate,
+    DateOnly? ActualStartDate,
+    DateOnly? ActualEndDate
+);
+
 public sealed record ActiveCycleSummaryDto(
     Guid CycleId,
     string CycleName,
@@ -57,7 +68,12 @@ public sealed record ActiveCycleSummaryDto(
     DateOnly StartDate,
     DateOnly? ExpectedEndDate,
     int? ProgressPercentage,
-    string Status
+    string Status,
+    string? CurrentStageName = null,
+    int? CurrentStageSequence = null,
+    int TotalStagesCount = 0,
+    int CompletedStagesCount = 0,
+    IReadOnlyList<ActiveCycleStageSummaryDto>? Stages = null
 );
 
 public sealed record FarmUtilizationSummaryDto(

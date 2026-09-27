@@ -69,7 +69,13 @@
                   </div>
                   <div class="cycle-progress-line">
                     <span>Cycle: <strong>{{ activeCycle.cycleName }}</strong></span>
-                    <span class="progress-val">{{ activeCycle.progressPercentage || 0 }}%</span>
+                    <span class="progress-val">
+                      @if (activeCycle.currentStageName) {
+                        {{ activeCycle.currentStageName }} ({{ activeCycle.progressPercentage || 0 }}%)
+                      } @else {
+                        {{ activeCycle.progressPercentage || 0 }}%
+                      }
+                    </span>
                   </div>
                 </div>
               } @else if (areaPlantations.length > 0) {

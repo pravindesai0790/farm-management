@@ -83,6 +83,9 @@ public sealed class DashboardStore(ApplicationDbContext dbContext) : IDashboardS
                 .ThenInclude(p => p!.FarmArea)
             .Include(c => c.Plantation)
                 .ThenInclude(p => p!.AreaUnit)
+            .Include(c => c.Stages)
+            .Include(c => c.LifecycleTemplate)
+                .ThenInclude(t => t!.Stages)
             .Where(c => c.OrganizationId == organizationId);
 
         if (farmId.HasValue)

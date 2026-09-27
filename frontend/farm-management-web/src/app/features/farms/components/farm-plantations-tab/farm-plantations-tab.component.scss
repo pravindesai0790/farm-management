@@ -112,6 +112,46 @@
   }
 }
 
+.cycle-link {
+  font-weight: 600;
+  color: var(--app-primary, #2f6f4e);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.stage-progress-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  .mini-bar {
+    width: 100px;
+    height: 5px;
+    background: #e2e8e2;
+    border-radius: 9999px;
+    overflow: hidden;
+
+    .fill {
+      height: 100%;
+      background: linear-gradient(90deg, #2e7d32, #7b1fa2);
+      border-radius: 9999px;
+    }
+  }
+
+  .stage-text {
+    font-size: 0.75rem;
+    color: var(--app-ink, #1c2a22);
+    font-weight: 500;
+  }
+}
+
+.muted {
+  color: var(--app-muted, #65746a);
+}
+
 .status-pill {
   font-size: 0.75rem;
   font-weight: 700;

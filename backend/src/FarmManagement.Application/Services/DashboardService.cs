@@ -180,6 +180,64 @@ public sealed class DashboardService(IDashboardStore store) : IDashboardService
                     ? Math.Round(ConvertArea(plantation.AllocatedArea, plantation.AreaUnit, targetUnit), 2, MidpointRounding.AwayFromZero)
                     : 0m;
 
+                string? currentStageName = null;
+                int? currentStageSequence = null;
+                int totalStagesCount = 0;
+                int completedStagesCount = 0;
+                List<ActiveCycleStageSummaryDto> stageDtos = [];
+
+                if (c.Stages != null && c.Stages.Count > 0)
+                {
+                    var sortedStages = c.Stages.OrderBy(s => s.SequenceNumber).ToList();
+                    totalStagesCount = sortedStages.Count;
+                    completedStagesCount = sortedStages.Count(s => s.Status == CropCycleStageStatus.Completed);
+                    
+                    var inProgress = sortedStages.FirstOrDefault(s => s.Status == CropCycleStageStatus.InProgress);
+                    var current = inProgress ?? sortedStages.FirstOrDefault(s => s.Status == CropCycleStageStatus.NotStarted);
+                    currentStageName = current?.StageName;
+                    currentStageSequence = current?.SequenceNumber;
+
+                    stageDtos = sortedStages.Select(s => new ActiveCycleStageSummaryDto(
+                        s.Id,
+                        s.StageName,
+                        s.SequenceNumber,
+                        s.Status.ToString().ToUpperInvariant(),
+                        s.PlannedStartDate,
+                        s.PlannedEndDate,
+                        s.ActualStartDate,
+                        s.ActualEndDate
+                    )).ToList();
+
+                    if (totalStagesCount > 0)
+                    {
+                        progressPct = (int)Math.Round((double)completedStagesCount / totalStagesCount * 100);
+                    }
+                }
+                else if (c.LifecycleTemplate?.Stages != null)
+                {
+                    var templateStages = c.LifecycleTemplate.Stages
+                        .Where(s => s.IsActive)
+                        .OrderBy(s => s.SequenceNumber)
+                        .ToList();
+
+                    if (templateStages.Count > 0)
+                    {
+                        totalStagesCount = templateStages.Count;
+                        currentStageName = templateStages[0].StageName;
+                        currentStageSequence = templateStages[0].SequenceNumber;
+                        stageDtos = templateStages.Select(s => new ActiveCycleStageSummaryDto(
+                            Guid.Empty,
+                            s.StageName,
+                            s.SequenceNumber,
+                            "NOT_STARTED",
+                            null,
+                            null,
+                            null,
+                            null
+                        )).ToList();
+                    }
+                }
+
                 return new ActiveCycleSummaryDto(
                     CycleId: c.Id,
                     CycleName: c.CycleName,
@@ -196,7 +254,12 @@ public sealed class DashboardService(IDashboardStore store) : IDashboardService
                     StartDate: startDate,
                     ExpectedEndDate: c.ExpectedEndDate,
                     ProgressPercentage: progressPct,
-                    Status: c.Status.ToString().ToUpperInvariant()
+                    Status: c.Status.ToString().ToUpperInvariant(),
+                    CurrentStageName: currentStageName,
+                    CurrentStageSequence: currentStageSequence,
+                    TotalStagesCount: totalStagesCount,
+                    CompletedStagesCount: completedStagesCount,
+                    Stages: stageDtos
                 );
             })
             .ToList();

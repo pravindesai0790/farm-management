@@ -31,37 +31,88 @@
               <div class="cycle-item">
                 <div class="cycle-top">
                   <div class="cycle-title-group">
-                    <span class="crop-badge">{{ cycle.cropName }}</span>
-                    <strong>{{ cycle.farmAreaName }}</strong>
-                    @if (cycle.varietyName) {
-                      <span class="variety-chip">{{ cycle.varietyName }}</span>
-                    }
+                    <div class="crop-avatar-box">
+                      {{ getCropIcon(cycle.cropName) }}
+                    </div>
+                    <div>
+                      <div class="crop-header-line">
+                        <strong class="area-title">{{ cycle.farmAreaName }}</strong>
+                        @if (cycle.varietyName) {
+                          <span class="variety-chip">{{ cycle.varietyName }}</span>
+                        }
+                      </div>
+                      <p class="cycle-sub-meta">
+                        Cycle: <span class="font-medium">{{ cycle.cycleName }}</span>
+                        · Area: <span class="font-semibold">{{ cycle.allocatedArea }} {{ cycle.areaUnitSymbol }}</span>
+                      </p>
+                    </div>
                   </div>
-                  <span class="cycle-status-pill">
-                    {{ cycle.status }} ({{ cycle.progressPercentage || 0 }}%)
+                  
+                  <span class="stage-status-badge">
+                    @if (cycle.currentStageName) {
+                      {{ cycle.currentStageName }} ({{ cycle.progressPercentage || 0 }}%)
+                    } @else {
+                      {{ cycle.status }} ({{ cycle.progressPercentage || 0 }}%)
+                    }
                   </span>
                 </div>
 
-                <div class="cycle-meta">
-                  <span>Cycle: <strong>{{ cycle.cycleName }}</strong></span>
-                  <span>Area: <strong>{{ cycle.allocatedArea }} {{ cycle.areaUnitSymbol }}</strong></span>
-                </div>
+                <!-- Stage Timeline Stepper -->
+                @if (cycle.stages && cycle.stages.length > 0) {
+                  <div class="stage-stepper-container">
+                    <div class="stage-labels-row">
+                      @for (stg of cycle.stages; track stg.stageId || stg.sequenceNumber) {
+                        <span
+                          class="stage-node"
+                          [class.completed]="isStageCompleted(stg.status)"
+                          [class.in-progress]="isStageInProgress(stg.status)"
+                          [class.not-started]="!isStageCompleted(stg.status) && !isStageInProgress(stg.status)"
+                        >
+                          @if (isStageCompleted(stg.status)) {
+                            <span class="check-mark">✓</span>
+                          } @else if (isStageInProgress(stg.status)) {
+                            <span class="active-dot">●</span>
+                          }
+                          {{ stg.stageName }}
+                        </span>
+                      }
+                    </div>
 
-                <!-- Progress Bar -->
-                <div class="progress-bar-wrapper">
-                  <div class="progress-track">
-                    <div
-                      class="progress-fill"
-                      [style.width.%]="cycle.progressPercentage || 0"
-                    ></div>
+                    <div class="progress-bar-wrapper">
+                      <div class="progress-track">
+                        <div
+                          class="progress-fill"
+                          [style.width.%]="cycle.progressPercentage || 0"
+                        ></div>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                } @else {
+                  <div class="progress-bar-wrapper standalone">
+                    <div class="progress-track">
+                      <div
+                        class="progress-fill"
+                        [style.width.%]="cycle.progressPercentage || 0"
+                      ></div>
+                    </div>
+                  </div>
+                }
 
                 <div class="cycle-footer">
                   <span>Started: <strong>{{ cycle.startDate | date: "mediumDate" }}</strong></span>
+                  
                   @if (cycle.expectedEndDate) {
-                    <span>Harvest Target: <strong>{{ cycle.expectedEndDate | date: "mediumDate" }}</strong></span>
+                    <span>
+                      Target Harvest: <strong>{{ cycle.expectedEndDate | date: "mediumDate" }}</strong>
+                      @if (getDaysRemainingText(cycle.expectedEndDate); as daysText) {
+                        <span class="countdown-tag">({{ daysText }})</span>
+                      }
+                    </span>
                   }
+
+                  <a [routerLink]="['/crop-cycles', cycle.cycleId]" class="lifecycle-link">
+                    Manage Stages →
+                  </a>
                 </div>
               </div>
             }
