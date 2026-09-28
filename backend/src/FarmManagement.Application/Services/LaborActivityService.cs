@@ -21,6 +21,7 @@ public sealed class LaborActivityService(ILaborActivityStore store) : ILaborActi
         Guid? farmAreaId,
         Guid? plantationId,
         Guid? cropCycleId,
+        Guid? cropCycleStageId,
         Guid? activityTypeId,
         DateOnly? fromDate,
         DateOnly? toDate,
@@ -35,6 +36,7 @@ public sealed class LaborActivityService(ILaborActivityStore store) : ILaborActi
         if (farmAreaId == Guid.Empty) throw Validation("farmAreaId", "Farm area identifier must be valid.");
         if (plantationId == Guid.Empty) throw Validation("plantationId", "Plantation identifier must be valid.");
         if (cropCycleId == Guid.Empty) throw Validation("cropCycleId", "Crop cycle identifier must be valid.");
+        if (cropCycleStageId == Guid.Empty) throw Validation("cropCycleStageId", "Crop cycle stage identifier must be valid.");
         if (activityTypeId == Guid.Empty) throw Validation("activityTypeId", "Labor activity type identifier must be valid.");
         if (fromDate.HasValue && toDate.HasValue && fromDate.Value > toDate.Value)
         {
@@ -49,6 +51,7 @@ public sealed class LaborActivityService(ILaborActivityStore store) : ILaborActi
             farmAreaId,
             plantationId,
             cropCycleId,
+            cropCycleStageId,
             activityTypeId,
             fromDate,
             toDate,
@@ -96,6 +99,7 @@ public sealed class LaborActivityService(ILaborActivityStore store) : ILaborActi
                 values.FarmAreaId,
                 values.PlantationId,
                 values.CropCycleId,
+                values.CropCycleStageId,
                 values.LaborActivityTypeId,
                 transactionCancellationToken);
 
@@ -163,6 +167,7 @@ public sealed class LaborActivityService(ILaborActivityStore store) : ILaborActi
                 values.FarmAreaId,
                 values.PlantationId,
                 values.CropCycleId,
+                values.CropCycleStageId,
                 values.LaborActivityTypeId,
                 transactionCancellationToken);
 
@@ -274,6 +279,7 @@ public sealed class LaborActivityService(ILaborActivityStore store) : ILaborActi
         Guid? farmAreaId,
         Guid? plantationId,
         Guid? cropCycleId,
+        Guid? cropCycleStageId,
         Guid laborActivityTypeId,
         CancellationToken cancellationToken)
     {
@@ -337,6 +343,22 @@ public sealed class LaborActivityService(ILaborActivityStore store) : ILaborActi
             }
         }
 
+        if (cropCycleStageId.HasValue)
+        {
+            if (!cropCycleId.HasValue)
+            {
+                throw Validation("cropCycleStageId", "A crop cycle is required when specifying a crop cycle stage.");
+            }
+
+            var stage = await store.FindCropCycleStageAsync(cropCycleStageId.Value, organizationId, cancellationToken)
+                ?? throw new ResourceNotFoundException("The crop cycle stage was not found.");
+
+            if (stage.CropCycleId != cropCycleId.Value)
+            {
+                throw Validation("cropCycleStageId", "The crop cycle stage does not belong to the selected crop cycle.");
+            }
+        }
+
         var activityType = await store.FindLaborActivityTypeAsync(laborActivityTypeId, organizationId, cancellationToken)
             ?? throw new ResourceNotFoundException("The labor activity type was not found.");
 
@@ -372,6 +394,12 @@ public sealed class LaborActivityService(ILaborActivityStore store) : ILaborActi
                 ? new NamedReferenceResponse(activity.CropCycleId.Value, string.Empty)
                 : null;
 
+        var cropCycleStage = activity.CropCycleStage != null
+            ? new StageReferenceResponse(activity.CropCycleStage.Id, activity.CropCycleStage.StageName, activity.CropCycleStage.SequenceNumber)
+            : activity.CropCycleStageId.HasValue
+                ? new StageReferenceResponse(activity.CropCycleStageId.Value, string.Empty, 0)
+                : null;
+
         var activityType = activity.LaborActivityType != null
             ? new NamedReferenceResponse(activity.LaborActivityType.Id, activity.LaborActivityType.Name)
             : new NamedReferenceResponse(activity.LaborActivityTypeId, string.Empty);
@@ -383,6 +411,7 @@ public sealed class LaborActivityService(ILaborActivityStore store) : ILaborActi
             farmArea,
             plantation,
             cropCycle,
+            cropCycleStage,
             activityType,
             activity.Status.ToString().ToUpperInvariant(),
             activity.Description,

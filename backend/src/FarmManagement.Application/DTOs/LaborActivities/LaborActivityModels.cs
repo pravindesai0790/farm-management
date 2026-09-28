@@ -2,6 +2,8 @@ namespace FarmManagement.Application.DTOs.LaborActivities;
 
 public sealed record NamedReferenceResponse(Guid Id, string Name);
 
+public sealed record StageReferenceResponse(Guid Id, string Name, int SequenceNumber);
+
 public sealed record LaborActivityResponse(
     Guid Id,
     DateOnly ActivityDate,
@@ -9,6 +11,7 @@ public sealed record LaborActivityResponse(
     NamedReferenceResponse? FarmArea,
     NamedReferenceResponse? Plantation,
     NamedReferenceResponse? CropCycle,
+    StageReferenceResponse? CropCycleStage,
     NamedReferenceResponse ActivityType,
     string Status,
     string? Description,
@@ -25,9 +28,6 @@ public sealed record CreateLaborActivityRequest(
     Guid? CropCycleStageId,
     Guid? LaborActivityTypeId,
     string? Description,
-    int? WorkerCount = null,
-    decimal? TotalWorkingHours = null,
-    decimal? CostAmount = null,
     string? Status = null);
 
 public sealed record UpdateLaborActivityRequest(
@@ -39,9 +39,6 @@ public sealed record UpdateLaborActivityRequest(
     Guid? CropCycleStageId,
     Guid? LaborActivityTypeId,
     string? Description,
-    int? WorkerCount = null,
-    decimal? TotalWorkingHours = null,
-    decimal? CostAmount = null,
     string? Status = null);
 
 public sealed record CancelLaborActivityRequest(string? Reason);

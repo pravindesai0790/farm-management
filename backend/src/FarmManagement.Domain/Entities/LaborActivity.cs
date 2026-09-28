@@ -185,5 +185,15 @@ public sealed class LaborActivity
         {
             throw new ArgumentException("Crop cycle stage identifier must be valid.", nameof(cropCycleStageId));
         }
+
+        if (cropCycleId.HasValue && !plantationId.HasValue)
+        {
+            throw new ArgumentException("A plantation is required when specifying a crop cycle.", nameof(cropCycleId));
+        }
+
+        if (cropCycleStageId.HasValue && !cropCycleId.HasValue)
+        {
+            throw new ArgumentException("A crop cycle is required when specifying a crop cycle stage.", nameof(cropCycleStageId));
+        }
     }
 }

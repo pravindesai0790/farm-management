@@ -13,6 +13,7 @@ public interface ILaborActivityService
         Guid? farmAreaId,
         Guid? plantationId,
         Guid? cropCycleId,
+        Guid? cropCycleStageId,
         Guid? activityTypeId,
         DateOnly? fromDate,
         DateOnly? toDate,

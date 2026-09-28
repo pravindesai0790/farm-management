@@ -14,6 +14,7 @@ public sealed class LaborActivityStore(ApplicationDbContext dbContext) : ILaborA
         Guid? farmAreaId,
         Guid? plantationId,
         Guid? cropCycleId,
+        Guid? cropCycleStageId,
         Guid? activityTypeId,
         DateOnly? fromDate,
         DateOnly? toDate,
@@ -28,6 +29,7 @@ public sealed class LaborActivityStore(ApplicationDbContext dbContext) : ILaborA
             farmAreaId,
             plantationId,
             cropCycleId,
+            cropCycleStageId,
             activityTypeId,
             fromDate,
             toDate,
@@ -50,7 +52,7 @@ public sealed class LaborActivityStore(ApplicationDbContext dbContext) : ILaborA
         Guid activityId,
         Guid organizationId,
         CancellationToken cancellationToken = default) =>
-        BuildQuery(organizationId, null, null, null, null, null, null, null, null)
+        BuildQuery(organizationId, null, null, null, null, null, null, null, null, null)
             .AsSplitQuery()
             .SingleOrDefaultAsync(activity => activity.Id == activityId, cancellationToken);
 
@@ -100,6 +102,16 @@ public sealed class LaborActivityStore(ApplicationDbContext dbContext) : ILaborA
             cycle => cycle.Id == cropCycleId && cycle.OrganizationId == organizationId,
             cancellationToken);
 
+    public Task<CropCycleStage?> FindCropCycleStageAsync(
+        Guid stageId,
+        Guid organizationId,
+        CancellationToken cancellationToken = default) =>
+        dbContext.CropCycleStages
+            .Include(stage => stage.CropCycle)
+            .SingleOrDefaultAsync(
+                stage => stage.Id == stageId && stage.CropCycle.OrganizationId == organizationId,
+                cancellationToken);
+
     public Task<LaborActivityType?> FindLaborActivityTypeAsync(
         Guid activityTypeId,
         Guid organizationId,
@@ -118,17 +130,6 @@ public sealed class LaborActivityStore(ApplicationDbContext dbContext) : ILaborA
             .OrderBy(type => type.DisplayOrder)
             .ThenBy(type => type.Name)
             .ToListAsync(cancellationToken);
-
-    public async Task<string> ResolveOrganizationCurrencyAsync(
-        Guid organizationId,
-        CancellationToken cancellationToken = default)
-    {
-        var setting = await dbContext.SystemSettings
-            .AsNoTracking()
-            .SingleOrDefaultAsync(s => s.Key == "OrganizationCurrency" || s.Key == "DefaultCurrency", cancellationToken);
-
-        return string.IsNullOrWhiteSpace(setting?.Value) ? "INR" : setting.Value.Trim();
-    }
 
     public async Task<string?> GetCancellationReasonAsync(
         Guid activityId,
@@ -184,6 +185,7 @@ public sealed class LaborActivityStore(ApplicationDbContext dbContext) : ILaborA
         Guid? farmAreaId,
         Guid? plantationId,
         Guid? cropCycleId,
+        Guid? cropCycleStageId,
         Guid? activityTypeId,
         DateOnly? fromDate,
         DateOnly? toDate,
@@ -202,6 +204,7 @@ public sealed class LaborActivityStore(ApplicationDbContext dbContext) : ILaborA
         if (farmAreaId.HasValue) query = query.Where(a => a.FarmAreaId == farmAreaId.Value);
         if (plantationId.HasValue) query = query.Where(a => a.PlantationId == plantationId.Value);
         if (cropCycleId.HasValue) query = query.Where(a => a.CropCycleId == cropCycleId.Value);
+        if (cropCycleStageId.HasValue) query = query.Where(a => a.CropCycleStageId == cropCycleStageId.Value);
         if (activityTypeId.HasValue) query = query.Where(a => a.LaborActivityTypeId == activityTypeId.Value);
         if (fromDate.HasValue) query = query.Where(a => a.ActivityDate >= fromDate.Value);
         if (toDate.HasValue) query = query.Where(a => a.ActivityDate <= toDate.Value);

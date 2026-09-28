@@ -11,6 +11,7 @@ public interface ILaborActivityStore
         Guid? farmAreaId,
         Guid? plantationId,
         Guid? cropCycleId,
+        Guid? cropCycleStageId,
         Guid? activityTypeId,
         DateOnly? fromDate,
         DateOnly? toDate,
@@ -49,16 +50,17 @@ public interface ILaborActivityStore
         Guid organizationId,
         CancellationToken cancellationToken = default);
 
+    Task<CropCycleStage?> FindCropCycleStageAsync(
+        Guid stageId,
+        Guid organizationId,
+        CancellationToken cancellationToken = default);
+
     Task<LaborActivityType?> FindLaborActivityTypeAsync(
         Guid activityTypeId,
         Guid organizationId,
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<LaborActivityType>> ListLaborActivityTypesAsync(
-        Guid organizationId,
-        CancellationToken cancellationToken = default);
-
-    Task<string> ResolveOrganizationCurrencyAsync(
         Guid organizationId,
         CancellationToken cancellationToken = default);
 
