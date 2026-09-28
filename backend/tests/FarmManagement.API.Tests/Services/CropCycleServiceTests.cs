@@ -618,6 +618,239 @@ public sealed class CropCycleServiceTests
         Assert.Contains("Non-perennial plantations cannot be reused", ex.Message);
     }
 
+    [Fact]
+    public async Task LifecycleSnapshot_FullScenario_TemplateModified_ExistingStagesRemainUnchanged_AndNewCycleReceivesNewValues()
+    {
+        var store = new FakeCropCycleStore();
+        var crop = CreateCrop(_organizationId, "Tomato");
+        var plantation1 = CreatePlantation(store, _organizationId, crop);
+        var templateA = CreateTemplate(store, _organizationId, crop.Id, "Tomato Standard Template");
+        AddStage(templateA, "Nursery", 1, 15);
+        AddStage(templateA, "Transplanting", 2, 20);
+
+        var service = new CropCycleService(store);
+
+        // 1. Start Crop Cycle 1 using Template A
+        var plannedStart1 = new DateOnly(2026, 4, 1);
+        var cycle1 = new CropCycle(_organizationId, plantation1.Id, "2026 Tomato Cycle 1", 2026, "Season 1", plannedStart1, null, _userId, templateA.Id);
+        store.Cycles.Add(cycle1);
+
+        var startResult1 = await service.StartAsync(CreateActor(), cycle1.Id, new StartCropCycleRequest(plannedStart1), "127.0.0.1");
+        Assert.True(startResult1);
+
+        // 2. Confirm crop_cycle_stages were generated
+        var lifecycle1Before = await service.GetLifecycleAsync(CreateActor(), cycle1.Id);
+        Assert.True(lifecycle1Before.HasGeneratedStages);
+        Assert.Equal(2, lifecycle1Before.TotalStagesCount);
+        Assert.Equal("Nursery", lifecycle1Before.Stages[0].StageName);
+        Assert.Equal(15, lifecycle1Before.Stages[0].ExpectedDurationDays);
+        Assert.Equal(plannedStart1, lifecycle1Before.Stages[0].PlannedStartDate);
+        Assert.Equal(new DateOnly(2026, 4, 16), lifecycle1Before.Stages[0].PlannedEndDate);
+        Assert.Equal("Transplanting", lifecycle1Before.Stages[1].StageName);
+        Assert.Equal(20, lifecycle1Before.Stages[1].ExpectedDurationDays);
+        Assert.Equal(new DateOnly(2026, 4, 16), lifecycle1Before.Stages[1].PlannedStartDate);
+        Assert.Equal(new DateOnly(2026, 5, 6), lifecycle1Before.Stages[1].PlannedEndDate);
+
+        // 3. Modify Template A stage name and duration (and add a new stage)
+        var templateStage1 = templateA.Stages.First(s => s.SequenceNumber == 1);
+        templateStage1.Update("Early Nursery Phase", 1, 10, "Updated description");
+        var templateStage2 = templateA.Stages.First(s => s.SequenceNumber == 2);
+        templateStage2.Update("Field Transplanting", 2, 25, "Extended duration");
+        AddStage(templateA, "Harvesting", 3, 30);
+
+        // 4. Reload the existing Crop Cycle
+        var lifecycle1After = await service.GetLifecycleAsync(CreateActor(), cycle1.Id);
+
+        // 5. Confirm its crop_cycle_stages did NOT change
+        Assert.True(lifecycle1After.HasGeneratedStages);
+        Assert.Equal(2, lifecycle1After.TotalStagesCount);
+        Assert.Equal("Nursery", lifecycle1After.Stages[0].StageName);
+        Assert.Equal(15, lifecycle1After.Stages[0].ExpectedDurationDays);
+        Assert.Equal(new DateOnly(2026, 4, 16), lifecycle1After.Stages[0].PlannedEndDate);
+        Assert.Equal("Transplanting", lifecycle1After.Stages[1].StageName);
+        Assert.Equal(20, lifecycle1After.Stages[1].ExpectedDurationDays);
+        Assert.Equal(new DateOnly(2026, 5, 6), lifecycle1After.Stages[1].PlannedEndDate);
+
+        // 6. Create/start another Crop Cycle using the modified template
+        var plantation2 = CreatePlantation(store, _organizationId, crop);
+        var plannedStart2 = new DateOnly(2026, 6, 1);
+        var createRequest2 = new CreateCropCycleRequest(
+            PlantationId: plantation2.Id,
+            CycleName: "2026 Tomato Cycle 2",
+            SeasonYear: 2026,
+            SeasonName: "Season 2",
+            PlannedStartDate: plannedStart2,
+            ExpectedEndDate: null,
+            LifecycleTemplateId: templateA.Id);
+
+        var cycle2Response = await service.CreateAsync(CreateActor(), createRequest2, "127.0.0.1");
+        // Total duration is now 10 + 25 + 30 = 65 days
+        Assert.Equal(plannedStart2.AddDays(65), cycle2Response.ExpectedEndDate);
+
+        var startResult2 = await service.StartAsync(CreateActor(), cycle2Response.Id, new StartCropCycleRequest(plannedStart2), "127.0.0.1");
+        Assert.True(startResult2);
+
+        // 7. Confirm the new cycle receives the new template values
+        var lifecycle2 = await service.GetLifecycleAsync(CreateActor(), cycle2Response.Id);
+        Assert.True(lifecycle2.HasGeneratedStages);
+        Assert.Equal(3, lifecycle2.TotalStagesCount);
+        Assert.Equal("Early Nursery Phase", lifecycle2.Stages[0].StageName);
+        Assert.Equal(10, lifecycle2.Stages[0].ExpectedDurationDays);
+        Assert.Equal(plannedStart2, lifecycle2.Stages[0].PlannedStartDate);
+        Assert.Equal(new DateOnly(2026, 6, 11), lifecycle2.Stages[0].PlannedEndDate);
+
+        Assert.Equal("Field Transplanting", lifecycle2.Stages[1].StageName);
+        Assert.Equal(25, lifecycle2.Stages[1].ExpectedDurationDays);
+        Assert.Equal(new DateOnly(2026, 6, 11), lifecycle2.Stages[1].PlannedStartDate);
+        Assert.Equal(new DateOnly(2026, 7, 6), lifecycle2.Stages[1].PlannedEndDate);
+
+        Assert.Equal("Harvesting", lifecycle2.Stages[2].StageName);
+        Assert.Equal(30, lifecycle2.Stages[2].ExpectedDurationDays);
+        Assert.Equal(new DateOnly(2026, 7, 6), lifecycle2.Stages[2].PlannedStartDate);
+        Assert.Equal(new DateOnly(2026, 8, 5), lifecycle2.Stages[2].PlannedEndDate);
+    }
+
+    [Fact]
+    public async Task StartedCropCycle_CannotChangeLifecycleTemplateId_ThrowsConflictException()
+    {
+        var store = new FakeCropCycleStore();
+        var crop = CreateCrop(_organizationId, "Grape");
+        var plantation = CreatePlantation(store, _organizationId, crop);
+        var templateA = CreateTemplate(store, _organizationId, crop.Id, "Template A");
+        AddStage(templateA, "Stage 1", 1, 10);
+        var templateB = CreateTemplate(store, _organizationId, crop.Id, "Template B");
+        AddStage(templateB, "Stage 1B", 1, 20);
+
+        var cycle = new CropCycle(_organizationId, plantation.Id, "Cycle", 2026, null, new DateOnly(2026, 4, 1), null, _userId, templateA.Id);
+        store.Cycles.Add(cycle);
+
+        var service = new CropCycleService(store);
+        await service.StartAsync(CreateActor(), cycle.Id, new StartCropCycleRequest(new DateOnly(2026, 4, 1)), "127.0.0.1");
+
+        // Cycle is now ACTIVE
+        Assert.Equal(CropCycleStatus.Active, cycle.Status);
+
+        var updateRequest = new UpdateCropCycleRequest(
+            PlantationId: plantation.Id,
+            CycleName: "Attempted Update",
+            SeasonYear: 2026,
+            SeasonName: null,
+            PlannedStartDate: new DateOnly(2026, 4, 1),
+            ExpectedEndDate: null,
+            LifecycleTemplateId: templateB.Id);
+
+        // Application service check
+        var ex = await Assert.ThrowsAsync<ConflictException>(() => service.UpdateAsync(CreateActor(), cycle.Id, updateRequest, "127.0.0.1"));
+        Assert.Contains("Only a planned crop cycle can be modified", ex.Message);
+
+        // Domain entity direct checks
+        Assert.Throws<InvalidOperationException>(() =>
+            cycle.SetLifecycleTemplate(templateB.Id, DateTimeOffset.UtcNow, _userId));
+
+        Assert.Throws<InvalidOperationException>(() =>
+            cycle.Update(plantation.Id, "Name", 2026, null, new DateOnly(2026, 4, 1), null, DateTimeOffset.UtcNow, _userId, templateB.Id));
+    }
+
+    [Fact]
+    public async Task DraftCropCycle_CanChangeLifecycleTemplateId_SuccessfullyUpdatesTemplateAndRecalculatesExpectedEndDate()
+    {
+        var store = new FakeCropCycleStore();
+        var crop = CreateCrop(_organizationId, "Grape");
+        var plantation = CreatePlantation(store, _organizationId, crop);
+        var templateA = CreateTemplate(store, _organizationId, crop.Id, "Template A");
+        AddStage(templateA, "Stage A", 1, 15);
+        var templateB = CreateTemplate(store, _organizationId, crop.Id, "Template B");
+        AddStage(templateB, "Stage B1", 1, 20);
+        AddStage(templateB, "Stage B2", 2, 25); // total 45 days
+
+        var plannedStart = new DateOnly(2026, 4, 1);
+        var cycle = new CropCycle(_organizationId, plantation.Id, "Draft Cycle", 2026, null, plannedStart, null, _userId, templateA.Id);
+        store.Cycles.Add(cycle);
+
+        var service = new CropCycleService(store);
+
+        // 1. Change from Template A to Template B
+        var updateRequest = new UpdateCropCycleRequest(
+            PlantationId: plantation.Id,
+            CycleName: "Draft Cycle Updated",
+            SeasonYear: 2026,
+            SeasonName: null,
+            PlannedStartDate: plannedStart,
+            ExpectedEndDate: null,
+            LifecycleTemplateId: templateB.Id);
+
+        var response = await service.UpdateAsync(CreateActor(), cycle.Id, updateRequest, "127.0.0.1");
+
+        Assert.Equal(templateB.Id, response.LifecycleTemplateId);
+        Assert.Equal("Template B", response.LifecycleTemplateName);
+        Assert.Equal(plannedStart.AddDays(45), response.ExpectedEndDate);
+        Assert.Equal(templateB.Id, cycle.LifecycleTemplateId);
+
+        // Also verify projected lifecycle reflects Template B
+        var lifecycle = await service.GetLifecycleAsync(CreateActor(), cycle.Id);
+        Assert.False(lifecycle.HasGeneratedStages);
+        Assert.Equal(templateB.Id, lifecycle.LifecycleTemplateId);
+        Assert.Equal(2, lifecycle.TotalStagesCount);
+        Assert.Equal("Stage B1", lifecycle.Stages[0].StageName);
+        Assert.Equal("Stage B2", lifecycle.Stages[1].StageName);
+
+        // 2. Can also clear template on draft cycle when ClearLifecycleTemplate is true
+        var clearTemplateRequest = new UpdateCropCycleRequest(
+            PlantationId: plantation.Id,
+            CycleName: "Draft Cycle Without Template",
+            SeasonYear: 2026,
+            SeasonName: null,
+            PlannedStartDate: plannedStart,
+            ExpectedEndDate: null,
+            LifecycleTemplateId: null,
+            ClearLifecycleTemplate: true);
+
+        var clearResponse = await service.UpdateAsync(CreateActor(), cycle.Id, clearTemplateRequest, "127.0.0.1");
+        Assert.Null(clearResponse.LifecycleTemplateId);
+        Assert.Null(cycle.LifecycleTemplateId);
+
+        // Domain entity SetLifecycleTemplate also works directly in Planned status
+        cycle.SetLifecycleTemplate(templateA.Id, DateTimeOffset.UtcNow, _userId);
+        Assert.Equal(templateA.Id, cycle.LifecycleTemplateId);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_PartialUpdateWithoutLifecycleTemplate_PreservesExistingLifecycleTemplate()
+    {
+        var store = new FakeCropCycleStore();
+        var crop = CreateCrop(_organizationId, "Grape");
+        var plantation = CreatePlantation(store, _organizationId, crop);
+        var template = CreateTemplate(store, _organizationId, crop.Id, "Template 1");
+        AddStage(template, "Stage A", 1, 20);
+
+        var plannedStart = new DateOnly(2026, 4, 1);
+        var cycle = new CropCycle(
+            _organizationId, plantation.Id, "Initial Cycle", 2026, null,
+            plannedStart, plannedStart.AddDays(20), _userId, template.Id);
+        store.Cycles.Add(cycle);
+
+        var service = new CropCycleService(store);
+
+        // Partial update: updating cycleName and seasonName, leaving LifecycleTemplateId omitted/null, ClearLifecycleTemplate: false
+        var updateRequest = new UpdateCropCycleRequest(
+            PlantationId: plantation.Id,
+            CycleName: "Renamed Cycle",
+            SeasonYear: 2026,
+            SeasonName: "Spring Season",
+            PlannedStartDate: plannedStart,
+            ExpectedEndDate: null,
+            LifecycleTemplateId: null,
+            ClearLifecycleTemplate: false);
+
+        var response = await service.UpdateAsync(CreateActor(), cycle.Id, updateRequest, "127.0.0.1");
+
+        // Verifies existing template and duration were PRESERVED, not accidentally detached!
+        Assert.Equal(template.Id, response.LifecycleTemplateId);
+        Assert.Equal("Template 1", response.LifecycleTemplateName);
+        Assert.Equal(plannedStart.AddDays(20), response.ExpectedEndDate);
+        Assert.Equal(template.Id, cycle.LifecycleTemplateId);
+    }
+
     private static Crop CreateCrop(Guid organizationId, string name) =>
         new(organizationId, name, "CropType", "PERENNIAL");
 

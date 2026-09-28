@@ -44,7 +44,8 @@ public sealed record UpdateCropCycleRequest(
     string? SeasonName,
     DateOnly? PlannedStartDate,
     DateOnly? ExpectedEndDate,
-    Guid? LifecycleTemplateId = null);
+    Guid? LifecycleTemplateId = null,
+    bool ClearLifecycleTemplate = false);
 
 public sealed record StartCropCycleRequest(DateOnly? StartDate);
 

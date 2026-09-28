@@ -271,14 +271,28 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
                 ?? throw new ResourceNotFoundException("The plantation was not found.");
             EnsureCanCreateForPlantation(plantation);
 
-            CropLifecycleTemplate? template = null;
-            if (values.LifecycleTemplateId is not null)
+            Guid? targetTemplateId;
+            if (request.ClearLifecycleTemplate)
             {
-                if (values.LifecycleTemplateId.Value == Guid.Empty)
+                targetTemplateId = null;
+            }
+            else if (values.LifecycleTemplateId is not null)
+            {
+                targetTemplateId = values.LifecycleTemplateId;
+            }
+            else
+            {
+                targetTemplateId = cycle.LifecycleTemplateId;
+            }
+
+            CropLifecycleTemplate? template = null;
+            if (targetTemplateId is not null)
+            {
+                if (targetTemplateId.Value == Guid.Empty)
                 {
                     throw Validation("lifecycleTemplateId", "A lifecycle template ID cannot be empty.");
                 }
-                template = await store.FindLifecycleTemplateAsync(values.LifecycleTemplateId.Value, actor.OrganizationId, transactionCancellationToken)
+                template = await store.FindLifecycleTemplateAsync(targetTemplateId.Value, actor.OrganizationId, transactionCancellationToken)
                     ?? throw Validation("lifecycleTemplateId", "The selected lifecycle template was not found.");
                 if (!template.IsActive)
                 {
@@ -325,7 +339,7 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
                 calculatedExpectedEndDate,
                 DateTimeOffset.UtcNow,
                 actor.UserId,
-                values.LifecycleTemplateId);
+                targetTemplateId);
             AddAudit(actor, cycle, "CropCycle.Updated", new
             {
                 previous,

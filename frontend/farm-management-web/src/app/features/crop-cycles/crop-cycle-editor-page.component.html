@@ -1,7 +1,7 @@
 <div class="section-heading">
   <a mat-button routerLink="/crop-cycles">← Back to cycles</a>
   <p class="eyebrow">Production season</p>
-  <h2>{{ id ? "Edit cycle" : "New cycle" }}</h2>
+  <h2>{{ id ? (isStarted() ? "Cycle details (Locked)" : "Edit cycle") : "New cycle" }}</h2>
 </div>
 
 @if (isLoading()) {
@@ -11,6 +11,16 @@
 } @else {
   <mat-card>
     <mat-card-content>
+      @if (isStarted()) {
+        <div class="started-banner">
+          <mat-icon>lock</mat-icon>
+          <div>
+            <strong>This crop cycle is {{ cycleStatus() }} and cannot be modified.</strong>
+            <p>Only planned crop cycles can be edited. Stages and actual progression are managed in the cycle's Lifecycle tab.</p>
+          </div>
+        </div>
+      }
+
       <form [formGroup]="form" (ngSubmit)="submit()">
         <div class="form-grid">
           <mat-form-field appearance="outline">
@@ -102,9 +112,15 @@
 
         <div class="form-actions">
           <a mat-button routerLink="/crop-cycles">Cancel</a>
-          <button mat-flat-button color="primary" [disabled]="isSubmitting()">
-            {{ id ? "Save changes" : "Create cycle" }}
-          </button>
+          @if (!isStarted()) {
+            <button mat-flat-button color="primary" [disabled]="isSubmitting()">
+              {{ id ? "Save changes" : "Create cycle" }}
+            </button>
+          } @else {
+            <a mat-flat-button color="primary" [routerLink]="['/crop-cycles', id]">
+              View cycle details
+            </a>
+          }
         </div>
       </form>
     </mat-card-content>

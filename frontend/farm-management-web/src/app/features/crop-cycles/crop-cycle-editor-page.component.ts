@@ -12,6 +12,7 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
 import { MatDatepickerModule } from "@angular/material/datepicker";
 import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { MatSelectModule } from "@angular/material/select";
@@ -35,6 +36,7 @@ import { formatDateOnly, parseDateOnly } from "../../core/utils/date.utils";
     MatCardModule,
     MatDatepickerModule,
     MatFormFieldModule,
+    MatIconModule,
     MatInputModule,
     MatProgressSpinnerModule,
     MatSelectModule,
@@ -59,6 +61,7 @@ export class CropCycleEditorPageComponent implements OnInit {
   readonly isLoadingLifecycleTemplates = signal(false);
   readonly isSubmitting = signal(false);
   readonly isStarted = signal(false);
+  readonly cycleStatus = signal<string | null>(null);
   readonly errorMessage = signal<unknown>(null);
   readonly plantations = signal<readonly Plantation[]>([]);
   readonly lifecycleTemplates = signal<readonly LifecycleTemplate[]>([]);
@@ -92,8 +95,9 @@ export class CropCycleEditorPageComponent implements OnInit {
             this.initialPlantationId = cycle.plantationId;
             const started = cycle.status !== "PLANNED";
             this.isStarted.set(started);
+            this.cycleStatus.set(cycle.status);
             if (started) {
-              this.form.get("lifecycleTemplateId")?.disable();
+              this.form.disable();
             }
 
             this.assignedTemplateName.set(cycle.lifecycleTemplateName ?? null);
@@ -323,7 +327,7 @@ export class CropCycleEditorPageComponent implements OnInit {
   }
 
   submit(): void {
-    if (this.form.invalid) {
+    if (this.isStarted() || this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
@@ -338,6 +342,7 @@ export class CropCycleEditorPageComponent implements OnInit {
       plannedStartDate: formatDateOnly(v.plannedStartDate) ?? "",
       expectedEndDate: formatDateOnly(v.expectedEndDate),
       lifecycleTemplateId: v.lifecycleTemplateId || null,
+      clearLifecycleTemplate: this.isEditingExistingCycle && !v.lifecycleTemplateId,
     };
     const request = this.id
       ? this.service.updateCycle(this.id, payload)
