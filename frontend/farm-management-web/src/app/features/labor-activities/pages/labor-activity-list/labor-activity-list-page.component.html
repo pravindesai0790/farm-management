@@ -3,7 +3,7 @@
     <p class="eyebrow">Farm Operations</p>
     <h2>Labor activities</h2>
     <p>
-      Track daily labor operations, working hours, and operational expenses across your farms and plantations.
+      Track daily labor operations across your farms, plantations, and crop cycles.
     </p>
   </div>
   @if (permissionService.has("LaborActivity.Create")) {
@@ -152,6 +152,23 @@
               <span>{{ a.plantation?.name || '—' }}</span>
               @if (a.cropCycle) {
                 <small class="cycle-text">{{ a.cropCycle.name }}</small>
+              }
+            </td>
+          </ng-container>
+
+          <!-- Stage Column -->
+          <ng-container matColumnDef="stage">
+            <th mat-header-cell *matHeaderCellDef>Stage</th>
+            <td mat-cell *matCellDef="let a">
+              @if (a.cropCycleStage) {
+                <span
+                  class="stage-badge"
+                  [matTooltip]="'Sequence ' + a.cropCycleStage.sequenceNumber + ': ' + a.cropCycleStage.name"
+                >
+                  Stage {{ a.cropCycleStage.sequenceNumber }}: {{ a.cropCycleStage.name }}
+                </span>
+              } @else {
+                <span class="muted-dash">—</span>
               }
             </td>
           </ng-container>

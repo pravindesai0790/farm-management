@@ -113,6 +113,21 @@
         </strong>
       </mat-card-content>
     </mat-card>
+
+    <mat-card>
+      <mat-card-content>
+        <span>Crop Cycle Stage</span>
+        <strong>
+          @if (item.cropCycleStage) {
+            <span class="stage-tag">
+              Stage {{ item.cropCycleStage.sequenceNumber }}: {{ item.cropCycleStage.name }}
+            </span>
+          } @else {
+            &mdash;
+          }
+        </strong>
+      </mat-card-content>
+    </mat-card>
   </div>
 
   <mat-card class="detail-card">
@@ -132,6 +147,17 @@
         <div class="info-item">
           <label>Status</label>
           <span>{{ item.status }}</span>
+        </div>
+
+        <div class="info-item">
+          <label>Crop Cycle Stage</label>
+          <span>
+            @if (item.cropCycleStage) {
+              Stage {{ item.cropCycleStage.sequenceNumber }}: {{ item.cropCycleStage.name }}
+            } @else {
+              &mdash;
+            }
+          </span>
         </div>
 
         <div class="info-item full-span">

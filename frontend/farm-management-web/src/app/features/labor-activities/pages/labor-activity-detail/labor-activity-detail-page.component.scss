@@ -138,7 +138,7 @@
 
 .cards {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 16px;
   margin-bottom: 24px;
 
@@ -167,6 +167,13 @@
       }
     }
   }
+
+  .stage-tag {
+    display: inline-block;
+    color: #1b5e20;
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
 }
 
 .detail-card {
@@ -181,7 +188,7 @@
 
   .info-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 20px;
 
     .info-item {
@@ -218,12 +225,20 @@
   }
 }
 
-@media (max-width: 960px) {
+@media (max-width: 1100px) {
   .cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 960px) {
+  .detail-card .info-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+}
 
-  .detail-card .info-grid {
+@media (max-width: 768px) {
+  .cards {
     grid-template-columns: repeat(2, 1fr);
   }
 }

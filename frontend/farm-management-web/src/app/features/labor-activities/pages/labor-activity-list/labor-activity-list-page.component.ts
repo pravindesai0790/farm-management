@@ -85,6 +85,7 @@ export class LaborActivityListPageComponent implements OnInit {
     "farm",
     "area",
     "plantation",
+    "stage",
     "activityType",
     "status",
     "actions",

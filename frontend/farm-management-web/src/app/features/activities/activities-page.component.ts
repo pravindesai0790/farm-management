@@ -47,7 +47,7 @@ export class ActivitiesPageComponent {
       title: "Labor activities",
       category: "Field operations",
       description:
-        "Track daily labor work, worker counts, working hours, and operational labor costs across farms and plantations.",
+        "Track daily labor operations across farms, plantations, crop cycles, and stages.",
       icon: "assignment",
       route: "/activities/labor-activities",
       status: "AVAILABLE",
@@ -55,10 +55,10 @@ export class ActivitiesPageComponent {
       createPermission: "LaborActivity.Create",
       createRoute: "/activities/labor-activities/new",
       highlights: [
-        "Worker logging",
-        "Working hours",
-        "Cost tracking",
-        "Farm & area assignment",
+        "Field operation logs",
+        "Farm & area tracking",
+        "Plantation & cycle link",
+        "Lifecycle stage context",
       ],
     },
     {
