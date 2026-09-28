@@ -26,11 +26,12 @@ import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { MatSelectModule } from "@angular/material/select";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { ActivatedRoute, Router, RouterLink } from "@angular/router";
-import { finalize, forkJoin, of, switchMap } from "rxjs";
+import { catchError, finalize, forkJoin, of, switchMap } from "rxjs";
 
 import { PermissionService } from "../../../../core/auth/permission.service";
 import {
   CropCycle,
+  CropCycleStage,
   Farm,
   FarmArea,
   Plantation,
@@ -40,7 +41,6 @@ import { formatDateOnly, parseDateOnly } from "../../../../core/utils/date.utils
 import { ErrorAlertComponent } from "../../../../shared/components/error-alert/error-alert.component";
 import {
   CreateLaborActivityRequest,
-  LaborActivity,
   LaborActivityStatus,
   NamedReference,
   UpdateLaborActivityRequest,
@@ -91,27 +91,24 @@ export class LaborActivityEditorPageComponent implements OnInit {
   readonly isLoadingAreas = signal(false);
   readonly isLoadingPlantations = signal(false);
   readonly isLoadingCycles = signal(false);
+  readonly isLoadingStages = signal(false);
 
   // Master data signals
   readonly farms = signal<readonly Farm[]>([]);
   readonly areas = signal<readonly FarmArea[]>([]);
   readonly plantations = signal<readonly Plantation[]>([]);
   readonly cropCycles = signal<readonly CropCycle[]>([]);
+  readonly cropCycleStages = signal<readonly CropCycleStage[]>([]);
   readonly activityTypes = signal<readonly NamedReference[]>([]);
-
-  readonly activityCurrency = signal("INR");
 
   readonly form: FormGroup = this.fb.group({
     activityDate: [new Date(), [Validators.required]],
     farmId: [null as string | null, [Validators.required]],
-    farmAreaId: [null as string | null, [Validators.required]],
-    plantationId: [null as string | null, [Validators.required]],
+    farmAreaId: [null as string | null],
+    plantationId: [null as string | null],
     cropCycleId: [null as string | null],
     cropCycleStageId: [null as string | null],
     laborActivityTypeId: [null as string | null, [Validators.required]],
-    workerCount: [1, [Validators.required, Validators.min(1)]],
-    totalWorkingHours: [null as number | null, [Validators.min(0.01)]],
-    costAmount: [null as number | null, [Validators.min(0)]],
     status: ["COMPLETED" as LaborActivityStatus, [Validators.required]],
     description: ["", [Validators.maxLength(1000)]],
   });
@@ -152,7 +149,6 @@ export class LaborActivityEditorPageComponent implements OnInit {
         switchMap(({ farms, types, activity }) => {
           this.farms.set(farms.items);
           this.activityTypes.set(types);
-          this.activityCurrency.set("INR");
 
           if (activity.status === "CANCELLED") {
             this.isCancelled.set(true);
@@ -162,27 +158,61 @@ export class LaborActivityEditorPageComponent implements OnInit {
           const farmId = activity.farm.id;
           const areaId = activity.farmArea?.id ?? null;
           const plantationId = activity.plantation?.id ?? null;
+          const cycleId = activity.cropCycle?.id ?? null;
 
           const areas$ = farmId ? this.farmService.listAreas(farmId, true) : of([]);
-          const plantations$ =
-            farmId && areaId
-              ? this.farmService.listPlantations(1, 100, farmId, areaId)
-              : of({ items: [] as Plantation[], totalCount: 0 });
-          const cycles$ =
-            plantationId
-              ? this.farmService.listCycles(1, 100, farmId, areaId ?? undefined, plantationId)
-              : of({ items: [] as CropCycle[], totalCount: 0 });
+          const plantations$ = farmId
+            ? this.farmService.listPlantations(1, 100, farmId, areaId ?? undefined)
+            : of({ items: [] as Plantation[], totalCount: 0 });
+          const cycles$ = plantationId
+            ? this.farmService.listCycles(1, 100, farmId, areaId ?? undefined, plantationId)
+            : of({ items: [] as CropCycle[], totalCount: 0 });
+          const lifecycle$ = cycleId
+            ? this.farmService.getCycleLifecycle(cycleId).pipe(catchError(() => of(null)))
+            : of(null);
 
           return forkJoin({
             areas: areas$,
             plantations: plantations$,
             cycles: cycles$,
+            lifecycle: lifecycle$,
           }).pipe(
             finalize(() => this.isLoading.set(false)),
-            switchMap(({ areas, plantations, cycles }) => {
+            switchMap(({ areas, plantations, cycles, lifecycle }) => {
               this.areas.set(areas);
               this.plantations.set(plantations.items);
               this.cropCycles.set(cycles.items);
+
+              let stages: CropCycleStage[] = [];
+              if (lifecycle?.stages) {
+                stages = lifecycle.stages.filter(
+                  (s) => !!s.id && s.id !== "00000000-0000-0000-0000-000000000000",
+                ) as CropCycleStage[];
+              }
+
+              if (
+                activity.cropCycleStage &&
+                !stages.some((s) => s.id === activity.cropCycleStage!.id)
+              ) {
+                stages = [
+                  ...stages,
+                  {
+                    id: activity.cropCycleStage.id,
+                    cropCycleId: cycleId ?? "",
+                    lifecycleTemplateStageId: "",
+                    stageName: activity.cropCycleStage.name,
+                    sequenceNumber: activity.cropCycleStage.sequenceNumber,
+                    expectedDurationDays: null,
+                    plannedStartDate: null,
+                    plannedEndDate: null,
+                    actualStartDate: null,
+                    actualEndDate: null,
+                    status: "COMPLETED",
+                    notes: null,
+                  },
+                ];
+              }
+              this.cropCycleStages.set(stages);
 
               this.form.patchValue({
                 activityDate: parseDateOnly(activity.activityDate),
@@ -221,20 +251,30 @@ export class LaborActivityEditorPageComponent implements OnInit {
     this.areas.set([]);
     this.plantations.set([]);
     this.cropCycles.set([]);
+    this.cropCycleStages.set([]);
 
     if (!newFarmId) {
       return;
     }
 
     this.isLoadingAreas.set(true);
-    this.farmService
-      .listAreas(newFarmId, true)
+    this.isLoadingPlantations.set(true);
+    forkJoin({
+      areas: this.farmService.listAreas(newFarmId, true),
+      plantations: this.farmService.listPlantations(1, 100, newFarmId),
+    })
       .pipe(
         takeUntilDestroyed(this.destroyRef),
-        finalize(() => this.isLoadingAreas.set(false)),
+        finalize(() => {
+          this.isLoadingAreas.set(false);
+          this.isLoadingPlantations.set(false);
+        }),
       )
       .subscribe({
-        next: (areas) => this.areas.set(areas),
+        next: ({ areas, plantations }) => {
+          this.areas.set(areas);
+          this.plantations.set(plantations.items);
+        },
         error: (err) => this.errorMessage.set(err),
       });
   }
@@ -248,15 +288,16 @@ export class LaborActivityEditorPageComponent implements OnInit {
     });
     this.plantations.set([]);
     this.cropCycles.set([]);
+    this.cropCycleStages.set([]);
 
     const farmId = this.form.get("farmId")?.value;
-    if (!farmId || !newAreaId) {
+    if (!farmId) {
       return;
     }
 
     this.isLoadingPlantations.set(true);
     this.farmService
-      .listPlantations(1, 100, farmId, newAreaId)
+      .listPlantations(1, 100, farmId, newAreaId ?? undefined)
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         finalize(() => this.isLoadingPlantations.set(false)),
@@ -268,17 +309,28 @@ export class LaborActivityEditorPageComponent implements OnInit {
   }
 
   onPlantationChange(newPlantationId: string | null): void {
-    // Reset crop cycle
+    // Reset crop cycle & stage
     this.form.patchValue({
       cropCycleId: null,
       cropCycleStageId: null,
     });
     this.cropCycles.set([]);
+    this.cropCycleStages.set([]);
 
-    const farmId = this.form.get("farmId")?.value;
-    const farmAreaId = this.form.get("farmAreaId")?.value;
     if (!newPlantationId) {
       return;
+    }
+
+    const farmId = this.form.get("farmId")?.value;
+    let farmAreaId = this.form.get("farmAreaId")?.value;
+
+    // Auto-infer farm area from plantation if area was left empty
+    if (!farmAreaId) {
+      const selected = this.plantations().find((p) => p.id === newPlantationId);
+      if (selected?.farmAreaId) {
+        farmAreaId = selected.farmAreaId;
+        this.form.patchValue({ farmAreaId }, { emitEvent: false });
+      }
     }
 
     this.isLoadingCycles.set(true);
@@ -290,6 +342,40 @@ export class LaborActivityEditorPageComponent implements OnInit {
       )
       .subscribe({
         next: (res) => this.cropCycles.set(res.items),
+        error: (err) => this.errorMessage.set(err),
+      });
+  }
+
+  onCropCycleChange(newCropCycleId: string | null): void {
+    // Reset stage control & options
+    this.form.patchValue({
+      cropCycleStageId: null,
+    });
+    this.cropCycleStages.set([]);
+
+    if (!newCropCycleId) {
+      return;
+    }
+
+    this.isLoadingStages.set(true);
+    this.farmService
+      .getCycleLifecycle(newCropCycleId)
+      .pipe(
+        catchError(() => of(null)),
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.isLoadingStages.set(false)),
+      )
+      .subscribe({
+        next: (lifecycle) => {
+          if (!lifecycle || !lifecycle.stages) {
+            this.cropCycleStages.set([]);
+            return;
+          }
+          const validStages = lifecycle.stages.filter(
+            (s) => !!s.id && s.id !== "00000000-0000-0000-0000-000000000000",
+          ) as CropCycleStage[];
+          this.cropCycleStages.set(validStages);
+        },
         error: (err) => this.errorMessage.set(err),
       });
   }

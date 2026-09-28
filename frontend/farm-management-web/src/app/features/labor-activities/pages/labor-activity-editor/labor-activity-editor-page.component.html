@@ -6,8 +6,8 @@
   <h2>{{ isEditMode() ? "Edit labor activity" : "Record labor activity" }}</h2>
   <p class="subtitle">
     {{ isEditMode()
-      ? "Update operational metrics, working hours, and costs for this activity."
-      : "Log work performed by farm workers and assign to respective farm areas and plantations." }}
+      ? "Update operational details, location, and crop cycle stage for this activity."
+      : "Log field work and operational activities across farms, areas, plantations, and crop cycles." }}
   </p>
 </div>
 
@@ -64,14 +64,26 @@
               <mat-error>Labor activity type is required</mat-error>
             }
           </mat-form-field>
+
+          <!-- Status -->
+          <mat-form-field appearance="outline">
+            <mat-label>Status *</mat-label>
+            <mat-select formControlName="status" required>
+              <mat-option value="COMPLETED">Completed</mat-option>
+              <mat-option value="DRAFT">Draft</mat-option>
+            </mat-select>
+            @if (form.get('status')?.hasError('required') && form.get('status')?.touched) {
+              <mat-error>Status is required</mat-error>
+            }
+          </mat-form-field>
         </div>
 
-        <!-- Section 2: Location Hierarchy -->
+        <!-- Section 2: Location & Lifecycle Hierarchy -->
         <h3 class="form-section-title">
-          <mat-icon>alt_route</mat-icon>Farm & Location Hierarchy
+          <mat-icon>alt_route</mat-icon>Location & Hierarchy
         </h3>
         <p class="section-hint">
-          Select Farm &rarr; Farm Area &rarr; Plantation &rarr; Crop Cycle.
+          Select Farm, with optional Area, Plantation, Crop Cycle, and Stage.
         </p>
         <div class="form-grid">
           <!-- Farm -->
@@ -95,13 +107,12 @@
 
           <!-- Farm Area -->
           <mat-form-field appearance="outline">
-            <mat-label>Farm area *</mat-label>
+            <mat-label>Farm area (Optional)</mat-label>
             <mat-select
               formControlName="farmAreaId"
               (valueChange)="onAreaChange($event)"
-              [disabled]="!form.get('farmId')?.value"
-              required
             >
+              <mat-option [value]="null">None / Farm-wide</mat-option>
               @for (area of areas(); track area.id) {
                 <mat-option [value]="area.id">
                   {{ area.name }}
@@ -111,20 +122,16 @@
             @if (isLoadingAreas()) {
               <mat-hint>Loading areas…</mat-hint>
             }
-            @if (form.get('farmAreaId')?.hasError('required') && form.get('farmAreaId')?.touched) {
-              <mat-error>Farm area is required</mat-error>
-            }
           </mat-form-field>
 
           <!-- Plantation -->
           <mat-form-field appearance="outline">
-            <mat-label>Plantation *</mat-label>
+            <mat-label>Plantation (Optional)</mat-label>
             <mat-select
               formControlName="plantationId"
               (valueChange)="onPlantationChange($event)"
-              [disabled]="!form.get('farmAreaId')?.value"
-              required
             >
+              <mat-option [value]="null">None / General area work</mat-option>
               @for (p of plantations(); track p.id) {
                 <mat-option [value]="p.id">
                   {{ p.plantationName }} ({{ p.cropName }})
@@ -134,9 +141,6 @@
             @if (isLoadingPlantations()) {
               <mat-hint>Loading plantations…</mat-hint>
             }
-            @if (form.get('plantationId')?.hasError('required') && form.get('plantationId')?.touched) {
-              <mat-error>Plantation is required</mat-error>
-            }
           </mat-form-field>
 
           <!-- Crop Cycle -->
@@ -144,7 +148,7 @@
             <mat-label>Crop cycle (Optional)</mat-label>
             <mat-select
               formControlName="cropCycleId"
-              [disabled]="!form.get('plantationId')?.value"
+              (valueChange)="onCropCycleChange($event)"
             >
               <mat-option [value]="null">None / General plantation work</mat-option>
               @for (c of cropCycles(); track c.id) {
@@ -157,83 +161,32 @@
               <mat-hint>Loading cycles…</mat-hint>
             }
           </mat-form-field>
-        </div>
 
-        <!-- Section 3: Work & Cost Metrics -->
-        <h3 class="form-section-title">
-          <mat-icon>groups</mat-icon>Labor & Operational Metrics
-        </h3>
-        <div class="form-grid">
-          <!-- Number of Workers -->
+          <!-- Crop Cycle Stage -->
           <mat-form-field appearance="outline">
-            <mat-label>Number of workers *</mat-label>
-            <input
-              matInput
-              type="number"
-              min="1"
-              step="1"
-              formControlName="workerCount"
-              required
-            />
-            <mat-icon matPrefix>people</mat-icon>
-            @if (form.get('workerCount')?.hasError('required') && form.get('workerCount')?.touched) {
-              <mat-error>Worker count is required</mat-error>
-            }
-            @if (form.get('workerCount')?.hasError('min')) {
-              <mat-error>Must have at least 1 worker</mat-error>
-            }
-          </mat-form-field>
-
-          <!-- Total Working Hours -->
-          <mat-form-field appearance="outline">
-            <mat-label>Total working hours</mat-label>
-            <input
-              matInput
-              type="number"
-              min="0.1"
-              step="0.5"
-              formControlName="totalWorkingHours"
-              placeholder="e.g. 40"
-            />
-            <span matTextSuffix>hours</span>
-            @if (form.get('totalWorkingHours')?.hasError('min')) {
-              <mat-error>Hours must be greater than 0</mat-error>
-            }
-          </mat-form-field>
-
-          <!-- Labor Cost -->
-          <mat-form-field appearance="outline">
-            <mat-label>Labor cost</mat-label>
-            <input
-              matInput
-              type="number"
-              min="0"
-              step="0.01"
-              formControlName="costAmount"
-              placeholder="0.00"
-            />
-            <span matTextSuffix>{{ activityCurrency() }}</span>
-            @if (form.get('costAmount')?.hasError('min')) {
-              <mat-error>Cost cannot be negative</mat-error>
-            }
-          </mat-form-field>
-
-          <!-- Status -->
-          <mat-form-field appearance="outline">
-            <mat-label>Status *</mat-label>
-            <mat-select formControlName="status" required>
-              <mat-option value="COMPLETED">Completed</mat-option>
-              <mat-option value="DRAFT">Draft</mat-option>
+            <mat-label>Crop cycle stage (Optional)</mat-label>
+            <mat-select formControlName="cropCycleStageId">
+              <mat-option [value]="null">None / Cycle-wide activity</mat-option>
+              @for (stage of cropCycleStages(); track stage.id) {
+                <mat-option [value]="stage.id">
+                  {{ stage.sequenceNumber }}. {{ stage.stageName }}
+                </mat-option>
+              }
             </mat-select>
+            @if (isLoadingStages()) {
+              <mat-hint>Loading stages…</mat-hint>
+            } @else if (form.get('cropCycleId')?.value && cropCycleStages().length === 0) {
+              <mat-hint>No stages defined for this cycle</mat-hint>
+            }
           </mat-form-field>
         </div>
 
-        <!-- Section 4: Notes / Description -->
+        <!-- Section 3: Notes / Description -->
         <h3 class="form-section-title">
           <mat-icon>notes</mat-icon>Notes & Remarks
         </h3>
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Description</mat-label>
+          <mat-label>Description (Optional)</mat-label>
           <textarea
             matInput
             rows="3"

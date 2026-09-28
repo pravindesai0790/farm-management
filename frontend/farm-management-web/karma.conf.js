@@ -16,7 +16,7 @@ module.exports = function (config) {
       clearContext: false
     },
     jasmineHtmlReporter: {
-      suppressAll: true
+      suppressAll: false
     },
     coverageReporter: {
       dir: require('path').join(__dirname, './coverage/farm-management-web'),
