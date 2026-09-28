@@ -5,6 +5,12 @@ export interface NamedReference {
   readonly name: string;
 }
 
+export interface StageReference {
+  readonly id: string;
+  readonly name: string;
+  readonly sequenceNumber: number;
+}
+
 export type LaborActivityStatus = "DRAFT" | "COMPLETED" | "CANCELLED";
 
 export interface LaborActivity {
@@ -14,6 +20,7 @@ export interface LaborActivity {
   readonly farmArea: NamedReference | null;
   readonly plantation: NamedReference | null;
   readonly cropCycle: NamedReference | null;
+  readonly cropCycleStage?: StageReference | null;
   readonly activityType: NamedReference;
   readonly status: LaborActivityStatus;
   readonly description: string | null;
@@ -29,6 +36,7 @@ export interface LaborActivityFilter {
   readonly farmAreaId?: string;
   readonly plantationId?: string;
   readonly cropCycleId?: string;
+  readonly cropCycleStageId?: string;
   readonly activityTypeId?: string;
   readonly fromDate?: string;
   readonly toDate?: string;
@@ -44,27 +52,23 @@ export interface CancelLaborActivityRequest {
 export interface CreateLaborActivityRequest {
   readonly activityDate: string;
   readonly farmId: string;
-  readonly farmAreaId: string;
-  readonly plantationId: string;
+  readonly farmAreaId?: string | null;
+  readonly plantationId?: string | null;
   readonly cropCycleId?: string | null;
+  readonly cropCycleStageId?: string | null;
   readonly laborActivityTypeId: string;
   readonly description?: string | null;
-  readonly workerCount: number;
-  readonly totalWorkingHours?: number | null;
-  readonly costAmount?: number | null;
-  readonly status: LaborActivityStatus;
+  readonly status?: LaborActivityStatus;
 }
 
 export interface UpdateLaborActivityRequest {
   readonly activityDate: string;
   readonly farmId: string;
-  readonly farmAreaId: string;
-  readonly plantationId: string;
+  readonly farmAreaId?: string | null;
+  readonly plantationId?: string | null;
   readonly cropCycleId?: string | null;
+  readonly cropCycleStageId?: string | null;
   readonly laborActivityTypeId: string;
   readonly description?: string | null;
-  readonly workerCount: number;
-  readonly totalWorkingHours?: number | null;
-  readonly costAmount?: number | null;
-  readonly status: LaborActivityStatus;
+  readonly status?: LaborActivityStatus;
 }

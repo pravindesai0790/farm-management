@@ -34,6 +34,9 @@ export class LaborActivityService {
     if (filter.cropCycleId) {
       params = params.set("cropCycleId", filter.cropCycleId);
     }
+    if (filter.cropCycleStageId) {
+      params = params.set("cropCycleStageId", filter.cropCycleStageId);
+    }
     if (filter.activityTypeId) {
       params = params.set("activityTypeId", filter.activityTypeId);
     }

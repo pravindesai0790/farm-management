@@ -107,6 +107,7 @@ export class LaborActivityEditorPageComponent implements OnInit {
     farmAreaId: [null as string | null, [Validators.required]],
     plantationId: [null as string | null, [Validators.required]],
     cropCycleId: [null as string | null],
+    cropCycleStageId: [null as string | null],
     laborActivityTypeId: [null as string | null, [Validators.required]],
     workerCount: [1, [Validators.required, Validators.min(1)]],
     totalWorkingHours: [null as number | null, [Validators.min(0.01)]],
@@ -189,6 +190,7 @@ export class LaborActivityEditorPageComponent implements OnInit {
                 farmAreaId: activity.farmArea?.id ?? null,
                 plantationId: activity.plantation?.id ?? null,
                 cropCycleId: activity.cropCycle?.id ?? null,
+                cropCycleStageId: activity.cropCycleStage?.id ?? null,
                 laborActivityTypeId: activity.activityType.id,
                 status: activity.status,
                 description: activity.description ?? "",
@@ -214,6 +216,7 @@ export class LaborActivityEditorPageComponent implements OnInit {
       farmAreaId: null,
       plantationId: null,
       cropCycleId: null,
+      cropCycleStageId: null,
     });
     this.areas.set([]);
     this.plantations.set([]);
@@ -241,6 +244,7 @@ export class LaborActivityEditorPageComponent implements OnInit {
     this.form.patchValue({
       plantationId: null,
       cropCycleId: null,
+      cropCycleStageId: null,
     });
     this.plantations.set([]);
     this.cropCycles.set([]);
@@ -267,6 +271,7 @@ export class LaborActivityEditorPageComponent implements OnInit {
     // Reset crop cycle
     this.form.patchValue({
       cropCycleId: null,
+      cropCycleStageId: null,
     });
     this.cropCycles.set([]);
 
@@ -313,19 +318,11 @@ export class LaborActivityEditorPageComponent implements OnInit {
     const payload: CreateLaborActivityRequest = {
       activityDate: formattedDate,
       farmId: formValue.farmId,
-      farmAreaId: formValue.farmAreaId,
-      plantationId: formValue.plantationId,
+      farmAreaId: formValue.farmAreaId || null,
+      plantationId: formValue.plantationId || null,
       cropCycleId: formValue.cropCycleId || null,
+      cropCycleStageId: formValue.cropCycleStageId || null,
       laborActivityTypeId: formValue.laborActivityTypeId,
-      workerCount: Number(formValue.workerCount),
-      totalWorkingHours:
-        formValue.totalWorkingHours !== null && formValue.totalWorkingHours !== ""
-          ? Number(formValue.totalWorkingHours)
-          : null,
-      costAmount:
-        formValue.costAmount !== null && formValue.costAmount !== ""
-          ? Number(formValue.costAmount)
-          : null,
       status: formValue.status,
       description: formValue.description?.trim() || null,
     };
