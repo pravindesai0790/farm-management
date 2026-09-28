@@ -195,10 +195,14 @@ public sealed class PlantationStore(ApplicationDbContext dbContext) : IPlantatio
             query = query.Where(plantation =>
                 (plantation.Status != PlantationStatus.Terminated && plantation.Status != PlantationStatus.Archived) &&
                 (plantation.Id == currentPlantationId ||
-                 !dbContext.CropCycles.Any(cycle =>
-                     cycle.PlantationId == plantation.Id &&
-                     cycle.SeasonYear == availableForSeasonYear.Value &&
-                     cycle.Status != CropCycleStatus.Cancelled)));
+                 (plantation.Crop != null && plantation.Crop.CropDurationType == "PERENNIAL"
+                     ? !dbContext.CropCycles.Any(cycle =>
+                         cycle.PlantationId == plantation.Id &&
+                         cycle.SeasonYear == availableForSeasonYear.Value &&
+                         cycle.Status != CropCycleStatus.Cancelled)
+                     : !dbContext.CropCycles.Any(cycle =>
+                         cycle.PlantationId == plantation.Id &&
+                         cycle.Status != CropCycleStatus.Cancelled))));
         }
 
         return query;

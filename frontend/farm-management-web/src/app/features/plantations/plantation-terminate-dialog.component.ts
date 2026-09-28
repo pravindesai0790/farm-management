@@ -26,6 +26,7 @@ import { formatDateOnly } from "../../core/utils/date.utils";
 export interface PlantationTerminateDialogData {
   plantationId: string;
   plantationName: string;
+  defaultNotes?: string;
 }
 
 export interface PlantationTerminateDialogResult {
@@ -174,15 +175,25 @@ export class PlantationTerminateDialogComponent implements OnInit {
   readonly form: FormGroup = this.fb.group({
     endReasonId: ["", Validators.required],
     terminationDate: [new Date(), Validators.required],
-    notes: ["Terminated from plantation details."],
+    notes: [this.data.defaultNotes ?? "Terminated from plantation details."],
     cancelActiveCycles: [true],
   });
 
   ngOnInit(): void {
     this.service.listEndReasons().subscribe({
       next: (reasons) => {
-        this.endReasons.set(reasons.filter((r) => r.isActive));
+        const activeReasons = reasons.filter((r) => r.isActive);
+        this.endReasons.set(activeReasons);
         this.isLoadingReasons.set(false);
+
+        if (!this.form.get("endReasonId")?.value) {
+          const harvestReason = activeReasons.find(
+            (r) => r.code?.toUpperCase() === "HARVEST_COMPLETED",
+          );
+          if (harvestReason) {
+            this.form.patchValue({ endReasonId: harvestReason.id });
+          }
+        }
       },
       error: () => {
         this.isLoadingReasons.set(false);

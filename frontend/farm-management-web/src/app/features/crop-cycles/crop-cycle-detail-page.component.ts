@@ -24,6 +24,8 @@ import { FarmManagementService } from "../../core/farm-management/farm-managemen
 import { getApiErrorMessage } from "../../core/models/api-error.model";
 import { CropCycleLifecycleTabComponent } from "./components/crop-cycle-lifecycle-tab/crop-cycle-lifecycle-tab.component";
 import { CropCycleCancelDialogComponent } from "./crop-cycle-cancel-dialog.component";
+import { CropCyclePlantationPromptDialogComponent } from "./dialogs/crop-cycle-plantation-prompt-dialog.component";
+import { PlantationTerminateDialogComponent } from "../plantations/plantation-terminate-dialog.component";
 
 @Component({
   selector: "app-crop-cycle-detail-page",
@@ -144,13 +146,11 @@ export class CropCycleDetailPageComponent implements OnInit {
     return new Date().toISOString().slice(0, 10);
   }
 
-  run(action: "start" | "harvest" | "complete"): void {
+  run(action: "start" | "harvest"): void {
     const request =
       action === "start"
         ? this.service.startCycle(this.id, this.today())
-        : action === "harvest"
-          ? this.service.harvestCycle(this.id, this.today())
-          : this.service.completeCycle(this.id, this.today());
+        : this.service.harvestCycle(this.id, this.today());
     request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.snack.open(`Cycle ${action}ed.`, "Dismiss", { duration: 3000 });
@@ -174,7 +174,93 @@ export class CropCycleDetailPageComponent implements OnInit {
   }
 
   complete(): void {
-    this.run("complete");
+    const cycle = this.cycle();
+    if (!cycle) return;
+
+    this.service
+      .completeCycle(this.id, this.today())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          this.refreshLifecycle();
+
+          if (!response?.requiresPlantationTerminationPrompt) {
+            this.snack.open(
+              "Cycle completed. Plantation remains active for future crop cycles.",
+              "Dismiss",
+              { duration: 4000 },
+            );
+            return;
+          }
+
+          const promptRef = this.dialog.open(CropCyclePlantationPromptDialogComponent, {
+            data: {
+              cycleName: cycle.cycleName,
+              cropName: response.cropName || cycle.cropName,
+              cropDurationType: response.cropDurationType || cycle.cropDurationType || "Non-perennial",
+              plantationName: response.plantationName || cycle.plantationName,
+              farmAreaName: cycle.farmAreaName,
+            },
+            width: "480px",
+            disableClose: true,
+          });
+
+          promptRef
+            .afterClosed()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((confirmed) => {
+              if (!confirmed) {
+                this.snack.open(
+                  "Cycle completed. Plantation kept active.",
+                  "Dismiss",
+                  { duration: 3000 },
+                );
+                return;
+              }
+
+              const termRef = this.dialog.open(PlantationTerminateDialogComponent, {
+                data: {
+                  plantationId: response.plantationId || cycle.plantationId,
+                  plantationName: response.plantationName || cycle.plantationName,
+                  defaultNotes: `Terminated after completing crop cycle ${cycle.cycleName}.`,
+                },
+                width: "500px",
+              });
+
+              termRef
+                .afterClosed()
+                .pipe(takeUntilDestroyed(this.destroyRef))
+                .subscribe((termResult) => {
+                  if (!termResult) return;
+                  this.service
+                    .terminatePlantation(response.plantationId || cycle.plantationId, termResult)
+                    .pipe(takeUntilDestroyed(this.destroyRef))
+                    .subscribe({
+                      next: () => {
+                        this.snack.open(
+                          "Plantation terminated. Farm area is now available for reuse.",
+                          "Dismiss",
+                          { duration: 4000 },
+                        );
+                        this.refreshLifecycle();
+                      },
+                      error: (e) =>
+                        this.snack.open(
+                          getApiErrorMessage(e, "Plantation could not be terminated."),
+                          "Dismiss",
+                          { duration: 5000 },
+                        ),
+                    });
+                });
+            });
+        },
+        error: (e) =>
+          this.snack.open(
+            getApiErrorMessage(e, "Cycle action could not be completed."),
+            "Dismiss",
+            { duration: 5000 },
+          ),
+      });
   }
 
   cancel(): void {

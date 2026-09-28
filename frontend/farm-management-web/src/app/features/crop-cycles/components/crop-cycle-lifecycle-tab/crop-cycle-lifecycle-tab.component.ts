@@ -44,6 +44,7 @@ export class CropCycleLifecycleTabComponent {
   @Input() isLoading = false;
 
   @Output() startCycle = new EventEmitter<void>();
+  @Output() completeCycle = new EventEmitter<void>();
   @Output() stageActionCompleted = new EventEmitter<void>();
 
   readonly isActionProcessing = signal(false);
@@ -104,6 +105,10 @@ export class CropCycleLifecycleTabComponent {
 
   onStartCycle(): void {
     this.startCycle.emit();
+  }
+
+  onCompleteCycle(): void {
+    this.completeCycle.emit();
   }
 
   canComplete(stage: CropCycleStage): boolean {

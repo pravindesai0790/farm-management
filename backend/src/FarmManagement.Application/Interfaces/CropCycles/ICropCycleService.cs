@@ -55,7 +55,7 @@ public interface ICropCycleService
         string? ipAddress,
         CancellationToken cancellationToken = default);
 
-    Task<bool> CompleteAsync(
+    Task<CompleteCropCycleResponse> CompleteAsync(
         CropCycleActor actor,
         Guid cycleId,
         CompleteCropCycleRequest? request,

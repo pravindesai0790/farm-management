@@ -61,6 +61,11 @@ public interface ICropCycleStore
         Guid? excludingCycleId = null,
         CancellationToken cancellationToken = default);
 
+    Task<bool> HasAnyCycleAsync(
+        Guid plantationId,
+        Guid? excludingCycleId = null,
+        CancellationToken cancellationToken = default);
+
     void Add(CropCycle cycle);
     void AddStage(CropCycleStage stage);
     Task<CropCycleStage?> FindStageAsync(Guid stageId, Guid organizationId, CancellationToken cancellationToken = default);

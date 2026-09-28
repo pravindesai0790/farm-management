@@ -77,13 +77,13 @@ public sealed class CropCyclesController(ICropCycleService cycleService) : Contr
 
     [HttpPost("{id:guid}/complete")]
     [Authorize(Policy = "Permission:CropCycle.Complete")]
-    public async Task<IActionResult> Complete(
+    public async Task<ActionResult<CompleteCropCycleResponse>> Complete(
         Guid id,
         [FromBody] CompleteCropCycleRequest? request,
         CancellationToken cancellationToken = default)
     {
-        await cycleService.CompleteAsync(GetUserContext(), id, request, GetIpAddress(), cancellationToken);
-        return NoContent();
+        var result = await cycleService.CompleteAsync(GetUserContext(), id, request, GetIpAddress(), cancellationToken);
+        return Ok(result);
     }
 
     [HttpPost("{id:guid}/cancel")]

@@ -175,6 +175,16 @@ export interface CropCycle {
   status: string;
   lifecycleTemplateId?: string | null;
   lifecycleTemplateName?: string | null;
+  cropDurationType?: string;
+}
+export interface CompleteCropCycleResponse {
+  cycleId: string;
+  plantationId: string;
+  plantationName: string;
+  cropId: string;
+  cropName: string;
+  cropDurationType: string;
+  requiresPlantationTerminationPrompt: boolean;
 }
 export interface CropCycleStage {
   id: string;

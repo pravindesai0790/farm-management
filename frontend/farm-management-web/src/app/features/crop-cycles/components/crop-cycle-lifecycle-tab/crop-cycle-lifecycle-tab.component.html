@@ -127,6 +127,19 @@
           </button>
         }
       </div>
+    } @else if (cycle?.status === 'HARVESTED') {
+      <div class="alert-banner alert-success">
+        <mat-icon class="alert-icon">check_circle</mat-icon>
+        <div class="alert-content">
+          <strong>Cycle Harvested — Ready for Completion</strong>
+          <p>Harvest has been recorded for this crop cycle. You can now complete the cycle to conclude production.</p>
+        </div>
+        @if (permissionService.has('CropCycle.Complete')) {
+          <button mat-flat-button color="primary" (click)="onCompleteCycle()">
+            <mat-icon>check_circle</mat-icon>Complete Cycle
+          </button>
+        }
+      </div>
     }
 
     <!-- Stages Timeline Table -->

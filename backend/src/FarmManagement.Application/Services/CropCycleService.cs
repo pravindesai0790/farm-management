@@ -213,6 +213,14 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
                 throw new ConflictException($"The plantation is already occupied by a crop cycle for season {values.SeasonYear}.");
             }
 
+            if (!string.Equals(plantation.Crop?.CropDurationType, "PERENNIAL", StringComparison.OrdinalIgnoreCase))
+            {
+                if (await store.HasAnyCycleAsync(values.PlantationId, null, transactionCancellationToken))
+                {
+                    throw new ConflictException("Non-perennial plantations cannot be reused for multiple crop cycles. Next planting must use a new plantation.");
+                }
+            }
+
             var cycle = new CropCycle(
                 actor.OrganizationId,
                 plantation.Id,
@@ -288,6 +296,14 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
             if (await store.HasCycleForSeasonAsync(targetPlantationId, values.SeasonYear, cycle.Id, transactionCancellationToken))
             {
                 throw new ConflictException($"The plantation is already occupied by a crop cycle for season {values.SeasonYear}.");
+            }
+
+            if (!string.Equals(plantation.Crop?.CropDurationType, "PERENNIAL", StringComparison.OrdinalIgnoreCase))
+            {
+                if (await store.HasAnyCycleAsync(targetPlantationId, cycle.Id, transactionCancellationToken))
+                {
+                    throw new ConflictException("Non-perennial plantations cannot be reused for multiple crop cycles. Next planting must use a new plantation.");
+                }
             }
 
             var previous = new
@@ -463,21 +479,60 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
             return Task.FromResult(cycle.Harvest(request.HarvestDate.Value, now, actor.UserId));
         }, cancellationToken);
 
-    public Task<bool> CompleteAsync(
+    public async Task<CompleteCropCycleResponse> CompleteAsync(
         CropCycleActor actor,
         Guid cycleId,
         CompleteCropCycleRequest? request,
         string? ipAddress,
-        CancellationToken cancellationToken = default) =>
-        TransitionAsync(actor, cycleId, request, ipAddress, "CropCycle.Completed", (cycle, plantation, now) =>
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        return await store.ExecuteInTransactionAsync(async transactionCancellationToken =>
         {
+            var cycle = await store.LockAsync(cycleId, actor.OrganizationId, transactionCancellationToken)
+                ?? throw new ResourceNotFoundException("The crop cycle was not found.");
+            var plantation = await store.LockPlantationAsync(cycle.PlantationId, actor.OrganizationId, transactionCancellationToken)
+                ?? throw new ResourceNotFoundException("The plantation was not found.");
+
             EnsureTransition(cycle, CropCycleStatus.Harvested, "Only a harvested crop cycle can be completed.");
             if (request?.CompletionDate is not null && request.CompletionDate < (cycle.ActualEndDate ?? cycle.PlannedStartDate))
             {
                 throw Validation("completionDate", "Completion date cannot be before the harvest date.");
             }
-            return Task.FromResult(cycle.Complete(request?.CompletionDate, now, actor.UserId));
+
+            var previousStatus = cycle.Status;
+            var now = DateTimeOffset.UtcNow;
+            if (!cycle.Complete(request?.CompletionDate, now, actor.UserId))
+            {
+                throw new ConflictException("The crop cycle could not be completed.");
+            }
+
+            var crop = plantation.Crop ?? throw new InvalidOperationException("A crop cycle references a plantation with a missing crop.");
+            var isPerennial = string.Equals(crop.CropDurationType, "PERENNIAL", StringComparison.OrdinalIgnoreCase);
+
+            AddAudit(actor, cycle, "CropCycle.Completed", new
+            {
+                PlantationId = plantation.Id,
+                PreviousStatus = previousStatus.ToString().ToUpperInvariant(),
+                NewStatus = cycle.Status.ToString().ToUpperInvariant(),
+                cycle.ActualStartDate,
+                cycle.ActualEndDate,
+                CropDurationType = crop.CropDurationType,
+                RequiresPlantationTerminationPrompt = !isPerennial
+            }, ipAddress);
+
+            await store.SaveChangesAsync(transactionCancellationToken);
+
+            return new CompleteCropCycleResponse(
+                cycle.Id,
+                plantation.Id,
+                plantation.PlantationName,
+                crop.Id,
+                crop.Name,
+                crop.CropDurationType,
+                RequiresPlantationTerminationPrompt: !isPerennial);
         }, cancellationToken);
+    }
 
     public Task<bool> CancelAsync(
         CropCycleActor actor,
@@ -641,7 +696,8 @@ public sealed class CropCycleService(ICropCycleStore store) : ICropCycleService
             cycle.ExpectedEndDate,
             cycle.Status.ToString().ToUpperInvariant(),
             cycle.LifecycleTemplateId,
-            lifecycleTemplate?.Name);
+            lifecycleTemplate?.Name,
+            crop.CropDurationType);
     }
 
     private static CreateValues ReadValues(CreateCropCycleRequest? request)

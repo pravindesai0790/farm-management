@@ -516,6 +516,9 @@ public sealed class CropCycleStageProgressionServiceTests
         public Task<bool> HasCycleForSeasonAsync(Guid plantationId, int seasonYear, Guid? excludingCycleId = null, CancellationToken cancellationToken = default) =>
             Task.FromResult(Cycles.Any(c => c.PlantationId == plantationId && c.SeasonYear == seasonYear && c.Status != CropCycleStatus.Cancelled && c.Id != excludingCycleId));
 
+        public Task<bool> HasAnyCycleAsync(Guid plantationId, Guid? excludingCycleId = null, CancellationToken cancellationToken = default) =>
+            Task.FromResult(Cycles.Any(c => c.PlantationId == plantationId && c.Status != CropCycleStatus.Cancelled && c.Id != excludingCycleId));
+
         public void Add(CropCycle cycle) => Cycles.Add(cycle);
         public void AddStage(CropCycleStage stage) => Stages.Add(stage);
         public Task<CropCycleStage?> FindStageAsync(Guid stageId, Guid organizationId, CancellationToken cancellationToken = default)

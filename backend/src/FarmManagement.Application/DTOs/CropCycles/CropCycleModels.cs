@@ -16,7 +16,17 @@ public sealed record CropCycleResponse(
     DateOnly? ExpectedEndDate,
     string Status,
     Guid? LifecycleTemplateId = null,
-    string? LifecycleTemplateName = null);
+    string? LifecycleTemplateName = null,
+    string? CropDurationType = null);
+
+public sealed record CompleteCropCycleResponse(
+    Guid CycleId,
+    Guid PlantationId,
+    string PlantationName,
+    Guid CropId,
+    string CropName,
+    string CropDurationType,
+    bool RequiresPlantationTerminationPrompt);
 
 public sealed record CreateCropCycleRequest(
     Guid? PlantationId,

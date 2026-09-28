@@ -560,6 +560,64 @@ public sealed class CropCycleServiceTests
         Assert.Empty(lifecycle.Stages);
     }
 
+    [Fact]
+    public async Task CompleteAsync_WhenCropIsPerennial_DoesNotRequireTerminationPrompt()
+    {
+        var store = new FakeCropCycleStore();
+        var crop = new Crop(_organizationId, "Grape", "Fruit", "PERENNIAL");
+        var plantation = CreatePlantation(store, _organizationId, crop);
+        var cycle = new CropCycle(_organizationId, plantation.Id, "Perennial Cycle", 2026, null, new DateOnly(2026, 4, 1), null, _userId, null);
+        cycle.Start(new DateOnly(2026, 4, 1), DateTimeOffset.UtcNow, _userId);
+        cycle.Harvest(new DateOnly(2026, 8, 1), DateTimeOffset.UtcNow, _userId);
+        store.Cycles.Add(cycle);
+
+        var service = new CropCycleService(store);
+        var response = await service.CompleteAsync(CreateActor(), cycle.Id, new CompleteCropCycleRequest(new DateOnly(2026, 8, 5)), "127.0.0.1");
+
+        Assert.NotNull(response);
+        Assert.Equal(cycle.Id, response.CycleId);
+        Assert.Equal("PERENNIAL", response.CropDurationType);
+        Assert.False(response.RequiresPlantationTerminationPrompt);
+        Assert.Equal(PlantationStatus.Active, plantation.Status);
+    }
+
+    [Fact]
+    public async Task CompleteAsync_WhenCropIsNonPerennial_RequiresTerminationPrompt()
+    {
+        var store = new FakeCropCycleStore();
+        var crop = new Crop(_organizationId, "Tomato", "Vegetable", "ANNUAL");
+        var plantation = CreatePlantation(store, _organizationId, crop);
+        var cycle = new CropCycle(_organizationId, plantation.Id, "Annual Cycle", 2026, null, new DateOnly(2026, 4, 1), null, _userId, null);
+        cycle.Start(new DateOnly(2026, 4, 1), DateTimeOffset.UtcNow, _userId);
+        cycle.Harvest(new DateOnly(2026, 8, 1), DateTimeOffset.UtcNow, _userId);
+        store.Cycles.Add(cycle);
+
+        var service = new CropCycleService(store);
+        var response = await service.CompleteAsync(CreateActor(), cycle.Id, new CompleteCropCycleRequest(new DateOnly(2026, 8, 5)), "127.0.0.1");
+
+        Assert.NotNull(response);
+        Assert.Equal(cycle.Id, response.CycleId);
+        Assert.Equal("ANNUAL", response.CropDurationType);
+        Assert.True(response.RequiresPlantationTerminationPrompt);
+        Assert.Equal(PlantationStatus.Active, plantation.Status);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenCropIsNonPerennialAndPlantationAlreadyHasCycle_ThrowsConflictException()
+    {
+        var store = new FakeCropCycleStore();
+        var crop = new Crop(_organizationId, "Chili", "Vegetable", "SEASONAL");
+        var plantation = CreatePlantation(store, _organizationId, crop);
+        var existingCycle = new CropCycle(_organizationId, plantation.Id, "First Cycle", 2025, null, new DateOnly(2025, 4, 1), null, _userId, null);
+        store.Cycles.Add(existingCycle);
+
+        var service = new CropCycleService(store);
+        var request = new CreateCropCycleRequest(plantation.Id, "Second Cycle", 2026, null, new DateOnly(2026, 4, 1), null, null);
+
+        var ex = await Assert.ThrowsAsync<ConflictException>(() => service.CreateAsync(CreateActor(), request, "127.0.0.1"));
+        Assert.Contains("Non-perennial plantations cannot be reused", ex.Message);
+    }
+
     private static Crop CreateCrop(Guid organizationId, string name) =>
         new(organizationId, name, "CropType", "PERENNIAL");
 
@@ -639,6 +697,9 @@ public sealed class CropCycleServiceTests
 
         public Task<bool> HasCycleForSeasonAsync(Guid plantationId, int seasonYear, Guid? excludingCycleId = null, CancellationToken cancellationToken = default) =>
             Task.FromResult(Cycles.Any(c => c.PlantationId == plantationId && c.SeasonYear == seasonYear && c.Status != CropCycleStatus.Cancelled && c.Id != excludingCycleId));
+
+        public Task<bool> HasAnyCycleAsync(Guid plantationId, Guid? excludingCycleId = null, CancellationToken cancellationToken = default) =>
+            Task.FromResult(Cycles.Any(c => c.PlantationId == plantationId && c.Status != CropCycleStatus.Cancelled && c.Id != excludingCycleId));
 
         public void Add(CropCycle cycle) => Cycles.Add(cycle);
         public void AddStage(CropCycleStage stage) => Stages.Add(stage);

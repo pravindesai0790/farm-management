@@ -5,6 +5,7 @@ import { environment } from "../../../environments/environment";
 import { PagedResponse } from "../models/paged-response.model";
 import {
   CompleteCropCycleStageRequest,
+  CompleteCropCycleResponse,
   Crop,
   CropCycle,
   CropCycleLifecycle,
@@ -301,8 +302,8 @@ export class FarmManagementService {
       harvestDate: date,
     });
   }
-  completeCycle(id: string, date?: string): Observable<void> {
-    return this.http.post<void>(
+  completeCycle(id: string, date?: string): Observable<CompleteCropCycleResponse> {
+    return this.http.post<CompleteCropCycleResponse>(
       `${this.api}/crop-cycles/${id}/complete`,
       date ? { completionDate: date } : null,
     );
