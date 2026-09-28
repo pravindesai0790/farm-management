@@ -16,3 +16,4 @@
 .idea/
 *.user
 *.suo
+**/docs/
