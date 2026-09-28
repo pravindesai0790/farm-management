@@ -13,20 +13,16 @@ public sealed class LaborActivity
         DateOnly activityDate,
         Guid farmId,
         Guid laborActivityTypeId,
-        int workerCount,
         Guid createdBy,
         Guid? farmAreaId = null,
         Guid? plantationId = null,
         Guid? cropCycleId = null,
-        decimal? totalWorkingHours = null,
-        decimal? costAmount = null,
-        Guid? currencyId = null,
+        Guid? cropCycleStageId = null,
         string? description = null,
         LaborActivityStatus status = LaborActivityStatus.Completed)
     {
         ValidateRequiredIdentifiers(organizationId, farmId, laborActivityTypeId, createdBy);
-        ValidateOptionalIdentifiers(farmAreaId, plantationId, cropCycleId, currencyId);
-        ValidateMetrics(workerCount, totalWorkingHours, costAmount);
+        ValidateOptionalIdentifiers(farmAreaId, plantationId, cropCycleId, cropCycleStageId);
 
         if (!Enum.IsDefined(status))
         {
@@ -40,12 +36,9 @@ public sealed class LaborActivity
         FarmAreaId = farmAreaId;
         PlantationId = plantationId;
         CropCycleId = cropCycleId;
+        CropCycleStageId = cropCycleStageId;
         LaborActivityTypeId = laborActivityTypeId;
         Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
-        WorkerCount = workerCount;
-        TotalWorkingHours = totalWorkingHours;
-        CostAmount = costAmount;
-        CurrencyId = currencyId;
         Status = status;
         CreatedAt = DateTimeOffset.UtcNow;
         CreatedBy = createdBy;
@@ -58,12 +51,9 @@ public sealed class LaborActivity
     public Guid? FarmAreaId { get; private set; }
     public Guid? PlantationId { get; private set; }
     public Guid? CropCycleId { get; private set; }
+    public Guid? CropCycleStageId { get; private set; }
     public Guid LaborActivityTypeId { get; private set; }
     public string? Description { get; private set; }
-    public int WorkerCount { get; private set; }
-    public decimal? TotalWorkingHours { get; private set; }
-    public decimal? CostAmount { get; private set; }
-    public Guid? CurrencyId { get; private set; }
     public LaborActivityStatus Status { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public Guid CreatedBy { get; private set; }
@@ -75,6 +65,7 @@ public sealed class LaborActivity
     public FarmArea? FarmArea { get; private set; }
     public CropPlantation? Plantation { get; private set; }
     public CropCycle? CropCycle { get; private set; }
+    public CropCycleStage? CropCycleStage { get; private set; }
     public LaborActivityType? LaborActivityType { get; private set; }
 
     public void Update(
@@ -83,11 +74,8 @@ public sealed class LaborActivity
         Guid? farmAreaId,
         Guid? plantationId,
         Guid? cropCycleId,
+        Guid? cropCycleStageId,
         Guid laborActivityTypeId,
-        int workerCount,
-        decimal? totalWorkingHours,
-        decimal? costAmount,
-        Guid? currencyId,
         string? description,
         DateTimeOffset now,
         Guid updatedBy)
@@ -98,19 +86,15 @@ public sealed class LaborActivity
         }
 
         ValidateRequiredIdentifiers(OrganizationId, farmId, laborActivityTypeId, updatedBy);
-        ValidateOptionalIdentifiers(farmAreaId, plantationId, cropCycleId, currencyId);
-        ValidateMetrics(workerCount, totalWorkingHours, costAmount);
+        ValidateOptionalIdentifiers(farmAreaId, plantationId, cropCycleId, cropCycleStageId);
 
         ActivityDate = activityDate;
         FarmId = farmId;
         FarmAreaId = farmAreaId;
         PlantationId = plantationId;
         CropCycleId = cropCycleId;
+        CropCycleStageId = cropCycleStageId;
         LaborActivityTypeId = laborActivityTypeId;
-        WorkerCount = workerCount;
-        TotalWorkingHours = totalWorkingHours;
-        CostAmount = costAmount;
-        CurrencyId = currencyId;
         Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
         UpdatedAt = now;
         UpdatedBy = updatedBy;
@@ -180,7 +164,7 @@ public sealed class LaborActivity
         }
     }
 
-    private static void ValidateOptionalIdentifiers(Guid? farmAreaId, Guid? plantationId, Guid? cropCycleId, Guid? currencyId)
+    private static void ValidateOptionalIdentifiers(Guid? farmAreaId, Guid? plantationId, Guid? cropCycleId, Guid? cropCycleStageId)
     {
         if (farmAreaId == Guid.Empty)
         {
@@ -197,27 +181,9 @@ public sealed class LaborActivity
             throw new ArgumentException("Crop cycle identifier must be valid.", nameof(cropCycleId));
         }
 
-        if (currencyId == Guid.Empty)
+        if (cropCycleStageId == Guid.Empty)
         {
-            throw new ArgumentException("Currency identifier must be valid.", nameof(currencyId));
-        }
-    }
-
-    private static void ValidateMetrics(int workerCount, decimal? totalWorkingHours, decimal? costAmount)
-    {
-        if (workerCount <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(workerCount), "Worker count must be greater than zero.");
-        }
-
-        if (totalWorkingHours is <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(totalWorkingHours), "Total working hours must be greater than zero.");
-        }
-
-        if (costAmount is < 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(costAmount), "Cost amount cannot be negative.");
+            throw new ArgumentException("Crop cycle stage identifier must be valid.", nameof(cropCycleStageId));
         }
     }
 }

@@ -22,12 +22,13 @@ public sealed record CreateLaborActivityRequest(
     Guid? FarmAreaId,
     Guid? PlantationId,
     Guid? CropCycleId,
+    Guid? CropCycleStageId,
     Guid? LaborActivityTypeId,
     string? Description,
-    int? WorkerCount,
-    decimal? TotalWorkingHours,
-    decimal? CostAmount,
-    string? Status);
+    int? WorkerCount = null,
+    decimal? TotalWorkingHours = null,
+    decimal? CostAmount = null,
+    string? Status = null);
 
 public sealed record UpdateLaborActivityRequest(
     DateOnly? ActivityDate,
@@ -35,12 +36,13 @@ public sealed record UpdateLaborActivityRequest(
     Guid? FarmAreaId,
     Guid? PlantationId,
     Guid? CropCycleId,
+    Guid? CropCycleStageId,
     Guid? LaborActivityTypeId,
     string? Description,
-    int? WorkerCount,
-    decimal? TotalWorkingHours,
-    decimal? CostAmount,
-    string? Status);
+    int? WorkerCount = null,
+    decimal? TotalWorkingHours = null,
+    decimal? CostAmount = null,
+    string? Status = null);
 
 public sealed record CancelLaborActivityRequest(string? Reason);
 

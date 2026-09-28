@@ -12,18 +12,6 @@ public sealed class LaborActivityConfiguration : IEntityTypeConfiguration<LaborA
         builder.ToTable("labor_activities", tableBuilder =>
         {
             tableBuilder.HasCheckConstraint(
-                "ck_labor_activities_worker_count",
-                "worker_count > 0");
-
-            tableBuilder.HasCheckConstraint(
-                "ck_labor_activities_working_hours",
-                "total_working_hours IS NULL OR total_working_hours > 0");
-
-            tableBuilder.HasCheckConstraint(
-                "ck_labor_activities_cost_amount",
-                "cost_amount IS NULL OR cost_amount >= 0");
-
-            tableBuilder.HasCheckConstraint(
                 "ck_labor_activities_status",
                 "status IN ('DRAFT', 'COMPLETED', 'CANCELLED')");
         });
@@ -85,6 +73,15 @@ public sealed class LaborActivityConfiguration : IEntityTypeConfiguration<LaborA
             .HasConstraintName("fk_labor_activity_cycle")
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.Property(activity => activity.CropCycleStageId)
+            .HasColumnName("crop_cycle_stage_id");
+
+        builder.HasOne(activity => activity.CropCycleStage)
+            .WithMany()
+            .HasForeignKey(activity => activity.CropCycleStageId)
+            .HasConstraintName("fk_labor_activity_stage")
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.Property(activity => activity.LaborActivityTypeId)
             .HasColumnName("labor_activity_type_id")
             .IsRequired();
@@ -97,21 +94,6 @@ public sealed class LaborActivityConfiguration : IEntityTypeConfiguration<LaborA
 
         builder.Property(activity => activity.Description)
             .HasColumnName("description");
-
-        builder.Property(activity => activity.WorkerCount)
-            .HasColumnName("worker_count")
-            .IsRequired();
-
-        builder.Property(activity => activity.TotalWorkingHours)
-            .HasColumnName("total_working_hours")
-            .HasPrecision(10, 2);
-
-        builder.Property(activity => activity.CostAmount)
-            .HasColumnName("cost_amount")
-            .HasPrecision(18, 2);
-
-        builder.Property(activity => activity.CurrencyId)
-            .HasColumnName("currency_id");
 
         builder.Property(activity => activity.Status)
             .HasColumnName("status")
@@ -150,6 +132,9 @@ public sealed class LaborActivityConfiguration : IEntityTypeConfiguration<LaborA
 
         builder.HasIndex(activity => activity.CropCycleId)
             .HasDatabaseName("ix_labor_activities_crop_cycle");
+
+        builder.HasIndex(activity => activity.CropCycleStageId)
+            .HasDatabaseName("ix_labor_activities_crop_cycle_stage");
 
         builder.HasIndex(activity => activity.FarmAreaId)
             .HasDatabaseName("ix_labor_activities_farm_area");

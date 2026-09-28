@@ -104,14 +104,11 @@ public sealed class LaborActivityService(ILaborActivityStore store) : ILaborActi
                 values.ActivityDate,
                 farm.Id,
                 activityType.Id,
-                values.WorkerCount,
                 actor.UserId,
                 effectiveAreaId,
                 values.PlantationId,
                 values.CropCycleId,
-                values.TotalWorkingHours,
-                values.CostAmount,
-                currencyId: null,
+                values.CropCycleStageId,
                 description: values.Description,
                 status: values.Status);
 
@@ -125,10 +122,8 @@ public sealed class LaborActivityService(ILaborActivityStore store) : ILaborActi
                 activity.FarmAreaId,
                 activity.PlantationId,
                 activity.CropCycleId,
+                activity.CropCycleStageId,
                 activity.LaborActivityTypeId,
-                activity.WorkerCount,
-                activity.TotalWorkingHours,
-                activity.CostAmount,
                 Status = activity.Status.ToString().ToUpperInvariant(),
                 activity.Description
             }, ipAddress);
@@ -179,10 +174,8 @@ public sealed class LaborActivityService(ILaborActivityStore store) : ILaborActi
                 activity.FarmAreaId,
                 activity.PlantationId,
                 activity.CropCycleId,
+                activity.CropCycleStageId,
                 activity.LaborActivityTypeId,
-                activity.WorkerCount,
-                activity.TotalWorkingHours,
-                activity.CostAmount,
                 Status = activity.Status.ToString().ToUpperInvariant(),
                 activity.Description
             };
@@ -193,11 +186,8 @@ public sealed class LaborActivityService(ILaborActivityStore store) : ILaborActi
                 effectiveAreaId,
                 values.PlantationId,
                 values.CropCycleId,
+                values.CropCycleStageId,
                 activityType.Id,
-                values.WorkerCount,
-                values.TotalWorkingHours,
-                values.CostAmount,
-                currencyId: null,
                 values.Description,
                 now,
                 actor.UserId);
@@ -212,10 +202,8 @@ public sealed class LaborActivityService(ILaborActivityStore store) : ILaborActi
                     activity.FarmAreaId,
                     activity.PlantationId,
                     activity.CropCycleId,
+                    activity.CropCycleStageId,
                     activity.LaborActivityTypeId,
-                    activity.WorkerCount,
-                    activity.TotalWorkingHours,
-                    activity.CostAmount,
                     Status = activity.Status.ToString().ToUpperInvariant(),
                     activity.Description
                 }
@@ -412,11 +400,9 @@ public sealed class LaborActivityService(ILaborActivityStore store) : ILaborActi
             request.FarmAreaId,
             request.PlantationId,
             request.CropCycleId,
+            request.CropCycleStageId,
             request.LaborActivityTypeId,
             request.Description,
-            request.WorkerCount,
-            request.TotalWorkingHours,
-            request.CostAmount,
             request.Status);
     }
 
@@ -429,11 +415,9 @@ public sealed class LaborActivityService(ILaborActivityStore store) : ILaborActi
             request.FarmAreaId,
             request.PlantationId,
             request.CropCycleId,
+            request.CropCycleStageId,
             request.LaborActivityTypeId,
             request.Description,
-            request.WorkerCount,
-            request.TotalWorkingHours,
-            request.CostAmount,
             request.Status);
     }
 
@@ -443,11 +427,9 @@ public sealed class LaborActivityService(ILaborActivityStore store) : ILaborActi
         Guid? farmAreaId,
         Guid? plantationId,
         Guid? cropCycleId,
+        Guid? cropCycleStageId,
         Guid? laborActivityTypeId,
         string? description,
-        int? workerCount,
-        decimal? totalWorkingHours,
-        decimal? costAmount,
         string? status)
     {
         if (activityDate is null) throw Validation("activityDate", "Activity date is required.");
@@ -456,10 +438,7 @@ public sealed class LaborActivityService(ILaborActivityStore store) : ILaborActi
         if (farmAreaId == Guid.Empty) throw Validation("farmAreaId", "Farm area identifier must be valid.");
         if (plantationId == Guid.Empty) throw Validation("plantationId", "Plantation identifier must be valid.");
         if (cropCycleId == Guid.Empty) throw Validation("cropCycleId", "Crop cycle identifier must be valid.");
-
-        if (!workerCount.HasValue || workerCount.Value <= 0) throw Validation("workerCount", "Worker count is required and must be greater than zero.");
-        if (totalWorkingHours is <= 0) throw Validation("totalWorkingHours", "Total working hours must be greater than zero.");
-        if (costAmount is < 0) throw Validation("costAmount", "Cost amount cannot be negative.");
+        if (cropCycleStageId == Guid.Empty) throw Validation("cropCycleStageId", "Crop cycle stage identifier must be valid.");
 
         var parsedStatus = LaborActivityStatus.Completed;
         if (!string.IsNullOrWhiteSpace(status))
@@ -478,11 +457,9 @@ public sealed class LaborActivityService(ILaborActivityStore store) : ILaborActi
             farmAreaId,
             plantationId,
             cropCycleId,
+            cropCycleStageId,
             laborActivityTypeId.Value,
             string.IsNullOrWhiteSpace(description) ? null : description.Trim(),
-            workerCount.Value,
-            totalWorkingHours,
-            costAmount,
             parsedStatus);
     }
 
@@ -528,10 +505,8 @@ public sealed class LaborActivityService(ILaborActivityStore store) : ILaborActi
         Guid? FarmAreaId,
         Guid? PlantationId,
         Guid? CropCycleId,
+        Guid? CropCycleStageId,
         Guid LaborActivityTypeId,
         string? Description,
-        int WorkerCount,
-        decimal? TotalWorkingHours,
-        decimal? CostAmount,
         LaborActivityStatus Status);
 }

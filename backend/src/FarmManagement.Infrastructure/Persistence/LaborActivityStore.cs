@@ -64,6 +64,7 @@ public sealed class LaborActivityStore(ApplicationDbContext dbContext) : ILaborA
             .Include(activity => activity.FarmArea)
             .Include(activity => activity.Plantation)
             .Include(activity => activity.CropCycle)
+            .Include(activity => activity.CropCycleStage)
             .Include(activity => activity.LaborActivityType)
             .SingleOrDefaultAsync(cancellationToken);
 
@@ -193,6 +194,7 @@ public sealed class LaborActivityStore(ApplicationDbContext dbContext) : ILaborA
             .Include(activity => activity.FarmArea)
             .Include(activity => activity.Plantation)
             .Include(activity => activity.CropCycle)
+            .Include(activity => activity.CropCycleStage)
             .Include(activity => activity.LaborActivityType)
             .Where(activity => activity.OrganizationId == organizationId);
 
