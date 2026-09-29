@@ -268,6 +268,19 @@ export class BreadcrumbService {
         }
         break;
 
+      case "inventory":
+        items.push({ label: "Inventory", route: "/inventory" });
+        if (segments[1] === "balances") {
+          items.push({ label: "Stock Balances" });
+        } else if (segments[1] === "ledger") {
+          items.push({ label: "Stock Movement Ledger" });
+        } else if (segments[1] === "items") {
+          items.push({ label: "Inventory Items" });
+        } else if (segments[1] === "locations") {
+          items.push({ label: "Storage Locations" });
+        }
+        break;
+
       default: {
         const readable = section.charAt(0).toUpperCase() + section.slice(1).replace(/-/g, " ");
         items.push({ label: readable });

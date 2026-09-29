@@ -132,6 +132,9 @@ builder.Services.AddScoped<IWorkerSettlementService, WorkerSettlementService>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
 builder.Services.AddScoped<IMasterDataService, MasterDataService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<FarmManagement.Application.Interfaces.Inventory.IInventoryItemService, InventoryItemService>();
+builder.Services.AddScoped<FarmManagement.Application.Interfaces.Inventory.IStorageLocationService, StorageLocationService>();
+builder.Services.AddScoped<FarmManagement.Application.Interfaces.Inventory.IInventoryStockService, InventoryStockService>();
 
 var app = builder.Build();
 

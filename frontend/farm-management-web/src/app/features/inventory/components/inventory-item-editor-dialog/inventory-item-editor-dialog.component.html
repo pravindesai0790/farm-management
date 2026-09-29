@@ -1,0 +1,46 @@
+<h2 mat-dialog-title>
+  <mat-icon class="dialog-icon">{{ data?.item ? 'edit' : 'add_circle' }}</mat-icon>
+  {{ data?.item ? 'Edit Inventory Item' : 'New Inventory Item' }}
+</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="form" class="editor-form">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Item name</mat-label>
+      <input matInput formControlName="name" placeholder="e.g. Urea 46% N, Glyphosate 480 SL" />
+      <mat-error>Item name is required</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>SKU / Product Code</mat-label>
+      <input matInput formControlName="sku" placeholder="e.g. FERT-UREA-01" />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Category</mat-label>
+      <input matInput formControlName="category" placeholder="e.g. Fertilizer, Pesticide, Seed, Fuel" />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Stock Unit of Measure</mat-label>
+      <mat-select formControlName="stockUnitId">
+        @for (u of units(); track u.id) {
+          <mat-option [value]="u.id">{{ u.name }} ({{ u.symbol || u.code }})</mat-option>
+        }
+      </mat-select>
+      <mat-error>Stock unit is required</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Description</mat-label>
+      <textarea matInput formControlName="description" rows="3" placeholder="Optional description or specifications"></textarea>
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="dialogRef.close(false)" [disabled]="isSubmitting()">Cancel</button>
+  <button mat-raised-button color="primary" (click)="submit()" [disabled]="form.invalid || isSubmitting()">
+    {{ isSubmitting() ? 'Saving...' : (data?.item ? 'Update Item' : 'Create Item') }}
+  </button>
+</mat-dialog-actions>

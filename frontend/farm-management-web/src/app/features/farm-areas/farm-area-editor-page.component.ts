@@ -66,7 +66,7 @@ export class FarmAreaEditorPageComponent implements OnInit {
   ngOnInit(): void {
     const farmList$ = this.service.listFarms(1, 100, "", true);
     const area$ = this.areaId ? this.service.getArea(this.areaId) : of(null);
-    forkJoin({ farms: farmList$, area: area$, units: this.service.listUnits() })
+    forkJoin({ farms: farmList$, area: area$, units: this.service.listUnits("AREA") })
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         finalize(() => this.isLoading.set(false)),

@@ -1,0 +1,118 @@
+<div class="page-container">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Inventory Management &bull; Facilities</p>
+      <h2>Storage Locations</h2>
+      <p class="subtitle">
+        Manage farm storage sheds, warehouses, cold storage rooms, and chemical containment bays.
+      </p>
+    </div>
+  </div>
+
+  <div class="actions-header">
+    <form [formGroup]="filterForm" class="filter-form">
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Farm</mat-label>
+        <mat-select formControlName="farmId">
+          <mat-option value="all">All farms</mat-option>
+          @for (farm of farms(); track farm.id) {
+            <mat-option [value]="farm.id">{{ farm.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Status</mat-label>
+        <mat-select formControlName="status">
+          <mat-option value="all">All status</mat-option>
+          <mat-option value="active">Active only</mat-option>
+          <mat-option value="inactive">Inactive only</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </form>
+
+    @if (permissionService.has('StorageLocation.Create')) {
+      <button mat-raised-button color="primary" (click)="openLocationEditor()">
+        <mat-icon>add_location</mat-icon>
+        New Storage Location
+      </button>
+    }
+  </div>
+
+  @if (isLoading()) {
+    <div class="loading-spinner">
+      <mat-spinner diameter="40"></mat-spinner>
+    </div>
+  } @else {
+    <div class="table-container mat-elevation-z1">
+      <table mat-table [dataSource]="locations()">
+        <!-- Name -->
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>Storage Location Name</th>
+          <td mat-cell *matCellDef="let loc" class="font-medium">
+            {{ loc.name }}
+            @if (loc.description) {
+              <div class="sub-text">{{ loc.description }}</div>
+            }
+          </td>
+        </ng-container>
+
+        <!-- Farm -->
+        <ng-container matColumnDef="farm">
+          <th mat-header-cell *matHeaderCellDef>Farm</th>
+          <td mat-cell *matCellDef="let loc">
+            {{ loc.farmName }}
+          </td>
+        </ng-container>
+
+        <!-- Status -->
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <td mat-cell *matCellDef="let loc">
+            <span [class]="loc.isActive ? 'badge-active' : 'badge-inactive'">
+              {{ loc.isActive ? 'Active' : 'Inactive' }}
+            </span>
+          </td>
+        </ng-container>
+
+        <!-- Actions -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <td mat-cell *matCellDef="let loc">
+            @if (permissionService.has('StorageLocation.Update')) {
+              <button mat-icon-button color="primary" (click)="openLocationEditor(loc)" title="Edit location">
+                <mat-icon>edit</mat-icon>
+              </button>
+            }
+
+            @if (loc.isActive && permissionService.has('StorageLocation.Deactivate')) {
+              <button mat-icon-button color="warn" (click)="toggleActive(loc, false)" title="Deactivate">
+                <mat-icon>block</mat-icon>
+              </button>
+            } @else if (!loc.isActive && permissionService.has('StorageLocation.Activate')) {
+              <button mat-icon-button color="primary" (click)="toggleActive(loc, true)" title="Activate">
+                <mat-icon>check_circle</mat-icon>
+              </button>
+            }
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="columns"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns;"></tr>
+      </table>
+
+      @if (locations().length === 0) {
+        <div class="empty-state">No storage locations found.</div>
+      }
+
+      <mat-paginator
+        [length]="totalCount()"
+        [pageIndex]="pageIndex()"
+        [pageSize]="pageSize()"
+        [pageSizeOptions]="[10, 20, 50]"
+        (page)="onPageChange($event)"
+        showFirstLastButtons>
+      </mat-paginator>
+    </div>
+  }
+</div>

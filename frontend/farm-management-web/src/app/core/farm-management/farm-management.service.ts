@@ -65,9 +65,13 @@ export class FarmManagementService {
     return this.http.patch<void>(`${this.api}/organization/deactivate`, null);
   }
 
-  listUnits(category = "AREA"): Observable<readonly Unit[]> {
+  listUnits(category?: string | null): Observable<readonly Unit[]> {
+    let params = new HttpParams();
+    if (category) {
+      params = params.set("category", category);
+    }
     return this.http.get<readonly Unit[]>(`${this.api}/master-data/units`, {
-      params: { category },
+      params,
     });
   }
   listOwnershipTypes(): Observable<readonly FarmOwnershipType[]> {

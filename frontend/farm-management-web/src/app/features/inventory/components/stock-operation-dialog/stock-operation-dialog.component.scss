@@ -1,0 +1,23 @@
+.dialog-icon {
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.operation-form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 380px;
+  max-width: 460px;
+  padding-top: 8px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.unit-suffix {
+  padding-right: 8px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.6);
+}

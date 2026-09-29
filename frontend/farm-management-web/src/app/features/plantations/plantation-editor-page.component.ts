@@ -100,7 +100,7 @@ export class PlantationEditorPageComponent implements OnInit {
     const base$ = forkJoin({
       farms: this.service.listFarms(1, 100, "", true),
       crops: this.service.listCrops(1, 100, "", true),
-      units: this.service.listUnits(),
+      units: this.service.listUnits("AREA"),
     });
 
     if (this.id) {

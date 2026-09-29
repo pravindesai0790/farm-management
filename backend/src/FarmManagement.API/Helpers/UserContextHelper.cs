@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using FarmManagement.Application.Common.Constants;
 using FarmManagement.Application.DTOs.Dashboard;
+using FarmManagement.Application.DTOs.Inventory;
 using FarmManagement.Application.DTOs.Labor;
 using FarmManagement.Application.DTOs.LaborActivities;
 using FarmManagement.Application.Interfaces;
@@ -150,6 +151,11 @@ public static class UserContextHelper
         if (typeof(TActor) == typeof(PlantationActor))
         {
             return (TActor)(object)new PlantationActor(userId, organizationId);
+        }
+
+        if (typeof(TActor) == typeof(InventoryActor))
+        {
+            return (TActor)(object)new InventoryActor(userId, organizationId);
         }
 
         if (typeof(TActor) == typeof(UserAdministrationActor))

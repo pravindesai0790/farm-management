@@ -64,6 +64,9 @@ public static class DependencyInjection
         services.AddScoped<IAttendanceStore, AttendanceStore>();
         services.AddScoped<IMasterDataStore, MasterDataStore>();
         services.AddScoped<IDashboardStore, DashboardStore>();
+        services.AddScoped<FarmManagement.Application.Interfaces.Inventory.IInventoryItemStore, InventoryItemStore>();
+        services.AddScoped<FarmManagement.Application.Interfaces.Inventory.IStorageLocationStore, StorageLocationStore>();
+        services.AddScoped<FarmManagement.Application.Interfaces.Inventory.IInventoryStockStore, InventoryStockStore>();
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();
         services.AddScoped<IdentityDataSeeder>();
 

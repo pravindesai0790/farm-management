@@ -1,0 +1,118 @@
+<h2 mat-dialog-title>
+  <mat-icon class="dialog-icon">{{ getIcon() }}</mat-icon>
+  {{ getTitle() }}
+</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="form" class="operation-form">
+    <!-- Common Date -->
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Transaction date</mat-label>
+      <input matInput [matDatepicker]="picker" formControlName="movementDate" />
+      <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+      <mat-datepicker #picker></mat-datepicker>
+      <mat-error>Date is required</mat-error>
+    </mat-form-field>
+
+    <!-- Item Selection -->
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Inventory item</mat-label>
+      <mat-select formControlName="inventoryItemId">
+        @for (item of items(); track item.id) {
+          <mat-option [value]="item.id">
+            {{ item.name }} {{ item.sku ? '(' + item.sku + ')' : '' }} — [{{ item.stockUnitSymbol || item.stockUnitCode }}]
+          </mat-option>
+        }
+      </mat-select>
+      <mat-error>Item is required</mat-error>
+    </mat-form-field>
+
+    <!-- Source / Main Farm Selection -->
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>{{ isTransfer() ? 'Source farm' : 'Farm' }}</mat-label>
+      <mat-select formControlName="farmId">
+        @for (farm of farms(); track farm.id) {
+          <mat-option [value]="farm.id">{{ farm.name }}</mat-option>
+        }
+      </mat-select>
+      <mat-error>Farm is required</mat-error>
+    </mat-form-field>
+
+    <!-- Source / Main Location Selection -->
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>{{ isTransfer() ? 'Source storage location' : 'Storage location' }}</mat-label>
+      <mat-select formControlName="storageLocationId">
+        @for (loc of locations(); track loc.id) {
+          <mat-option [value]="loc.id">{{ loc.name }}</mat-option>
+        }
+      </mat-select>
+      <mat-error>Storage location is required</mat-error>
+    </mat-form-field>
+
+    <!-- If Transfer: Destination Farm & Destination Location -->
+    @if (isTransfer()) {
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Destination farm</mat-label>
+        <mat-select formControlName="destinationFarmId">
+          @for (farm of farms(); track farm.id) {
+            <mat-option [value]="farm.id">{{ farm.name }}</mat-option>
+          }
+        </mat-select>
+        <mat-error>Destination farm is required</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Destination storage location</mat-label>
+        <mat-select formControlName="destinationStorageLocationId">
+          @for (loc of destLocations(); track loc.id) {
+            <mat-option [value]="loc.id">{{ loc.name }}</mat-option>
+          }
+        </mat-select>
+        <mat-error>Destination location is required</mat-error>
+      </mat-form-field>
+    }
+
+    <!-- If Adjustment: Adjustment Type (In / Out) -->
+    @if (data.operationType === 'ADJUSTMENT') {
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Adjustment direction</mat-label>
+        <mat-select formControlName="adjustmentType">
+          <mat-option value="AdjustmentIn">Adjustment In (+ Increase Stock)</mat-option>
+          <mat-option value="AdjustmentOut">Adjustment Out (- Decrease Stock)</mat-option>
+        </mat-select>
+      </mat-form-field>
+    }
+
+    <!-- Quantity -->
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Quantity</mat-label>
+      <input matInput type="number" step="0.0001" min="0.0001" formControlName="quantity" />
+      <span matSuffix class="unit-suffix">{{ selectedUnitSymbol() }}</span>
+      <mat-error>Quantity must be greater than zero</mat-error>
+    </mat-form-field>
+
+    <!-- Reference Number (Receipt, Issue, Transfer) -->
+    @if (data.operationType === 'RECEIPT' || data.operationType === 'ISSUE' || data.operationType === 'TRANSFER') {
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Reference number / PO #</mat-label>
+        <input matInput formControlName="referenceNumber" placeholder="Optional ref #" />
+      </mat-form-field>
+    }
+
+    <!-- Notes / Reason -->
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>{{ data.operationType === 'ADJUSTMENT' ? 'Reason for adjustment (Required)' : 'Notes' }}</mat-label>
+      <textarea matInput formControlName="notes" rows="2" [placeholder]="data.operationType === 'ADJUSTMENT' ? 'Physical count variance, damage, etc.' : 'Optional notes'"></textarea>
+      @if (data.operationType === 'ADJUSTMENT') {
+        <mat-error>Reason notes are required for adjustments</mat-error>
+      }
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="dialogRef.close(false)" [disabled]="isSubmitting()">Cancel</button>
+  <button mat-raised-button color="primary" (click)="submit()" [disabled]="form.invalid || isSubmitting()">
+    {{ isSubmitting() ? 'Posting...' : 'Post Transaction' }}
+  </button>
+</mat-dialog-actions>

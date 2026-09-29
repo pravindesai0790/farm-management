@@ -65,7 +65,7 @@ export class FarmEditorPageComponent implements OnInit {
   ngOnInit(): void {
     forkJoin({
       farm: this.farmId ? this.service.getFarm(this.farmId) : of(null),
-      units: this.service.listUnits(),
+      units: this.service.listUnits("AREA"),
       ownership: this.service.listOwnershipTypes(),
     })
       .pipe(

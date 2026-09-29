@@ -375,6 +375,67 @@ export const routes: Routes = [
           ),
       },
       {
+        path: "inventory",
+        children: [
+          {
+            path: "",
+            title: "Inventory",
+            canActivate: [permissionGuard],
+            data: {
+              permissions: [
+                "InventoryStock.View",
+                "InventoryItem.View",
+                "StorageLocation.View",
+              ],
+            },
+            loadComponent: () =>
+              import("./features/inventory/inventory-page.component").then(
+                (module) => module.InventoryPageComponent,
+              ),
+          },
+          {
+            path: "balances",
+            title: "Stock Balances",
+            canActivate: [permissionGuard],
+            data: { permission: "InventoryStock.View" },
+            loadComponent: () =>
+              import(
+                "./features/inventory/components/stock-overview-tab/stock-overview-tab.component"
+              ).then((module) => module.StockOverviewTabComponent),
+          },
+          {
+            path: "ledger",
+            title: "Stock Movement Ledger",
+            canActivate: [permissionGuard],
+            data: { permission: "InventoryStock.View" },
+            loadComponent: () =>
+              import(
+                "./features/inventory/components/stock-ledger-tab/stock-ledger-tab.component"
+              ).then((module) => module.StockLedgerTabComponent),
+          },
+          {
+            path: "items",
+            title: "Inventory Items",
+            canActivate: [permissionGuard],
+            data: { permission: "InventoryItem.View" },
+            loadComponent: () =>
+              import(
+                "./features/inventory/components/inventory-items-tab/inventory-items-tab.component"
+              ).then((module) => module.InventoryItemsTabComponent),
+          },
+          {
+            path: "locations",
+            title: "Storage Locations",
+            canActivate: [permissionGuard],
+            data: { permission: "StorageLocation.View" },
+            loadComponent: () =>
+              import(
+                "./features/inventory/components/storage-locations-tab/storage-locations-tab.component"
+              ).then((module) => module.StorageLocationsTabComponent),
+          },
+        ],
+      },
+      {
         path: "organization/new",
         title: "Create organization",
         canActivate: [permissionGuard],

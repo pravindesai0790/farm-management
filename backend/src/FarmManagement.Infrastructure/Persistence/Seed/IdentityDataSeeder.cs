@@ -133,7 +133,19 @@ public sealed class IdentityDataSeeder(
         new("Attendance.View", "View labor attendance.", "Attendance"),
         new("Attendance.Create", "Create labor attendance.", "Attendance"),
         new("Attendance.Update", "Update labor attendance.", "Attendance"),
-        new("Attendance.Finalize", "Finalize labor attendance.", "Attendance")
+        new("Attendance.Finalize", "Finalize labor attendance.", "Attendance"),
+        new("InventoryItem.View", "View inventory items.", "Inventory Items"),
+        new("InventoryItem.Create", "Create inventory items.", "Inventory Items"),
+        new("InventoryItem.Update", "Update inventory items.", "Inventory Items"),
+        new("InventoryItem.Activate", "Activate inventory items.", "Inventory Items"),
+        new("InventoryItem.Deactivate", "Deactivate inventory items.", "Inventory Items"),
+        new("StorageLocation.View", "View storage locations.", "Storage Locations"),
+        new("StorageLocation.Create", "Create storage locations.", "Storage Locations"),
+        new("StorageLocation.Update", "Update storage locations.", "Storage Locations"),
+        new("StorageLocation.Activate", "Activate storage locations.", "Storage Locations"),
+        new("StorageLocation.Deactivate", "Deactivate storage locations.", "Storage Locations"),
+        new("InventoryStock.View", "View stock overview and ledger.", "Inventory Stock"),
+        new("InventoryTransaction.Create", "Post inventory stock transactions.", "Inventory Stock")
     ];
 
     private static readonly IReadOnlySet<string> OrganizationAdminPermissions =
@@ -240,7 +252,19 @@ public sealed class IdentityDataSeeder(
             "Attendance.View",
             "Attendance.Create",
             "Attendance.Update",
-            "Attendance.Finalize"
+            "Attendance.Finalize",
+            "InventoryItem.View",
+            "InventoryItem.Create",
+            "InventoryItem.Update",
+            "InventoryItem.Activate",
+            "InventoryItem.Deactivate",
+            "StorageLocation.View",
+            "StorageLocation.Create",
+            "StorageLocation.Update",
+            "StorageLocation.Activate",
+            "StorageLocation.Deactivate",
+            "InventoryStock.View",
+            "InventoryTransaction.Create"
         };
 
     private static readonly IReadOnlyList<SeedFarmOwnershipType> SeedFarmOwnershipTypes =

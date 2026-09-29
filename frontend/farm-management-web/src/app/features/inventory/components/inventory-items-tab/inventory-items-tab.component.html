@@ -1,0 +1,133 @@
+<div class="page-container">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Inventory Management &bull; Catalog</p>
+      <h2>Inventory Items</h2>
+      <p class="subtitle">
+        Maintain master catalog of input items, SKUs, category classifications, and standard stock units.
+      </p>
+    </div>
+  </div>
+
+  <div class="actions-header">
+    <form [formGroup]="filterForm" class="filter-form">
+      <mat-form-field appearance="outline" class="search-field">
+        <mat-label>Search items / SKU</mat-label>
+
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput formControlName="search" placeholder="Filter by name, SKU, category..." />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Status</mat-label>
+        <mat-select formControlName="status">
+          <mat-option value="all">All status</mat-option>
+          <mat-option value="active">Active only</mat-option>
+          <mat-option value="inactive">Inactive only</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </form>
+
+    @if (permissionService.has('InventoryItem.Create')) {
+      <button mat-raised-button color="primary" (click)="openItemEditor()">
+        <mat-icon>add</mat-icon>
+        New Inventory Item
+      </button>
+    }
+  </div>
+
+  @if (isLoading()) {
+    <div class="loading-spinner">
+      <mat-spinner diameter="40"></mat-spinner>
+    </div>
+  } @else {
+    <div class="table-container mat-elevation-z1">
+      <table mat-table [dataSource]="items()">
+        <!-- Name -->
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>Item Name</th>
+          <td mat-cell *matCellDef="let item" class="font-medium">
+            {{ item.name }}
+            @if (item.description) {
+              <div class="sub-text">{{ item.description }}</div>
+            }
+          </td>
+        </ng-container>
+
+        <!-- SKU -->
+        <ng-container matColumnDef="sku">
+          <th mat-header-cell *matHeaderCellDef>SKU / Code</th>
+          <td mat-cell *matCellDef="let item">
+            <code>{{ item.sku || '—' }}</code>
+          </td>
+        </ng-container>
+
+        <!-- Category -->
+        <ng-container matColumnDef="category">
+          <th mat-header-cell *matHeaderCellDef>Category</th>
+          <td mat-cell *matCellDef="let item">
+            {{ item.category || 'General' }}
+          </td>
+        </ng-container>
+
+        <!-- Stock Unit -->
+        <ng-container matColumnDef="unit">
+          <th mat-header-cell *matHeaderCellDef>Stock Unit</th>
+          <td mat-cell *matCellDef="let item">
+            <mat-chip-option selectable="false" selected color="accent">
+              {{ item.stockUnitName }} ({{ item.stockUnitSymbol || item.stockUnitCode }})
+            </mat-chip-option>
+          </td>
+        </ng-container>
+
+        <!-- Status -->
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <td mat-cell *matCellDef="let item">
+            <span [class]="item.isActive ? 'badge-active' : 'badge-inactive'">
+              {{ item.isActive ? 'Active' : 'Inactive' }}
+            </span>
+          </td>
+        </ng-container>
+
+        <!-- Actions -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <td mat-cell *matCellDef="let item">
+            @if (permissionService.has('InventoryItem.Update')) {
+              <button mat-icon-button color="primary" (click)="openItemEditor(item)" title="Edit item">
+                <mat-icon>edit</mat-icon>
+              </button>
+            }
+
+            @if (item.isActive && permissionService.has('InventoryItem.Deactivate')) {
+              <button mat-icon-button color="warn" (click)="toggleActive(item, false)" title="Deactivate">
+                <mat-icon>block</mat-icon>
+              </button>
+            } @else if (!item.isActive && permissionService.has('InventoryItem.Activate')) {
+              <button mat-icon-button color="primary" (click)="toggleActive(item, true)" title="Activate">
+                <mat-icon>check_circle</mat-icon>
+              </button>
+            }
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="columns"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns;"></tr>
+      </table>
+
+      @if (items().length === 0) {
+        <div class="empty-state">No inventory items found.</div>
+      }
+
+      <mat-paginator
+        [length]="totalCount()"
+        [pageIndex]="pageIndex()"
+        [pageSize]="pageSize()"
+        [pageSizeOptions]="[10, 20, 50]"
+        (page)="onPageChange($event)"
+        showFirstLastButtons>
+      </mat-paginator>
+    </div>
+  }
+</div>

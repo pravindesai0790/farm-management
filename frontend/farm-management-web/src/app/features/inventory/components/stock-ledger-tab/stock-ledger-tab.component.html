@@ -1,0 +1,156 @@
+<div class="page-container">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Inventory Management &bull; Ledger</p>
+      <h2>Stock Movement Ledger</h2>
+      <p class="subtitle">
+        Authoritative append-only audit trail of all receipts, issues, opening stock, adjustments, and transfers.
+      </p>
+    </div>
+  </div>
+
+  <div class="actions-header">
+    <form [formGroup]="filterForm" class="filter-form">
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Farm</mat-label>
+        <mat-select formControlName="farmId">
+          <mat-option value="all">All farms</mat-option>
+          @for (farm of farms(); track farm.id) {
+            <mat-option [value]="farm.id">{{ farm.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Location</mat-label>
+        <mat-select formControlName="storageLocationId">
+          <mat-option value="all">All locations</mat-option>
+          @for (loc of locations(); track loc.id) {
+            <mat-option [value]="loc.id">{{ loc.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Item</mat-label>
+        <mat-select formControlName="inventoryItemId">
+          <mat-option value="all">All items</mat-option>
+          @for (item of items(); track item.id) {
+            <mat-option [value]="item.id">{{ item.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Movement Type</mat-label>
+        <mat-select formControlName="movementType">
+          <mat-option value="all">All types</mat-option>
+          <mat-option value="OpeningStock">Opening Stock</mat-option>
+          <mat-option value="Receipt">Receipt</mat-option>
+          <mat-option value="Issue">Issue</mat-option>
+          <mat-option value="AdjustmentIn">Adjustment In (+)</mat-option>
+          <mat-option value="AdjustmentOut">Adjustment Out (-)</mat-option>
+          <mat-option value="TransferIn">Transfer In (+)</mat-option>
+          <mat-option value="TransferOut">Transfer Out (-)</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="date-field">
+        <mat-label>From Date</mat-label>
+        <input matInput [matDatepicker]="fromPicker" formControlName="fromDate" />
+        <mat-datepicker-toggle matIconSuffix [for]="fromPicker"></mat-datepicker-toggle>
+        <mat-datepicker #fromPicker></mat-datepicker>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="date-field">
+        <mat-label>To Date</mat-label>
+        <input matInput [matDatepicker]="toPicker" formControlName="toDate" />
+        <mat-datepicker-toggle matIconSuffix [for]="toPicker"></mat-datepicker-toggle>
+        <mat-datepicker #toPicker></mat-datepicker>
+      </mat-form-field>
+    </form>
+  </div>
+
+  @if (isLoading()) {
+    <div class="loading-spinner">
+      <mat-spinner diameter="40"></mat-spinner>
+    </div>
+  } @else {
+    <div class="table-container mat-elevation-z1">
+      <table mat-table [dataSource]="movements()">
+        <!-- Date -->
+        <ng-container matColumnDef="date">
+          <th mat-header-cell *matHeaderCellDef>Date</th>
+          <td mat-cell *matCellDef="let m" class="font-medium">
+            {{ m.movementDate }}
+          </td>
+        </ng-container>
+
+        <!-- Type -->
+        <ng-container matColumnDef="type">
+          <th mat-header-cell *matHeaderCellDef>Type</th>
+          <td mat-cell *matCellDef="let m">
+            <span [class]="getMovementBadgeClass(m)">
+              {{ m.movementTypeName || m.movementType }}
+            </span>
+          </td>
+        </ng-container>
+
+        <!-- Item -->
+        <ng-container matColumnDef="item">
+          <th mat-header-cell *matHeaderCellDef>Item</th>
+          <td mat-cell *matCellDef="let m" class="font-medium">
+            {{ m.inventoryItemName }}
+          </td>
+        </ng-container>
+
+        <!-- Location -->
+        <ng-container matColumnDef="location">
+          <th mat-header-cell *matHeaderCellDef>Location & Farm</th>
+          <td mat-cell *matCellDef="let m">
+            {{ m.storageLocationName }} <span class="sub-text">({{ m.farmName }})</span>
+          </td>
+        </ng-container>
+
+        <!-- Quantity -->
+        <ng-container matColumnDef="quantity">
+          <th mat-header-cell *matHeaderCellDef>Quantity</th>
+          <td mat-cell *matCellDef="let m">
+            <span [class]="isIncoming(m) ? 'incoming-qty' : 'outgoing-qty'">
+              {{ isIncoming(m) ? '+' : '-' }}{{ m.quantity | number:'1.0-4' }} {{ m.stockUnitSymbol || m.stockUnitCode }}
+            </span>
+          </td>
+        </ng-container>
+
+        <!-- Reference / Notes -->
+        <ng-container matColumnDef="notes">
+          <th mat-header-cell *matHeaderCellDef>Reference / Notes</th>
+          <td mat-cell *matCellDef="let m">
+            @if (m.referenceNumber) {
+              <div><code>Ref: {{ m.referenceNumber }}</code></div>
+            }
+            @if (m.notes) {
+              <div class="sub-text">{{ m.notes }}</div>
+            }
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="columns"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns;"></tr>
+      </table>
+
+      @if (movements().length === 0) {
+        <div class="empty-state">No stock ledger movements match the selected filters.</div>
+      }
+
+      <mat-paginator
+        [length]="totalCount()"
+        [pageIndex]="pageIndex()"
+        [pageSize]="pageSize()"
+        [pageSizeOptions]="[10, 20, 50]"
+        (page)="onPageChange($event)"
+        showFirstLastButtons>
+      </mat-paginator>
+    </div>
+  }
+</div>

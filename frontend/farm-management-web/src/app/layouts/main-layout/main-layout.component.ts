@@ -84,7 +84,7 @@ export class MainLayoutComponent {
 
   readonly currentUrl = signal<string>(this.router.url);
   readonly expandedMenus = signal<ReadonlySet<string>>(
-    new Set<string>(["farms", "plantations", "activities", "labor"]),
+    new Set<string>(["farms", "plantations", "activities", "labor", "inventory"]),
   );
 
   readonly organizationName = computed(
@@ -162,6 +162,45 @@ export class MainLayoutComponent {
               label: "Labor activities",
               route: "/activities/labor-activities",
               permissions: ["LaborActivity.View"],
+            },
+          ],
+        },
+      ],
+    },
+    {
+      title: "Inventory",
+      items: [
+        {
+          id: "inventory",
+          label: "Inventory",
+          icon: "inventory_2",
+          route: "/inventory",
+          exactMatch: true,
+          permissions: [
+            "InventoryStock.View",
+            "InventoryItem.View",
+            "StorageLocation.View",
+          ],
+          children: [
+            {
+              label: "Stock Balances",
+              route: "/inventory/balances",
+              permissions: ["InventoryStock.View"],
+            },
+            {
+              label: "Stock Movement Ledger",
+              route: "/inventory/ledger",
+              permissions: ["InventoryStock.View"],
+            },
+            {
+              label: "Inventory Items",
+              route: "/inventory/items",
+              permissions: ["InventoryItem.View"],
+            },
+            {
+              label: "Storage Locations",
+              route: "/inventory/locations",
+              permissions: ["StorageLocation.View"],
             },
           ],
         },
