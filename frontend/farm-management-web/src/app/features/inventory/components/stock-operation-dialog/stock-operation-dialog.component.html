@@ -50,7 +50,7 @@
     </mat-form-field>
 
     <!-- Real-Time Stock Balance Feedback Indicator -->
-    @if (form.controls.storageLocationId.value && form.controls.inventoryItemId.value) {
+    @if (hasSelectedLocationAndItem()) {
       <div class="balance-card" [class.warning]="isInsufficientStock()" [class.loading]="isLoadingBalance()">
         <mat-icon class="balance-icon">{{ isInsufficientStock() ? 'warning' : 'inventory_2' }}</mat-icon>
         <div class="balance-info">

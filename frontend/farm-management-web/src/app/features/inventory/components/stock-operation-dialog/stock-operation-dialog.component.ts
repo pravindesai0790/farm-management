@@ -1,6 +1,6 @@
 import { CommonModule } from "@angular/common";
 import { Component, DestroyRef, OnInit, computed, inject, signal } from "@angular/core";
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { takeUntilDestroyed, toSignal } from "@angular/core/rxjs-interop";
 import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatNativeDateModule } from "@angular/material/core";
@@ -73,22 +73,6 @@ export class StockOperationDialogComponent implements OnInit {
   readonly currentBalance = signal<StockBalance | null>(null);
   readonly isLoadingBalance = signal(false);
 
-  // Computed available quantity on hand
-  readonly availableQuantity = computed(() => this.currentBalance()?.quantityOnHand ?? 0);
-
-  // Computed validation flag determining if entered quantity exceeds available stock
-  readonly isInsufficientStock = computed(() => {
-    const op = this.data.operationType;
-    const isIssueOrTransfer = op === "ISSUE" || op === "TRANSFER";
-    const isAdjOut = op === "ADJUSTMENT" && this.form.controls.adjustmentType.value === "AdjustmentOut";
-    if (!isIssueOrTransfer && !isAdjOut) return false;
-
-    const qty = this.form.controls.quantity.value;
-    if (qty === null || qty === undefined || qty <= 0) return false;
-
-    return qty > this.availableQuantity();
-  });
-
   readonly form = this.fb.group({
     movementDate: [new Date(), Validators.required],
     inventoryItemId: [this.data.defaultItemId || "", Validators.required],
@@ -102,6 +86,42 @@ export class StockOperationDialogComponent implements OnInit {
     referenceNumber: ["", [Validators.maxLength(100)]],
     // Added maxLength(1000) validator matching backend notes column limit
     notes: ["", [Validators.maxLength(1000)]],
+  });
+
+  // Reactive signal converting form changes so computed() signals update reactively on user edits
+  private readonly formValues = toSignal(this.form.valueChanges, {
+    initialValue: this.form.getRawValue(),
+  });
+
+  // Computed helper determining if both storage location and item have been selected
+  readonly hasSelectedLocationAndItem = computed(() => {
+    const val = this.formValues();
+    return !!val.storageLocationId && !!val.inventoryItemId;
+  });
+
+  // Computed available quantity on hand
+  readonly availableQuantity = computed(() => this.currentBalance()?.quantityOnHand ?? 0);
+
+  // Computed unit symbol for the currently selected item
+  readonly selectedUnitSymbol = computed(() => {
+    const itemId = this.formValues().inventoryItemId;
+    if (!itemId) return "";
+    const item = this.items().find((i) => i.id === itemId);
+    return item ? (item.stockUnitSymbol || item.stockUnitCode) : "";
+  });
+
+  // Computed validation flag determining if entered quantity exceeds available stock in real-time
+  readonly isInsufficientStock = computed(() => {
+    const op = this.data.operationType;
+    const values = this.formValues();
+    const isIssueOrTransfer = op === "ISSUE" || op === "TRANSFER";
+    const isAdjOut = op === "ADJUSTMENT" && values.adjustmentType === "AdjustmentOut";
+    if (!isIssueOrTransfer && !isAdjOut) return false;
+
+    const qty = values.quantity;
+    if (qty === null || qty === undefined || qty <= 0) return false;
+
+    return qty > this.availableQuantity();
   });
 
   ngOnInit(): void {
@@ -196,13 +216,6 @@ export class StockOperationDialogComponent implements OnInit {
     }
   }
 
-  selectedUnitSymbol(): string {
-    const itemId = this.form.controls.inventoryItemId.value;
-    if (!itemId) return "";
-    const item = this.items().find((i) => i.id === itemId);
-    return item ? (item.stockUnitSymbol || item.stockUnitCode) : "";
-  }
-
   private loadFarms(): void {
     this.farmService.listFarms(1, 100, "", true)
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -228,7 +241,7 @@ export class StockOperationDialogComponent implements OnInit {
   }
 
   submit(): void {
-    if (this.form.invalid || this.isSubmitting()) return;
+    if (this.form.invalid || this.isSubmitting() || this.isInsufficientStock()) return;
 
     const val = this.form.getRawValue();
     const movementDateStr = formatDateOnly(val.movementDate!)!;
