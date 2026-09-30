@@ -1,0 +1,308 @@
+<div class="inputs-tab-container">
+  <!-- Top Action & Header Bar -->
+  <div class="tab-header-strip">
+    <div>
+      <h3 class="tab-title">Inputs & Inventory Utilized</h3>
+      <p class="tab-subtitle">
+        Track agrochemicals, fertilizers, seeds, and farm materials issued to this crop cycle.
+      </p>
+    </div>
+
+    <div class="header-actions">
+      @if (canIssueInputs()) {
+        <button mat-flat-button color="primary" (click)="openIssueDialog()">
+          <mat-icon>add_shopping_cart</mat-icon>Issue Inputs
+        </button>
+      }
+
+      <button mat-stroked-button (click)="navigateToLedger()">
+        <mat-icon>open_in_new</mat-icon>Central Ledger
+      </button>
+
+      <button mat-icon-button (click)="load()" matTooltip="Refresh input records">
+        <mat-icon>refresh</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  @if (isLoading()) {
+    <div class="loading-state">
+      <mat-spinner diameter="36" />
+      <p>Loading inputs & inventory usage...</p>
+    </div>
+  } @else {
+    <!-- Top KPI Strip -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-icon-wrapper cat-general-bg">
+          <mat-icon class="kpi-icon">inventory_2</mat-icon>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-label">Distinct Inputs</span>
+          <strong class="kpi-value">{{ kpis().distinctCount }}</strong>
+          <span class="kpi-subtext">Types of items used</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon-wrapper cat-fertilizer-bg">
+          <mat-icon class="kpi-icon">event_available</mat-icon>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-label">Application Events</span>
+          <strong class="kpi-value">{{ kpis().totalApplications }}</strong>
+          <span class="kpi-subtext">Issue transactions</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon-wrapper cat-chemical-bg">
+          <mat-icon class="kpi-icon">today</mat-icon>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-label">Latest Application</span>
+          <strong class="kpi-value">
+            {{ kpis().latestDate !== '—' ? (kpis().latestDate | date: 'mediumDate') : '—' }}
+          </strong>
+          <span class="kpi-subtext">Last issue date</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Total Quantities Applied to Date Summary Grid -->
+    <div class="section-card mat-elevation-z1">
+      <div class="section-header">
+        <h4>Total Quantities Applied to Date</h4>
+        <span class="section-subtitle">Aggregated net usage across all stages</span>
+      </div>
+
+      @if (summaryItems().length === 0) {
+        <div class="empty-summary-box">
+          <mat-icon class="empty-icon">spa</mat-icon>
+          <p>No inventory inputs have been applied to this cycle yet.</p>
+        </div>
+      } @else {
+        <div class="summary-cards-grid">
+          @for (item of summaryItems(); track item.itemId) {
+            <div class="summary-item-card">
+              <div class="summary-item-header">
+                <div>
+                  <span class="item-name">{{ item.itemName }}</span>
+                  @if (item.itemSku) {
+                    <span class="item-sku">SKU: {{ item.itemSku }}</span>
+                  }
+                </div>
+                <span class="category-chip" [class]="getCategoryBadgeClass(item.category)">
+                  {{ item.category }}
+                </span>
+              </div>
+
+              <div class="summary-item-qty">
+                <span class="qty-num">{{ item.netQuantity | number: '1.0-2' }}</span>
+                <span class="qty-unit">{{ item.unitSymbol }}</span>
+              </div>
+
+              <div class="summary-item-footer">
+                <span class="meta-info">
+                  <mat-icon class="inline-icon">numbers</mat-icon>{{ item.issueCount }} application{{ item.issueCount === 1 ? '' : 's' }}
+                </span>
+
+                @if (item.stages.length > 0) {
+                  <span class="meta-info stages-info" matTooltip="Stages: {{ item.stages.join(', ') }}">
+                    <mat-icon class="inline-icon">schema</mat-icon>{{ item.stages.join(', ') }}
+                  </span>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Detailed Application History Ledger -->
+    <div class="section-card mat-elevation-z1">
+      <div class="table-filter-bar">
+        <h4>Detailed Application History</h4>
+
+        <div class="filter-controls">
+          <mat-form-field appearance="outline" class="search-field">
+            <mat-label>Search movements</mat-label>
+            <input
+              matInput
+              [(ngModel)]="searchQuery"
+              placeholder="Search item, ref, or notes..."
+            />
+            <mat-icon matPrefix>search</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="category-filter">
+            <mat-label>Category</mat-label>
+            <mat-select [(ngModel)]="selectedCategory">
+              <mat-option value="all">All Categories</mat-option>
+              @for (cat of categories(); track cat) {
+                <mat-option [value]="cat">{{ cat }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+      </div>
+
+      @if (filteredMovements().length === 0) {
+        <div class="empty-state">
+          <mat-icon class="empty-state-icon">receipt_long</mat-icon>
+          <h4>No inventory transactions found</h4>
+          <p>
+            @if (movements().length === 0) {
+              There are no recorded input issues for this crop cycle.
+            } @else {
+              No transactions match your current search and category filter.
+            }
+          </p>
+          @if (canIssueInputs() && movements().length === 0) {
+            <button mat-flat-button color="primary" (click)="openIssueDialog()">
+              <mat-icon>add_shopping_cart</mat-icon>Issue First Input
+            </button>
+          }
+        </div>
+      } @else {
+        <div class="table-container">
+          <table mat-table [dataSource]="filteredMovements()">
+            <!-- Date Column -->
+            <ng-container matColumnDef="date">
+              <th mat-header-cell *matHeaderCellDef>Date</th>
+              <td mat-cell *matCellDef="let m" class="font-medium">
+                {{ m.movementDate | date: 'mediumDate' }}
+              </td>
+            </ng-container>
+
+            <!-- Item & Category Column -->
+            <ng-container matColumnDef="item">
+              <th mat-header-cell *matHeaderCellDef>Input Item</th>
+              <td mat-cell *matCellDef="let m">
+                <div class="item-cell-title font-medium">{{ m.inventoryItemName }}</div>
+                <div class="item-cell-sub">
+                  @if (m.inventoryItemCategory) {
+                    <span class="category-chip micro-chip" [class]="getCategoryBadgeClass(m.inventoryItemCategory)">
+                      {{ m.inventoryItemCategory }}
+                    </span>
+                  }
+                  @if (m.inventoryItemSku) {
+                    <span class="sub-text">SKU: {{ m.inventoryItemSku }}</span>
+                  }
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- Stage Column -->
+            <ng-container matColumnDef="stage">
+              <th mat-header-cell *matHeaderCellDef>Cycle Stage</th>
+              <td mat-cell *matCellDef="let m">
+                @if (m.cropCycleStageName) {
+                  <span class="stage-badge">
+                    <mat-icon class="inline-icon">schema</mat-icon>{{ m.cropCycleStageName }}
+                  </span>
+                } @else {
+                  <span class="sub-text text-muted">—</span>
+                }
+              </td>
+            </ng-container>
+
+            <!-- Quantity Column -->
+            <ng-container matColumnDef="quantity">
+              <th mat-header-cell *matHeaderCellDef>Quantity</th>
+              <td mat-cell *matCellDef="let m">
+                <span [class]="m.isReversed || m.reversedMovementId ? 'reversed-qty' : 'issue-qty'">
+                  {{ m.quantity | number: '1.0-4' }} {{ m.stockUnitSymbol || m.stockUnitCode }}
+                </span>
+              </td>
+            </ng-container>
+
+            <!-- Location Column -->
+            <ng-container matColumnDef="location">
+              <th mat-header-cell *matHeaderCellDef>Location</th>
+              <td mat-cell *matCellDef="let m">
+                <div>{{ m.storageLocationName }}</div>
+                <span class="sub-text">({{ m.farmName }})</span>
+              </td>
+            </ng-container>
+
+            <!-- Activity Column -->
+            <ng-container matColumnDef="activity">
+              <th mat-header-cell *matHeaderCellDef>Linked Activity</th>
+              <td mat-cell *matCellDef="let m">
+                @if (m.laborActivityTypeName) {
+                  <div class="activity-link-badge">
+                    <mat-icon class="inline-icon">engineering</mat-icon>{{ m.laborActivityTypeName }}
+                  </div>
+                } @else {
+                  <span class="sub-text text-muted">—</span>
+                }
+              </td>
+            </ng-container>
+
+            <!-- Reference & Notes Column -->
+            <ng-container matColumnDef="notes">
+              <th mat-header-cell *matHeaderCellDef>Ref & Notes</th>
+              <td mat-cell *matCellDef="let m">
+                @if (m.referenceNumber) {
+                  <div><code>Ref: {{ m.referenceNumber }}</code></div>
+                }
+                @if (m.reversalReason) {
+                  <div class="reversal-reason-text">
+                    <strong>Reversal Reason:</strong> {{ m.reversalReason }}
+                  </div>
+                }
+                @if (m.notes) {
+                  <div class="sub-text">{{ m.notes }}</div>
+                }
+              </td>
+            </ng-container>
+
+            <!-- Status Column -->
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>Status</th>
+              <td mat-cell *matCellDef="let m">
+                @if (m.isReversed) {
+                  <span class="badge-status badge-reversed">Reversed</span>
+                } @else if (m.reversedMovementId || (m.movementTypeName || m.movementType || '').toLowerCase().includes('reversal')) {
+                  <span class="badge-status badge-reversal-entry">Reversal Entry</span>
+                } @else {
+                  <span class="badge-status badge-active">Applied</span>
+                }
+              </td>
+            </ng-container>
+
+            <!-- Actions Column -->
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef>Actions</th>
+              <td mat-cell *matCellDef="let m">
+                @if (canReverse(m)) {
+                  <button
+                    mat-icon-button
+                    color="warn"
+                    (click)="openReversalDialog(m)"
+                    matTooltip="Reverse this transaction"
+                  >
+                    <mat-icon>undo</mat-icon>
+                  </button>
+                }
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+          </table>
+
+          <mat-paginator
+            [length]="totalCount()"
+            [pageIndex]="pageIndex()"
+            [pageSize]="pageSize()"
+            [pageSizeOptions]="[10, 20, 50]"
+            (page)="onPageChange($event)"
+            showFirstLastButtons
+          />
+        </div>
+      }
+    </div>
+  }
+</div>

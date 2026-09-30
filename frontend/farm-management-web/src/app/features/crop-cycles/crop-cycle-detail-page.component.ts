@@ -22,6 +22,7 @@ import { BreadcrumbService } from "../../core/breadcrumb/breadcrumb.service";
 import { CropCycle, CropCycleLifecycle } from "../../core/farm-management/farm-management.models";
 import { FarmManagementService } from "../../core/farm-management/farm-management.service";
 import { getApiErrorMessage } from "../../core/models/api-error.model";
+import { CropCycleInputsTabComponent } from "./components/crop-cycle-inputs-tab/crop-cycle-inputs-tab.component";
 import { CropCycleLifecycleTabComponent } from "./components/crop-cycle-lifecycle-tab/crop-cycle-lifecycle-tab.component";
 import { CropCycleCancelDialogComponent } from "./crop-cycle-cancel-dialog.component";
 import { CropCyclePlantationPromptDialogComponent } from "./dialogs/crop-cycle-plantation-prompt-dialog.component";
@@ -40,6 +41,7 @@ import { PlantationTerminateDialogComponent } from "../plantations/plantation-te
     MatTabsModule,
     RouterLink,
     CropCycleLifecycleTabComponent,
+    CropCycleInputsTabComponent,
   ],
   templateUrl: "./crop-cycle-detail-page.component.html",
   styleUrl: "./crop-cycle-detail-page.component.scss",

@@ -35,6 +35,9 @@ export interface StockOperationDialogData {
   readonly defaultFarmId?: string;
   readonly defaultLocationId?: string;
   readonly defaultItemId?: string;
+  readonly defaultCropCycleId?: string;
+  readonly defaultPlantationId?: string;
+  readonly defaultFarmAreaId?: string;
 }
 
 @Component({
@@ -258,7 +261,12 @@ export class StockOperationDialogComponent implements OnInit {
               finalize(() => this.isLoadingPlantations.set(false))
             )
             .subscribe({
-              next: (r) => this.plantations.set(r.items),
+              next: (r) => {
+                this.plantations.set(r.items);
+                if (this.data.defaultPlantationId && r.items.some((p) => p.id === this.data.defaultPlantationId)) {
+                  this.form.controls.plantationId.setValue(this.data.defaultPlantationId);
+                }
+              },
               error: () => this.plantations.set([]),
             });
         } else {
@@ -292,7 +300,12 @@ export class StockOperationDialogComponent implements OnInit {
               finalize(() => this.isLoadingCycles.set(false))
             )
             .subscribe({
-              next: (r) => this.cropCycles.set(r.items),
+              next: (r) => {
+                this.cropCycles.set(r.items);
+                if (this.data.defaultCropCycleId && r.items.some((c) => c.id === this.data.defaultCropCycleId)) {
+                  this.form.controls.cropCycleId.setValue(this.data.defaultCropCycleId);
+                }
+              },
               error: () => this.cropCycles.set([]),
             });
         } else {
@@ -383,6 +396,12 @@ export class StockOperationDialogComponent implements OnInit {
     if (this.data.defaultFarmId) {
       this.loadLocations(this.data.defaultFarmId, false);
       this.loadFarmAreas(this.data.defaultFarmId);
+    } else if (this.data.defaultPlantationId) {
+      this.farmService.getPlantation(this.data.defaultPlantationId)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe((p) => {
+          this.form.controls.farmId.setValue(p.farmId);
+        });
     }
 
     // Trigger initial balance check if default item and location are provided
@@ -440,7 +459,12 @@ export class StockOperationDialogComponent implements OnInit {
         finalize(() => this.isLoadingAreas.set(false))
       )
       .subscribe({
-        next: (r) => this.farmAreas.set(r.items),
+        next: (r) => {
+          this.farmAreas.set(r.items);
+          if (this.data.defaultFarmAreaId && r.items.some((a) => a.id === this.data.defaultFarmAreaId)) {
+            this.form.controls.farmAreaId.setValue(this.data.defaultFarmAreaId);
+          }
+        },
         error: () => this.farmAreas.set([]),
       });
   }

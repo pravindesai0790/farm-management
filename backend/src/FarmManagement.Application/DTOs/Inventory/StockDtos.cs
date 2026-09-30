@@ -56,7 +56,8 @@ public sealed record StockMovementResponse(
     bool IsReversed = false,
     Guid? ReversalMovementId = null,
     Guid? ReversedMovementId = null,
-    string? ReversalReason = null);
+    string? ReversalReason = null,
+    string? InventoryItemCategory = null);
 
 public sealed record RecordOpeningStockRequest(
     Guid FarmId,

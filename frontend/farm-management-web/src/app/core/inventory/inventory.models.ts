@@ -137,6 +137,7 @@ export interface StockMovement {
   readonly reversalMovementId?: string | null;
   readonly reversedMovementId?: string | null;
   readonly reversalReason?: string | null;
+  readonly inventoryItemCategory?: string | null;
 }
 
 export interface ReverseStockMovementRequest {
