@@ -323,6 +323,189 @@ public sealed class InventoryStockServiceTests
         Assert.Equal(2, movements.Count);
     }
 
+    [Fact]
+    public async Task RecordStockIssue_WithValidCropCycleAndStage_RecordsOperationalLinks()
+    {
+        var store = new FakeInventoryStockStore();
+        var (item, loc) = SetupItemAndLocation(store, _organizationId);
+        var service = new InventoryStockService(store);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        // Setup stock receipt so balance exists
+        await service.RecordStockReceiptAsync(CreateActor(), new RecordStockReceiptRequest(loc.FarmId, loc.Id, item.Id, 100m, today), "127.0.0.1");
+
+        // Setup FarmArea, Plantation, CropCycle, CropCycleStage, LaborActivity
+        var area = new FarmArea(_organizationId, loc.FarmId, null, "North Orchard", 50m, Guid.NewGuid(), Guid.NewGuid());
+        store.FarmAreas.Add(area);
+
+        var plantation = new CropPlantation(_organizationId, loc.FarmId, area.Id, Guid.NewGuid(), null, null, "Apples Block 1", 20m, Guid.NewGuid(), today, null, Guid.NewGuid());
+        store.Plantations.Add(plantation);
+
+        var cycle = new CropCycle(_organizationId, plantation.Id, "Apple Cycle 2026", 2026, "Spring", today, null, Guid.NewGuid());
+        store.CropCycles.Add(cycle);
+
+        var stage = new CropCycleStage(cycle.Id, Guid.NewGuid(), "Bud Break", 1, 14, today, today.AddDays(14), Guid.NewGuid());
+        store.CropCycleStages.Add(stage);
+
+        var activityType = new LaborActivityType(_organizationId, "FERT", "Fertilizer Application");
+        var activity = new LaborActivity(_organizationId, today, loc.FarmId, activityType.Id, Guid.NewGuid(), area.Id, plantation.Id, cycle.Id, stage.Id, "Spring spraying");
+        store.LaborActivities.Add(activity);
+
+        var issueRequest = new RecordStockIssueRequest(
+            loc.FarmId,
+            loc.Id,
+            item.Id,
+            25m,
+            today,
+            ReferenceNumber: "ISS-001",
+            PurposeNotes: "Foliar spray application",
+            CropCycleId: cycle.Id,
+            CropCycleStageId: stage.Id,
+            PlantationId: plantation.Id,
+            FarmAreaId: area.Id,
+            LaborActivityId: activity.Id);
+
+        var response = await service.RecordStockIssueAsync(CreateActor(), issueRequest, "127.0.0.1");
+
+        Assert.NotNull(response);
+        Assert.Equal(cycle.Id, response.CropCycleId);
+        Assert.Equal(stage.Id, response.CropCycleStageId);
+        Assert.Equal(plantation.Id, response.PlantationId);
+        Assert.Equal(area.Id, response.FarmAreaId);
+        Assert.Equal(activity.Id, response.LaborActivityId);
+
+        var movement = store.Movements.Single(m => m.Id == response.Id);
+        Assert.Equal(cycle.Id, movement.CropCycleId);
+        Assert.Equal(stage.Id, movement.CropCycleStageId);
+        Assert.Equal(plantation.Id, movement.PlantationId);
+        Assert.Equal(area.Id, movement.FarmAreaId);
+        Assert.Equal(activity.Id, movement.LaborActivityId);
+    }
+
+    [Fact]
+    public async Task RecordStockIssue_WithCropCycleStageWithoutCycle_ThrowsValidationException()
+    {
+        var store = new FakeInventoryStockStore();
+        var (item, loc) = SetupItemAndLocation(store, _organizationId);
+        var service = new InventoryStockService(store);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        await service.RecordStockReceiptAsync(CreateActor(), new RecordStockReceiptRequest(loc.FarmId, loc.Id, item.Id, 100m, today), "127.0.0.1");
+
+        var issueRequest = new RecordStockIssueRequest(
+            loc.FarmId,
+            loc.Id,
+            item.Id,
+            10m,
+            today,
+            CropCycleId: null,
+            CropCycleStageId: Guid.NewGuid());
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(() =>
+            service.RecordStockIssueAsync(CreateActor(), issueRequest, "127.0.0.1"));
+
+        Assert.Contains("Crop cycle stage cannot be selected without selecting a crop cycle", ex.Errors["cropCycleStageId"][0]);
+    }
+
+    [Fact]
+    public async Task RecordStockIssue_WithCropCycleFromDifferentFarm_ThrowsValidationException()
+    {
+        var store = new FakeInventoryStockStore();
+        var (item, loc) = SetupItemAndLocation(store, _organizationId);
+        var otherFarm = new Farm(_organizationId, "Other Farm", Guid.NewGuid(), Guid.NewGuid());
+        store.Farms.Add(otherFarm);
+
+        var service = new InventoryStockService(store);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        await service.RecordStockReceiptAsync(CreateActor(), new RecordStockReceiptRequest(loc.FarmId, loc.Id, item.Id, 100m, today), "127.0.0.1");
+
+        var plantation = new CropPlantation(_organizationId, otherFarm.Id, Guid.NewGuid(), Guid.NewGuid(), null, null, "Other Plantation", 20m, Guid.NewGuid(), today, null, Guid.NewGuid());
+        store.Plantations.Add(plantation);
+
+        var cycle = new CropCycle(_organizationId, plantation.Id, "Other Cycle", 2026, "Spring", today, null, Guid.NewGuid());
+        store.CropCycles.Add(cycle);
+
+        var issueRequest = new RecordStockIssueRequest(
+            loc.FarmId,
+            loc.Id,
+            item.Id,
+            10m,
+            today,
+            CropCycleId: cycle.Id);
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(() =>
+            service.RecordStockIssueAsync(CreateActor(), issueRequest, "127.0.0.1"));
+
+        Assert.Contains("does not belong to the selected farm", ex.Errors["cropCycleId"][0]);
+    }
+
+    [Fact]
+    public async Task RecordStockIssue_WithStageBelongingToDifferentCycle_ThrowsValidationException()
+    {
+        var store = new FakeInventoryStockStore();
+        var (item, loc) = SetupItemAndLocation(store, _organizationId);
+        var service = new InventoryStockService(store);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        await service.RecordStockReceiptAsync(CreateActor(), new RecordStockReceiptRequest(loc.FarmId, loc.Id, item.Id, 100m, today), "127.0.0.1");
+
+        var plantation = new CropPlantation(_organizationId, loc.FarmId, Guid.NewGuid(), Guid.NewGuid(), null, null, "Block 1", 20m, Guid.NewGuid(), today, null, Guid.NewGuid());
+        store.Plantations.Add(plantation);
+
+        var cycle1 = new CropCycle(_organizationId, plantation.Id, "Cycle 1", 2026, "Spring", today, null, Guid.NewGuid());
+        var cycle2 = new CropCycle(_organizationId, plantation.Id, "Cycle 2", 2026, "Fall", today, null, Guid.NewGuid());
+        store.CropCycles.Add(cycle1);
+        store.CropCycles.Add(cycle2);
+
+        // Stage belongs to cycle2
+        var stageFromCycle2 = new CropCycleStage(cycle2.Id, Guid.NewGuid(), "Harvest Stage", 1, 10, today, today.AddDays(10), Guid.NewGuid());
+        store.CropCycleStages.Add(stageFromCycle2);
+
+        var issueRequest = new RecordStockIssueRequest(
+            loc.FarmId,
+            loc.Id,
+            item.Id,
+            10m,
+            today,
+            CropCycleId: cycle1.Id,
+            CropCycleStageId: stageFromCycle2.Id);
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(() =>
+            service.RecordStockIssueAsync(CreateActor(), issueRequest, "127.0.0.1"));
+
+        Assert.Contains("does not belong to the selected crop cycle", ex.Errors["cropCycleStageId"][0]);
+    }
+
+    [Fact]
+    public async Task GetLedger_WithCropCycleIdFilter_FiltersByCropCycle()
+    {
+        var store = new FakeInventoryStockStore();
+        var (item, loc) = SetupItemAndLocation(store, _organizationId);
+        var service = new InventoryStockService(store);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        await service.RecordStockReceiptAsync(CreateActor(), new RecordStockReceiptRequest(loc.FarmId, loc.Id, item.Id, 200m, today), "127.0.0.1");
+
+        var plantation = new CropPlantation(_organizationId, loc.FarmId, Guid.NewGuid(), Guid.NewGuid(), null, null, "Block 1", 20m, Guid.NewGuid(), today, null, Guid.NewGuid());
+        store.Plantations.Add(plantation);
+
+        var targetCycle = new CropCycle(_organizationId, plantation.Id, "Target Cycle", 2026, "Spring", today, null, Guid.NewGuid());
+        var otherCycle = new CropCycle(_organizationId, plantation.Id, "Other Cycle", 2026, "Fall", today, null, Guid.NewGuid());
+        store.CropCycles.Add(targetCycle);
+        store.CropCycles.Add(otherCycle);
+
+        await service.RecordStockIssueAsync(CreateActor(), new RecordStockIssueRequest(loc.FarmId, loc.Id, item.Id, 20m, today, CropCycleId: targetCycle.Id), "127.0.0.1");
+        await service.RecordStockIssueAsync(CreateActor(), new RecordStockIssueRequest(loc.FarmId, loc.Id, item.Id, 30m, today, CropCycleId: otherCycle.Id), "127.0.0.1");
+        await service.RecordStockIssueAsync(CreateActor(), new RecordStockIssueRequest(loc.FarmId, loc.Id, item.Id, 10m, today), "127.0.0.1"); // general issue
+
+        var result = await service.GetLedgerAsync(CreateActor(), 1, 20, loc.FarmId, loc.Id, item.Id, StockMovementType.Issue, null, null, cropCycleId: targetCycle.Id);
+
+        Assert.Single(result.Items);
+        Assert.Equal(20m, result.Items[0].Quantity);
+        Assert.Equal(targetCycle.Id, result.Items[0].CropCycleId);
+    }
+
     private static (InventoryItem Item, StorageLocation Location) SetupItemAndLocation(FakeInventoryStockStore store, Guid orgId)
     {
         var farm = new Farm(orgId, "Green Valley Farm", Guid.NewGuid(), Guid.NewGuid());
@@ -355,6 +538,11 @@ public sealed class FakeInventoryStockStore : IInventoryStockStore
     public List<StockMovement> Movements { get; } = [];
     public List<AuditLog> AuditLogs { get; } = [];
     public List<Guid> AdvisoryLockHistory { get; } = [];
+    public List<CropCycle> CropCycles { get; } = [];
+    public List<CropCycleStage> CropCycleStages { get; } = [];
+    public List<CropPlantation> Plantations { get; } = [];
+    public List<FarmArea> FarmAreas { get; } = [];
+    public List<LaborActivity> LaborActivities { get; } = [];
 
     public Task<InventoryItem?> FindItemAsync(Guid itemId, Guid organizationId, CancellationToken cancellationToken = default) =>
         Task.FromResult(Items.FirstOrDefault(i => i.Id == itemId && i.OrganizationId == organizationId));
@@ -364,6 +552,21 @@ public sealed class FakeInventoryStockStore : IInventoryStockStore
 
     public Task<Farm?> FindFarmAsync(Guid farmId, Guid organizationId, CancellationToken cancellationToken = default) =>
         Task.FromResult(Farms.FirstOrDefault(f => f.Id == farmId && f.OrganizationId == organizationId));
+
+    public Task<CropCycle?> FindCropCycleAsync(Guid cycleId, Guid organizationId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(CropCycles.FirstOrDefault(c => c.Id == cycleId && c.OrganizationId == organizationId));
+
+    public Task<CropCycleStage?> FindCropCycleStageAsync(Guid stageId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(CropCycleStages.FirstOrDefault(s => s.Id == stageId));
+
+    public Task<CropPlantation?> FindPlantationAsync(Guid plantationId, Guid organizationId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(Plantations.FirstOrDefault(p => p.Id == plantationId && p.OrganizationId == organizationId));
+
+    public Task<FarmArea?> FindFarmAreaAsync(Guid areaId, Guid organizationId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(FarmAreas.FirstOrDefault(a => a.Id == areaId && a.OrganizationId == organizationId));
+
+    public Task<LaborActivity?> FindLaborActivityAsync(Guid activityId, Guid organizationId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(LaborActivities.FirstOrDefault(a => a.Id == activityId && a.OrganizationId == organizationId));
 
     public Task<StockBalance?> FindBalanceAsync(Guid locationId, Guid itemId, Guid organizationId, CancellationToken cancellationToken = default) =>
         Task.FromResult(Balances.FirstOrDefault(b => b.StorageLocationId == locationId && b.InventoryItemId == itemId && b.OrganizationId == organizationId));
@@ -393,23 +596,25 @@ public sealed class FakeInventoryStockStore : IInventoryStockStore
             (!itemId.HasValue || b.InventoryItemId == itemId.Value))
             .Skip(skip).Take(take).ToList());
 
-    public Task<int> CountMovementsAsync(Guid organizationId, Guid? farmId, Guid? locationId, Guid? itemId, StockMovementType? movementType, DateOnly? fromDate, DateOnly? toDate, CancellationToken cancellationToken = default) =>
+    public Task<int> CountMovementsAsync(Guid organizationId, Guid? farmId, Guid? locationId, Guid? itemId, StockMovementType? movementType, DateOnly? fromDate, DateOnly? toDate, Guid? cropCycleId = null, CancellationToken cancellationToken = default) =>
         Task.FromResult(Movements.Count(m => m.OrganizationId == organizationId &&
             (!farmId.HasValue || m.FarmId == farmId.Value) &&
             (!locationId.HasValue || m.StorageLocationId == locationId.Value) &&
             (!itemId.HasValue || m.InventoryItemId == itemId.Value) &&
             (!movementType.HasValue || m.MovementType == movementType.Value) &&
             (!fromDate.HasValue || m.MovementDate >= fromDate.Value) &&
-            (!toDate.HasValue || m.MovementDate <= toDate.Value)));
+            (!toDate.HasValue || m.MovementDate <= toDate.Value) &&
+            (!cropCycleId.HasValue || m.CropCycleId == cropCycleId.Value)));
 
-    public Task<IReadOnlyList<StockMovement>> ListMovementsAsync(Guid organizationId, Guid? farmId, Guid? locationId, Guid? itemId, StockMovementType? movementType, DateOnly? fromDate, DateOnly? toDate, int skip, int take, CancellationToken cancellationToken = default) =>
+    public Task<IReadOnlyList<StockMovement>> ListMovementsAsync(Guid organizationId, Guid? farmId, Guid? locationId, Guid? itemId, StockMovementType? movementType, DateOnly? fromDate, DateOnly? toDate, int skip, int take, Guid? cropCycleId = null, CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<StockMovement>>(Movements.Where(m => m.OrganizationId == organizationId &&
             (!farmId.HasValue || m.FarmId == farmId.Value) &&
             (!locationId.HasValue || m.StorageLocationId == locationId.Value) &&
             (!itemId.HasValue || m.InventoryItemId == itemId.Value) &&
             (!movementType.HasValue || m.MovementType == movementType.Value) &&
             (!fromDate.HasValue || m.MovementDate >= fromDate.Value) &&
-            (!toDate.HasValue || m.MovementDate <= toDate.Value))
+            (!toDate.HasValue || m.MovementDate <= toDate.Value) &&
+            (!cropCycleId.HasValue || m.CropCycleId == cropCycleId.Value))
             .Skip(skip).Take(take).ToList());
 
     public async Task<T> ExecuteInTransactionAsync<T>(Func<CancellationToken, Task<T>> operation, CancellationToken cancellationToken = default) =>

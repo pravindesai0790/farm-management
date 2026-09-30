@@ -113,6 +113,97 @@
       <mat-error>Quantity must be greater than zero</mat-error>
     </mat-form-field>
 
+    <!-- Operational Linkage (Optional - for Stock Issue) -->
+    @if (isIssue()) {
+      <div class="operational-link-section">
+        <div class="operational-section-title">
+          <mat-icon class="section-icon">hub</mat-icon>
+          <span>Operational Linkage (Optional)</span>
+        </div>
+        <p class="section-hint">Link this stock issue directly to field operations, crop cycle, or plantation for stage-wise input accounting.</p>
+
+        <!-- 1. Farm Area & 2. Plantation -->
+        <div class="form-row">
+          <!-- 1. Farm Area -->
+          <mat-form-field appearance="outline" class="half-width" subscriptSizing="dynamic">
+            <mat-label>Farm area / block / plot</mat-label>
+            <mat-select formControlName="farmAreaId">
+              <mat-option value="">None (General)</mat-option>
+              @for (area of farmAreas(); track area.id) {
+                <mat-option [value]="area.id">{{ area.name }}</mat-option>
+              }
+            </mat-select>
+            @if (isLoadingAreas()) {
+              <mat-spinner matSuffix diameter="18"></mat-spinner>
+            }
+          </mat-form-field>
+
+          <!-- 2. Plantation -->
+          <mat-form-field appearance="outline" class="half-width" subscriptSizing="dynamic">
+            <mat-label>Plantation</mat-label>
+            <mat-select formControlName="plantationId">
+              <mat-option value="">None</mat-option>
+              @for (p of plantations(); track p.id) {
+                <mat-option [value]="p.id">{{ p.plantationName }}</mat-option>
+              }
+            </mat-select>
+            @if (isLoadingPlantations()) {
+              <mat-spinner matSuffix diameter="18"></mat-spinner>
+            }
+          </mat-form-field>
+        </div>
+
+        <!-- 3. Crop Cycle & 4. Current Cycle Stage -->
+        <div class="form-row">
+          <!-- 3. Crop Cycle -->
+          <mat-form-field appearance="outline" class="half-width" subscriptSizing="dynamic">
+            <mat-label>Crop cycle</mat-label>
+            <mat-select formControlName="cropCycleId">
+              <mat-option value="">None</mat-option>
+              @for (cycle of cropCycles(); track cycle.id) {
+                <mat-option [value]="cycle.id">{{ cycle.cycleName }} ({{ cycle.seasonName || cycle.seasonYear }})</mat-option>
+              }
+            </mat-select>
+            @if (isLoadingCycles()) {
+              <mat-spinner matSuffix diameter="18"></mat-spinner>
+            }
+          </mat-form-field>
+
+          <!-- 4. Current Cycle Stage -->
+          <mat-form-field appearance="outline" class="half-width" subscriptSizing="dynamic">
+            <mat-label>Current cycle stage</mat-label>
+            <mat-select formControlName="cropCycleStageId">
+              <mat-option value="">None</mat-option>
+              @for (stage of cycleStages(); track stage.id) {
+                <mat-option [value]="stage.id">
+                  {{ stage.sequenceNumber }}. {{ stage.stageName }} ({{ stage.status }})
+                </mat-option>
+              }
+            </mat-select>
+            @if (isLoadingStages()) {
+              <mat-spinner matSuffix diameter="18"></mat-spinner>
+            }
+          </mat-form-field>
+        </div>
+
+        <!-- 5. Field / Labor Activity -->
+        <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+          <mat-label>Field activity</mat-label>
+          <mat-select formControlName="laborActivityId">
+            <mat-option value="">None</mat-option>
+            @for (act of filteredLaborActivities(); track act.id) {
+              <mat-option [value]="act.id">
+                {{ act.activityDate }} — {{ act.activityType.name }} ({{ act.status }})
+              </mat-option>
+            }
+          </mat-select>
+          @if (isLoadingActivities()) {
+            <mat-spinner matSuffix diameter="18"></mat-spinner>
+          }
+        </mat-form-field>
+      </div>
+    }
+
     <!-- Reference Number (Receipt, Issue, Transfer) -->
     @if (data.operationType === 'RECEIPT' || data.operationType === 'ISSUE' || data.operationType === 'TRANSFER') {
       <mat-form-field appearance="outline" class="full-width">

@@ -57,11 +57,12 @@ export class StockLedgerTabComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly columns = ["date", "type", "item", "location", "quantity", "notes"];
+  readonly columns = ["date", "type", "item", "location", "quantity", "operationalLink", "notes"];
   readonly movements = signal<readonly StockMovement[]>([]);
   readonly farms = signal<readonly Farm[]>([]);
   readonly locations = signal<readonly StorageLocation[]>([]);
   readonly items = signal<readonly InventoryItem[]>([]);
+  readonly filterCropCycleId = signal<string | null>(null);
 
   readonly totalCount = signal(0);
   readonly pageIndex = signal(0);
@@ -81,7 +82,7 @@ export class StockLedgerTabComponent implements OnInit {
     this.loadFarms();
     this.loadItems();
 
-    // Deep-linking: Pre-populate movement ledger filters from route query parameters (e.g. from View Ledger shortcut)
+    // Deep-linking: Pre-populate movement ledger filters from route query parameters (e.g. from View Ledger shortcut or Crop Cycle link)
     this.route.queryParams
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((params) => {
@@ -89,6 +90,9 @@ export class StockLedgerTabComponent implements OnInit {
         const locationId = params['storageLocationId'] || 'all';
         const itemId = params['inventoryItemId'] || 'all';
         const type = params['movementType'] || 'all';
+        const cycleId = params['cropCycleId'] || null;
+
+        this.filterCropCycleId.set(cycleId);
 
         if (farmId !== 'all') {
           this.loadLocations(farmId);
@@ -188,6 +192,7 @@ export class StockLedgerTabComponent implements OnInit {
         val.movementType === "all" ? null : val.movementType,
         val.fromDate ? formatDateOnly(val.fromDate) : null,
         val.toDate ? formatDateOnly(val.toDate) : null,
+        this.filterCropCycleId(),
       )
       .pipe(
         takeUntilDestroyed(this.destroyRef),

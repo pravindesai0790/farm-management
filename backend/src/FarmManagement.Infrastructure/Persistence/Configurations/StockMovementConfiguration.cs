@@ -94,6 +94,51 @@ public sealed class StockMovementConfiguration : IEntityTypeConfiguration<StockM
         builder.Property(movement => movement.ParentTransactionId)
             .HasColumnName("parent_transaction_id");
 
+        builder.Property(movement => movement.CropCycleId)
+            .HasColumnName("crop_cycle_id");
+
+        builder.HasOne(movement => movement.CropCycle)
+            .WithMany()
+            .HasForeignKey(movement => movement.CropCycleId)
+            .HasConstraintName("fk_stock_movements_crop_cycle")
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Property(movement => movement.CropCycleStageId)
+            .HasColumnName("crop_cycle_stage_id");
+
+        builder.HasOne(movement => movement.CropCycleStage)
+            .WithMany()
+            .HasForeignKey(movement => movement.CropCycleStageId)
+            .HasConstraintName("fk_stock_movements_crop_cycle_stage")
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Property(movement => movement.PlantationId)
+            .HasColumnName("plantation_id");
+
+        builder.HasOne(movement => movement.Plantation)
+            .WithMany()
+            .HasForeignKey(movement => movement.PlantationId)
+            .HasConstraintName("fk_stock_movements_plantation")
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Property(movement => movement.FarmAreaId)
+            .HasColumnName("farm_area_id");
+
+        builder.HasOne(movement => movement.FarmArea)
+            .WithMany()
+            .HasForeignKey(movement => movement.FarmAreaId)
+            .HasConstraintName("fk_stock_movements_farm_area")
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Property(movement => movement.LaborActivityId)
+            .HasColumnName("labor_activity_id");
+
+        builder.HasOne(movement => movement.LaborActivity)
+            .WithMany()
+            .HasForeignKey(movement => movement.LaborActivityId)
+            .HasConstraintName("fk_stock_movements_labor_activity")
+            .OnDelete(DeleteBehavior.SetNull);
+
         builder.Property(movement => movement.CreatedAt)
             .HasColumnName("created_at")
             .IsRequired();
@@ -114,6 +159,26 @@ public sealed class StockMovementConfiguration : IEntityTypeConfiguration<StockM
         builder.HasIndex(movement => movement.ParentTransactionId)
             .HasDatabaseName("ix_stock_movements_parent_transaction")
             .HasFilter("parent_transaction_id IS NOT NULL");
+
+        builder.HasIndex(movement => movement.CropCycleId)
+            .HasDatabaseName("ix_stock_movements_crop_cycle")
+            .HasFilter("crop_cycle_id IS NOT NULL");
+
+        builder.HasIndex(movement => movement.CropCycleStageId)
+            .HasDatabaseName("ix_stock_movements_crop_cycle_stage")
+            .HasFilter("crop_cycle_stage_id IS NOT NULL");
+
+        builder.HasIndex(movement => movement.PlantationId)
+            .HasDatabaseName("ix_stock_movements_plantation")
+            .HasFilter("plantation_id IS NOT NULL");
+
+        builder.HasIndex(movement => movement.FarmAreaId)
+            .HasDatabaseName("ix_stock_movements_farm_area")
+            .HasFilter("farm_area_id IS NOT NULL");
+
+        builder.HasIndex(movement => movement.LaborActivityId)
+            .HasDatabaseName("ix_stock_movements_labor_activity")
+            .HasFilter("labor_activity_id IS NOT NULL");
 
         // Enforce database-level uniqueness for opening stock per storage location and inventory item
         builder.HasIndex(movement => new { movement.StorageLocationId, movement.InventoryItemId })

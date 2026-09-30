@@ -42,7 +42,17 @@ public sealed record StockMovementResponse(
     string? Notes,
     Guid? ParentTransactionId,
     DateTimeOffset CreatedAt,
-    Guid CreatedBy);
+    Guid CreatedBy,
+    Guid? CropCycleId = null,
+    string? CropCycleTitle = null,
+    Guid? CropCycleStageId = null,
+    string? CropCycleStageName = null,
+    Guid? PlantationId = null,
+    string? PlantationName = null,
+    Guid? FarmAreaId = null,
+    string? FarmAreaName = null,
+    Guid? LaborActivityId = null,
+    string? LaborActivityTypeName = null);
 
 public sealed record RecordOpeningStockRequest(
     Guid FarmId,
@@ -68,7 +78,12 @@ public sealed record RecordStockIssueRequest(
     decimal Quantity,
     DateOnly MovementDate,
     string? ReferenceNumber = null,
-    string? PurposeNotes = null);
+    string? PurposeNotes = null,
+    Guid? CropCycleId = null,
+    Guid? CropCycleStageId = null,
+    Guid? PlantationId = null,
+    Guid? FarmAreaId = null,
+    Guid? LaborActivityId = null);
 
 public sealed record RecordStockAdjustmentRequest(
     Guid FarmId,

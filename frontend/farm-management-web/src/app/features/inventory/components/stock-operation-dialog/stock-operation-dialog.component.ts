@@ -9,15 +9,19 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/materia
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
+import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { MatSelectModule } from "@angular/material/select";
 import { MatSnackBar } from "@angular/material/snack-bar";
+import { finalize, map, merge } from "rxjs";
 
 import { FarmManagementService } from "../../../../core/farm-management/farm-management.service";
-import { Farm } from "../../../../core/farm-management/farm-management.models";
+import { CropCycle, CropCycleStage, Farm, FarmArea, Plantation } from "../../../../core/farm-management/farm-management.models";
 import { InventoryItem, StockBalance, StorageLocation } from "../../../../core/inventory/inventory.models";
 import { InventoryService } from "../../../../core/inventory/inventory.service";
 import { getApiErrorMessage } from "../../../../core/models/api-error.model";
 import { formatDateOnly } from "../../../../core/utils/date.utils";
+import { LaborActivity } from "../../../labor-activities/models/labor-activity.models";
+import { LaborActivityService } from "../../../labor-activities/services/labor-activity.service";
 
 export type StockOperationType =
   | "OPENING_STOCK"
@@ -46,6 +50,7 @@ export interface StockOperationDialogData {
     MatIconModule,
     MatInputModule,
     MatNativeDateModule,
+    MatProgressSpinnerModule,
     MatSelectModule,
   ],
   templateUrl: "./stock-operation-dialog.component.html",
@@ -57,6 +62,7 @@ export class StockOperationDialogComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly inventoryService = inject(InventoryService);
   private readonly farmService = inject(FarmManagementService);
+  private readonly laborActivityService = inject(LaborActivityService);
   private readonly snack = inject(MatSnackBar);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -64,6 +70,18 @@ export class StockOperationDialogComponent implements OnInit {
   readonly items = signal<readonly InventoryItem[]>([]);
   readonly locations = signal<readonly StorageLocation[]>([]);
   readonly destLocations = signal<readonly StorageLocation[]>([]);
+  readonly farmAreas = signal<readonly FarmArea[]>([]);
+  readonly plantations = signal<readonly Plantation[]>([]);
+  readonly cropCycles = signal<readonly CropCycle[]>([]);
+  readonly cycleStages = signal<readonly CropCycleStage[]>([]);
+  readonly laborActivities = signal<readonly LaborActivity[]>([]);
+
+  // Loading signals for operational cascading dropdowns
+  readonly isLoadingAreas = signal(false);
+  readonly isLoadingPlantations = signal(false);
+  readonly isLoadingCycles = signal(false);
+  readonly isLoadingStages = signal(false);
+  readonly isLoadingActivities = signal(false);
   readonly isSubmitting = signal(false);
 
   // Maximum date restriction for datepicker (prevents future movement dates)
@@ -80,6 +98,11 @@ export class StockOperationDialogComponent implements OnInit {
     storageLocationId: [this.data.defaultLocationId || "", Validators.required],
     destinationFarmId: [""],
     destinationStorageLocationId: [""],
+    farmAreaId: [""],
+    plantationId: [{ value: "", disabled: true }],
+    cropCycleId: [{ value: "", disabled: true }],
+    cropCycleStageId: [{ value: "", disabled: true }],
+    laborActivityId: [{ value: "", disabled: true }],
     adjustmentType: ["AdjustmentIn"],
     quantity: [null as number | null, [Validators.required, Validators.min(0.0001)]],
     // Added maxLength(100) validator matching backend referenceNumber column limit
@@ -89,8 +112,19 @@ export class StockOperationDialogComponent implements OnInit {
   });
 
   // Reactive signal converting form changes so computed() signals update reactively on user edits
-  private readonly formValues = toSignal(this.form.valueChanges, {
-    initialValue: this.form.getRawValue(),
+  private readonly formValues = toSignal(
+    merge(this.form.valueChanges, this.form.statusChanges).pipe(map(() => this.form.getRawValue())),
+    {
+      initialValue: this.form.getRawValue(),
+    }
+  );
+
+  // Filtered labor activities based on selected cropCycleStageId (if stage is selected)
+  readonly filteredLaborActivities = computed(() => {
+    const stageId = this.formValues().cropCycleStageId;
+    const all = this.laborActivities();
+    if (!stageId) return all;
+    return all.filter((a) => !a.cropCycleStage?.id || a.cropCycleStage.id === stageId);
   });
 
   // Computed helper determining if both storage location and item have been selected
@@ -168,11 +202,175 @@ export class StockOperationDialogComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => checkBalance());
 
+    // 0. Farm selection: resets all downstream operational dropdowns and loads areas
     this.form.controls.farmId.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((farmId) => {
         this.form.controls.storageLocationId.setValue("");
-        if (farmId) this.loadLocations(farmId, false);
+        this.form.controls.farmAreaId.setValue("");
+        this.form.controls.plantationId.setValue("");
+        this.form.controls.cropCycleId.setValue("");
+        this.form.controls.cropCycleStageId.setValue("");
+        this.form.controls.laborActivityId.setValue("");
+
+        this.form.controls.plantationId.disable();
+        this.form.controls.cropCycleId.disable();
+        this.form.controls.cropCycleStageId.disable();
+        this.form.controls.laborActivityId.disable();
+
+        this.farmAreas.set([]);
+        this.plantations.set([]);
+        this.cropCycles.set([]);
+        this.cycleStages.set([]);
+        this.laborActivities.set([]);
+
+        if (farmId) {
+          this.loadLocations(farmId, false);
+          this.loadFarmAreas(farmId);
+        }
+      });
+
+    // 1. Area selection: loads plantations for selected area and enables plantation dropdown
+    this.form.controls.farmAreaId.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((areaId) => {
+        this.form.controls.plantationId.setValue("");
+        this.form.controls.cropCycleId.setValue("");
+        this.form.controls.cropCycleStageId.setValue("");
+        this.form.controls.laborActivityId.setValue("");
+
+        this.form.controls.cropCycleId.disable();
+        this.form.controls.cropCycleStageId.disable();
+        this.form.controls.laborActivityId.disable();
+
+        this.plantations.set([]);
+        this.cropCycles.set([]);
+        this.cycleStages.set([]);
+        this.laborActivities.set([]);
+
+        const farmId = this.form.controls.farmId.value;
+        if (areaId && farmId) {
+          this.form.controls.plantationId.enable();
+          this.isLoadingPlantations.set(true);
+          this.farmService.listPlantations(1, 100, farmId, areaId)
+            .pipe(
+              takeUntilDestroyed(this.destroyRef),
+              finalize(() => this.isLoadingPlantations.set(false))
+            )
+            .subscribe({
+              next: (r) => this.plantations.set(r.items),
+              error: () => this.plantations.set([]),
+            });
+        } else {
+          this.form.controls.plantationId.disable();
+        }
+      });
+
+    // 2. Plantation selection: loads cycles for selected plantation and enables cycle dropdown
+    this.form.controls.plantationId.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((plantationId) => {
+        this.form.controls.cropCycleId.setValue("");
+        this.form.controls.cropCycleStageId.setValue("");
+        this.form.controls.laborActivityId.setValue("");
+
+        this.form.controls.cropCycleStageId.disable();
+        this.form.controls.laborActivityId.disable();
+
+        this.cropCycles.set([]);
+        this.cycleStages.set([]);
+        this.laborActivities.set([]);
+
+        const farmId = this.form.controls.farmId.value;
+        const areaId = this.form.controls.farmAreaId.value;
+        if (plantationId && farmId) {
+          this.form.controls.cropCycleId.enable();
+          this.isLoadingCycles.set(true);
+          this.farmService.listCycles(1, 100, farmId, areaId || undefined, plantationId)
+            .pipe(
+              takeUntilDestroyed(this.destroyRef),
+              finalize(() => this.isLoadingCycles.set(false))
+            )
+            .subscribe({
+              next: (r) => this.cropCycles.set(r.items),
+              error: () => this.cropCycles.set([]),
+            });
+        } else {
+          this.form.controls.cropCycleId.disable();
+        }
+      });
+
+    // 3. Crop Cycle selection: loads stages and activities for selected cycle, auto-preselects active stage
+    this.form.controls.cropCycleId.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((cycleId) => {
+        this.form.controls.cropCycleStageId.setValue("");
+        this.form.controls.laborActivityId.setValue("");
+
+        this.cycleStages.set([]);
+        this.laborActivities.set([]);
+
+        const farmId = this.form.controls.farmId.value;
+        const areaId = this.form.controls.farmAreaId.value;
+        const plantationId = this.form.controls.plantationId.value;
+
+        if (cycleId && farmId) {
+          this.form.controls.cropCycleStageId.enable();
+          this.form.controls.laborActivityId.enable();
+
+          this.isLoadingStages.set(true);
+          this.farmService.getCycleLifecycle(cycleId)
+            .pipe(
+              takeUntilDestroyed(this.destroyRef),
+              finalize(() => this.isLoadingStages.set(false))
+            )
+            .subscribe({
+              next: (lifecycle) => {
+                this.cycleStages.set(lifecycle.stages || []);
+                const activeStage = lifecycle.stages?.find(
+                  (s) => s.status === "IN_PROGRESS"
+                );
+                if (activeStage) {
+                  this.form.controls.cropCycleStageId.setValue(activeStage.id);
+                }
+              },
+              error: () => this.cycleStages.set([]),
+            });
+
+          this.isLoadingActivities.set(true);
+          this.laborActivityService.list({
+            page: 1,
+            pageSize: 100,
+            farmId,
+            farmAreaId: areaId || undefined,
+            plantationId: plantationId || undefined,
+            cropCycleId: cycleId,
+          })
+            .pipe(
+              takeUntilDestroyed(this.destroyRef),
+              finalize(() => this.isLoadingActivities.set(false))
+            )
+            .subscribe({
+              next: (r) => this.laborActivities.set(r.items),
+              error: () => this.laborActivities.set([]),
+            });
+        } else {
+          this.form.controls.cropCycleStageId.disable();
+          this.form.controls.laborActivityId.disable();
+        }
+      });
+
+    // 4. Stage selection: if current selected activity doesn't match new stage, reset activity
+    this.form.controls.cropCycleStageId.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((stageId) => {
+        const currentActId = this.form.controls.laborActivityId.value;
+        if (currentActId) {
+          const act = this.laborActivities().find((a) => a.id === currentActId);
+          if (act && act.cropCycleStage?.id && stageId && act.cropCycleStage.id !== stageId) {
+            this.form.controls.laborActivityId.setValue("");
+          }
+        }
       });
 
     this.form.controls.destinationFarmId.valueChanges
@@ -184,6 +382,7 @@ export class StockOperationDialogComponent implements OnInit {
 
     if (this.data.defaultFarmId) {
       this.loadLocations(this.data.defaultFarmId, false);
+      this.loadFarmAreas(this.data.defaultFarmId);
     }
 
     // Trigger initial balance check if default item and location are provided
@@ -194,6 +393,10 @@ export class StockOperationDialogComponent implements OnInit {
 
   isTransfer(): boolean {
     return this.data.operationType === "TRANSFER";
+  }
+
+  isIssue(): boolean {
+    return this.data.operationType === "ISSUE";
   }
 
   getTitle(): string {
@@ -226,6 +429,20 @@ export class StockOperationDialogComponent implements OnInit {
     this.inventoryService.listItems(1, 200, null, null, true)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((r) => this.items.set(r.items));
+  }
+
+  private loadFarmAreas(farmId: string): void {
+    if (this.data.operationType !== "ISSUE") return;
+    this.isLoadingAreas.set(true);
+    this.farmService.listFarmAreas(1, 100, farmId, true)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.isLoadingAreas.set(false))
+      )
+      .subscribe({
+        next: (r) => this.farmAreas.set(r.items),
+        error: () => this.farmAreas.set([]),
+      });
   }
 
   private loadLocations(farmId: string, isDestination: boolean): void {
@@ -281,6 +498,11 @@ export class StockOperationDialogComponent implements OnInit {
           movementDate: movementDateStr,
           referenceNumber: val.referenceNumber || null,
           purposeNotes: val.notes || null,
+          cropCycleId: val.cropCycleId || null,
+          cropCycleStageId: val.cropCycleStageId || null,
+          plantationId: val.plantationId || null,
+          farmAreaId: val.farmAreaId || null,
+          laborActivityId: val.laborActivityId || null,
         }).subscribe(this.obsHandler());
         break;
 

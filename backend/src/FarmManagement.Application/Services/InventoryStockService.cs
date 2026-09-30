@@ -62,16 +62,17 @@ public sealed class InventoryStockService(IInventoryStockStore store) : IInvento
         StockMovementType? movementType,
         DateOnly? fromDate,
         DateOnly? toDate,
+        Guid? cropCycleId = null,
         CancellationToken cancellationToken = default)
     {
         ValidateActor(actor);
         if (page < 1) throw Validation("page", "Page must be at least 1.");
         pageSize = NormalizePageSize(pageSize);
 
-        var totalCount = await store.CountMovementsAsync(actor.OrganizationId, farmId, storageLocationId, inventoryItemId, movementType, fromDate, toDate, cancellationToken);
+        var totalCount = await store.CountMovementsAsync(actor.OrganizationId, farmId, storageLocationId, inventoryItemId, movementType, fromDate, toDate, cropCycleId, cancellationToken);
         var movements = await store.ListMovementsAsync(
             actor.OrganizationId, farmId, storageLocationId, inventoryItemId, movementType, fromDate, toDate,
-            checked((page - 1) * pageSize), pageSize, cancellationToken);
+            checked((page - 1) * pageSize), pageSize, cropCycleId, cancellationToken);
 
         return new PagedResponse<StockMovementResponse>(movements.Select(ToMovementResponse).ToArray(), page, pageSize, totalCount);
     }
@@ -210,6 +211,8 @@ public sealed class InventoryStockService(IInventoryStockStore store) : IInvento
         ValidateMovementDate(request.MovementDate);
 
         var (item, location) = await ValidateItemAndLocationAsync(actor, request.InventoryItemId, request.StorageLocationId, request.FarmId, cancellationToken);
+        var (cycle, stage, plantation, area, activity) = await ValidateOperationalLinksAsync(
+            actor, request.FarmId, request.CropCycleId, request.CropCycleStageId, request.PlantationId, request.FarmAreaId, request.LaborActivityId, cancellationToken);
 
         return await store.ExecuteInTransactionAsync(async ct =>
         {
@@ -237,13 +240,27 @@ public sealed class InventoryStockService(IInventoryStockStore store) : IInvento
                 request.MovementDate,
                 actor.UserId,
                 referenceNumber: request.ReferenceNumber,
-                notes: request.PurposeNotes);
+                notes: request.PurposeNotes,
+                cropCycleId: request.CropCycleId,
+                cropCycleStageId: request.CropCycleStageId,
+                plantationId: request.PlantationId,
+                farmAreaId: request.FarmAreaId,
+                laborActivityId: request.LaborActivityId);
 
             store.AddMovement(movement);
-            AddAudit(actor, movement, "Stock.IssueRecorded", new { item.Name, request.Quantity }, ipAddress);
+            AddAudit(actor, movement, "Stock.IssueRecorded", new
+            {
+                item.Name,
+                request.Quantity,
+                request.CropCycleId,
+                request.CropCycleStageId,
+                request.PlantationId,
+                request.FarmAreaId,
+                request.LaborActivityId
+            }, ipAddress);
             await store.SaveChangesAsync(ct);
 
-            return ToMovementResponse(movement, item, location.Farm, location, item.StockUnit);
+            return ToMovementResponse(movement, item, location.Farm, location, item.StockUnit, cycle, stage, plantation, area, activity);
         }, cancellationToken);
     }
 
@@ -469,6 +486,100 @@ public sealed class InventoryStockService(IInventoryStockStore store) : IInvento
         return (item, location);
     }
 
+    private async Task<(CropCycle? Cycle, CropCycleStage? Stage, CropPlantation? Plantation, FarmArea? Area, LaborActivity? Activity)> ValidateOperationalLinksAsync(
+        InventoryActor actor,
+        Guid farmId,
+        Guid? cropCycleId,
+        Guid? cropCycleStageId,
+        Guid? plantationId,
+        Guid? farmAreaId,
+        Guid? laborActivityId,
+        CancellationToken cancellationToken)
+    {
+        CropCycle? cycle = null;
+        CropCycleStage? stage = null;
+        CropPlantation? plantation = null;
+        FarmArea? area = null;
+        LaborActivity? activity = null;
+
+        if (cropCycleId.HasValue)
+        {
+            cycle = await store.FindCropCycleAsync(cropCycleId.Value, actor.OrganizationId, cancellationToken);
+            if (cycle is null)
+            {
+                throw Validation("cropCycleId", "The selected crop cycle was not found in your organization.");
+            }
+            var cycleFarmId = cycle.Plantation?.FarmId;
+            if (!cycleFarmId.HasValue)
+            {
+                var cyclePlantation = await store.FindPlantationAsync(cycle.PlantationId, actor.OrganizationId, cancellationToken);
+                cycleFarmId = cyclePlantation?.FarmId;
+            }
+            if (cycleFarmId != farmId)
+            {
+                throw Validation("cropCycleId", "The selected crop cycle does not belong to the selected farm.");
+            }
+        }
+
+        if (cropCycleStageId.HasValue)
+        {
+            if (!cropCycleId.HasValue)
+            {
+                throw Validation("cropCycleStageId", "Crop cycle stage cannot be selected without selecting a crop cycle.");
+            }
+            stage = await store.FindCropCycleStageAsync(cropCycleStageId.Value, cancellationToken);
+            if (stage is null)
+            {
+                throw Validation("cropCycleStageId", "The selected crop cycle stage was not found.");
+            }
+            if (stage.CropCycleId != cropCycleId.Value)
+            {
+                throw Validation("cropCycleStageId", "The selected crop cycle stage does not belong to the selected crop cycle.");
+            }
+        }
+
+        if (plantationId.HasValue)
+        {
+            plantation = await store.FindPlantationAsync(plantationId.Value, actor.OrganizationId, cancellationToken);
+            if (plantation is null)
+            {
+                throw Validation("plantationId", "The selected plantation was not found in your organization.");
+            }
+            if (plantation.FarmId != farmId)
+            {
+                throw Validation("plantationId", "The selected plantation does not belong to the selected farm.");
+            }
+        }
+
+        if (farmAreaId.HasValue)
+        {
+            area = await store.FindFarmAreaAsync(farmAreaId.Value, actor.OrganizationId, cancellationToken);
+            if (area is null)
+            {
+                throw Validation("farmAreaId", "The selected farm area was not found in your organization.");
+            }
+            if (area.FarmId != farmId)
+            {
+                throw Validation("farmAreaId", "The selected farm area does not belong to the selected farm.");
+            }
+        }
+
+        if (laborActivityId.HasValue)
+        {
+            activity = await store.FindLaborActivityAsync(laborActivityId.Value, actor.OrganizationId, cancellationToken);
+            if (activity is null)
+            {
+                throw Validation("laborActivityId", "The selected labor activity was not found in your organization.");
+            }
+            if (activity.FarmId != farmId)
+            {
+                throw Validation("laborActivityId", "The selected labor activity does not belong to the selected farm.");
+            }
+        }
+
+        return (cycle, stage, plantation, area, activity);
+    }
+
     private void AddAudit(InventoryActor actor, StockMovement movement, string action, object? details, string? ipAddress) =>
         store.AddAuditLog(new AuditLog(
             action,
@@ -500,10 +611,29 @@ public sealed class InventoryStockService(IInventoryStockStore store) : IInvento
             b.UpdatedAt);
 
     private static StockMovementResponse ToMovementResponse(StockMovement m) =>
-        ToMovementResponse(m, m.InventoryItem, m.Farm, m.StorageLocation, m.StockUnit);
+        ToMovementResponse(
+            m,
+            m.InventoryItem,
+            m.Farm,
+            m.StorageLocation,
+            m.StockUnit,
+            m.CropCycle,
+            m.CropCycleStage,
+            m.Plantation,
+            m.FarmArea,
+            m.LaborActivity);
 
     private static StockMovementResponse ToMovementResponse(
-        StockMovement m, InventoryItem? item, Farm? farm, StorageLocation? location, Unit? unit) =>
+        StockMovement m,
+        InventoryItem? item,
+        Farm? farm,
+        StorageLocation? location,
+        Unit? unit,
+        CropCycle? cycle = null,
+        CropCycleStage? stage = null,
+        CropPlantation? plantation = null,
+        FarmArea? area = null,
+        LaborActivity? activity = null) =>
         new(
             m.Id,
             m.OrganizationId,
@@ -525,7 +655,17 @@ public sealed class InventoryStockService(IInventoryStockStore store) : IInvento
             m.Notes,
             m.ParentTransactionId,
             m.CreatedAt,
-            m.CreatedBy);
+            m.CreatedBy,
+            m.CropCycleId,
+            cycle?.CycleName,
+            m.CropCycleStageId,
+            stage?.StageName,
+            m.PlantationId,
+            plantation?.PlantationName,
+            m.FarmAreaId,
+            area?.Name,
+            m.LaborActivityId,
+            activity?.LaborActivityType?.Name);
 
     private static void ValidateActor(InventoryActor actor)
     {

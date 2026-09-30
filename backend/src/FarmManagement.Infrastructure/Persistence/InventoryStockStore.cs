@@ -21,6 +21,25 @@ public sealed class InventoryStockStore(ApplicationDbContext dbContext) : IInven
     public Task<Farm?> FindFarmAsync(Guid farmId, Guid organizationId, CancellationToken cancellationToken = default) =>
         dbContext.Farms.SingleOrDefaultAsync(farm => farm.Id == farmId && farm.OrganizationId == organizationId, cancellationToken);
 
+    public Task<CropCycle?> FindCropCycleAsync(Guid cycleId, Guid organizationId, CancellationToken cancellationToken = default) =>
+        dbContext.CropCycles
+            .Include(c => c.Plantation)
+            .SingleOrDefaultAsync(c => c.Id == cycleId && c.OrganizationId == organizationId, cancellationToken);
+
+    public Task<CropCycleStage?> FindCropCycleStageAsync(Guid stageId, CancellationToken cancellationToken = default) =>
+        dbContext.CropCycleStages.SingleOrDefaultAsync(s => s.Id == stageId, cancellationToken);
+
+    public Task<CropPlantation?> FindPlantationAsync(Guid plantationId, Guid organizationId, CancellationToken cancellationToken = default) =>
+        dbContext.CropPlantations.SingleOrDefaultAsync(p => p.Id == plantationId && p.OrganizationId == organizationId, cancellationToken);
+
+    public Task<FarmArea?> FindFarmAreaAsync(Guid areaId, Guid organizationId, CancellationToken cancellationToken = default) =>
+        dbContext.FarmAreas.SingleOrDefaultAsync(a => a.Id == areaId && a.OrganizationId == organizationId, cancellationToken);
+
+    public Task<LaborActivity?> FindLaborActivityAsync(Guid activityId, Guid organizationId, CancellationToken cancellationToken = default) =>
+        dbContext.LaborActivities
+            .Include(a => a.LaborActivityType)
+            .SingleOrDefaultAsync(a => a.Id == activityId && a.OrganizationId == organizationId, cancellationToken);
+
     // Find a stock balance with explicit multi-tenant organization isolation
     public Task<StockBalance?> FindBalanceAsync(Guid locationId, Guid itemId, Guid organizationId, CancellationToken cancellationToken = default) =>
         dbContext.StockBalances
@@ -90,8 +109,9 @@ public sealed class InventoryStockStore(ApplicationDbContext dbContext) : IInven
         StockMovementType? movementType,
         DateOnly? fromDate,
         DateOnly? toDate,
+        Guid? cropCycleId = null,
         CancellationToken cancellationToken = default) =>
-        await BuildMovementQuery(organizationId, farmId, locationId, itemId, movementType, fromDate, toDate).CountAsync(cancellationToken);
+        await BuildMovementQuery(organizationId, farmId, locationId, itemId, movementType, fromDate, toDate, cropCycleId).CountAsync(cancellationToken);
 
     public async Task<IReadOnlyList<StockMovement>> ListMovementsAsync(
         Guid organizationId,
@@ -103,8 +123,9 @@ public sealed class InventoryStockStore(ApplicationDbContext dbContext) : IInven
         DateOnly? toDate,
         int skip,
         int take,
+        Guid? cropCycleId = null,
         CancellationToken cancellationToken = default) =>
-        await BuildMovementQuery(organizationId, farmId, locationId, itemId, movementType, fromDate, toDate)
+        await BuildMovementQuery(organizationId, farmId, locationId, itemId, movementType, fromDate, toDate, cropCycleId)
             .AsNoTracking()
             .OrderByDescending(m => m.MovementDate)
             .ThenByDescending(m => m.CreatedAt)
@@ -164,13 +185,20 @@ public sealed class InventoryStockStore(ApplicationDbContext dbContext) : IInven
         Guid? itemId,
         StockMovementType? movementType,
         DateOnly? fromDate,
-        DateOnly? toDate)
+        DateOnly? toDate,
+        Guid? cropCycleId = null)
     {
         var query = dbContext.StockMovements
             .Include(m => m.Farm)
             .Include(m => m.StorageLocation)
             .Include(m => m.InventoryItem)
             .Include(m => m.StockUnit)
+            .Include(m => m.CropCycle)
+            .Include(m => m.CropCycleStage)
+            .Include(m => m.Plantation)
+            .Include(m => m.FarmArea)
+            .Include(m => m.LaborActivity)
+                .ThenInclude(a => a!.LaborActivityType)
             .Where(m => m.OrganizationId == organizationId);
 
         if (farmId.HasValue) query = query.Where(m => m.FarmId == farmId.Value);
@@ -179,6 +207,7 @@ public sealed class InventoryStockStore(ApplicationDbContext dbContext) : IInven
         if (movementType.HasValue) query = query.Where(m => m.MovementType == movementType.Value);
         if (fromDate.HasValue) query = query.Where(m => m.MovementDate >= fromDate.Value);
         if (toDate.HasValue) query = query.Where(m => m.MovementDate <= toDate.Value);
+        if (cropCycleId.HasValue) query = query.Where(m => m.CropCycleId == cropCycleId.Value);
 
         return query;
     }

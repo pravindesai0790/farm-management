@@ -7,9 +7,52 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  min-width: 380px;
-  max-width: 460px;
+  min-width: 420px;
+  max-width: 520px;
   padding-top: 8px;
+}
+
+.form-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 8px;
+
+  .half-width {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.operational-link-section {
+  background: #fbfbfb;
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 4px;
+  margin-bottom: 8px;
+
+  .operational-section-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    font-size: 13px;
+    color: #374151;
+    margin-bottom: 4px;
+
+    .section-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: #059669;
+    }
+  }
+
+  .section-hint {
+    font-size: 11px;
+    color: #6b7280;
+    margin: 0 0 10px 0;
+  }
 }
 
 .full-width {

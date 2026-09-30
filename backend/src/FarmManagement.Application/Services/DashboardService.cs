@@ -191,7 +191,7 @@ public sealed class DashboardService(IDashboardStore store) : IDashboardService
                     var sortedStages = c.Stages.OrderBy(s => s.SequenceNumber).ToList();
                     totalStagesCount = sortedStages.Count;
                     completedStagesCount = sortedStages.Count(s => s.Status == CropCycleStageStatus.Completed);
-                    
+
                     var inProgress = sortedStages.FirstOrDefault(s => s.Status == CropCycleStageStatus.InProgress);
                     var current = inProgress ?? sortedStages.FirstOrDefault(s => s.Status == CropCycleStageStatus.NotStarted);
                     currentStageName = current?.StageName;

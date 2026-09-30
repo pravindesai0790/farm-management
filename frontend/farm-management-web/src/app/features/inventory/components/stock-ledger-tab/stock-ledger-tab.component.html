@@ -124,6 +124,34 @@
           </td>
         </ng-container>
 
+        <!-- Operational Link / Crop Cycle -->
+        <ng-container matColumnDef="operationalLink">
+          <th mat-header-cell *matHeaderCellDef>Operational Linkage</th>
+          <td mat-cell *matCellDef="let m">
+            @if (m.cropCycleTitle) {
+              <div class="op-link-badge">
+                <mat-icon class="op-icon">sync</mat-icon>
+                <span class="font-medium">{{ m.cropCycleTitle }}</span>
+              </div>
+              @if (m.cropCycleStageName) {
+                <div class="sub-text op-stage">Stage: {{ m.cropCycleStageName }}</div>
+              }
+            }
+            @if (m.plantationName) {
+              <div class="sub-text">Plantation: {{ m.plantationName }}</div>
+            }
+            @if (m.farmAreaName) {
+              <div class="sub-text">Area: {{ m.farmAreaName }}</div>
+            }
+            @if (m.laborActivityTypeName) {
+              <div class="sub-text">Activity: {{ m.laborActivityTypeName }}</div>
+            }
+            @if (!m.cropCycleTitle && !m.plantationName && !m.farmAreaName && !m.laborActivityTypeName) {
+              <span class="sub-text text-muted">—</span>
+            }
+          </td>
+        </ng-container>
+
         <!-- Reference / Notes -->
         <ng-container matColumnDef="notes">
           <th mat-header-cell *matHeaderCellDef>Reference / Notes</th>

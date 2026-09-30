@@ -32,6 +32,7 @@ public interface IInventoryStockService
         StockMovementType? movementType,
         DateOnly? fromDate,
         DateOnly? toDate,
+        Guid? cropCycleId = null,
         CancellationToken cancellationToken = default);
 
     Task<StockMovementResponse> RecordOpeningStockAsync(

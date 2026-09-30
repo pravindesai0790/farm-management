@@ -116,6 +116,16 @@ export interface StockMovement {
   readonly parentTransactionId?: string | null;
   readonly createdAt: string;
   readonly createdBy: string;
+  readonly cropCycleId?: string | null;
+  readonly cropCycleTitle?: string | null;
+  readonly cropCycleStageId?: string | null;
+  readonly cropCycleStageName?: string | null;
+  readonly plantationId?: string | null;
+  readonly plantationName?: string | null;
+  readonly farmAreaId?: string | null;
+  readonly farmAreaName?: string | null;
+  readonly laborActivityId?: string | null;
+  readonly laborActivityTypeName?: string | null;
 }
 
 export type StockMovementList = PagedResponse<StockMovement>;
@@ -147,6 +157,11 @@ export interface RecordStockIssueRequest {
   readonly movementDate: string;
   readonly referenceNumber?: string | null;
   readonly purposeNotes?: string | null;
+  readonly cropCycleId?: string | null;
+  readonly cropCycleStageId?: string | null;
+  readonly plantationId?: string | null;
+  readonly farmAreaId?: string | null;
+  readonly laborActivityId?: string | null;
 }
 
 export interface RecordStockAdjustmentRequest {

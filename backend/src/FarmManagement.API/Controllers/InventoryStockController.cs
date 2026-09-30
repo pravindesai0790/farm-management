@@ -64,6 +64,7 @@ public sealed class InventoryStockController(IInventoryStockService stockService
         [FromQuery] StockMovementType? movementType = null,
         [FromQuery] DateOnly? fromDate = null,
         [FromQuery] DateOnly? toDate = null,
+        [FromQuery] Guid? cropCycleId = null,
         CancellationToken cancellationToken = default)
     {
         var result = await stockService.GetLedgerAsync(
@@ -76,6 +77,7 @@ public sealed class InventoryStockController(IInventoryStockService stockService
             movementType,
             fromDate,
             toDate,
+            cropCycleId,
             cancellationToken);
 
         return Ok(result);

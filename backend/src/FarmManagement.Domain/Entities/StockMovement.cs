@@ -20,7 +20,12 @@ public sealed class StockMovement
         Guid createdBy,
         string? referenceNumber = null,
         string? notes = null,
-        Guid? parentTransactionId = null)
+        Guid? parentTransactionId = null,
+        Guid? cropCycleId = null,
+        Guid? cropCycleStageId = null,
+        Guid? plantationId = null,
+        Guid? farmAreaId = null,
+        Guid? laborActivityId = null)
     {
         if (organizationId == Guid.Empty)
         {
@@ -74,6 +79,11 @@ public sealed class StockMovement
         ReferenceNumber = NormalizeOptional(referenceNumber);
         Notes = NormalizeOptional(notes);
         ParentTransactionId = parentTransactionId;
+        CropCycleId = cropCycleId;
+        CropCycleStageId = cropCycleStageId;
+        PlantationId = plantationId;
+        FarmAreaId = farmAreaId;
+        LaborActivityId = laborActivityId;
         CreatedAt = DateTimeOffset.UtcNow;
         CreatedBy = createdBy;
     }
@@ -90,6 +100,11 @@ public sealed class StockMovement
     public string? ReferenceNumber { get; private set; }
     public string? Notes { get; private set; }
     public Guid? ParentTransactionId { get; private set; }
+    public Guid? CropCycleId { get; private set; }
+    public Guid? CropCycleStageId { get; private set; }
+    public Guid? PlantationId { get; private set; }
+    public Guid? FarmAreaId { get; private set; }
+    public Guid? LaborActivityId { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public Guid CreatedBy { get; private set; }
 
@@ -98,6 +113,11 @@ public sealed class StockMovement
     public StorageLocation? StorageLocation { get; private set; }
     public InventoryItem? InventoryItem { get; private set; }
     public Unit? StockUnit { get; private set; }
+    public CropCycle? CropCycle { get; private set; }
+    public CropCycleStage? CropCycleStage { get; private set; }
+    public CropPlantation? Plantation { get; private set; }
+    public FarmArea? FarmArea { get; private set; }
+    public LaborActivity? LaborActivity { get; private set; }
 
     private static string? NormalizeOptional(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();

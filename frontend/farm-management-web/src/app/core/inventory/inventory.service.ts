@@ -147,6 +147,7 @@ export class InventoryService {
     movementType?: string | null,
     fromDate?: string | null,
     toDate?: string | null,
+    cropCycleId?: string | null,
   ): Observable<StockMovementList> {
     let params = new HttpParams()
       .set("page", page.toString())
@@ -158,6 +159,7 @@ export class InventoryService {
     if (movementType) params = params.set("movementType", movementType);
     if (fromDate) params = params.set("fromDate", fromDate);
     if (toDate) params = params.set("toDate", toDate);
+    if (cropCycleId) params = params.set("cropCycleId", cropCycleId);
 
     return this.http.get<StockMovementList>(`${this.api}/stock/ledger`, { params });
   }
