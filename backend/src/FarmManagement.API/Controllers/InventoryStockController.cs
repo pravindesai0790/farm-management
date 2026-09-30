@@ -34,6 +34,25 @@ public sealed class InventoryStockController(IInventoryStockService stockService
         return Ok(result);
     }
 
+    /// <summary>
+    /// Gets the current on-hand stock balance for a specific storage location and inventory item.
+    /// </summary>
+    [HttpGet("balance")]
+    [Authorize(Policy = "Permission:InventoryStock.View")]
+    public async Task<IActionResult> GetBalance(
+        [FromQuery] Guid storageLocationId,
+        [FromQuery] Guid inventoryItemId,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await stockService.GetBalanceAsync(
+            GetUserContext(),
+            storageLocationId,
+            inventoryItemId,
+            cancellationToken);
+
+        return result is null ? NotFound() : Ok(result);
+    }
+
     [HttpGet("ledger")]
     [Authorize(Policy = "Permission:InventoryStock.View")]
     public async Task<IActionResult> GetLedger(

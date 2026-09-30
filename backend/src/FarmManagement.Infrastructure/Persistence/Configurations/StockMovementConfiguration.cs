@@ -114,5 +114,11 @@ public sealed class StockMovementConfiguration : IEntityTypeConfiguration<StockM
         builder.HasIndex(movement => movement.ParentTransactionId)
             .HasDatabaseName("ix_stock_movements_parent_transaction")
             .HasFilter("parent_transaction_id IS NOT NULL");
+
+        // Enforce database-level uniqueness for opening stock per storage location and inventory item
+        builder.HasIndex(movement => new { movement.StorageLocationId, movement.InventoryItemId })
+            .HasDatabaseName("ux_stock_movements_opening_stock_location_item")
+            .HasFilter("movement_type = 'OPENINGSTOCK'")
+            .IsUnique();
     }
 }

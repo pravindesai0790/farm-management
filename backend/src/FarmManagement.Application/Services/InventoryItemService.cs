@@ -108,6 +108,16 @@ public sealed class InventoryItemService(IInventoryItemStore store) : IInventory
             throw Validation("stockUnitId", "The selected stock unit was not found or is inactive.");
         }
 
+        // Enforce stock unit immutability once stock movements have been recorded to preserve transaction and balance integrity
+        if (request.StockUnitId != item.StockUnitId)
+        {
+            var hasMovements = await store.HasMovementsAsync(item.Id, actor.OrganizationId, cancellationToken);
+            if (hasMovements)
+            {
+                throw Validation("stockUnitId", "The stock unit of measurement cannot be changed once stock movements have been recorded for this item.");
+            }
+        }
+
         if (!string.IsNullOrWhiteSpace(request.Sku))
         {
             var existingWithSku = await store.FindBySkuAsync(request.Sku, actor.OrganizationId, cancellationToken);
@@ -148,6 +158,18 @@ public sealed class InventoryItemService(IInventoryItemStore store) : IInventory
     {
         ValidateActor(actor);
         var item = await FindItemOrThrowAsync(actor, id, cancellationToken);
+
+        // Prevent deactivating an inventory item if any storage location in the organization holds positive stock on hand
+        if (!active)
+        {
+            var totalOnHand = await store.GetTotalQuantityOnHandAsync(item.Id, actor.OrganizationId, cancellationToken);
+            if (totalOnHand > 0m)
+            {
+                var unitSymbol = item.StockUnit?.Symbol ?? string.Empty;
+                throw Validation("isActive", $"Cannot deactivate inventory item '{item.Name}' because it currently has {totalOnHand:G29} {unitSymbol} on hand across storage locations. Stock must be issued, transferred, or adjusted to zero before deactivation.".Trim());
+            }
+        }
+
         var now = DateTimeOffset.UtcNow;
         var changed = active ? item.Activate(now, actor.UserId) : item.Deactivate(now, actor.UserId);
 

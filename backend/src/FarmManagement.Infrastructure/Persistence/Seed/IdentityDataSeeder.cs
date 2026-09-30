@@ -267,6 +267,85 @@ public sealed class IdentityDataSeeder(
             "InventoryTransaction.Create"
         };
 
+    /// <summary>
+    /// Default role permissions seeded for the FarmManager role.
+    /// Grants operational management for farm areas, crop cycles, labor activities, and inventory operations.
+    /// </summary>
+    private static readonly IReadOnlySet<string> FarmManagerPermissions =
+        new HashSet<string>(StringComparer.Ordinal)
+        {
+            "Farm.View",
+            "FarmArea.View",
+            "Crop.View",
+            "CropVariety.View",
+            "CropLifecycleTemplate.View",
+            "Plantation.View",
+            "Plantation.Create",
+            "Plantation.Update",
+            "Plantation.Activate",
+            "Plantation.Terminate",
+            "CropCycle.View",
+            "CropCycle.Create",
+            "CropCycle.Update",
+            "CropCycle.Start",
+            "CropCycle.Complete",
+            "CropCycleLifecycle.View",
+            "CropCycleLifecycle.Start",
+            "CropCycleLifecycle.UpdateStage",
+            "CropCycleLifecycle.SkipStage",
+            "Unit.View",
+            "PlantationEndReason.View",
+            "LaborActivity.View",
+            "LaborActivity.Create",
+            "LaborActivity.Update",
+            "LaborActivity.Cancel",
+            "LaborActivityType.View",
+            "Worker.View",
+            "Contractor.View",
+            "LaborCategory.View",
+            "WorkerWage.View",
+            "Attendance.View",
+            "Attendance.Create",
+            "Attendance.Update",
+            "Attendance.Finalize",
+            "InventoryItem.View",
+            "StorageLocation.View",
+            "StorageLocation.Create",
+            "StorageLocation.Update",
+            "InventoryStock.View",
+            "InventoryTransaction.Create"
+        };
+
+    /// <summary>
+    /// Default role permissions seeded for the Supervisor role.
+    /// Grants field-level execution access for labor activities, attendance logging, inventory viewing, and posting stock transactions.
+    /// </summary>
+    private static readonly IReadOnlySet<string> SupervisorPermissions =
+        new HashSet<string>(StringComparer.Ordinal)
+        {
+            "Farm.View",
+            "FarmArea.View",
+            "Crop.View",
+            "CropVariety.View",
+            "Plantation.View",
+            "CropCycle.View",
+            "CropCycleLifecycle.View",
+            "CropCycleLifecycle.UpdateStage",
+            "Unit.View",
+            "LaborActivity.View",
+            "LaborActivity.Create",
+            "LaborActivity.Update",
+            "LaborActivityType.View",
+            "Worker.View",
+            "Attendance.View",
+            "Attendance.Create",
+            "Attendance.Update",
+            "InventoryItem.View",
+            "StorageLocation.View",
+            "InventoryStock.View",
+            "InventoryTransaction.Create"
+        };
+
     private static readonly IReadOnlyList<SeedFarmOwnershipType> SeedFarmOwnershipTypes =
     [
         new("OWNED", "Owned"),
@@ -798,6 +877,30 @@ public sealed class IdentityDataSeeder(
                 roles["OrganizationAdmin"],
                 permissions[permissionName],
                 existingAssignmentKeys);
+        }
+
+        // Seed default permissions for FarmManager role
+        if (roles.TryGetValue("FarmManager", out var farmManagerRole))
+        {
+            foreach (var permissionName in FarmManagerPermissions)
+            {
+                if (permissions.TryGetValue(permissionName, out var perm))
+                {
+                    AddRolePermissionIfMissing(farmManagerRole, perm, existingAssignmentKeys);
+                }
+            }
+        }
+
+        // Seed default permissions for Supervisor role
+        if (roles.TryGetValue("Supervisor", out var supervisorRole))
+        {
+            foreach (var permissionName in SupervisorPermissions)
+            {
+                if (permissions.TryGetValue(permissionName, out var perm))
+                {
+                    AddRolePermissionIfMissing(supervisorRole, perm, existingAssignmentKeys);
+                }
+            }
         }
     }
 

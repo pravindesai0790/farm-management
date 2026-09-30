@@ -47,6 +47,29 @@ public sealed class InventoryItemStore(ApplicationDbContext dbContext) : IInvent
             .Take(take)
             .ToListAsync(cancellationToken);
 
+    /// <summary>
+    /// Sums positive stock quantities on hand for an inventory item across all storage locations in the organization.
+    /// Used by InventoryItemService to prevent deactivating items with active physical stock.
+    /// </summary>
+    public async Task<decimal> GetTotalQuantityOnHandAsync(
+        Guid itemId,
+        Guid organizationId,
+        CancellationToken cancellationToken = default) =>
+        await dbContext.StockBalances
+            .Where(b => b.InventoryItemId == itemId && b.OrganizationId == organizationId)
+            .SumAsync(b => (decimal?)b.QuantityOnHand, cancellationToken) ?? 0m;
+
+    /// <summary>
+    /// Checks if any ledger movements have been recorded for the item.
+    /// Used to enforce stock unit immutability once stock transactions exist.
+    /// </summary>
+    public async Task<bool> HasMovementsAsync(
+        Guid itemId,
+        Guid organizationId,
+        CancellationToken cancellationToken = default) =>
+        await dbContext.StockMovements
+            .AnyAsync(m => m.InventoryItemId == itemId && m.OrganizationId == organizationId, cancellationToken);
+
     public void Add(InventoryItem item) => dbContext.InventoryItems.Add(item);
 
     public void AddAuditLog(AuditLog auditLog) => dbContext.AuditLogs.Add(auditLog);

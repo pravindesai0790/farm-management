@@ -139,6 +139,17 @@ public sealed class StorageLocationService(IStorageLocationStore store) : IStora
     {
         ValidateActor(actor);
         var location = await FindLocationOrThrowAsync(actor, id, cancellationToken);
+
+        // Prevent deactivating a storage location if it currently contains positive on-hand stock for any inventory item
+        if (!active)
+        {
+            var itemsWithStockCount = await store.CountItemsWithStockAsync(location.Id, actor.OrganizationId, cancellationToken);
+            if (itemsWithStockCount > 0)
+            {
+                throw Validation("isActive", $"Cannot deactivate storage location '{location.Name}' because it currently holds active stock for {itemsWithStockCount} item(s). All stock must be transferred or adjusted to zero before deactivation.");
+            }
+        }
+
         var now = DateTimeOffset.UtcNow;
         var changed = active ? location.Activate(now, actor.UserId) : location.Deactivate(now, actor.UserId);
 

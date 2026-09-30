@@ -15,6 +15,13 @@ public interface IInventoryStockService
         Guid? inventoryItemId,
         CancellationToken cancellationToken = default);
 
+    // Get single stock balance for a specific storage location and inventory item
+    Task<StockBalanceResponse?> GetBalanceAsync(
+        InventoryActor actor,
+        Guid storageLocationId,
+        Guid inventoryItemId,
+        CancellationToken cancellationToken = default);
+
     Task<PagedResponse<StockMovementResponse>> GetLedgerAsync(
         InventoryActor actor,
         int page,

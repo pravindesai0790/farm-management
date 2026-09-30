@@ -34,6 +34,24 @@ public sealed class InventoryStockService(IInventoryStockStore store) : IInvento
         return new PagedResponse<StockBalanceResponse>(balances.Select(ToBalanceResponse).ToArray(), page, pageSize, totalCount);
     }
 
+    /// <summary>
+    /// Fetches the current on-hand stock balance for a specific storage location and inventory item.
+    /// Enables real-time stock availability preview in UI transaction dialogs.
+    /// </summary>
+    public async Task<StockBalanceResponse?> GetBalanceAsync(
+        InventoryActor actor,
+        Guid storageLocationId,
+        Guid inventoryItemId,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        if (storageLocationId == Guid.Empty) throw Validation("storageLocationId", "Storage location is required.");
+        if (inventoryItemId == Guid.Empty) throw Validation("inventoryItemId", "Inventory item is required.");
+
+        var balance = await store.FindBalanceAsync(storageLocationId, inventoryItemId, actor.OrganizationId, cancellationToken);
+        return balance is null ? null : ToBalanceResponse(balance);
+    }
+
     public async Task<PagedResponse<StockMovementResponse>> GetLedgerAsync(
         InventoryActor actor,
         int page,
@@ -58,6 +76,11 @@ public sealed class InventoryStockService(IInventoryStockStore store) : IInvento
         return new PagedResponse<StockMovementResponse>(movements.Select(ToMovementResponse).ToArray(), page, pageSize, totalCount);
     }
 
+    /// <summary>
+    /// Records opening stock for an inventory item at a storage location.
+    /// Performs atomic inside-transaction uniqueness verification and transaction-level advisory locking
+    /// to prevent duplicate opening stock entries under concurrent requests.
+    /// </summary>
     public async Task<StockMovementResponse> RecordOpeningStockAsync(
         InventoryActor actor,
         RecordOpeningStockRequest request,
@@ -67,17 +90,23 @@ public sealed class InventoryStockService(IInventoryStockStore store) : IInvento
         ValidateActor(actor);
         if (request is null) throw Validation("request", "Request body is required.");
         ValidateQuantity(request.Quantity);
+        ValidateMovementDate(request.MovementDate);
 
         var (item, location) = await ValidateItemAndLocationAsync(actor, request.InventoryItemId, request.StorageLocationId, request.FarmId, cancellationToken);
 
-        var hasOpening = await store.HasOpeningStockAsync(request.StorageLocationId, request.InventoryItemId, cancellationToken);
-        if (hasOpening)
-        {
-            throw new ConflictException("Opening stock has already been recorded for this item at the selected storage location.");
-        }
-
         return await store.ExecuteInTransactionAsync(async ct =>
         {
+            // Acquire PostgreSQL transaction-level advisory lock on (storageLocationId, inventoryItemId)
+            // to serialize concurrent requests before locking or checking opening stock existence.
+            await store.AcquireAdvisoryLockAsync(request.StorageLocationId, request.InventoryItemId, ct);
+
+            // Atomic inside-transaction check for pre-existing opening stock record
+            var hasOpening = await store.HasOpeningStockAsync(request.StorageLocationId, request.InventoryItemId, ct);
+            if (hasOpening)
+            {
+                throw new ConflictException("Opening stock has already been recorded for this item at the selected storage location.");
+            }
+
             var now = DateTimeOffset.UtcNow;
             var balance = await store.LockBalanceAsync(request.StorageLocationId, request.InventoryItemId, actor.OrganizationId, ct);
             if (balance is null)
@@ -106,10 +135,14 @@ public sealed class InventoryStockService(IInventoryStockStore store) : IInvento
             AddAudit(actor, movement, "Stock.OpeningStockRecorded", new { item.Name, request.Quantity }, ipAddress);
             await store.SaveChangesAsync(ct);
 
-            return ToMovementResponse(movement, item, location.Farm!, location, item.StockUnit!);
+            return ToMovementResponse(movement, item, location.Farm, location, item.StockUnit);
         }, cancellationToken);
     }
 
+    /// <summary>
+    /// Records stock receipts into a storage location.
+    /// Uses transaction-level advisory locking to prevent phantom lock collisions when creating initial balance rows.
+    /// </summary>
     public async Task<StockMovementResponse> RecordStockReceiptAsync(
         InventoryActor actor,
         RecordStockReceiptRequest request,
@@ -119,11 +152,15 @@ public sealed class InventoryStockService(IInventoryStockStore store) : IInvento
         ValidateActor(actor);
         if (request is null) throw Validation("request", "Request body is required.");
         ValidateQuantity(request.Quantity);
+        ValidateMovementDate(request.MovementDate);
 
         var (item, location) = await ValidateItemAndLocationAsync(actor, request.InventoryItemId, request.StorageLocationId, request.FarmId, cancellationToken);
 
         return await store.ExecuteInTransactionAsync(async ct =>
         {
+            // Acquire advisory lock to serialize initial row insertions and updates safely
+            await store.AcquireAdvisoryLockAsync(request.StorageLocationId, request.InventoryItemId, ct);
+
             var now = DateTimeOffset.UtcNow;
             var balance = await store.LockBalanceAsync(request.StorageLocationId, request.InventoryItemId, actor.OrganizationId, ct);
             if (balance is null)
@@ -153,10 +190,14 @@ public sealed class InventoryStockService(IInventoryStockStore store) : IInvento
             AddAudit(actor, movement, "Stock.ReceiptRecorded", new { item.Name, request.Quantity }, ipAddress);
             await store.SaveChangesAsync(ct);
 
-            return ToMovementResponse(movement, item, location.Farm!, location, item.StockUnit!);
+            return ToMovementResponse(movement, item, location.Farm, location, item.StockUnit);
         }, cancellationToken);
     }
 
+    /// <summary>
+    /// Records stock issues from a storage location, deducting from available balance.
+    /// Enforces non-negative stock invariants.
+    /// </summary>
     public async Task<StockMovementResponse> RecordStockIssueAsync(
         InventoryActor actor,
         RecordStockIssueRequest request,
@@ -166,11 +207,15 @@ public sealed class InventoryStockService(IInventoryStockStore store) : IInvento
         ValidateActor(actor);
         if (request is null) throw Validation("request", "Request body is required.");
         ValidateQuantity(request.Quantity);
+        ValidateMovementDate(request.MovementDate);
 
         var (item, location) = await ValidateItemAndLocationAsync(actor, request.InventoryItemId, request.StorageLocationId, request.FarmId, cancellationToken);
 
         return await store.ExecuteInTransactionAsync(async ct =>
         {
+            // Acquire advisory lock on target location and item
+            await store.AcquireAdvisoryLockAsync(request.StorageLocationId, request.InventoryItemId, ct);
+
             var now = DateTimeOffset.UtcNow;
             var balance = await store.LockBalanceAsync(request.StorageLocationId, request.InventoryItemId, actor.OrganizationId, ct);
             if (balance is null || balance.QuantityOnHand < request.Quantity)
@@ -198,10 +243,13 @@ public sealed class InventoryStockService(IInventoryStockStore store) : IInvento
             AddAudit(actor, movement, "Stock.IssueRecorded", new { item.Name, request.Quantity }, ipAddress);
             await store.SaveChangesAsync(ct);
 
-            return ToMovementResponse(movement, item, location.Farm!, location, item.StockUnit!);
+            return ToMovementResponse(movement, item, location.Farm, location, item.StockUnit);
         }, cancellationToken);
     }
 
+    /// <summary>
+    /// Records manual stock adjustments (AdjustmentIn or AdjustmentOut) with mandatory audit reasoning.
+    /// </summary>
     public async Task<StockMovementResponse> RecordStockAdjustmentAsync(
         InventoryActor actor,
         RecordStockAdjustmentRequest request,
@@ -211,6 +259,7 @@ public sealed class InventoryStockService(IInventoryStockStore store) : IInvento
         ValidateActor(actor);
         if (request is null) throw Validation("request", "Request body is required.");
         ValidateQuantity(request.Quantity);
+        ValidateMovementDate(request.MovementDate);
 
         if (request.AdjustmentType != StockMovementType.AdjustmentIn && request.AdjustmentType != StockMovementType.AdjustmentOut)
         {
@@ -226,6 +275,9 @@ public sealed class InventoryStockService(IInventoryStockStore store) : IInvento
 
         return await store.ExecuteInTransactionAsync(async ct =>
         {
+            // Acquire advisory lock on target location and item
+            await store.AcquireAdvisoryLockAsync(request.StorageLocationId, request.InventoryItemId, ct);
+
             var now = DateTimeOffset.UtcNow;
             var balance = await store.LockBalanceAsync(request.StorageLocationId, request.InventoryItemId, actor.OrganizationId, ct);
 
@@ -268,10 +320,15 @@ public sealed class InventoryStockService(IInventoryStockStore store) : IInvento
             AddAudit(actor, movement, "Stock.AdjustmentRecorded", new { item.Name, Type = request.AdjustmentType.ToString(), request.Quantity }, ipAddress);
             await store.SaveChangesAsync(ct);
 
-            return ToMovementResponse(movement, item, location.Farm!, location, item.StockUnit!);
+            return ToMovementResponse(movement, item, location.Farm, location, item.StockUnit);
         }, cancellationToken);
     }
 
+    /// <summary>
+    /// Records stock transfers between storage locations.
+    /// Orders lock acquisitions deterministically to eliminate PostgreSQL 40P01 deadlocks when concurrent
+    /// opposite-direction transfers occur between the same storage locations.
+    /// </summary>
     public async Task<IReadOnlyList<StockMovementResponse>> RecordStockTransferAsync(
         InventoryActor actor,
         RecordStockTransferRequest request,
@@ -281,6 +338,7 @@ public sealed class InventoryStockService(IInventoryStockStore store) : IInvento
         ValidateActor(actor);
         if (request is null) throw Validation("request", "Request body is required.");
         ValidateQuantity(request.Quantity);
+        ValidateMovementDate(request.MovementDate);
 
         if (request.SourceStorageLocationId == request.DestinationStorageLocationId)
         {
@@ -306,7 +364,29 @@ public sealed class InventoryStockService(IInventoryStockStore store) : IInvento
             var now = DateTimeOffset.UtcNow;
             var parentTransactionId = Guid.NewGuid();
 
-            var sourceBalance = await store.LockBalanceAsync(request.SourceStorageLocationId, request.InventoryItemId, actor.OrganizationId, ct);
+            // Determine deterministic lock order based on storage location GUIDs
+            // Prevents deadlock when two concurrent transfers move stock in opposite directions (Loc A -> Loc B vs Loc B -> Loc A)
+            var firstLocId = request.SourceStorageLocationId.CompareTo(request.DestinationStorageLocationId) < 0
+                ? request.SourceStorageLocationId
+                : request.DestinationStorageLocationId;
+
+            var secondLocId = firstLocId == request.SourceStorageLocationId
+                ? request.DestinationStorageLocationId
+                : request.SourceStorageLocationId;
+
+            // Step 1: Acquire advisory locks in strict deterministic order
+            await store.AcquireAdvisoryLockAsync(firstLocId, request.InventoryItemId, ct);
+            await store.AcquireAdvisoryLockAsync(secondLocId, request.InventoryItemId, ct);
+
+            // Step 2: Lock balance rows in strict deterministic order
+            var firstBalance = await store.LockBalanceAsync(firstLocId, request.InventoryItemId, actor.OrganizationId, ct);
+            var secondBalance = await store.LockBalanceAsync(secondLocId, request.InventoryItemId, actor.OrganizationId, ct);
+
+            // Map locks back to source and destination balances
+            var sourceBalance = request.SourceStorageLocationId == firstLocId ? firstBalance : secondBalance;
+            var destBalance = request.DestinationStorageLocationId == firstLocId ? firstBalance : secondBalance;
+
+            // Validate and deduct from source location
             if (sourceBalance is null || sourceBalance.QuantityOnHand < request.Quantity)
             {
                 var available = sourceBalance?.QuantityOnHand ?? 0m;
@@ -315,7 +395,7 @@ public sealed class InventoryStockService(IInventoryStockStore store) : IInvento
 
             sourceBalance.DeductStock(request.Quantity, now, actor.UserId);
 
-            var destBalance = await store.LockBalanceAsync(request.DestinationStorageLocationId, request.InventoryItemId, actor.OrganizationId, ct);
+            // Add stock to destination location balance
             if (destBalance is null)
             {
                 destBalance = new StockBalance(actor.OrganizationId, request.DestinationFarmId, request.DestinationStorageLocationId, request.InventoryItemId, request.Quantity);
@@ -361,8 +441,8 @@ public sealed class InventoryStockService(IInventoryStockStore store) : IInvento
 
             return new[]
             {
-                ToMovementResponse(transferOut, item, sourceLoc.Farm!, sourceLoc, item.StockUnit!),
-                ToMovementResponse(transferIn, item, destFarm, destLoc, item.StockUnit!)
+                ToMovementResponse(transferOut, item, sourceLoc.Farm, sourceLoc, item.StockUnit),
+                ToMovementResponse(transferIn, item, destFarm, destLoc, item.StockUnit)
             };
         }, cancellationToken);
     }
@@ -420,26 +500,26 @@ public sealed class InventoryStockService(IInventoryStockStore store) : IInvento
             b.UpdatedAt);
 
     private static StockMovementResponse ToMovementResponse(StockMovement m) =>
-        ToMovementResponse(m, m.InventoryItem!, m.Farm!, m.StorageLocation!, m.StockUnit!);
+        ToMovementResponse(m, m.InventoryItem, m.Farm, m.StorageLocation, m.StockUnit);
 
     private static StockMovementResponse ToMovementResponse(
-        StockMovement m, InventoryItem item, Farm farm, StorageLocation location, Unit unit) =>
+        StockMovement m, InventoryItem? item, Farm? farm, StorageLocation? location, Unit? unit) =>
         new(
             m.Id,
             m.OrganizationId,
             m.MovementType,
             m.MovementType.ToString(),
             m.InventoryItemId,
-            item.Name,
-            item.Sku,
+            item?.Name ?? string.Empty,
+            item?.Sku,
             m.FarmId,
-            farm.Name,
+            farm?.Name ?? string.Empty,
             m.StorageLocationId,
-            location.Name,
+            location?.Name ?? string.Empty,
             m.Quantity,
             m.StockUnitId,
-            unit.Code,
-            unit.Symbol,
+            unit?.Code ?? string.Empty,
+            unit?.Symbol ?? string.Empty,
             m.MovementDate,
             m.ReferenceNumber,
             m.Notes,
@@ -460,6 +540,18 @@ public sealed class InventoryStockService(IInventoryStockStore store) : IInvento
         if (quantity <= 0m)
         {
             throw Validation("quantity", "Quantity must be greater than zero.");
+        }
+    }
+
+    /// <summary>
+    /// Validates that movement date is not in the future.
+    /// </summary>
+    private static void ValidateMovementDate(DateOnly movementDate)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        if (movementDate > today)
+        {
+            throw Validation("movementDate", "Transaction date cannot be in the future.");
         }
     }
 

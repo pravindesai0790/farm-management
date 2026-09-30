@@ -54,6 +54,18 @@ public sealed class StorageLocationStore(ApplicationDbContext dbContext) : IStor
         return await query.AnyAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// Counts distinct inventory items holding positive on-hand stock (> 0) in the specified storage location.
+    /// Used by StorageLocationService to prevent deactivating storage locations that contain active inventory.
+    /// </summary>
+    public async Task<int> CountItemsWithStockAsync(
+        Guid locationId,
+        Guid organizationId,
+        CancellationToken cancellationToken = default) =>
+        await dbContext.StockBalances
+            .Where(b => b.StorageLocationId == locationId && b.OrganizationId == organizationId && b.QuantityOnHand > 0m)
+            .CountAsync(cancellationToken);
+
     public void Add(StorageLocation location) => dbContext.StorageLocations.Add(location);
 
     public void AddAuditLog(AuditLog auditLog) => dbContext.AuditLogs.Add(auditLog);

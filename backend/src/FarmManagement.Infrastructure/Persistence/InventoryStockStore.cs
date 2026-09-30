@@ -21,14 +21,16 @@ public sealed class InventoryStockStore(ApplicationDbContext dbContext) : IInven
     public Task<Farm?> FindFarmAsync(Guid farmId, Guid organizationId, CancellationToken cancellationToken = default) =>
         dbContext.Farms.SingleOrDefaultAsync(farm => farm.Id == farmId && farm.OrganizationId == organizationId, cancellationToken);
 
-    public Task<StockBalance?> FindBalanceAsync(Guid locationId, Guid itemId, CancellationToken cancellationToken = default) =>
+    // Find a stock balance with explicit multi-tenant organization isolation
+    public Task<StockBalance?> FindBalanceAsync(Guid locationId, Guid itemId, Guid organizationId, CancellationToken cancellationToken = default) =>
         dbContext.StockBalances
             .Include(b => b.Farm)
             .Include(b => b.StorageLocation)
             .Include(b => b.InventoryItem)
                 .ThenInclude(i => i!.StockUnit)
-            .SingleOrDefaultAsync(b => b.StorageLocationId == locationId && b.InventoryItemId == itemId, cancellationToken);
+            .SingleOrDefaultAsync(b => b.StorageLocationId == locationId && b.InventoryItemId == itemId && b.OrganizationId == organizationId, cancellationToken);
 
+    // Lock an existing stock balance row for update
     public Task<StockBalance?> LockBalanceAsync(Guid locationId, Guid itemId, Guid organizationId, CancellationToken cancellationToken = default) =>
         dbContext.StockBalances
             .FromSqlInterpolated($"SELECT * FROM stock_balances WHERE storage_location_id = {locationId} AND inventory_item_id = {itemId} AND organization_id = {organizationId} FOR UPDATE")
@@ -37,6 +39,20 @@ public sealed class InventoryStockStore(ApplicationDbContext dbContext) : IInven
             .Include(b => b.InventoryItem)
                 .ThenInclude(i => i!.StockUnit)
             .SingleOrDefaultAsync(cancellationToken);
+
+    // Acquire PostgreSQL transaction-level advisory lock on (storageLocationId, inventoryItemId)
+    // Serializes concurrent requests for non-existent balance rows to prevent phantom lock collisions
+    public async Task AcquireAdvisoryLockAsync(Guid locationId, Guid itemId, CancellationToken cancellationToken = default)
+    {
+        if (dbContext.Database.ProviderName?.Contains("Npgsql", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            var locStr = locationId.ToString();
+            var itemStr = itemId.ToString();
+            await dbContext.Database.ExecuteSqlInterpolatedAsync(
+                $"SELECT pg_advisory_xact_lock(hashtext({locStr}), hashtext({itemStr}))",
+                cancellationToken);
+        }
+    }
 
     public Task<bool> HasOpeningStockAsync(Guid locationId, Guid itemId, CancellationToken cancellationToken = default) =>
         dbContext.StockMovements

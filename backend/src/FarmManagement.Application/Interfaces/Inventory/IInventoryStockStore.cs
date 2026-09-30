@@ -9,8 +9,15 @@ public interface IInventoryStockStore
     Task<StorageLocation?> FindLocationAsync(Guid locationId, Guid organizationId, CancellationToken cancellationToken = default);
     Task<Farm?> FindFarmAsync(Guid farmId, Guid organizationId, CancellationToken cancellationToken = default);
 
-    Task<StockBalance?> FindBalanceAsync(Guid locationId, Guid itemId, CancellationToken cancellationToken = default);
+    // Find a stock balance with multi-tenant organization isolation
+    Task<StockBalance?> FindBalanceAsync(Guid locationId, Guid itemId, Guid organizationId, CancellationToken cancellationToken = default);
+
+    // Row-level lock on existing stock balance
     Task<StockBalance?> LockBalanceAsync(Guid locationId, Guid itemId, Guid organizationId, CancellationToken cancellationToken = default);
+
+    // Acquire PostgreSQL transaction-level advisory lock on (storageLocationId, inventoryItemId)
+    // Prevents phantom lock race conditions when creating initial stock balance rows
+    Task AcquireAdvisoryLockAsync(Guid locationId, Guid itemId, CancellationToken cancellationToken = default);
 
     Task<bool> HasOpeningStockAsync(Guid locationId, Guid itemId, CancellationToken cancellationToken = default);
 
