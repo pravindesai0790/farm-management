@@ -12,6 +12,7 @@ import {
   RecordStockIssueRequest,
   RecordStockReceiptRequest,
   RecordStockTransferRequest,
+  StockBalance,
   StockBalanceList,
   StockMovement,
   StockMovementList,
@@ -107,6 +108,18 @@ export class InventoryService {
   }
 
   // Stock Overview & Ledger
+
+  /**
+   * Fetches real-time on-hand stock balance for a specific storage location and inventory item.
+   * Used for real-time stock balance validation during transaction entry.
+   */
+  getBalance(storageLocationId: string, inventoryItemId: string): Observable<StockBalance | null> {
+    const params = new HttpParams()
+      .set("storageLocationId", storageLocationId)
+      .set("inventoryItemId", inventoryItemId);
+    return this.http.get<StockBalance | null>(`${this.api}/stock/balance`, { params });
+  }
+
   getOverview(
     page: number = 1,
     pageSize: number = 20,

@@ -1,4 +1,7 @@
 <div class="page-container">
+  <!-- Shared module sub-navigation bar -->
+  <app-inventory-sub-nav />
+
   <div class="section-heading">
     <div>
       <p class="eyebrow">Inventory Management &bull; Catalog</p>
@@ -94,6 +97,11 @@
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef>Actions</th>
           <td mat-cell *matCellDef="let item">
+            <!-- Shortcut to view stock balances for this item -->
+            <button mat-icon-button color="accent" (click)="viewBalances(item)" title="View Stock Balances">
+              <mat-icon>inventory_2</mat-icon>
+            </button>
+
             @if (permissionService.has('InventoryItem.Update')) {
               <button mat-icon-button color="primary" (click)="openItemEditor(item)" title="Edit item">
                 <mat-icon>edit</mat-icon>

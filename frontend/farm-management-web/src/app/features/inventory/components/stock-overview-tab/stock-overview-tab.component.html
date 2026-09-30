@@ -1,4 +1,6 @@
 <div class="page-container">
+  <app-inventory-sub-nav />
+
   <div class="section-heading">
     <div>
       <p class="eyebrow">Inventory Management &bull; Stock</p>
@@ -118,6 +120,9 @@
                 <mat-icon>swap_horiz</mat-icon>
               </button>
             }
+            <button mat-icon-button (click)="viewLedger(b)" title="View movement ledger history for this item & location">
+              <mat-icon>receipt_long</mat-icon>
+            </button>
           </td>
         </ng-container>
 

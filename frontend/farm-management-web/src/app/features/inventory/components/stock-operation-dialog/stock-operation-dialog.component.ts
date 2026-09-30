@@ -1,5 +1,5 @@
 import { CommonModule } from "@angular/common";
-import { Component, DestroyRef, OnInit, inject, signal } from "@angular/core";
+import { Component, DestroyRef, OnInit, computed, inject, signal } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
@@ -14,7 +14,7 @@ import { MatSnackBar } from "@angular/material/snack-bar";
 
 import { FarmManagementService } from "../../../../core/farm-management/farm-management.service";
 import { Farm } from "../../../../core/farm-management/farm-management.models";
-import { InventoryItem, StorageLocation } from "../../../../core/inventory/inventory.models";
+import { InventoryItem, StockBalance, StorageLocation } from "../../../../core/inventory/inventory.models";
 import { InventoryService } from "../../../../core/inventory/inventory.service";
 import { getApiErrorMessage } from "../../../../core/models/api-error.model";
 import { formatDateOnly } from "../../../../core/utils/date.utils";
@@ -66,6 +66,29 @@ export class StockOperationDialogComponent implements OnInit {
   readonly destLocations = signal<readonly StorageLocation[]>([]);
   readonly isSubmitting = signal(false);
 
+  // Maximum date restriction for datepicker (prevents future movement dates)
+  readonly today = new Date();
+
+  // Signals for real-time stock balance lookup
+  readonly currentBalance = signal<StockBalance | null>(null);
+  readonly isLoadingBalance = signal(false);
+
+  // Computed available quantity on hand
+  readonly availableQuantity = computed(() => this.currentBalance()?.quantityOnHand ?? 0);
+
+  // Computed validation flag determining if entered quantity exceeds available stock
+  readonly isInsufficientStock = computed(() => {
+    const op = this.data.operationType;
+    const isIssueOrTransfer = op === "ISSUE" || op === "TRANSFER";
+    const isAdjOut = op === "ADJUSTMENT" && this.form.controls.adjustmentType.value === "AdjustmentOut";
+    if (!isIssueOrTransfer && !isAdjOut) return false;
+
+    const qty = this.form.controls.quantity.value;
+    if (qty === null || qty === undefined || qty <= 0) return false;
+
+    return qty > this.availableQuantity();
+  });
+
   readonly form = this.fb.group({
     movementDate: [new Date(), Validators.required],
     inventoryItemId: [this.data.defaultItemId || "", Validators.required],
@@ -75,8 +98,10 @@ export class StockOperationDialogComponent implements OnInit {
     destinationStorageLocationId: [""],
     adjustmentType: ["AdjustmentIn"],
     quantity: [null as number | null, [Validators.required, Validators.min(0.0001)]],
-    referenceNumber: [""],
-    notes: [""],
+    // Added maxLength(100) validator matching backend referenceNumber column limit
+    referenceNumber: ["", [Validators.maxLength(100)]],
+    // Added maxLength(1000) validator matching backend notes column limit
+    notes: ["", [Validators.maxLength(1000)]],
   });
 
   ngOnInit(): void {
@@ -86,11 +111,42 @@ export class StockOperationDialogComponent implements OnInit {
     }
 
     if (this.data.operationType === "ADJUSTMENT") {
-      this.form.controls.notes.setValidators(Validators.required);
+      this.form.controls.notes.setValidators([Validators.required, Validators.maxLength(1000)]);
     }
 
     this.loadFarms();
     this.loadItems();
+
+    // Reactive stock balance checker: fetches current stock balance when item and location are selected
+    const checkBalance = () => {
+      const locId = this.form.controls.storageLocationId.value;
+      const itemId = this.form.controls.inventoryItemId.value;
+      if (locId && itemId) {
+        this.isLoadingBalance.set(true);
+        this.inventoryService.getBalance(locId, itemId)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
+            next: (b) => {
+              this.currentBalance.set(b);
+              this.isLoadingBalance.set(false);
+            },
+            error: () => {
+              this.currentBalance.set(null);
+              this.isLoadingBalance.set(false);
+            },
+          });
+      } else {
+        this.currentBalance.set(null);
+      }
+    };
+
+    this.form.controls.storageLocationId.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => checkBalance());
+
+    this.form.controls.inventoryItemId.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => checkBalance());
 
     this.form.controls.farmId.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -108,6 +164,11 @@ export class StockOperationDialogComponent implements OnInit {
 
     if (this.data.defaultFarmId) {
       this.loadLocations(this.data.defaultFarmId, false);
+    }
+
+    // Trigger initial balance check if default item and location are provided
+    if (this.data.defaultLocationId && this.data.defaultItemId) {
+      checkBalance();
     }
   }
 

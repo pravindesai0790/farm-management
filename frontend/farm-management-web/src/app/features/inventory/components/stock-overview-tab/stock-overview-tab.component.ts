@@ -16,6 +16,7 @@ import { MatSnackBar } from "@angular/material/snack-bar";
 import { MatTableModule } from "@angular/material/table";
 import { finalize, merge } from "rxjs";
 
+import { ActivatedRoute, Router } from "@angular/router";
 import { PermissionService } from "../../../../core/auth/permission.service";
 import { FarmManagementService } from "../../../../core/farm-management/farm-management.service";
 import { Farm } from "../../../../core/farm-management/farm-management.models";
@@ -23,6 +24,7 @@ import { InventoryItem, StockBalance, StorageLocation } from "../../../../core/i
 import { InventoryService } from "../../../../core/inventory/inventory.service";
 import { getApiErrorMessage } from "../../../../core/models/api-error.model";
 import { StockOperationDialogComponent, StockOperationType } from "../stock-operation-dialog/stock-operation-dialog.component";
+import { InventorySubNavComponent } from "../inventory-sub-nav/inventory-sub-nav.component";
 
 @Component({
   selector: "app-stock-overview-tab",
@@ -41,6 +43,7 @@ import { StockOperationDialogComponent, StockOperationType } from "../stock-oper
     MatProgressSpinnerModule,
     MatSelectModule,
     MatTableModule,
+    InventorySubNavComponent,
   ],
   templateUrl: "./stock-overview-tab.component.html",
   styleUrl: "./stock-overview-tab.component.scss",
@@ -51,6 +54,8 @@ export class StockOverviewTabComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly snack = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
   readonly permissionService = inject(PermissionService);
 
@@ -75,6 +80,27 @@ export class StockOverviewTabComponent implements OnInit {
     this.loadFarms();
     this.loadItems();
 
+    // Deep-linking: Pre-populate filters from route query parameters (e.g. from cross-navigation shortcuts)
+    this.route.queryParams
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((params) => {
+        const farmId = params['farmId'] || 'all';
+        const locationId = params['storageLocationId'] || 'all';
+        const itemId = params['inventoryItemId'] || 'all';
+
+        if (farmId !== 'all') {
+          this.loadLocations(farmId);
+        }
+
+        this.filterForm.patchValue({
+          farmId,
+          storageLocationId: locationId,
+          inventoryItemId: itemId,
+        }, { emitEvent: false });
+
+        this.load();
+      });
+
     this.filterForm.controls.farmId.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((farmId) => {
@@ -98,6 +124,19 @@ export class StockOverviewTabComponent implements OnInit {
       });
 
     this.load();
+  }
+
+  /**
+   * Cross-navigation shortcut routing directly to the Stock Movement Ledger pre-filtered by item and location.
+   */
+  viewLedger(balance: StockBalance): void {
+    this.router.navigate(["/inventory/ledger"], {
+      queryParams: {
+        farmId: balance.farmId,
+        storageLocationId: balance.storageLocationId,
+        inventoryItemId: balance.inventoryItemId,
+      },
+    });
   }
 
   private loadFarms(): void {

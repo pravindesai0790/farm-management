@@ -5,13 +5,13 @@
 
 <mat-dialog-content>
   <form [formGroup]="form" class="operation-form">
-    <!-- Common Date -->
+    <!-- Common Date (Enforces MovementDate <= Today UTC invariant) -->
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Transaction date</mat-label>
-      <input matInput [matDatepicker]="picker" formControlName="movementDate" />
+      <input matInput [matDatepicker]="picker" [max]="today" formControlName="movementDate" />
       <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
       <mat-datepicker #picker></mat-datepicker>
-      <mat-error>Date is required</mat-error>
+      <mat-error>Date is required and cannot be in the future</mat-error>
     </mat-form-field>
 
     <!-- Item Selection -->
@@ -48,6 +48,28 @@
       </mat-select>
       <mat-error>Storage location is required</mat-error>
     </mat-form-field>
+
+    <!-- Real-Time Stock Balance Feedback Indicator -->
+    @if (form.controls.storageLocationId.value && form.controls.inventoryItemId.value) {
+      <div class="balance-card" [class.warning]="isInsufficientStock()" [class.loading]="isLoadingBalance()">
+        <mat-icon class="balance-icon">{{ isInsufficientStock() ? 'warning' : 'inventory_2' }}</mat-icon>
+        <div class="balance-info">
+          @if (isLoadingBalance()) {
+            <span class="balance-text">Checking on-hand balance...</span>
+          } @else {
+            <span class="balance-label">Current Available On-Hand:</span>
+            <span class="balance-value">
+              {{ availableQuantity() | number:'1.0-4' }} {{ selectedUnitSymbol() }}
+            </span>
+            @if (isInsufficientStock()) {
+              <div class="balance-alert">
+                Entered quantity exceeds available stock on hand ({{ availableQuantity() | number:'1.0-4' }} {{ selectedUnitSymbol() }}).
+              </div>
+            }
+          }
+        </div>
+      </div>
+    }
 
     <!-- If Transfer: Destination Farm & Destination Location -->
     @if (isTransfer()) {
@@ -112,7 +134,7 @@
 
 <mat-dialog-actions align="end">
   <button mat-button (click)="dialogRef.close(false)" [disabled]="isSubmitting()">Cancel</button>
-  <button mat-raised-button color="primary" (click)="submit()" [disabled]="form.invalid || isSubmitting()">
+  <button mat-raised-button color="primary" (click)="submit()" [disabled]="form.invalid || isSubmitting() || isInsufficientStock()">
     {{ isSubmitting() ? 'Posting...' : 'Post Transaction' }}
   </button>
 </mat-dialog-actions>

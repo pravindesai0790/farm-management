@@ -50,7 +50,8 @@ export class InventoryItemEditorDialogComponent implements OnInit {
 
   readonly form = this.fb.group({
     name: [this.data?.item?.name || "", [Validators.required, Validators.maxLength(200)]],
-    sku: [this.data?.item?.sku || "", [Validators.maxLength(100)]],
+    // SKU maximum length set to 50 to match database code_sku column constraint (character varying(50))
+    sku: [this.data?.item?.sku || "", [Validators.maxLength(50)]],
     category: [this.data?.item?.category || "", [Validators.maxLength(100)]],
     stockUnitId: [this.data?.item?.stockUnitId || "", [Validators.required]],
     description: [this.data?.item?.description || "", [Validators.maxLength(500)]],

@@ -1,4 +1,7 @@
 <div class="page-container">
+  <!-- Shared module sub-navigation bar -->
+  <app-inventory-sub-nav />
+
   <div class="section-heading">
     <div>
       <p class="eyebrow">Inventory Management &bull; Facilities</p>
@@ -79,6 +82,11 @@
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef>Actions</th>
           <td mat-cell *matCellDef="let loc">
+            <!-- Shortcut to view stock balances at this storage location -->
+            <button mat-icon-button color="accent" (click)="viewStock(loc)" title="View Stock at Location">
+              <mat-icon>inventory_2</mat-icon>
+            </button>
+
             @if (permissionService.has('StorageLocation.Update')) {
               <button mat-icon-button color="primary" (click)="openLocationEditor(loc)" title="Edit location">
                 <mat-icon>edit</mat-icon>

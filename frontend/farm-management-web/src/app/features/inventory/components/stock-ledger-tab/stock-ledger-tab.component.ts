@@ -17,12 +17,14 @@ import { MatSnackBar } from "@angular/material/snack-bar";
 import { MatTableModule } from "@angular/material/table";
 import { finalize, merge } from "rxjs";
 
+import { ActivatedRoute } from "@angular/router";
 import { FarmManagementService } from "../../../../core/farm-management/farm-management.service";
 import { Farm } from "../../../../core/farm-management/farm-management.models";
 import { InventoryItem, StockMovement, StorageLocation } from "../../../../core/inventory/inventory.models";
 import { InventoryService } from "../../../../core/inventory/inventory.service";
 import { getApiErrorMessage } from "../../../../core/models/api-error.model";
 import { formatDateOnly } from "../../../../core/utils/date.utils";
+import { InventorySubNavComponent } from "../inventory-sub-nav/inventory-sub-nav.component";
 
 @Component({
   selector: "app-stock-ledger-tab",
@@ -42,6 +44,7 @@ import { formatDateOnly } from "../../../../core/utils/date.utils";
     MatProgressSpinnerModule,
     MatSelectModule,
     MatTableModule,
+    InventorySubNavComponent,
   ],
   templateUrl: "./stock-ledger-tab.component.html",
   styleUrl: "./stock-ledger-tab.component.scss",
@@ -51,6 +54,7 @@ export class StockLedgerTabComponent implements OnInit {
   private readonly farmService = inject(FarmManagementService);
   private readonly fb = inject(FormBuilder);
   private readonly snack = inject(MatSnackBar);
+  private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly columns = ["date", "type", "item", "location", "quantity", "notes"];
@@ -76,6 +80,29 @@ export class StockLedgerTabComponent implements OnInit {
   ngOnInit(): void {
     this.loadFarms();
     this.loadItems();
+
+    // Deep-linking: Pre-populate movement ledger filters from route query parameters (e.g. from View Ledger shortcut)
+    this.route.queryParams
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((params) => {
+        const farmId = params['farmId'] || 'all';
+        const locationId = params['storageLocationId'] || 'all';
+        const itemId = params['inventoryItemId'] || 'all';
+        const type = params['movementType'] || 'all';
+
+        if (farmId !== 'all') {
+          this.loadLocations(farmId);
+        }
+
+        this.filterForm.patchValue({
+          farmId,
+          storageLocationId: locationId,
+          inventoryItemId: itemId,
+          movementType: type,
+        }, { emitEvent: false });
+
+        this.load();
+      });
 
     this.filterForm.controls.farmId.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))

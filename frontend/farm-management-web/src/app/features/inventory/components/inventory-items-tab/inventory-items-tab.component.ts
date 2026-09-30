@@ -14,6 +14,7 @@ import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { MatSelectModule } from "@angular/material/select";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { MatTableModule } from "@angular/material/table";
+import { Router } from "@angular/router";
 import { debounceTime, distinctUntilChanged, finalize, merge } from "rxjs";
 
 import { PermissionService } from "../../../../core/auth/permission.service";
@@ -23,6 +24,7 @@ import { InventoryItem } from "../../../../core/inventory/inventory.models";
 import { InventoryService } from "../../../../core/inventory/inventory.service";
 import { getApiErrorMessage } from "../../../../core/models/api-error.model";
 import { InventoryItemEditorDialogComponent } from "../inventory-item-editor-dialog/inventory-item-editor-dialog.component";
+import { InventorySubNavComponent } from "../inventory-sub-nav/inventory-sub-nav.component";
 
 @Component({
   selector: "app-inventory-items-tab",
@@ -41,6 +43,7 @@ import { InventoryItemEditorDialogComponent } from "../inventory-item-editor-dia
     MatProgressSpinnerModule,
     MatSelectModule,
     MatTableModule,
+    InventorySubNavComponent,
   ],
   templateUrl: "./inventory-items-tab.component.html",
   styleUrl: "./inventory-items-tab.component.scss",
@@ -52,6 +55,7 @@ export class InventoryItemsTabComponent implements OnInit {
   private readonly snack = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly router = inject(Router);
   readonly permissionService = inject(PermissionService);
 
   readonly columns = ["name", "sku", "category", "unit", "status", "actions"];
@@ -131,6 +135,15 @@ export class InventoryItemsTabComponent implements OnInit {
       .subscribe((res) => {
         if (res) this.load();
       });
+  }
+
+  /**
+   * Navigates to the Stock Balances tab filtered by the selected inventory item ID.
+   */
+  viewBalances(item: InventoryItem): void {
+    this.router.navigate(["/inventory/balances"], {
+      queryParams: { inventoryItemId: item.id },
+    });
   }
 
   toggleActive(item: InventoryItem, activate: boolean): void {

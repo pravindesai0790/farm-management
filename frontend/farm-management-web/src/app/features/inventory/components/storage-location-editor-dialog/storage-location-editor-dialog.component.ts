@@ -49,7 +49,8 @@ export class StorageLocationEditorDialogComponent implements OnInit {
   readonly isSubmitting = signal(false);
 
   readonly form = this.fb.group({
-    farmId: [this.data?.location?.farmId || "", [Validators.required]],
+    // Disable farmId selector when editing existing location (storage locations cannot change farm assignment)
+    farmId: [{ value: this.data?.location?.farmId || "", disabled: !!this.data?.location }, [Validators.required]],
     name: [this.data?.location?.name || "", [Validators.required, Validators.maxLength(200)]],
     description: [this.data?.location?.description || "", [Validators.maxLength(500)]],
   });

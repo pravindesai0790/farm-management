@@ -13,6 +13,7 @@ import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { MatSelectModule } from "@angular/material/select";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { MatTableModule } from "@angular/material/table";
+import { Router } from "@angular/router";
 import { finalize, merge } from "rxjs";
 
 import { PermissionService } from "../../../../core/auth/permission.service";
@@ -22,6 +23,7 @@ import { StorageLocation } from "../../../../core/inventory/inventory.models";
 import { InventoryService } from "../../../../core/inventory/inventory.service";
 import { getApiErrorMessage } from "../../../../core/models/api-error.model";
 import { StorageLocationEditorDialogComponent } from "../storage-location-editor-dialog/storage-location-editor-dialog.component";
+import { InventorySubNavComponent } from "../inventory-sub-nav/inventory-sub-nav.component";
 
 @Component({
   selector: "app-storage-locations-tab",
@@ -39,6 +41,7 @@ import { StorageLocationEditorDialogComponent } from "../storage-location-editor
     MatProgressSpinnerModule,
     MatSelectModule,
     MatTableModule,
+    InventorySubNavComponent,
   ],
   templateUrl: "./storage-locations-tab.component.html",
   styleUrl: "./storage-locations-tab.component.scss",
@@ -50,6 +53,7 @@ export class StorageLocationsTabComponent implements OnInit {
   private readonly snack = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly router = inject(Router);
   readonly permissionService = inject(PermissionService);
 
   readonly columns = ["name", "farm", "status", "actions"];
@@ -129,6 +133,18 @@ export class StorageLocationsTabComponent implements OnInit {
       .subscribe((res) => {
         if (res) this.load();
       });
+  }
+
+  /**
+   * Navigates to the Stock Balances tab filtered by the selected storage location and farm ID.
+   */
+  viewStock(loc: StorageLocation): void {
+    this.router.navigate(["/inventory/balances"], {
+      queryParams: {
+        farmId: loc.farmId,
+        storageLocationId: loc.id,
+      },
+    });
   }
 
   toggleActive(location: StorageLocation, activate: boolean): void {
