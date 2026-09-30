@@ -7,6 +7,7 @@ import { MatCardModule } from "@angular/material/card";
 import { MatChipsModule } from "@angular/material/chips";
 import { MatNativeDateModule } from "@angular/material/core";
 import { MatDatepickerModule } from "@angular/material/datepicker";
+import { MatDialog, MatDialogModule } from "@angular/material/dialog";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
@@ -18,6 +19,7 @@ import { MatTableModule } from "@angular/material/table";
 import { finalize, merge } from "rxjs";
 
 import { ActivatedRoute } from "@angular/router";
+import { PermissionService } from "../../../../core/auth/permission.service";
 import { FarmManagementService } from "../../../../core/farm-management/farm-management.service";
 import { Farm } from "../../../../core/farm-management/farm-management.models";
 import { InventoryItem, StockMovement, StorageLocation } from "../../../../core/inventory/inventory.models";
@@ -25,6 +27,7 @@ import { InventoryService } from "../../../../core/inventory/inventory.service";
 import { getApiErrorMessage } from "../../../../core/models/api-error.model";
 import { formatDateOnly } from "../../../../core/utils/date.utils";
 import { InventorySubNavComponent } from "../inventory-sub-nav/inventory-sub-nav.component";
+import { StockMovementReversalDialogComponent } from "../stock-movement-reversal-dialog/stock-movement-reversal-dialog.component";
 
 @Component({
   selector: "app-stock-ledger-tab",
@@ -36,6 +39,7 @@ import { InventorySubNavComponent } from "../inventory-sub-nav/inventory-sub-nav
     MatCardModule,
     MatChipsModule,
     MatDatepickerModule,
+    MatDialogModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
@@ -54,10 +58,12 @@ export class StockLedgerTabComponent implements OnInit {
   private readonly farmService = inject(FarmManagementService);
   private readonly fb = inject(FormBuilder);
   private readonly snack = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  readonly permissionService = inject(PermissionService);
 
-  readonly columns = ["date", "type", "item", "location", "quantity", "operationalLink", "notes"];
+  readonly columns = ["date", "type", "item", "location", "quantity", "operationalLink", "notes", "actions"];
   readonly movements = signal<readonly StockMovement[]>([]);
   readonly farms = signal<readonly Farm[]>([]);
   readonly locations = signal<readonly StorageLocation[]>([]);
@@ -165,6 +171,9 @@ export class StockLedgerTabComponent implements OnInit {
       str === "receipt" ||
       str === "adjustmentin" ||
       str === "transferin" ||
+      str === "issuereversal" ||
+      str === "adjustmentoutreversal" ||
+      str === "transferoutreversal" ||
       str === "1" ||
       str === "2" ||
       str === "4" ||
@@ -172,9 +181,40 @@ export class StockLedgerTabComponent implements OnInit {
     );
   }
 
-  getMovementBadgeClass(movement: StockMovement | string | number): string {
+  isReversal(movement: StockMovement): boolean {
+    if (!movement) return false;
+    if (movement.reversedMovementId) return true;
+    const type = (movement.movementTypeName || movement.movementType || "").toLowerCase();
+    return type.includes("reversal");
+  }
+
+  getMovementBadgeClass(movement: StockMovement): string {
+    if (movement.isReversed) return "badge-reversed";
+    if (this.isReversal(movement)) return "badge-reversal";
     if (this.isIncoming(movement)) return "badge-in";
     return "badge-out";
+  }
+
+  canReverse(movement: StockMovement): boolean {
+    return (
+      !movement.isReversed &&
+      !this.isReversal(movement) &&
+      this.permissionService.has("InventoryTransaction.Reverse")
+    );
+  }
+
+  openReversalDialog(movement: StockMovement): void {
+    const dialogRef = this.dialog.open(StockMovementReversalDialogComponent, {
+      width: "520px",
+      data: { movement },
+    });
+
+    dialogRef
+      .afterClosed()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((res) => {
+        if (res) this.load();
+      });
   }
 
   load(): void {

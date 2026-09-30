@@ -40,6 +40,45 @@ public sealed class InventoryStockStore(ApplicationDbContext dbContext) : IInven
             .Include(a => a.LaborActivityType)
             .SingleOrDefaultAsync(a => a.Id == activityId && a.OrganizationId == organizationId, cancellationToken);
 
+    public Task<StockMovement?> FindMovementAsync(Guid movementId, Guid organizationId, CancellationToken cancellationToken = default) =>
+        dbContext.StockMovements
+            .Include(m => m.InventoryItem)
+                .ThenInclude(i => i!.StockUnit)
+            .Include(m => m.StorageLocation)
+                .ThenInclude(l => l!.Farm)
+            .Include(m => m.Farm)
+            .Include(m => m.CropCycle)
+            .Include(m => m.CropCycleStage)
+            .Include(m => m.Plantation)
+            .Include(m => m.FarmArea)
+            .Include(m => m.LaborActivity)
+                .ThenInclude(a => a!.LaborActivityType)
+            .Include(m => m.ReversalMovement)
+            .Include(m => m.ReversedMovement)
+            .SingleOrDefaultAsync(m => m.Id == movementId && m.OrganizationId == organizationId, cancellationToken);
+
+    public async Task<IReadOnlyList<StockMovement>> FindMovementsByParentTransactionIdAsync(Guid parentTransactionId, Guid organizationId, CancellationToken cancellationToken = default)
+    {
+        var items = await dbContext.StockMovements
+            .Include(m => m.InventoryItem)
+                .ThenInclude(i => i!.StockUnit)
+            .Include(m => m.StorageLocation)
+                .ThenInclude(l => l!.Farm)
+            .Include(m => m.Farm)
+            .Include(m => m.CropCycle)
+            .Include(m => m.CropCycleStage)
+            .Include(m => m.Plantation)
+            .Include(m => m.FarmArea)
+            .Include(m => m.LaborActivity)
+                .ThenInclude(a => a!.LaborActivityType)
+            .Include(m => m.ReversalMovement)
+            .Include(m => m.ReversedMovement)
+            .Where(m => m.ParentTransactionId == parentTransactionId && m.OrganizationId == organizationId)
+            .ToListAsync(cancellationToken);
+
+        return items;
+    }
+
     // Find a stock balance with explicit multi-tenant organization isolation
     public Task<StockBalance?> FindBalanceAsync(Guid locationId, Guid itemId, Guid organizationId, CancellationToken cancellationToken = default) =>
         dbContext.StockBalances

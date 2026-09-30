@@ -52,7 +52,11 @@ public sealed record StockMovementResponse(
     Guid? FarmAreaId = null,
     string? FarmAreaName = null,
     Guid? LaborActivityId = null,
-    string? LaborActivityTypeName = null);
+    string? LaborActivityTypeName = null,
+    bool IsReversed = false,
+    Guid? ReversalMovementId = null,
+    Guid? ReversedMovementId = null,
+    string? ReversalReason = null);
 
 public sealed record RecordOpeningStockRequest(
     Guid FarmId,
@@ -104,3 +108,7 @@ public sealed record RecordStockTransferRequest(
     DateOnly MovementDate,
     string? ReferenceNumber = null,
     string? Notes = null);
+
+public sealed record ReverseStockMovementRequest(
+    string Reason,
+    DateOnly? ReversalDate = null);

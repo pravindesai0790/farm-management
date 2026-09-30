@@ -18,6 +18,9 @@ public interface IInventoryStockStore
     Task<FarmArea?> FindFarmAreaAsync(Guid areaId, Guid organizationId, CancellationToken cancellationToken = default);
     Task<LaborActivity?> FindLaborActivityAsync(Guid activityId, Guid organizationId, CancellationToken cancellationToken = default);
 
+    Task<StockMovement?> FindMovementAsync(Guid movementId, Guid organizationId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<StockMovement>> FindMovementsByParentTransactionIdAsync(Guid parentTransactionId, Guid organizationId, CancellationToken cancellationToken = default);
+
     // Row-level lock on existing stock balance
     Task<StockBalance?> LockBalanceAsync(Guid locationId, Guid itemId, Guid organizationId, CancellationToken cancellationToken = default);
 

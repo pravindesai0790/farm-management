@@ -95,6 +95,9 @@
             <span [class]="getMovementBadgeClass(m)">
               {{ m.movementTypeName || m.movementType }}
             </span>
+            @if (m.isReversed) {
+              <span class="badge-reversed-tag">[Reversed]</span>
+            }
           </td>
         </ng-container>
 
@@ -159,14 +162,42 @@
             @if (m.referenceNumber) {
               <div><code>Ref: {{ m.referenceNumber }}</code></div>
             }
+            @if (m.reversalReason) {
+              <div class="reversal-reason-text">
+                <strong>Reversal Reason:</strong> {{ m.reversalReason }}
+              </div>
+            }
             @if (m.notes) {
               <div class="sub-text">{{ m.notes }}</div>
             }
           </td>
         </ng-container>
 
+        <!-- Actions -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef class="text-right">Actions</th>
+          <td mat-cell *matCellDef="let m" class="text-right">
+            @if (canReverse(m)) {
+              <button
+                mat-stroked-button
+                color="warn"
+                class="btn-xs"
+                (click)="openReversalDialog(m)"
+                title="Reverse / void this movement"
+              >
+                <mat-icon>undo</mat-icon>
+                <span>Reverse</span>
+              </button>
+            } @else if (m.isReversed) {
+              <span class="sub-text text-muted">Voided</span>
+            } @else if (isReversal(m)) {
+              <span class="sub-text text-muted">Reversal Entry</span>
+            }
+          </td>
+        </ng-container>
+
         <tr mat-header-row *matHeaderRowDef="columns"></tr>
-        <tr mat-row *matRowDef="let row; columns: columns;"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns;" [class.row-reversed]="row.isReversed"></tr>
       </table>
 
       @if (movements().length === 0) {

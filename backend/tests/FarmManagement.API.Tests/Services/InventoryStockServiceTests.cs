@@ -506,6 +506,105 @@ public sealed class InventoryStockServiceTests
         Assert.Equal(targetCycle.Id, result.Items[0].CropCycleId);
     }
 
+    [Fact]
+    public async Task ReverseReceipt_WhenSufficientStock_DeductsBalanceAndMarksReversed()
+    {
+        var store = new FakeInventoryStockStore();
+        var service = new InventoryStockService(store);
+        var (item, loc) = SetupItemAndLocation(store, _organizationId);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        var receipt = await service.RecordStockReceiptAsync(CreateActor(), new RecordStockReceiptRequest(loc.FarmId, loc.Id, item.Id, 100m, today, "PO-100"), "127.0.0.1");
+
+        var reversal = await service.ReverseStockMovementAsync(CreateActor(), receipt.Id, new ReverseStockMovementRequest("Data entry mistake"), "127.0.0.1");
+
+        Assert.NotNull(reversal);
+        Assert.Equal(StockMovementType.ReceiptReversal, reversal.MovementType);
+        Assert.Equal(100m, reversal.Quantity);
+        Assert.Equal(receipt.Id, reversal.ReversedMovementId);
+
+        var balance = store.Balances.First(b => b.StorageLocationId == loc.Id && b.InventoryItemId == item.Id);
+        Assert.Equal(0m, balance.QuantityOnHand);
+
+        var originalInStore = store.Movements.First(m => m.Id == receipt.Id);
+        Assert.True(originalInStore.IsReversed);
+        Assert.Equal(reversal.Id, originalInStore.ReversalMovementId);
+        Assert.Equal("Data entry mistake", originalInStore.ReversalReason);
+    }
+
+    [Fact]
+    public async Task ReverseReceipt_WhenInsufficientStock_ThrowsValidationException()
+    {
+        var store = new FakeInventoryStockStore();
+        var service = new InventoryStockService(store);
+        var (item, loc) = SetupItemAndLocation(store, _organizationId);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        var receipt = await service.RecordStockReceiptAsync(CreateActor(), new RecordStockReceiptRequest(loc.FarmId, loc.Id, item.Id, 100m, today), "127.0.0.1");
+        await service.RecordStockIssueAsync(CreateActor(), new RecordStockIssueRequest(loc.FarmId, loc.Id, item.Id, 80m, today), "127.0.0.1");
+
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            service.ReverseStockMovementAsync(CreateActor(), receipt.Id, new ReverseStockMovementRequest("Try to reverse 100 with only 20 remaining"), "127.0.0.1"));
+    }
+
+    [Fact]
+    public async Task ReverseIssue_RestoresStockAndCopiesOperationalLinks()
+    {
+        var store = new FakeInventoryStockStore();
+        var service = new InventoryStockService(store);
+        var (item, loc) = SetupItemAndLocation(store, _organizationId);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        await service.RecordOpeningStockAsync(CreateActor(), new RecordOpeningStockRequest(loc.FarmId, loc.Id, item.Id, 100m, today), "127.0.0.1");
+
+        var plantation = new CropPlantation(_organizationId, loc.FarmId, Guid.NewGuid(), Guid.NewGuid(), null, null, "Block 1", 20m, Guid.NewGuid(), today, null, _userId);
+        store.Plantations.Add(plantation);
+
+        var targetCycle = new CropCycle(_organizationId, plantation.Id, "Cycle-1", 2026, "2026 Season", DateOnly.FromDateTime(DateTime.UtcNow), null, _userId);
+        store.CropCycles.Add(targetCycle);
+
+        var issue = await service.RecordStockIssueAsync(CreateActor(), new RecordStockIssueRequest(loc.FarmId, loc.Id, item.Id, 40m, today, CropCycleId: targetCycle.Id), "127.0.0.1");
+
+        var reversal = await service.ReverseStockMovementAsync(CreateActor(), issue.Id, new ReverseStockMovementRequest("Cancelled operation"), "127.0.0.1");
+
+        Assert.Equal(StockMovementType.IssueReversal, reversal.MovementType);
+        Assert.Equal(40m, reversal.Quantity);
+        Assert.Equal(targetCycle.Id, reversal.CropCycleId);
+
+        var balance = store.Balances.First(b => b.StorageLocationId == loc.Id && b.InventoryItemId == item.Id);
+        Assert.Equal(100m, balance.QuantityOnHand);
+    }
+
+    [Fact]
+    public async Task ReverseTransfer_ReversesBothLegsAtomically()
+    {
+        var store = new FakeInventoryStockStore();
+        var service = new InventoryStockService(store);
+        var (item, locSource) = SetupItemAndLocation(store, _organizationId);
+        var locDest = new StorageLocation(_organizationId, locSource.FarmId, "Destination Shed", Guid.NewGuid());
+        store.Locations.Add(locDest);
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        await service.RecordOpeningStockAsync(CreateActor(), new RecordOpeningStockRequest(locSource.FarmId, locSource.Id, item.Id, 100m, today), "127.0.0.1");
+
+        var transferLegs = await service.RecordStockTransferAsync(CreateActor(), new RecordStockTransferRequest(locSource.FarmId, locSource.Id, locSource.FarmId, locDest.Id, item.Id, 50m, today), "127.0.0.1");
+
+        var outLeg = transferLegs.First(m => m.MovementType == StockMovementType.TransferOut);
+        var reversal = await service.ReverseStockMovementAsync(CreateActor(), outLeg.Id, new ReverseStockMovementRequest("Wrong transfer location"), "127.0.0.1");
+
+        Assert.Equal(StockMovementType.TransferOutReversal, reversal.MovementType);
+
+        var sourceBalance = store.Balances.First(b => b.StorageLocationId == locSource.Id && b.InventoryItemId == item.Id);
+        var destBalance = store.Balances.First(b => b.StorageLocationId == locDest.Id && b.InventoryItemId == item.Id);
+
+        Assert.Equal(100m, sourceBalance.QuantityOnHand);
+        Assert.Equal(0m, destBalance.QuantityOnHand);
+
+        var allMovements = store.Movements.Where(m => m.ParentTransactionId == outLeg.ParentTransactionId).ToList();
+        Assert.All(allMovements, m => Assert.True(m.IsReversed));
+    }
+
     private static (InventoryItem Item, StorageLocation Location) SetupItemAndLocation(FakeInventoryStockStore store, Guid orgId)
     {
         var farm = new Farm(orgId, "Green Valley Farm", Guid.NewGuid(), Guid.NewGuid());
@@ -568,6 +667,12 @@ public sealed class FakeInventoryStockStore : IInventoryStockStore
     public Task<LaborActivity?> FindLaborActivityAsync(Guid activityId, Guid organizationId, CancellationToken cancellationToken = default) =>
         Task.FromResult(LaborActivities.FirstOrDefault(a => a.Id == activityId && a.OrganizationId == organizationId));
 
+    public Task<StockMovement?> FindMovementAsync(Guid movementId, Guid organizationId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(Movements.FirstOrDefault(m => m.Id == movementId && m.OrganizationId == organizationId));
+
+    public Task<IReadOnlyList<StockMovement>> FindMovementsByParentTransactionIdAsync(Guid parentTransactionId, Guid organizationId, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<StockMovement>>(Movements.Where(m => m.ParentTransactionId == parentTransactionId && m.OrganizationId == organizationId).ToList());
+
     public Task<StockBalance?> FindBalanceAsync(Guid locationId, Guid itemId, Guid organizationId, CancellationToken cancellationToken = default) =>
         Task.FromResult(Balances.FirstOrDefault(b => b.StorageLocationId == locationId && b.InventoryItemId == itemId && b.OrganizationId == organizationId));
 
@@ -581,7 +686,7 @@ public sealed class FakeInventoryStockStore : IInventoryStockStore
     }
 
     public Task<bool> HasOpeningStockAsync(Guid locationId, Guid itemId, CancellationToken cancellationToken = default) =>
-        Task.FromResult(Movements.Any(m => m.StorageLocationId == locationId && m.InventoryItemId == itemId && m.MovementType == StockMovementType.OpeningStock));
+        Task.FromResult(Movements.Any(m => m.StorageLocationId == locationId && m.InventoryItemId == itemId && m.MovementType == StockMovementType.OpeningStock && !m.IsReversed));
 
     public Task<int> CountBalancesAsync(Guid organizationId, Guid? farmId, Guid? locationId, Guid? itemId, CancellationToken cancellationToken = default) =>
         Task.FromResult(Balances.Count(b => b.OrganizationId == organizationId &&

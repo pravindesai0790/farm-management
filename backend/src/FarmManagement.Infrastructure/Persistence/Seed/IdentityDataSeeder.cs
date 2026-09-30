@@ -145,7 +145,8 @@ public sealed class IdentityDataSeeder(
         new("StorageLocation.Activate", "Activate storage locations.", "Storage Locations"),
         new("StorageLocation.Deactivate", "Deactivate storage locations.", "Storage Locations"),
         new("InventoryStock.View", "View stock overview and ledger.", "Inventory Stock"),
-        new("InventoryTransaction.Create", "Post inventory stock transactions.", "Inventory Stock")
+        new("InventoryTransaction.Create", "Post inventory stock transactions.", "Inventory Stock"),
+        new("InventoryTransaction.Reverse", "Reverse / void inventory stock transactions.", "Inventory Stock")
     ];
 
     private static readonly IReadOnlySet<string> OrganizationAdminPermissions =
@@ -264,7 +265,8 @@ public sealed class IdentityDataSeeder(
             "StorageLocation.Activate",
             "StorageLocation.Deactivate",
             "InventoryStock.View",
-            "InventoryTransaction.Create"
+            "InventoryTransaction.Create",
+            "InventoryTransaction.Reverse"
         };
 
     /// <summary>
@@ -313,7 +315,8 @@ public sealed class IdentityDataSeeder(
             "StorageLocation.Create",
             "StorageLocation.Update",
             "InventoryStock.View",
-            "InventoryTransaction.Create"
+            "InventoryTransaction.Create",
+            "InventoryTransaction.Reverse"
         };
 
     /// <summary>

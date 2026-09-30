@@ -139,6 +139,33 @@ public sealed class StockMovementConfiguration : IEntityTypeConfiguration<StockM
             .HasConstraintName("fk_stock_movements_labor_activity")
             .OnDelete(DeleteBehavior.SetNull);
 
+        builder.Property(movement => movement.IsReversed)
+            .HasColumnName("is_reversed")
+            .HasDefaultValue(false)
+            .IsRequired();
+
+        builder.Property(movement => movement.ReversalMovementId)
+            .HasColumnName("reversal_movement_id");
+
+        builder.HasOne(movement => movement.ReversalMovement)
+            .WithMany()
+            .HasForeignKey(movement => movement.ReversalMovementId)
+            .HasConstraintName("fk_stock_movements_reversal_movement")
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Property(movement => movement.ReversedMovementId)
+            .HasColumnName("reversed_movement_id");
+
+        builder.HasOne(movement => movement.ReversedMovement)
+            .WithMany()
+            .HasForeignKey(movement => movement.ReversedMovementId)
+            .HasConstraintName("fk_stock_movements_reversed_movement")
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Property(movement => movement.ReversalReason)
+            .HasColumnName("reversal_reason")
+            .HasMaxLength(1000);
+
         builder.Property(movement => movement.CreatedAt)
             .HasColumnName("created_at")
             .IsRequired();
@@ -180,10 +207,21 @@ public sealed class StockMovementConfiguration : IEntityTypeConfiguration<StockM
             .HasDatabaseName("ix_stock_movements_labor_activity")
             .HasFilter("labor_activity_id IS NOT NULL");
 
-        // Enforce database-level uniqueness for opening stock per storage location and inventory item
+        builder.HasIndex(movement => movement.ReversalMovementId)
+            .HasDatabaseName("ix_stock_movements_reversal_movement")
+            .HasFilter("reversal_movement_id IS NOT NULL");
+
+        builder.HasIndex(movement => movement.ReversedMovementId)
+            .HasDatabaseName("ix_stock_movements_reversed_movement")
+            .HasFilter("reversed_movement_id IS NOT NULL");
+
+        builder.HasIndex(movement => new { movement.OrganizationId, movement.IsReversed })
+            .HasDatabaseName("ix_stock_movements_organization_is_reversed");
+
+        // Enforce database-level uniqueness for active (non-reversed) opening stock per storage location and inventory item
         builder.HasIndex(movement => new { movement.StorageLocationId, movement.InventoryItemId })
             .HasDatabaseName("ux_stock_movements_opening_stock_location_item")
-            .HasFilter("movement_type = 'OPENINGSTOCK'")
+            .HasFilter("movement_type = 'OPENINGSTOCK' AND is_reversed = FALSE")
             .IsUnique();
     }
 }

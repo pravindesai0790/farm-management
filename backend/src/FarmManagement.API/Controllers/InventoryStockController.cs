@@ -163,5 +163,23 @@ public sealed class InventoryStockController(IInventoryStockService stockService
         return Ok(result);
     }
 
+    [HttpPost("movements/{id:guid}/reverse")]
+    [Authorize(Policy = "Permission:InventoryTransaction.Reverse")]
+    public async Task<IActionResult> ReverseMovement(
+        Guid id,
+        [FromBody] ReverseStockMovementRequest request,
+        CancellationToken cancellationToken)
+    {
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var result = await stockService.ReverseStockMovementAsync(
+            GetUserContext(),
+            id,
+            request,
+            ipAddress,
+            cancellationToken);
+
+        return Ok(result);
+    }
+
     private InventoryActor GetUserContext() => UserContextHelper.GetUserContext<InventoryActor>(User);
 }

@@ -11,5 +11,14 @@ public enum StockMovementType
     AdjustmentIn = 4,
     AdjustmentOut = 5,
     TransferIn = 6,
-    TransferOut = 7
+    TransferOut = 7,
+
+    // Compensating Reversal Types
+    OpeningStockReversal = 8,
+    ReceiptReversal = 9,
+    IssueReversal = 10,
+    AdjustmentInReversal = 11,
+    AdjustmentOutReversal = 12,
+    TransferInReversal = 13,
+    TransferOutReversal = 14
 }

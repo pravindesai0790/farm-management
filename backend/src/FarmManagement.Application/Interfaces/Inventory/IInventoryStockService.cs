@@ -64,4 +64,11 @@ public interface IInventoryStockService
         RecordStockTransferRequest request,
         string? ipAddress,
         CancellationToken cancellationToken = default);
+
+    Task<StockMovementResponse> ReverseStockMovementAsync(
+        InventoryActor actor,
+        Guid movementId,
+        ReverseStockMovementRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default);
 }

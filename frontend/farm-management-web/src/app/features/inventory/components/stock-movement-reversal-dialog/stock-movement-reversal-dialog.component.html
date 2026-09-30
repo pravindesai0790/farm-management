@@ -1,0 +1,146 @@
+<h2 mat-dialog-title class="dialog-title">
+  <mat-icon color="warn">undo</mat-icon>
+  <span>Reverse Stock Movement</span>
+</h2>
+
+<mat-dialog-content class="dialog-content">
+  <p class="dialog-description">
+    Reversing a movement issues a compensating transaction to void the effect of this record while preserving the complete audit history.
+  </p>
+
+  <!-- Original Movement Summary Card -->
+  <div class="movement-summary-card">
+    <div class="summary-header">
+      <span class="movement-type-badge font-medium">
+        {{ movement.movementTypeName || movement.movementType }}
+      </span>
+      <span class="movement-date sub-text">Date: {{ movement.movementDate }}</span>
+    </div>
+
+    <div class="summary-grid">
+      <div class="summary-item">
+        <span class="label sub-text">Item</span>
+        <span class="value font-medium">{{ movement.inventoryItemName }}</span>
+      </div>
+
+      <div class="summary-item">
+        <span class="label sub-text">Location & Farm</span>
+        <span class="value font-medium">{{ movement.storageLocationName }} ({{ movement.farmName }})</span>
+      </div>
+
+      <div class="summary-item">
+        <span class="label sub-text">Original Quantity</span>
+        <span class="value font-bold">
+          {{ movement.quantity | number:'1.0-4' }} {{ movement.stockUnitSymbol || movement.stockUnitCode }}
+        </span>
+      </div>
+
+      @if (movement.cropCycleTitle) {
+        <div class="summary-item">
+          <span class="label sub-text">Crop Cycle Link</span>
+          <span class="value font-medium">{{ movement.cropCycleTitle }}</span>
+        </div>
+      }
+
+      @if (movement.referenceNumber) {
+        <div class="summary-item">
+          <span class="label sub-text">Reference</span>
+          <span class="value font-medium">Ref: {{ movement.referenceNumber }}</span>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Real-Time Stock Balance Warning (for reversing stock additions) -->
+  @if (isStockDeduction()) {
+    <div class="balance-info-box" [class.insufficient]="isInsufficientStock()">
+      <div class="balance-header">
+        <mat-icon class="info-icon">{{ isInsufficientStock() ? 'error' : 'info' }}</mat-icon>
+        <span>
+          @if (isLoadingBalance()) {
+            Checking current stock balance...
+          } @else if (isInsufficientStock()) {
+            Insufficient Stock to Reverse
+          } @else {
+            Available Stock Balance
+          }
+        </span>
+      </div>
+      @if (!isLoadingBalance()) {
+        <div class="balance-detail">
+          <span>Current On-Hand Stock: <strong>{{ availableQuantity() | number:'1.0-4' }} {{ movement.stockUnitSymbol || movement.stockUnitCode }}</strong></span>
+          <span>Required to Deduct: <strong>{{ movement.quantity | number:'1.0-4' }} {{ movement.stockUnitSymbol || movement.stockUnitCode }}</strong></span>
+        </div>
+        @if (isInsufficientStock()) {
+          <p class="insufficient-text">
+            Cannot reverse this stock addition because the current stock on-hand ({{ availableQuantity() | number:'1.0-4' }}) is less than the original addition quantity ({{ movement.quantity | number:'1.0-4' }}). Stock has already been consumed by subsequent transactions.
+          </p>
+        }
+      }
+    </div>
+  }
+
+  <!-- Reversal Form -->
+  <form [formGroup]="form" (ngSubmit)="submit()" id="reversalForm" class="reversal-form">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Reversal Effective Date</mat-label>
+      <input
+        matInput
+        [matDatepicker]="reversalDatePicker"
+        formControlName="reversalDate"
+        [min]="minDate"
+        [max]="today"
+      />
+      <mat-datepicker-toggle matIconSuffix [for]="reversalDatePicker"></mat-datepicker-toggle>
+      <mat-datepicker #reversalDatePicker></mat-datepicker>
+      <mat-hint>Date must be between {{ movement.movementDate }} and Today.</mat-hint>
+      @if (form.controls.reversalDate.hasError('required')) {
+        <mat-error>Reversal date is required.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Reason for Reversal / Voiding</mat-label>
+      <textarea
+        matInput
+        formControlName="reason"
+        rows="3"
+        placeholder="Provide mandatory reason for reversing this transaction..."
+      ></textarea>
+      @if (form.controls.reason.hasError('required')) {
+        <mat-error>Reason for reversal is required.</mat-error>
+      }
+      @if (form.controls.reason.hasError('minlength')) {
+        <mat-error>Reason must be at least 3 characters long.</mat-error>
+      }
+      @if (form.controls.reason.hasError('maxlength')) {
+        <mat-error>Reason cannot exceed 500 characters.</mat-error>
+      }
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" [disabled]="isSubmitting()" [mat-dialog-close]="false">
+    Cancel
+  </button>
+  <button
+    mat-raised-button
+    color="warn"
+    type="submit"
+    form="reversalForm"
+    [disabled]="form.invalid || isSubmitting() || isInsufficientStock()"
+  >
+    @if (isSubmitting()) {
+      <ng-container>
+        <mat-spinner diameter="18" class="inline-spinner"></mat-spinner>
+        <span>Reversing...</span>
+      </ng-container>
+    } @else {
+      <ng-container>
+        <mat-icon>undo</mat-icon>
+        <span>Confirm Reversal</span>
+      </ng-container>
+    }
+  </button>
+</mat-dialog-actions>

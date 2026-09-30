@@ -665,7 +665,290 @@ public sealed class InventoryStockService(IInventoryStockStore store) : IInvento
             m.FarmAreaId,
             area?.Name,
             m.LaborActivityId,
-            activity?.LaborActivityType?.Name);
+            activity?.LaborActivityType?.Name,
+            m.IsReversed,
+            m.ReversalMovementId,
+            m.ReversedMovementId,
+            m.ReversalReason);
+
+    public async Task<StockMovementResponse> ReverseStockMovementAsync(
+        InventoryActor actor,
+        Guid movementId,
+        ReverseStockMovementRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        if (request is null) throw Validation("request", "Request body is required.");
+        if (string.IsNullOrWhiteSpace(request.Reason))
+        {
+            throw Validation("reason", "A reason is required to reverse an inventory transaction.");
+        }
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var reversalDate = request.ReversalDate ?? today;
+        if (reversalDate > today)
+        {
+            throw Validation("reversalDate", "Reversal date cannot be in the future.");
+        }
+
+        var movement = await store.FindMovementAsync(movementId, actor.OrganizationId, cancellationToken);
+        if (movement is null)
+        {
+            throw new KeyNotFoundException("The specified stock movement was not found.");
+        }
+
+        if (reversalDate < movement.MovementDate)
+        {
+            throw Validation("reversalDate", $"Reversal date ({reversalDate}) cannot precede the original movement date ({movement.MovementDate}).");
+        }
+
+        if (movement.IsReversed)
+        {
+            throw new InvalidOperationException("This transaction has already been reversed.");
+        }
+
+        if (StockMovement.IsReversalType(movement.MovementType) || movement.ReversedMovementId.HasValue)
+        {
+            throw Validation("movementId", "A reversal transaction cannot be reversed.");
+        }
+
+        return await store.ExecuteInTransactionAsync(async ct =>
+        {
+            var now = DateTimeOffset.UtcNow;
+
+            if (movement.MovementType == StockMovementType.TransferOut || movement.MovementType == StockMovementType.TransferIn)
+            {
+                return await ReverseTransferMovementAsync(actor, movement, request.Reason.Trim(), reversalDate, now, ipAddress, ct);
+            }
+
+            return await ReverseStandardMovementAsync(actor, movement, request.Reason.Trim(), reversalDate, now, ipAddress, ct);
+        }, cancellationToken);
+    }
+
+    private async Task<StockMovementResponse> ReverseStandardMovementAsync(
+        InventoryActor actor,
+        StockMovement movement,
+        string reason,
+        DateOnly reversalDate,
+        DateTimeOffset now,
+        string? ipAddress,
+        CancellationToken ct)
+    {
+        var item = movement.InventoryItem ?? await store.FindItemAsync(movement.InventoryItemId, actor.OrganizationId, ct);
+        var location = movement.StorageLocation ?? await store.FindLocationAsync(movement.StorageLocationId, actor.OrganizationId, ct);
+
+        await store.AcquireAdvisoryLockAsync(movement.StorageLocationId, movement.InventoryItemId, ct);
+        var balance = await store.LockBalanceAsync(movement.StorageLocationId, movement.InventoryItemId, actor.OrganizationId, ct);
+
+        var (reversalType, isDeduction) = GetOpposingReversalType(movement.MovementType);
+
+        if (isDeduction)
+        {
+            var onHand = balance?.QuantityOnHand ?? 0m;
+            if (balance is null || onHand < movement.Quantity)
+            {
+                var unitSymbol = item?.StockUnit?.Symbol ?? item?.StockUnit?.Code ?? "";
+                throw Validation("quantity", $"Cannot reverse {movement.MovementType}: {movement.Quantity} {unitSymbol} were recorded, but only {onHand} {unitSymbol} remain in {location?.Name ?? "storage location"}.");
+            }
+
+            balance.DeductStock(movement.Quantity, now, actor.UserId);
+        }
+        else
+        {
+            if (balance is null)
+            {
+                balance = new StockBalance(actor.OrganizationId, movement.FarmId, movement.StorageLocationId, movement.InventoryItemId, movement.Quantity);
+                store.AddBalance(balance);
+            }
+            else
+            {
+                balance.AddStock(movement.Quantity, now, actor.UserId);
+            }
+        }
+
+        var reversalMovement = new StockMovement(
+            actor.OrganizationId,
+            reversalType,
+            movement.InventoryItemId,
+            movement.FarmId,
+            movement.StorageLocationId,
+            movement.Quantity,
+            movement.StockUnitId,
+            reversalDate,
+            actor.UserId,
+            referenceNumber: movement.ReferenceNumber,
+            notes: $"Reversal of {movement.MovementType} ({movement.Id}): {reason}",
+            parentTransactionId: movement.ParentTransactionId,
+            cropCycleId: movement.CropCycleId,
+            cropCycleStageId: movement.CropCycleStageId,
+            plantationId: movement.PlantationId,
+            farmAreaId: movement.FarmAreaId,
+            laborActivityId: movement.LaborActivityId,
+            reversedMovementId: movement.Id);
+
+        store.AddMovement(reversalMovement);
+        movement.MarkAsReversed(reversalMovement.Id, reason);
+
+        AddAudit(actor, movement, "Stock.MovementReversed", new
+        {
+            OriginalMovementId = movement.Id,
+            ReversalMovementId = reversalMovement.Id,
+            OriginalType = movement.MovementType.ToString(),
+            ReversalType = reversalType.ToString(),
+            movement.Quantity,
+            Reason = reason
+        }, ipAddress);
+
+        await store.SaveChangesAsync(ct);
+
+        return ToMovementResponse(
+            reversalMovement,
+            item,
+            location?.Farm ?? movement.Farm,
+            location,
+            item?.StockUnit ?? movement.StockUnit,
+            movement.CropCycle,
+            movement.CropCycleStage,
+            movement.Plantation,
+            movement.FarmArea,
+            movement.LaborActivity);
+    }
+
+    private async Task<StockMovementResponse> ReverseTransferMovementAsync(
+        InventoryActor actor,
+        StockMovement targetMovement,
+        string reason,
+        DateOnly reversalDate,
+        DateTimeOffset now,
+        string? ipAddress,
+        CancellationToken ct)
+    {
+        if (!targetMovement.ParentTransactionId.HasValue)
+        {
+            throw Validation("parentTransactionId", "Transfer movement lacks a parent transaction identifier.");
+        }
+
+        var legs = await store.FindMovementsByParentTransactionIdAsync(targetMovement.ParentTransactionId.Value, actor.OrganizationId, ct);
+        var outLeg = legs.FirstOrDefault(m => m.MovementType == StockMovementType.TransferOut);
+        var inLeg = legs.FirstOrDefault(m => m.MovementType == StockMovementType.TransferIn);
+
+        if (outLeg is null || inLeg is null)
+        {
+            throw Validation("parentTransactionId", "The transfer transaction legs could not be fully identified.");
+        }
+
+        if (outLeg.IsReversed || inLeg.IsReversed)
+        {
+            throw new InvalidOperationException("This transfer transaction has already been reversed.");
+        }
+
+        var item = outLeg.InventoryItem ?? await store.FindItemAsync(outLeg.InventoryItemId, actor.OrganizationId, ct);
+
+        var firstLocId = outLeg.StorageLocationId.CompareTo(inLeg.StorageLocationId) < 0
+            ? outLeg.StorageLocationId
+            : inLeg.StorageLocationId;
+        var secondLocId = firstLocId == outLeg.StorageLocationId
+            ? inLeg.StorageLocationId
+            : outLeg.StorageLocationId;
+
+        await store.AcquireAdvisoryLockAsync(firstLocId, outLeg.InventoryItemId, ct);
+        await store.AcquireAdvisoryLockAsync(secondLocId, outLeg.InventoryItemId, ct);
+
+        var destBalance = await store.LockBalanceAsync(inLeg.StorageLocationId, inLeg.InventoryItemId, actor.OrganizationId, ct);
+        var sourceBalance = await store.LockBalanceAsync(outLeg.StorageLocationId, outLeg.InventoryItemId, actor.OrganizationId, ct);
+
+        var destOnHand = destBalance?.QuantityOnHand ?? 0m;
+        if (destBalance is null || destOnHand < inLeg.Quantity)
+        {
+            var unitSymbol = item?.StockUnit?.Symbol ?? item?.StockUnit?.Code ?? "";
+            var destLocName = inLeg.StorageLocation?.Name ?? "destination location";
+            throw Validation("quantity", $"Cannot reverse transfer: destination '{destLocName}' only has {destOnHand} {unitSymbol} on hand, but {inLeg.Quantity} {unitSymbol} is required to reverse.");
+        }
+
+        destBalance.DeductStock(inLeg.Quantity, now, actor.UserId);
+
+        if (sourceBalance is null)
+        {
+            sourceBalance = new StockBalance(actor.OrganizationId, outLeg.FarmId, outLeg.StorageLocationId, outLeg.InventoryItemId, outLeg.Quantity);
+            store.AddBalance(sourceBalance);
+        }
+        else
+        {
+            sourceBalance.AddStock(outLeg.Quantity, now, actor.UserId);
+        }
+
+        var reversalParentTransactionId = Guid.NewGuid();
+
+        var outReversal = new StockMovement(
+            actor.OrganizationId,
+            StockMovementType.TransferOutReversal,
+            outLeg.InventoryItemId,
+            outLeg.FarmId,
+            outLeg.StorageLocationId,
+            outLeg.Quantity,
+            outLeg.StockUnitId,
+            reversalDate,
+            actor.UserId,
+            referenceNumber: outLeg.ReferenceNumber,
+            notes: $"Reversal of TransferOut ({outLeg.Id}): {reason}",
+            parentTransactionId: reversalParentTransactionId,
+            reversedMovementId: outLeg.Id);
+
+        var inReversal = new StockMovement(
+            actor.OrganizationId,
+            StockMovementType.TransferInReversal,
+            inLeg.InventoryItemId,
+            inLeg.FarmId,
+            inLeg.StorageLocationId,
+            inLeg.Quantity,
+            inLeg.StockUnitId,
+            reversalDate,
+            actor.UserId,
+            referenceNumber: inLeg.ReferenceNumber,
+            notes: $"Reversal of TransferIn ({inLeg.Id}): {reason}",
+            parentTransactionId: reversalParentTransactionId,
+            reversedMovementId: inLeg.Id);
+
+        store.AddMovement(outReversal);
+        store.AddMovement(inReversal);
+
+        outLeg.MarkAsReversed(outReversal.Id, reason);
+        inLeg.MarkAsReversed(inReversal.Id, reason);
+
+        AddAudit(actor, targetMovement, "Stock.TransferReversed", new
+        {
+            ParentTransactionId = targetMovement.ParentTransactionId,
+            ReversalParentTransactionId = reversalParentTransactionId,
+            OutLegId = outLeg.Id,
+            OutReversalId = outReversal.Id,
+            InLegId = inLeg.Id,
+            InReversalId = inReversal.Id,
+            Reason = reason
+        }, ipAddress);
+
+        await store.SaveChangesAsync(ct);
+
+        var returnMovement = targetMovement.Id == inLeg.Id ? inReversal : outReversal;
+        var returnLoc = returnMovement.StorageLocationId == inLeg.StorageLocationId ? inLeg.StorageLocation : outLeg.StorageLocation;
+
+        return ToMovementResponse(
+            returnMovement,
+            item,
+            returnLoc?.Farm,
+            returnLoc,
+            item?.StockUnit);
+    }
+
+    private static (StockMovementType ReversalType, bool IsDeduction) GetOpposingReversalType(StockMovementType type) => type switch
+    {
+        StockMovementType.OpeningStock => (StockMovementType.OpeningStockReversal, true),
+        StockMovementType.Receipt => (StockMovementType.ReceiptReversal, true),
+        StockMovementType.Issue => (StockMovementType.IssueReversal, false),
+        StockMovementType.AdjustmentIn => (StockMovementType.AdjustmentInReversal, true),
+        StockMovementType.AdjustmentOut => (StockMovementType.AdjustmentOutReversal, false),
+        _ => throw new InvalidOperationException($"Unsupported movement type for standard reversal: {type}")
+    };
 
     private static void ValidateActor(InventoryActor actor)
     {

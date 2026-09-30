@@ -25,7 +25,8 @@ public sealed class StockMovement
         Guid? cropCycleStageId = null,
         Guid? plantationId = null,
         Guid? farmAreaId = null,
-        Guid? laborActivityId = null)
+        Guid? laborActivityId = null,
+        Guid? reversedMovementId = null)
     {
         if (organizationId == Guid.Empty)
         {
@@ -84,6 +85,8 @@ public sealed class StockMovement
         PlantationId = plantationId;
         FarmAreaId = farmAreaId;
         LaborActivityId = laborActivityId;
+        ReversedMovementId = reversedMovementId;
+        IsReversed = false;
         CreatedAt = DateTimeOffset.UtcNow;
         CreatedBy = createdBy;
     }
@@ -105,6 +108,10 @@ public sealed class StockMovement
     public Guid? PlantationId { get; private set; }
     public Guid? FarmAreaId { get; private set; }
     public Guid? LaborActivityId { get; private set; }
+    public bool IsReversed { get; private set; }
+    public Guid? ReversalMovementId { get; private set; }
+    public Guid? ReversedMovementId { get; private set; }
+    public string? ReversalReason { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public Guid CreatedBy { get; private set; }
 
@@ -118,6 +125,39 @@ public sealed class StockMovement
     public CropPlantation? Plantation { get; private set; }
     public FarmArea? FarmArea { get; private set; }
     public LaborActivity? LaborActivity { get; private set; }
+    public StockMovement? ReversalMovement { get; private set; }
+    public StockMovement? ReversedMovement { get; private set; }
+
+    public void MarkAsReversed(Guid reversalMovementId, string reason)
+    {
+        if (IsReversed)
+        {
+            throw new InvalidOperationException("This movement has already been reversed.");
+        }
+
+        if (reversalMovementId == Guid.Empty)
+        {
+            throw new ArgumentException("A reversal movement identifier is required.", nameof(reversalMovementId));
+        }
+
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            throw new ArgumentException("A reversal reason is required.", nameof(reason));
+        }
+
+        IsReversed = true;
+        ReversalMovementId = reversalMovementId;
+        ReversalReason = reason.Trim();
+    }
+
+    public static bool IsReversalType(StockMovementType type) =>
+        type is StockMovementType.OpeningStockReversal
+             or StockMovementType.ReceiptReversal
+             or StockMovementType.IssueReversal
+             or StockMovementType.AdjustmentInReversal
+             or StockMovementType.AdjustmentOutReversal
+             or StockMovementType.TransferInReversal
+             or StockMovementType.TransferOutReversal;
 
     private static string? NormalizeOptional(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();

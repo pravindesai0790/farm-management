@@ -12,6 +12,7 @@ import {
   RecordStockIssueRequest,
   RecordStockReceiptRequest,
   RecordStockTransferRequest,
+  ReverseStockMovementRequest,
   StockBalance,
   StockBalanceList,
   StockMovement,
@@ -183,5 +184,9 @@ export class InventoryService {
 
   recordTransfer(request: RecordStockTransferRequest): Observable<readonly StockMovement[]> {
     return this.http.post<readonly StockMovement[]>(`${this.api}/stock/transfers`, request);
+  }
+
+  reverseMovement(id: string, request: ReverseStockMovementRequest): Observable<StockMovement> {
+    return this.http.post<StockMovement>(`${this.api}/stock/movements/${id}/reverse`, request);
   }
 }

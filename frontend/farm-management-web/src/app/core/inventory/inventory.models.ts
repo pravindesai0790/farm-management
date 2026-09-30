@@ -7,7 +7,14 @@ export type StockMovementType =
   | "AdjustmentIn"
   | "AdjustmentOut"
   | "TransferIn"
-  | "TransferOut";
+  | "TransferOut"
+  | "OpeningStockReversal"
+  | "ReceiptReversal"
+  | "IssueReversal"
+  | "AdjustmentInReversal"
+  | "AdjustmentOutReversal"
+  | "TransferInReversal"
+  | "TransferOutReversal";
 
 export interface InventoryItem {
   readonly id: string;
@@ -126,6 +133,15 @@ export interface StockMovement {
   readonly farmAreaName?: string | null;
   readonly laborActivityId?: string | null;
   readonly laborActivityTypeName?: string | null;
+  readonly isReversed: boolean;
+  readonly reversalMovementId?: string | null;
+  readonly reversedMovementId?: string | null;
+  readonly reversalReason?: string | null;
+}
+
+export interface ReverseStockMovementRequest {
+  readonly reason: string;
+  readonly reversalDate?: string | null;
 }
 
 export type StockMovementList = PagedResponse<StockMovement>;
