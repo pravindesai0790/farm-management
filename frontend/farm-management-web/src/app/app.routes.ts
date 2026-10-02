@@ -441,7 +441,17 @@ export const routes: Routes = [
           {
             path: "",
             pathMatch: "full",
-            redirectTo: "suppliers",
+            redirectTo: "direct",
+          },
+          {
+            path: "direct",
+            title: "Direct Expenses",
+            canActivate: [permissionGuard],
+            data: { permission: "Expense.View" },
+            loadComponent: () =>
+              import(
+                "./features/expenses/direct-expenses/direct-expense-list-page/direct-expense-list-page.component"
+              ).then((module) => module.DirectExpenseListPageComponent),
           },
           {
             path: "suppliers",

@@ -1,0 +1,72 @@
+<div class="dialog-container">
+  <div class="dialog-header">
+    <h2 mat-dialog-title>
+      <mat-icon color="warn">undo</mat-icon>
+      Reverse Expense
+    </h2>
+    <button mat-icon-button mat-dialog-close [disabled]="isSubmitting()" aria-label="Close dialog">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+    <mat-dialog-content class="dialog-content">
+      <div class="expense-summary-card">
+        <div class="summary-row">
+          <span class="label">Farm:</span>
+          <span class="value">{{ data.expense.farmName }}</span>
+        </div>
+        <div class="summary-row">
+          <span class="label">Category:</span>
+          <span class="value">{{ data.expense.expenseCategoryName }}</span>
+        </div>
+        <div class="summary-row">
+          <span class="label">Amount:</span>
+          <span class="value amount">{{ data.expense.currencySymbol }} {{ data.expense.amount | number:'1.2-2' }}</span>
+        </div>
+        <div class="summary-row">
+          <span class="label">Description:</span>
+          <span class="value">{{ data.expense.description }}</span>
+        </div>
+      </div>
+
+      <div class="warning-callout">
+        <mat-icon>warning</mat-icon>
+        <div>
+          <strong>Reversal is permanent.</strong>
+          This expense record will be marked as reversed and its financial value excluded from expense reports.
+        </div>
+      </div>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Reason for Reversal</mat-label>
+        <textarea
+          matInput
+          rows="3"
+          formControlName="reason"
+          placeholder="Please explain why this expense is being reversed..."
+        ></textarea>
+        @if (form.controls.reason.hasError('required') && form.controls.reason.touched) {
+          <mat-error>Reversal reason is required.</mat-error>
+        }
+        @if (form.controls.reason.hasError('maxlength') && form.controls.reason.touched) {
+          <mat-error>Reason cannot exceed 500 characters.</mat-error>
+        }
+      </mat-form-field>
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end" class="dialog-actions">
+      <button mat-button type="button" mat-dialog-close [disabled]="isSubmitting()">
+        Cancel
+      </button>
+      <button mat-raised-button color="warn" type="submit" [disabled]="form.invalid || isSubmitting()">
+        @if (isSubmitting()) {
+          <mat-spinner diameter="18"></mat-spinner>
+        } @else {
+          <mat-icon>undo</mat-icon>
+        }
+        <span>Confirm Reversal</span>
+      </button>
+    </mat-dialog-actions>
+  </form>
+</div>

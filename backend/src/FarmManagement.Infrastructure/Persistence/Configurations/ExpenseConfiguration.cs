@@ -115,6 +115,15 @@ public sealed class ExpenseConfiguration : IEntityTypeConfiguration<Expense>
             .HasConstraintName("fk_expenses_crop_cycle")
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.Property(e => e.CropCycleStageId)
+            .HasColumnName("crop_cycle_stage_id");
+
+        builder.HasOne(e => e.CropCycleStage)
+            .WithMany()
+            .HasForeignKey(e => e.CropCycleStageId)
+            .HasConstraintName("fk_expenses_crop_cycle_stage")
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.Property(e => e.AttachmentReference)
             .HasColumnName("attachment_reference")
             .HasMaxLength(500);

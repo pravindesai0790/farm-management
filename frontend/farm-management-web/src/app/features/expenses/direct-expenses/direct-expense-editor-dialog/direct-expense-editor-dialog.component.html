@@ -1,0 +1,199 @@
+<div class="dialog-container">
+  <div class="dialog-header">
+    <h2 mat-dialog-title>
+      <mat-icon>{{ data?.expense ? 'edit_note' : 'add_circle' }}</mat-icon>
+      {{ data?.expense ? 'Edit Expense Draft' : 'Record Direct Farm Expense' }}
+    </h2>
+    <button mat-icon-button mat-dialog-close [disabled]="isSubmitting()" aria-label="Close dialog">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+    <mat-dialog-content class="dialog-content">
+      @if (isLoadingLookups()) {
+        <div class="loading-state">
+          <mat-progress-spinner mode="indeterminate" diameter="32"></mat-progress-spinner>
+          <span>Loading master data...</span>
+        </div>
+      }
+
+      <div class="form-grid">
+        <!-- Farm -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Farm</mat-label>
+          <mat-select formControlName="farmId" placeholder="Select farm">
+            @for (farm of farms(); track farm.id) {
+              <mat-option [value]="farm.id">{{ farm.name }}</mat-option>
+            }
+          </mat-select>
+          @if (form.controls.farmId.hasError('required') && form.controls.farmId.touched) {
+            <mat-error>Farm is required.</mat-error>
+          }
+        </mat-form-field>
+
+        <!-- Category -->
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Expense Category</mat-label>
+          <mat-select formControlName="expenseCategoryId" placeholder="Select category">
+            @for (cat of categories(); track cat.id) {
+              <mat-option [value]="cat.id">{{ cat.name }}</mat-option>
+            }
+          </mat-select>
+          @if (form.controls.expenseCategoryId.hasError('required') && form.controls.expenseCategoryId.touched) {
+            <mat-error>Category is required.</mat-error>
+          }
+        </mat-form-field>
+
+        <!-- Expense Date -->
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Expense Date</mat-label>
+          <input
+            matInput
+            [matDatepicker]="expenseDatePicker"
+            formControlName="expenseDate"
+            [max]="today"
+            placeholder="Choose a date"
+          />
+          <mat-datepicker-toggle matIconSuffix [for]="expenseDatePicker"></mat-datepicker-toggle>
+          <mat-datepicker #expenseDatePicker></mat-datepicker>
+          @if (form.controls.expenseDate.hasError('required') && form.controls.expenseDate.touched) {
+            <mat-error>Expense date is required.</mat-error>
+          }
+        </mat-form-field>
+
+        <!-- Amount -->
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Amount</mat-label>
+          <input matInput type="number" step="0.01" min="0.01" formControlName="amount" placeholder="0.00" />
+          @if (form.controls.amount.hasError('required') && form.controls.amount.touched) {
+            <mat-error>Amount is required.</mat-error>
+          }
+          @if (form.controls.amount.hasError('min') && form.controls.amount.touched) {
+            <mat-error>Amount must be greater than zero.</mat-error>
+          }
+        </mat-form-field>
+
+        <!-- Currency -->
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Currency</mat-label>
+          <mat-select formControlName="currencyId" placeholder="Select currency">
+            @for (curr of currencies(); track curr.id) {
+              <mat-option [value]="curr.id">{{ curr.code }} ({{ curr.symbol }})</mat-option>
+            }
+          </mat-select>
+          @if (form.controls.currencyId.hasError('required') && form.controls.currencyId.touched) {
+            <mat-error>Currency is required.</mat-error>
+          }
+        </mat-form-field>
+
+        <!-- Description -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Description</mat-label>
+          <textarea
+            matInput
+            rows="2"
+            formControlName="description"
+            placeholder="e.g. Purchased organic pesticide spray for Zone B"
+          ></textarea>
+          @if (form.controls.description.hasError('required') && form.controls.description.touched) {
+            <mat-error>Description is required.</mat-error>
+          }
+          @if (form.controls.description.hasError('maxlength') && form.controls.description.touched) {
+            <mat-error>Description cannot exceed 500 characters.</mat-error>
+          }
+        </mat-form-field>
+
+        <!-- Optional Supplier -->
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Supplier (Optional)</mat-label>
+          <mat-select formControlName="supplierId" placeholder="None / Direct expense">
+            <mat-option value="">None (Direct)</mat-option>
+            @for (sup of suppliers(); track sup.id) {
+              <mat-option [value]="sup.id">{{ sup.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Optional Reference Number -->
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Reference / Receipt # (Optional)</mat-label>
+          <input matInput formControlName="referenceNumber" placeholder="e.g. REC-12048" />
+        </mat-form-field>
+
+        <!-- Operational Linkages Section Header -->
+        <div class="section-divider full-width">
+          <span class="section-title">Operational Linkages (Optional)</span>
+        </div>
+
+        <!-- Farm Area -->
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Farm Area / Zone</mat-label>
+          <mat-select formControlName="farmAreaId">
+            <mat-option value="">None</mat-option>
+            @for (area of areas(); track area.id) {
+              <mat-option [value]="area.id">{{ area.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Plantation -->
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Plantation</mat-label>
+          <mat-select formControlName="plantationId">
+            <mat-option value="">None</mat-option>
+            @for (plant of plantations(); track plant.id) {
+              <mat-option [value]="plant.id">{{ plant.plantationName }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Crop Cycle -->
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Crop Cycle</mat-label>
+          <mat-select formControlName="cropCycleId">
+            <mat-option value="">None</mat-option>
+            @for (cycle of cropCycles(); track cycle.id) {
+              <mat-option [value]="cycle.id">{{ cycle.cycleName }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Crop Cycle Stage -->
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Crop Cycle Stage</mat-label>
+          <mat-select formControlName="cropCycleStageId">
+            <mat-option value="">None</mat-option>
+            @for (stage of cropCycleStages(); track stage.id) {
+              <mat-option [value]="stage.id">{{ stage.sequenceNumber }}. {{ stage.stageName }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Attachment Reference / URL -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Attachment URL / Document Reference (Optional)</mat-label>
+          <input
+            matInput
+            formControlName="attachmentReference"
+            placeholder="e.g. https://storage.farm.org/docs/rec-88.pdf"
+          />
+        </mat-form-field>
+      </div>
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end" class="dialog-actions">
+      <button mat-button type="button" mat-dialog-close [disabled]="isSubmitting()">
+        Cancel
+      </button>
+      <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid || isSubmitting()">
+        @if (isSubmitting()) {
+          <mat-spinner diameter="18"></mat-spinner>
+        } @else {
+          <mat-icon>save</mat-icon>
+        }
+        <span>{{ data?.expense ? 'Save Changes' : 'Save as Draft' }}</span>
+      </button>
+    </mat-dialog-actions>
+  </form>
+</div>

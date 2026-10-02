@@ -1,0 +1,135 @@
+<div class="dialog-container">
+  <div class="dialog-header">
+    <h2 mat-dialog-title>
+      <mat-icon>receipt_long</mat-icon>
+      Expense Details
+    </h2>
+    <div class="header-right">
+      <span class="status-badge" [ngClass]="getStatusClass(data.expense.status)">
+        {{ data.expense.status }}
+      </span>
+      <button mat-icon-button mat-dialog-close aria-label="Close dialog">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <mat-dialog-content class="dialog-content">
+    <!-- Amount Banner -->
+    <div class="amount-banner">
+      <span class="banner-label">Total Expense Amount</span>
+      <span class="banner-amount">{{ data.expense.currencySymbol }} {{ data.expense.amount | number:'1.2-2' }}</span>
+      <span class="banner-currency">{{ data.expense.currencyCode }}</span>
+    </div>
+
+    <!-- Details Grid -->
+    <div class="details-grid">
+      <div class="detail-item">
+        <span class="detail-label">Farm</span>
+        <span class="detail-value">{{ data.expense.farmName }}</span>
+      </div>
+
+      <div class="detail-item">
+        <span class="detail-label">Category</span>
+        <span class="detail-value">{{ data.expense.expenseCategoryName }}</span>
+      </div>
+
+      <div class="detail-item">
+        <span class="detail-label">Expense Date</span>
+        <span class="detail-value">{{ data.expense.expenseDate | date:'mediumDate' }}</span>
+      </div>
+
+      <div class="detail-item">
+        <span class="detail-label">Supplier</span>
+        <span class="detail-value">{{ data.expense.supplierName || 'None (Direct expense)' }}</span>
+      </div>
+
+      <div class="detail-item">
+        <span class="detail-label">Reference #</span>
+        <span class="detail-value">{{ data.expense.referenceNumber || '—' }}</span>
+      </div>
+
+      <div class="detail-item full-width">
+        <span class="detail-label">Description</span>
+        <span class="detail-value text-wrap">{{ data.expense.description }}</span>
+      </div>
+
+      <!-- Operational Linkages -->
+      <div class="section-divider full-width">
+        <span class="section-title">Operational Linkages</span>
+      </div>
+
+      <div class="detail-item">
+        <span class="detail-label">Farm Area</span>
+        <span class="detail-value">{{ data.expense.farmAreaName || '—' }}</span>
+      </div>
+
+      <div class="detail-item">
+        <span class="detail-label">Plantation</span>
+        <span class="detail-value">{{ data.expense.plantationName || '—' }}</span>
+      </div>
+
+      <div class="detail-item">
+        <span class="detail-label">Crop Cycle</span>
+        <span class="detail-value">{{ data.expense.cropCycleName || '—' }}</span>
+      </div>
+
+      <div class="detail-item">
+        <span class="detail-label">Crop Cycle Stage</span>
+        <span class="detail-value">{{ data.expense.cropCycleStageName || '—' }}</span>
+      </div>
+
+      <!-- Attachment Link -->
+      @if (data.expense.attachmentReference) {
+        <div class="detail-item full-width">
+          <span class="detail-label">Attachment</span>
+          <span class="detail-value">
+            <a [href]="data.expense.attachmentReference" target="_blank" rel="noopener noreferrer" class="attachment-link">
+              <mat-icon>attach_file</mat-icon>
+              View Document
+            </a>
+          </span>
+        </div>
+      }
+
+      <!-- Reversal Info if Reversed -->
+      @if (data.expense.status === 'Reversed') {
+        <div class="section-divider full-width reversal-section">
+          <span class="section-title">Reversal Information</span>
+        </div>
+
+        <div class="detail-item full-width reversal-box">
+          <span class="detail-label">Reason for Reversal</span>
+          <span class="detail-value text-wrap">{{ data.expense.reversalReason }}</span>
+          <span class="reversal-timestamp">
+            Reversed at: {{ data.expense.reversedAt | date:'medium' }}
+          </span>
+        </div>
+      }
+
+      <!-- Audit Metadata -->
+      <div class="section-divider full-width">
+        <span class="section-title">Audit Information</span>
+      </div>
+
+      <div class="detail-item">
+        <span class="detail-label">Created</span>
+        <span class="detail-value">{{ data.expense.createdAt | date:'medium' }}</span>
+      </div>
+
+      <div class="detail-item">
+        <span class="detail-label">Posted</span>
+        <span class="detail-value">{{ data.expense.postedAt ? (data.expense.postedAt | date:'medium') : 'Not posted' }}</span>
+      </div>
+
+      <div class="detail-item">
+        <span class="detail-label">Last Updated</span>
+        <span class="detail-value">{{ data.expense.updatedAt ? (data.expense.updatedAt | date:'medium') : '—' }}</span>
+      </div>
+    </div>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end" class="dialog-actions">
+    <button mat-button type="button" mat-dialog-close>Close</button>
+  </mat-dialog-actions>
+</div>

@@ -138,6 +138,7 @@ builder.Services.AddScoped<FarmManagement.Application.Interfaces.Inventory.IStor
 builder.Services.AddScoped<FarmManagement.Application.Interfaces.Inventory.IInventoryStockService, InventoryStockService>();
 builder.Services.AddScoped<ISupplierService, SupplierService>();
 builder.Services.AddScoped<IExpenseCategoryService, ExpenseCategoryService>();
+builder.Services.AddScoped<IExpenseService, ExpenseService>();
 
 var app = builder.Build();
 

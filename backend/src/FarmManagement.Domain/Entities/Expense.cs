@@ -22,6 +22,7 @@ public sealed class Expense
     public Guid? FarmAreaId { get; private set; }
     public Guid? PlantationId { get; private set; }
     public Guid? CropCycleId { get; private set; }
+    public Guid? CropCycleStageId { get; private set; }
     public string? AttachmentReference { get; private set; }
     public ExpenseStatus Status { get; private set; }
     public DateTimeOffset? PostedAt { get; private set; }
@@ -42,6 +43,7 @@ public sealed class Expense
     public FarmArea? FarmArea { get; private set; }
     public CropPlantation? Plantation { get; private set; }
     public CropCycle? CropCycle { get; private set; }
+    public CropCycleStage? CropCycleStage { get; private set; }
 
     public static Expense CreateDraft(
         Guid organizationId,
@@ -57,6 +59,7 @@ public sealed class Expense
         Guid? farmAreaId = null,
         Guid? plantationId = null,
         Guid? cropCycleId = null,
+        Guid? cropCycleStageId = null,
         string? attachmentReference = null)
     {
         ValidateCommon(organizationId, farmId, expenseCategoryId, description, amount, currencyId, createdBy);
@@ -77,6 +80,7 @@ public sealed class Expense
             FarmAreaId = farmAreaId,
             PlantationId = plantationId,
             CropCycleId = cropCycleId,
+            CropCycleStageId = cropCycleStageId,
             AttachmentReference = NormalizeOptional(attachmentReference, 500),
             Status = ExpenseStatus.Draft,
             CreatedAt = now,
@@ -97,6 +101,7 @@ public sealed class Expense
         Guid? farmAreaId = null,
         Guid? plantationId = null,
         Guid? cropCycleId = null,
+        Guid? cropCycleStageId = null,
         string? attachmentReference = null,
         DateTimeOffset? now = null)
     {
@@ -118,6 +123,7 @@ public sealed class Expense
         FarmAreaId = farmAreaId;
         PlantationId = plantationId;
         CropCycleId = cropCycleId;
+        CropCycleStageId = cropCycleStageId;
         AttachmentReference = NormalizeOptional(attachmentReference, 500);
         UpdatedAt = now ?? DateTimeOffset.UtcNow;
         UpdatedBy = updatedBy;

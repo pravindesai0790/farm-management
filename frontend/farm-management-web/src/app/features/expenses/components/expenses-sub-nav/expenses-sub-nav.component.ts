@@ -25,6 +25,12 @@ export class ExpensesSubNavComponent {
 
   readonly navItems: readonly ExpenseNavItem[] = [
     {
+      label: "Direct Expenses",
+      route: "/expenses/direct",
+      icon: "receipt_long",
+      permission: "Expense.View",
+    },
+    {
       label: "Suppliers",
       route: "/expenses/suppliers",
       icon: "store",
