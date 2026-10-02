@@ -61,6 +61,12 @@ Use this as the starting point for feature work. All core Phase 1, Phase 2, and 
   - Worker payments & settlements (`WorkerPayment`, `WorkerPaymentAllocation`, `SettlementStatus`): payment recording, advances, payout settlements, balance calculations, and FIFO payment-to-earnings allocation.
 - **Labor Activities**:
   - Field activity types (`LaborActivityType`) and field activities (`LaborActivity`, `LaborActivityStatus`): scheduling and execution tracking linked to farms, plantations, and cycles, with cancellation workflows and audit reasons.
+- **Inventory & Warehouse Management**:
+  - Master data: Inventory items (`InventoryItem`), storage locations (`StorageLocation`), stock units (`Unit`).
+  - Stock balance & ledger (`StockBalance`, `StockMovement`): real-time on-hand stock balances and audit movements across Opening Stock, Receipts, Issues, Adjustments (In/Out), Transfers (In/Out), and Reversals.
+  - Concurrency & Integrity: PostgreSQL transaction-level advisory locking (`pg_advisory_xact_lock`), balance update row locking (`FOR UPDATE`), and insufficient stock validation.
+  - Transaction Reversals: atomic reversal workflow (`ReverseStockMovementAsync`) generating opposing movement records and linking reversal IDs with audit logging.
+  - Operational Linkages: foreign key linkages (`CropCycleId`, `CropCycleStageId`, `PlantationId`, `FarmAreaId`, `LaborActivityId`) on stock movements for agronomic cost accounting.
 - **Dashboard APIs**:
   - Farm 360 metrics, active crop cycle progress trackers, and daily workforce attendance/labor cost summaries.
 
@@ -86,6 +92,13 @@ Use this as the starting point for feature work. All core Phase 1, Phase 2, and 
   - Wage rates and contractors master management.
 - **Labor Activities**:
   - Labor activity list with status filters and pagination, activity editor, activity details, and cancellation modal.
+- **Inventory & Stock Management**:
+  - Inventory items catalog (list, create/edit, category filters, active toggle).
+  - Storage locations management per farm (list, create/edit).
+  - Stock Overview & On-hand Balances tab with farm/location/item filters and stock operation quick actions.
+  - Stock Operations Modal (`StockOperationDialogComponent`) supporting Opening Stock, Receipts, Issues, Adjustments, and Transfers with real-time stock availability check, advisory lock safety, and cascading operational linkages (Crop Cycle, Stage, Plantation, Area, Activity).
+  - Stock Movement Ledger (`StockLedgerTabComponent`) with movement badges, operational link tags with deep linking (`?cropCycleId=...`), and transaction reversal dialog integration.
+  - Crop Cycle detail page **"Inputs & Inventory Utilized"** tab (`CropCycleInputsTabComponent`) with KPI metrics strip, aggregated net applied quantities ($\sum \text{Issues} - \sum \text{Reversals}$) per item, category chips (Fertilizer, Seed, Chemical, Material), stage breakdowns, interactive reversal dialog, and 1-click "Issue Inputs" modal shortcut pre-selected with cycle metadata.
 - **Operational Dashboard**:
   - Farm 360 overview cards, active cycle progress indicators, and daily labor attendance summary cards.
 - **Shared UI**:
@@ -94,11 +107,10 @@ Use this as the starting point for feature work. All core Phase 1, Phase 2, and 
 ### Automated Test Suite in Place
 
 - Backend test project at `backend/tests/FarmManagement.API.Tests/`.
-- 425 passing unit and integration tests verifying domain models, lifecycle stage invariants, wage calculations, attendance finalization, and payment allocation engines.
+- 482 passing unit and integration tests verifying domain models, lifecycle stage invariants, wage calculations, attendance finalization, payment allocation engines, inventory transactions, stock balances, advisory locks, transaction reversals, and crop cycle operational linkages.
 
 ### Future Roadmap / Not Yet Implemented
 
-- Inventory & Warehouse management (seeds, fertilizers, crop protection chemicals, equipment).
 - Machinery and farm implement maintenance tracking.
 - Harvest logging, yield collection, grading, and packing.
 - Sales, crop invoicing, dispatch, and customer orders.
