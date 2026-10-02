@@ -146,7 +146,29 @@ public sealed class IdentityDataSeeder(
         new("StorageLocation.Deactivate", "Deactivate storage locations.", "Storage Locations"),
         new("InventoryStock.View", "View stock overview and ledger.", "Inventory Stock"),
         new("InventoryTransaction.Create", "Post inventory stock transactions.", "Inventory Stock"),
-        new("InventoryTransaction.Reverse", "Reverse / void inventory stock transactions.", "Inventory Stock")
+        new("InventoryTransaction.Reverse", "Reverse / void inventory stock transactions.", "Inventory Stock"),
+        new("Supplier.View", "View suppliers.", "Suppliers"),
+        new("Supplier.Create", "Create suppliers.", "Suppliers"),
+        new("Supplier.Update", "Update suppliers.", "Suppliers"),
+        new("Supplier.Deactivate", "Deactivate suppliers.", "Suppliers"),
+        new("ExpenseCategory.View", "View expense categories.", "Expense Categories"),
+        new("ExpenseCategory.Manage", "Manage expense categories.", "Expense Categories"),
+        new("Expense.View", "View direct expenses.", "Expenses"),
+        new("Expense.Create", "Create direct expenses.", "Expenses"),
+        new("Expense.UpdateDraft", "Update draft direct expenses.", "Expenses"),
+        new("Expense.Post", "Post direct expenses.", "Expenses"),
+        new("Expense.Reverse", "Reverse direct expenses.", "Expenses"),
+        new("Expense.Report.View", "View expense reports and summaries.", "Expenses"),
+        new("PurchaseInvoice.View", "View purchase invoices.", "Purchase Invoices"),
+        new("PurchaseInvoice.Create", "Create purchase invoices.", "Purchase Invoices"),
+        new("PurchaseInvoice.UpdateDraft", "Update draft purchase invoices.", "Purchase Invoices"),
+        new("PurchaseInvoice.Post", "Post purchase invoices.", "Purchase Invoices"),
+        new("PurchaseInvoice.Reverse", "Reverse purchase invoices.", "Purchase Invoices"),
+        new("PurchaseInvoice.ReceiveItems", "Receive inventory items from purchase invoices.", "Purchase Invoices"),
+        new("SupplierPayment.View", "View supplier payments.", "Supplier Payments"),
+        new("SupplierPayment.Create", "Record supplier payments.", "Supplier Payments"),
+        new("SupplierPayment.Reverse", "Reverse supplier payments.", "Supplier Payments"),
+        new("SupplierBalance.View", "View supplier balances and payables.", "Supplier Payments")
     ];
 
     private static readonly IReadOnlySet<string> OrganizationAdminPermissions =
@@ -266,7 +288,29 @@ public sealed class IdentityDataSeeder(
             "StorageLocation.Deactivate",
             "InventoryStock.View",
             "InventoryTransaction.Create",
-            "InventoryTransaction.Reverse"
+            "InventoryTransaction.Reverse",
+            "Supplier.View",
+            "Supplier.Create",
+            "Supplier.Update",
+            "Supplier.Deactivate",
+            "ExpenseCategory.View",
+            "ExpenseCategory.Manage",
+            "Expense.View",
+            "Expense.Create",
+            "Expense.UpdateDraft",
+            "Expense.Post",
+            "Expense.Reverse",
+            "Expense.Report.View",
+            "PurchaseInvoice.View",
+            "PurchaseInvoice.Create",
+            "PurchaseInvoice.UpdateDraft",
+            "PurchaseInvoice.Post",
+            "PurchaseInvoice.Reverse",
+            "PurchaseInvoice.ReceiveItems",
+            "SupplierPayment.View",
+            "SupplierPayment.Create",
+            "SupplierPayment.Reverse",
+            "SupplierBalance.View"
         };
 
     /// <summary>
@@ -316,7 +360,24 @@ public sealed class IdentityDataSeeder(
             "StorageLocation.Update",
             "InventoryStock.View",
             "InventoryTransaction.Create",
-            "InventoryTransaction.Reverse"
+            "InventoryTransaction.Reverse",
+            "Supplier.View",
+            "Supplier.Create",
+            "Supplier.Update",
+            "ExpenseCategory.View",
+            "Expense.View",
+            "Expense.Create",
+            "Expense.UpdateDraft",
+            "Expense.Post",
+            "Expense.Report.View",
+            "PurchaseInvoice.View",
+            "PurchaseInvoice.Create",
+            "PurchaseInvoice.UpdateDraft",
+            "PurchaseInvoice.Post",
+            "PurchaseInvoice.ReceiveItems",
+            "SupplierPayment.View",
+            "SupplierPayment.Create",
+            "SupplierBalance.View"
         };
 
     /// <summary>
@@ -504,6 +565,7 @@ public sealed class IdentityDataSeeder(
         await SeedPlantationEndReasonsAsync(cancellationToken);
         await SeedLaborActivityTypesAsync(cancellationToken);
         await SeedLaborCategoriesAsync(cancellationToken);
+        await SeedExpenseCategoriesAsync(cancellationToken);
         await SeedInitialSuperAdminAsync(organization, roles["SuperAdmin"], initialAdmin, cancellationToken);
 
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -767,6 +829,28 @@ public sealed class IdentityDataSeeder(
                     organizationId: null,
                     name: seedCategory.Name,
                     isSystem: true,
+                    description: seedCategory.Description));
+            }
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task SeedExpenseCategoriesAsync(CancellationToken cancellationToken)
+    {
+        foreach (var seedCategory in SeedExpenseCategories)
+        {
+            var exists = await dbContext.ExpenseCategories.AnyAsync(
+                category => category.IsSystemDefault && category.OrganizationId == null && category.Name == seedCategory.Name,
+                cancellationToken);
+
+            if (!exists)
+            {
+                dbContext.ExpenseCategories.Add(new ExpenseCategory(
+                    organizationId: null,
+                    name: seedCategory.Name,
+                    code: seedCategory.Code,
+                    isSystemDefault: true,
                     description: seedCategory.Description));
             }
         }
@@ -1052,6 +1136,26 @@ public sealed class IdentityDataSeeder(
         int SequenceNumber,
         int? ExpectedDurationDays,
         string? Description = null);
+
+    private static readonly IReadOnlyList<SeedExpenseCategory> SeedExpenseCategories =
+    [
+        new("Fertilizer", "FERT", "Fertilizers and soil enrichment inputs"),
+        new("Pesticides", "PEST", "Pesticides, insecticides, and fungicides"),
+        new("Seeds", "SEED", "Seeds and planting material"),
+        new("Irrigation", "IRRI", "Irrigation supplies, water, and system maintenance"),
+        new("Electricity", "ELEC", "Electricity and power utility costs"),
+        new("Fuel", "FUEL", "Diesel, petrol, and fuel for farm machinery"),
+        new("Equipment Repair", "REP", "Repairs and maintenance of farm equipment and implements"),
+        new("Machinery Rental", "RENT_MACH", "Rental and hire charges for machinery and tractors"),
+        new("Transport", "TRN", "Freight, haulage, and transportation costs"),
+        new("Rent/Lease", "LEASE", "Land, facility, and storage lease or rent"),
+        new("Utilities", "UTIL", "Water, waste, and general utility charges"),
+        new("Packaging", "PKG", "Harvest crates, sacks, boxes, and packaging supplies"),
+        new("Professional Services", "PROF", "Agronomy consulting, soil testing, legal, and accounting"),
+        new("Other", "OTHR", "Miscellaneous operational farm expenses")
+    ];
+
+    private sealed record SeedExpenseCategory(string Name, string Code, string? Description = null);
 
     private sealed record InitialAdminConfiguration(string Email, string Password);
 }

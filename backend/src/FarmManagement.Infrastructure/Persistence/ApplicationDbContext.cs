@@ -79,6 +79,22 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
 
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
 
+    public DbSet<Supplier> Suppliers => Set<Supplier>();
+
+    public DbSet<ExpenseCategory> ExpenseCategories => Set<ExpenseCategory>();
+
+    public DbSet<Expense> Expenses => Set<Expense>();
+
+    public DbSet<PurchaseInvoice> PurchaseInvoices => Set<PurchaseInvoice>();
+
+    public DbSet<PurchaseInvoiceLine> PurchaseInvoiceLines => Set<PurchaseInvoiceLine>();
+
+    public DbSet<PurchaseInvoiceReceiptLine> PurchaseInvoiceReceiptLines => Set<PurchaseInvoiceReceiptLine>();
+
+    public DbSet<SupplierPayment> SupplierPayments => Set<SupplierPayment>();
+
+    public DbSet<SupplierPaymentAllocation> SupplierPaymentAllocations => Set<SupplierPaymentAllocation>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
