@@ -7,6 +7,7 @@ using FarmManagement.Application.Interfaces.Plantations;
 using FarmManagement.Application.Interfaces.CropCycles;
 using FarmManagement.Application.Interfaces.Organizations;
 using FarmManagement.Application.Interfaces.Dashboard;
+using FarmManagement.Application.Interfaces.Expenses;
 using FarmManagement.Application.Interfaces.LaborActivities;
 using FarmManagement.Application.Interfaces.Labor;
 using FarmManagement.Application.Interfaces;
@@ -67,6 +68,8 @@ public static class DependencyInjection
         services.AddScoped<FarmManagement.Application.Interfaces.Inventory.IInventoryItemStore, InventoryItemStore>();
         services.AddScoped<FarmManagement.Application.Interfaces.Inventory.IStorageLocationStore, StorageLocationStore>();
         services.AddScoped<FarmManagement.Application.Interfaces.Inventory.IInventoryStockStore, InventoryStockStore>();
+        services.AddScoped<ISupplierStore, SupplierStore>();
+        services.AddScoped<IExpenseCategoryStore, ExpenseCategoryStore>();
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();
         services.AddScoped<IdentityDataSeeder>();
 

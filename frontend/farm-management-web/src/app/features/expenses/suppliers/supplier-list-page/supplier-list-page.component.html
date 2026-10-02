@@ -1,0 +1,145 @@
+<div class="suppliers-container">
+  <div class="header-row">
+    <div>
+      <h1 class="page-title">Expense Management</h1>
+      <p class="page-subtitle">Manage suppliers, vendors, expense categories, and accounts payable.</p>
+    </div>
+    @if (permissionService.has('Supplier.Create')) {
+      <button mat-flat-button color="primary" (click)="openCreateDialog()">
+        <mat-icon>add</mat-icon>
+        New Supplier
+      </button>
+    }
+  </div>
+
+  <app-expenses-sub-nav />
+
+  <mat-card class="filter-card">
+    <mat-card-content>
+      <form [formGroup]="filterForm" class="filter-form">
+        <mat-form-field appearance="outline" class="search-field">
+          <mat-label>Search suppliers</mat-label>
+          <mat-icon matPrefix>search</mat-icon>
+          <input matInput formControlName="search" placeholder="Search by name, contact, phone, or email" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="status-field">
+          <mat-label>Status</mat-label>
+          <mat-select formControlName="status">
+            <mat-option value="all">All statuses</mat-option>
+            <mat-option value="active">Active only</mat-option>
+            <mat-option value="inactive">Inactive only</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="table-card">
+    @if (isLoading()) {
+      <div class="loading-shade">
+        <mat-spinner diameter="40"></mat-spinner>
+      </div>
+    }
+
+    <div class="table-responsive">
+      <table mat-table [dataSource]="suppliers()" class="suppliers-table">
+        <!-- Name Column -->
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>Name</th>
+          <td mat-cell *matCellDef="let s">
+            <div class="supplier-name-cell">
+              <span class="supplier-name">{{ s.name }}</span>
+              @if (s.notes) {
+                <span class="supplier-notes-hint" [matTooltip]="s.notes">
+                  <mat-icon class="hint-icon">info</mat-icon>
+                </span>
+              }
+            </div>
+          </td>
+        </ng-container>
+
+        <!-- Contact Person Column -->
+        <ng-container matColumnDef="contactPerson">
+          <th mat-header-cell *matHeaderCellDef>Contact Person</th>
+          <td mat-cell *matCellDef="let s">{{ s.contactPerson || '—' }}</td>
+        </ng-container>
+
+        <!-- Phone Column -->
+        <ng-container matColumnDef="phone">
+          <th mat-header-cell *matHeaderCellDef>Phone</th>
+          <td mat-cell *matCellDef="let s">{{ s.phone || '—' }}</td>
+        </ng-container>
+
+        <!-- Email Column -->
+        <ng-container matColumnDef="email">
+          <th mat-header-cell *matHeaderCellDef>Email</th>
+          <td mat-cell *matCellDef="let s">{{ s.email || '—' }}</td>
+        </ng-container>
+
+        <!-- Registration Identifier Column -->
+        <ng-container matColumnDef="registrationIdentifier">
+          <th mat-header-cell *matHeaderCellDef>Registration / Tax ID</th>
+          <td mat-cell *matCellDef="let s">{{ s.registrationIdentifier || '—' }}</td>
+        </ng-container>
+
+        <!-- Status Column -->
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <td mat-cell *matCellDef="let s">
+            <mat-chip-set>
+              <mat-chip [class.active-chip]="s.isActive" [class.inactive-chip]="!s.isActive">
+                {{ s.isActive ? 'Active' : 'Inactive' }}
+              </mat-chip>
+            </mat-chip-set>
+          </td>
+        </ng-container>
+
+        <!-- Actions Column -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef class="actions-header">Actions</th>
+          <td mat-cell *matCellDef="let s" class="actions-cell">
+            @if (permissionService.has('Supplier.Update')) {
+              <button mat-icon-button (click)="openEditDialog(s)" matTooltip="Edit supplier">
+                <mat-icon>edit</mat-icon>
+              </button>
+            }
+            @if (permissionService.has('Supplier.Deactivate')) {
+              <button
+                mat-icon-button
+                (click)="toggleStatus(s)"
+                [matTooltip]="s.isActive ? 'Deactivate supplier' : 'Activate supplier'"
+                [color]="s.isActive ? 'warn' : 'primary'"
+              >
+                <mat-icon>{{ s.isActive ? 'block' : 'check_circle' }}</mat-icon>
+              </button>
+            }
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="columns"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns"></tr>
+
+        <tr class="mat-row" *matNoDataRow>
+          <td class="mat-cell no-data-cell" [attr.colspan]="columns.length">
+            @if (!isLoading()) {
+              <div class="empty-state">
+                <mat-icon class="empty-icon">store</mat-icon>
+                <p>No suppliers found matching the criteria.</p>
+              </div>
+            }
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <mat-paginator
+      [length]="totalCount()"
+      [pageIndex]="pageIndex()"
+      [pageSize]="pageSize()"
+      [pageSizeOptions]="[10, 20, 50]"
+      (page)="onPageChange($event)"
+      showFirstLastButtons
+    ></mat-paginator>
+  </mat-card>
+</div>

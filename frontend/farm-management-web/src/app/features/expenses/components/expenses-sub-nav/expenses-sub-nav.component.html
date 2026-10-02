@@ -1,0 +1,17 @@
+<nav class="sub-nav-container" aria-label="Expense Management Navigation">
+  <div class="sub-nav-tabs">
+    @for (item of navItems; track item.route) {
+      @if (canAccess(item)) {
+        <a
+          [routerLink]="item.route"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: !!item.exact }"
+          class="sub-nav-tab"
+        >
+          <mat-icon class="tab-icon">{{ item.icon }}</mat-icon>
+          <span>{{ item.label }}</span>
+        </a>
+      }
+    }
+  </div>
+</nav>

@@ -436,6 +436,36 @@ export const routes: Routes = [
         ],
       },
       {
+        path: "expenses",
+        children: [
+          {
+            path: "",
+            pathMatch: "full",
+            redirectTo: "suppliers",
+          },
+          {
+            path: "suppliers",
+            title: "Suppliers",
+            canActivate: [permissionGuard],
+            data: { permission: "Supplier.View" },
+            loadComponent: () =>
+              import(
+                "./features/expenses/suppliers/supplier-list-page/supplier-list-page.component"
+              ).then((module) => module.SupplierListPageComponent),
+          },
+          {
+            path: "categories",
+            title: "Expense Categories",
+            canActivate: [permissionGuard],
+            data: { permission: "ExpenseCategory.View" },
+            loadComponent: () =>
+              import(
+                "./features/expenses/categories/expense-category-list-page/expense-category-list-page.component"
+              ).then((module) => module.ExpenseCategoryListPageComponent),
+          },
+        ],
+      },
+      {
         path: "organization/new",
         title: "Create organization",
         canActivate: [permissionGuard],

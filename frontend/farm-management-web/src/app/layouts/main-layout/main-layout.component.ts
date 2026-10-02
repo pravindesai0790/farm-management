@@ -84,7 +84,7 @@ export class MainLayoutComponent {
 
   readonly currentUrl = signal<string>(this.router.url);
   readonly expandedMenus = signal<ReadonlySet<string>>(
-    new Set<string>(["farms", "plantations", "activities", "labor", "inventory"]),
+    new Set<string>(["farms", "plantations", "activities", "labor", "inventory", "expenses"]),
   );
 
   readonly organizationName = computed(
@@ -241,6 +241,30 @@ export class MainLayoutComponent {
               label: "Wage rates",
               route: "/labor/wage-rates",
               permissions: ["WorkerWage.View"],
+            },
+          ],
+        },
+      ],
+    },
+    {
+      title: "Expenses",
+      items: [
+        {
+          id: "expenses",
+          label: "Expenses",
+          icon: "receipt_long",
+          route: "/expenses",
+          permissions: ["Supplier.View", "ExpenseCategory.View"],
+          children: [
+            {
+              label: "Suppliers",
+              route: "/expenses/suppliers",
+              permissions: ["Supplier.View"],
+            },
+            {
+              label: "Expense Categories",
+              route: "/expenses/categories",
+              permissions: ["ExpenseCategory.View"],
             },
           ],
         },

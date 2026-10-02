@@ -1,0 +1,26 @@
+.dialog-content {
+  min-width: 440px;
+  max-width: 540px;
+  padding-top: 16px;
+}
+
+.form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.dialog-actions {
+  padding: 16px 24px;
+  gap: 8px;
+}
+
+@media (max-width: 500px) {
+  .dialog-content {
+    min-width: 100%;
+  }
+}

@@ -1,6 +1,6 @@
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { ComponentFixture, TestBed, fakeAsync, tick } from "@angular/core";
+import { ComponentFixture, TestBed, fakeAsync, tick } from "@angular/core/testing";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ActivatedRoute, provideRouter } from "@angular/router";

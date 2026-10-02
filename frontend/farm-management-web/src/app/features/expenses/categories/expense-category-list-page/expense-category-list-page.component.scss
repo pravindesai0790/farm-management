@@ -1,0 +1,146 @@
+.categories-container {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+
+  .page-title {
+    margin: 0 0 4px;
+    font-size: 24px;
+    font-weight: 600;
+    color: #202124;
+  }
+
+  .page-subtitle {
+    margin: 0;
+    font-size: 14px;
+    color: #5f6368;
+  }
+}
+
+.filter-card {
+  margin-bottom: 16px;
+
+  .filter-form {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+
+    .search-field {
+      flex: 1;
+    }
+
+    .status-field {
+      width: 180px;
+    }
+  }
+}
+
+.table-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.loading-shade {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.7);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.table-responsive {
+  overflow-x: auto;
+}
+
+.categories-table {
+  width: 100%;
+
+  .category-name {
+    font-weight: 500;
+    color: #202124;
+  }
+
+  .system-chip {
+    background-color: #e8f0fe !important;
+    color: #1967d2 !important;
+    font-weight: 500;
+  }
+
+  .custom-chip {
+    background-color: #e6f4ea !important;
+    color: #137333 !important;
+    font-weight: 500;
+  }
+
+  .active-chip {
+    background-color: #e6f4ea !important;
+    color: #137333 !important;
+    font-weight: 500;
+  }
+
+  .inactive-chip {
+    background-color: #fce8e6 !important;
+    color: #c5221f !important;
+    font-weight: 500;
+  }
+
+  .system-locked-hint {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+
+    .lock-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: #9aa0a6;
+    }
+  }
+
+  .actions-header {
+    text-align: right;
+  }
+
+  .actions-cell {
+    text-align: right;
+    white-space: nowrap;
+  }
+}
+
+.no-data-cell {
+  padding: 48px 16px;
+  text-align: center;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: #80868b;
+
+  .empty-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 14px;
+  }
+}

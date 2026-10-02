@@ -11,6 +11,7 @@ using FarmManagement.Application.Interfaces.Users;
 using FarmManagement.Application.Interfaces.Roles;
 using FarmManagement.Application.Interfaces.Organizations;
 using FarmManagement.Application.Interfaces.Dashboard;
+using FarmManagement.Application.Interfaces.Expenses;
 using FarmManagement.Application.Interfaces.LaborActivities;
 using FarmManagement.Application.Interfaces.Labor;
 using FarmManagement.Application.Services;
@@ -135,6 +136,8 @@ builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<FarmManagement.Application.Interfaces.Inventory.IInventoryItemService, InventoryItemService>();
 builder.Services.AddScoped<FarmManagement.Application.Interfaces.Inventory.IStorageLocationService, StorageLocationService>();
 builder.Services.AddScoped<FarmManagement.Application.Interfaces.Inventory.IInventoryStockService, InventoryStockService>();
+builder.Services.AddScoped<ISupplierService, SupplierService>();
+builder.Services.AddScoped<IExpenseCategoryService, ExpenseCategoryService>();
 
 var app = builder.Build();
 
