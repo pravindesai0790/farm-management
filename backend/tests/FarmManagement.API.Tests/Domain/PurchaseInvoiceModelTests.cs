@@ -97,8 +97,8 @@ public class PurchaseInvoiceModelTests
             OrgId,
             invoice.Id,
             CategoryId,
-            "Delivery and freight charge",
-            75.50m);
+            75.50m,
+            "Delivery and freight charge");
 
         Assert.Equal(InvoiceLineType.NonInventoryExpense, line.LineType);
         Assert.Equal(CategoryId, line.ExpenseCategoryId);
@@ -127,7 +127,7 @@ public class PurchaseInvoiceModelTests
         var line1 = PurchaseInvoiceLine.CreateInventoryLine(
             OrgId, invoice.Id, ItemId, UnitId, 10m, 15m); // 150.00
         var line2 = PurchaseInvoiceLine.CreateNonInventoryLine(
-            OrgId, invoice.Id, CategoryId, "Inspection Fee", 50m); // 50.00
+            OrgId, invoice.Id, CategoryId, 50m, "Inspection Fee"); // 50.00
 
         invoice.Lines.Add(line1);
         invoice.Lines.Add(line2);
@@ -153,7 +153,7 @@ public class PurchaseInvoiceModelTests
         var invoice = PurchaseInvoice.CreateDraft(
             OrgId, SupplierId, FarmId, "INV-001", new DateOnly(2026, 10, 1), CurrencyId, UserId);
         var line = PurchaseInvoiceLine.CreateNonInventoryLine(
-            OrgId, invoice.Id, CategoryId, "Consulting fee", 500m);
+            OrgId, invoice.Id, CategoryId, 500m, "Consulting fee");
         invoice.Lines.Add(line);
 
         var postTime = DateTimeOffset.UtcNow;
@@ -170,7 +170,7 @@ public class PurchaseInvoiceModelTests
     {
         var invoice = PurchaseInvoice.CreateDraft(
             OrgId, SupplierId, FarmId, "INV-001", new DateOnly(2026, 10, 1), CurrencyId, UserId);
-        invoice.Lines.Add(PurchaseInvoiceLine.CreateNonInventoryLine(OrgId, invoice.Id, CategoryId, "Fee", 100m));
+        invoice.Lines.Add(PurchaseInvoiceLine.CreateNonInventoryLine(OrgId, invoice.Id, CategoryId, 100m, "Fee"));
         invoice.Post(UserId);
 
         Assert.Throws<InvalidOperationException>(() => invoice.Post(UserId));
@@ -181,7 +181,7 @@ public class PurchaseInvoiceModelTests
     {
         var invoice = PurchaseInvoice.CreateDraft(
             OrgId, SupplierId, FarmId, "INV-001", new DateOnly(2026, 10, 1), CurrencyId, UserId);
-        invoice.Lines.Add(PurchaseInvoiceLine.CreateNonInventoryLine(OrgId, invoice.Id, CategoryId, "Fee", 100m));
+        invoice.Lines.Add(PurchaseInvoiceLine.CreateNonInventoryLine(OrgId, invoice.Id, CategoryId, 100m, "Fee"));
         invoice.Post(UserId);
 
         Assert.Throws<InvalidOperationException>(() =>
@@ -193,7 +193,7 @@ public class PurchaseInvoiceModelTests
     {
         var invoice = PurchaseInvoice.CreateDraft(
             OrgId, SupplierId, FarmId, "INV-001", new DateOnly(2026, 10, 1), CurrencyId, UserId);
-        invoice.Lines.Add(PurchaseInvoiceLine.CreateNonInventoryLine(OrgId, invoice.Id, CategoryId, "Fee", 100m));
+        invoice.Lines.Add(PurchaseInvoiceLine.CreateNonInventoryLine(OrgId, invoice.Id, CategoryId, 100m, "Fee"));
         invoice.Post(UserId);
 
         var reverserId = Guid.NewGuid();

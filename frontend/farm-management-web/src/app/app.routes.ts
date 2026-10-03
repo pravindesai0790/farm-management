@@ -454,6 +454,46 @@ export const routes: Routes = [
               ).then((module) => module.DirectExpenseListPageComponent),
           },
           {
+            path: "invoices",
+            title: "Supplier Invoices",
+            canActivate: [permissionGuard],
+            data: { permission: "PurchaseInvoice.View" },
+            loadComponent: () =>
+              import(
+                "./features/expenses/invoices/purchase-invoice-list-page/purchase-invoice-list-page.component"
+              ).then((module) => module.PurchaseInvoiceListPageComponent),
+          },
+          {
+            path: "invoices/new",
+            title: "Create Supplier Invoice",
+            canActivate: [permissionGuard],
+            data: { permission: "PurchaseInvoice.Create" },
+            loadComponent: () =>
+              import(
+                "./features/expenses/invoices/purchase-invoice-editor-page/purchase-invoice-editor-page.component"
+              ).then((module) => module.PurchaseInvoiceEditorPageComponent),
+          },
+          {
+            path: "invoices/:id/edit",
+            title: "Edit Supplier Invoice",
+            canActivate: [permissionGuard],
+            data: { permission: "PurchaseInvoice.UpdateDraft" },
+            loadComponent: () =>
+              import(
+                "./features/expenses/invoices/purchase-invoice-editor-page/purchase-invoice-editor-page.component"
+              ).then((module) => module.PurchaseInvoiceEditorPageComponent),
+          },
+          {
+            path: "invoices/:id",
+            title: "Supplier Invoice Details",
+            canActivate: [permissionGuard],
+            data: { permission: "PurchaseInvoice.View" },
+            loadComponent: () =>
+              import(
+                "./features/expenses/invoices/purchase-invoice-detail-page/purchase-invoice-detail-page.component"
+              ).then((module) => module.PurchaseInvoiceDetailPageComponent),
+          },
+          {
             path: "suppliers",
             title: "Suppliers",
             canActivate: [permissionGuard],

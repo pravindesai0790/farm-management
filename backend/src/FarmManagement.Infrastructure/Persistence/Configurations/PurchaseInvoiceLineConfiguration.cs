@@ -65,7 +65,7 @@ public sealed class PurchaseInvoiceLineConfiguration : IEntityTypeConfiguration<
         builder.Property(pil => pil.Description)
             .HasColumnName("description")
             .HasMaxLength(500)
-            .IsRequired();
+            .IsRequired(false);
 
         builder.Property(pil => pil.Quantity)
             .HasColumnName("quantity")
@@ -115,6 +115,15 @@ public sealed class PurchaseInvoiceLineConfiguration : IEntityTypeConfiguration<
             .WithMany()
             .HasForeignKey(pil => pil.CropCycleId)
             .HasConstraintName("fk_purchase_invoice_lines_crop_cycle")
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Property(pil => pil.CropCycleStageId)
+            .HasColumnName("crop_cycle_stage_id");
+
+        builder.HasOne(pil => pil.CropCycleStage)
+            .WithMany()
+            .HasForeignKey(pil => pil.CropCycleStageId)
+            .HasConstraintName("fk_purchase_invoice_lines_crop_cycle_stage")
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.Property(pil => pil.SortOrder)

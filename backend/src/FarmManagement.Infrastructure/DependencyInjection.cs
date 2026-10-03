@@ -71,6 +71,7 @@ public static class DependencyInjection
         services.AddScoped<ISupplierStore, SupplierStore>();
         services.AddScoped<IExpenseCategoryStore, ExpenseCategoryStore>();
         services.AddScoped<IExpenseStore, ExpenseStore>();
+        services.AddScoped<IPurchaseInvoiceStore, PurchaseInvoiceStore>();
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();
         services.AddScoped<IdentityDataSeeder>();
 

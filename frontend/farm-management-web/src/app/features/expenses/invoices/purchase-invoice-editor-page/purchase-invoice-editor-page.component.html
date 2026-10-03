@@ -1,0 +1,343 @@
+<div class="page-container">
+  <app-expenses-sub-nav></app-expenses-sub-nav>
+
+  <div class="page-header">
+    <div class="header-title">
+      <h1>{{ isEdit() ? 'Edit Supplier Invoice Draft' : 'Create Supplier Invoice' }}</h1>
+      <p class="subtitle">Enter supplier invoice header metadata, line allocations, and financial totals.</p>
+    </div>
+    <div class="header-actions">
+      <a mat-stroked-button routerLink="/expenses/invoices">
+        <mat-icon>arrow_back</mat-icon> Back to Invoices
+      </a>
+    </div>
+  </div>
+
+  <div class="loading-overlay" *ngIf="isLoading()">
+    <mat-spinner diameter="48"></mat-spinner>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" *ngIf="!isLoading()" class="editor-form">
+    <!-- Header Info Card -->
+    <mat-card class="form-card">
+      <mat-card-header>
+        <mat-card-title>Invoice Header Details</mat-card-title>
+      </mat-card-header>
+
+      <mat-card-content>
+        <div class="form-grid">
+          <mat-form-field appearance="outline">
+            <mat-label>Supplier</mat-label>
+            <mat-select formControlName="supplierId" required>
+              <mat-option *ngFor="let s of suppliers()" [value]="s.id">
+                {{ s.name }}
+              </mat-option>
+            </mat-select>
+            <mat-error *ngIf="form.controls.supplierId.hasError('required')">
+              Supplier is required.
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Farm</mat-label>
+            <mat-select formControlName="farmId" required>
+              <mat-option *ngFor="let farm of farms()" [value]="farm.id">
+                {{ farm.name }}
+              </mat-option>
+            </mat-select>
+            <mat-error *ngIf="form.controls.farmId.hasError('required')">
+              Farm is required.
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Supplier Invoice #</mat-label>
+            <input matInput formControlName="supplierInvoiceNumber" placeholder="e.g. INV-2026-001" required />
+            <mat-error *ngIf="form.controls.supplierInvoiceNumber.hasError('required')">
+              Invoice number is required.
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Invoice Date</mat-label>
+            <input matInput [matDatepicker]="invPicker" formControlName="invoiceDate" required />
+            <mat-datepicker-toggle matIconSuffix [for]="invPicker"></mat-datepicker-toggle>
+            <mat-datepicker #invPicker></mat-datepicker>
+            <mat-error *ngIf="form.controls.invoiceDate.hasError('required')">
+              Invoice date is required.
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Due Date</mat-label>
+            <input matInput [matDatepicker]="duePicker" formControlName="dueDate" placeholder="Optional due date" />
+            <mat-datepicker-toggle matIconSuffix [for]="duePicker"></mat-datepicker-toggle>
+            <mat-datepicker #duePicker></mat-datepicker>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Currency</mat-label>
+            <mat-select formControlName="currencyId" required>
+              <mat-option *ngFor="let c of currencies()" [value]="c.id">
+                {{ c.code }} ({{ c.symbol }}) — {{ c.name }}
+              </mat-option>
+            </mat-select>
+            <mat-error *ngIf="form.controls.currencyId.hasError('required')">
+              Currency is required.
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Payment Terms</mat-label>
+            <input matInput formControlName="paymentTerms" placeholder="e.g. Net 30, Cash on Delivery" />
+          </mat-form-field>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Invoice Lines FormArray -->
+    <mat-card class="form-card">
+      <mat-card-header class="lines-header">
+        <mat-card-title>Invoice Line Items</mat-card-title>
+        <button mat-flat-button color="accent" type="button" (click)="addLine()">
+          <mat-icon>add</mat-icon> Add Line Item
+        </button>
+      </mat-card-header>
+
+      <mat-card-content>
+        <div formArrayName="lines" class="lines-container">
+          <div
+            *ngFor="let group of lineFormGroups; let i = index"
+            [formGroupName]="i"
+            class="line-item-card"
+          >
+            <div class="line-header">
+              <span class="line-number">Line #{{ i + 1 }}</span>
+              <div class="line-type-toggle">
+                <mat-radio-group formControlName="lineType" aria-label="Line item type">
+                  <mat-radio-button value="InventoryItem">Inventory Item</mat-radio-button>
+                  <mat-radio-button value="NonInventoryExpense">Non-Inventory Expense</mat-radio-button>
+                </mat-radio-group>
+              </div>
+              <button
+                mat-icon-button
+                color="warn"
+                type="button"
+                (click)="removeLine(i)"
+                matTooltip="Remove this line"
+              >
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+
+            <!-- Inventory Item Fields -->
+            <div class="line-fields-grid" *ngIf="group.controls['lineType'].value === 'InventoryItem'">
+              <mat-form-field appearance="outline" class="col-span-2">
+                <mat-label>Inventory Item</mat-label>
+                <mat-select
+                  formControlName="inventoryItemId"
+                  (selectionChange)="onInventoryItemSelect(i, $event.value)"
+                  required
+                >
+                  <mat-option *ngFor="let item of inventoryItems()" [value]="item.id">
+                    {{ item.name }} (SKU: {{ item.sku }})
+                  </mat-option>
+                </mat-select>
+                <mat-error *ngIf="group.controls['inventoryItemId'].hasError('required')">
+                  Inventory item is required.
+                </mat-error>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Quantity</mat-label>
+                <input matInput type="number" formControlName="quantity" step="0.01" min="0.0001" required />
+                <span matSuffix *ngIf="group.controls['stockUnitCode'].value">
+                  &nbsp;{{ group.controls['stockUnitCode'].value }}
+                </span>
+                <mat-error *ngIf="group.controls['quantity'].hasError('required')">Required.</mat-error>
+                <mat-error *ngIf="group.controls['quantity'].hasError('min')">Must be > 0.</mat-error>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Unit Price ({{ getCurrencySymbol() }})</mat-label>
+                <input matInput type="number" formControlName="unitPrice" step="0.01" min="0" required />
+                <mat-error *ngIf="group.controls['unitPrice'].hasError('required')">Required.</mat-error>
+                <mat-error *ngIf="group.controls['unitPrice'].hasError('min')">Must be >= 0.</mat-error>
+              </mat-form-field>
+
+              <div class="line-computed-amount">
+                <label>Line Total</label>
+                <div class="amount-value">
+                  {{ getCurrencySymbol() }} {{ calculateLineAmount(group) | number: '1.2-2' }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Non-Inventory Expense Fields -->
+            <div class="line-fields-grid" *ngIf="group.controls['lineType'].value === 'NonInventoryExpense'">
+              <mat-form-field appearance="outline" class="col-span-2">
+                <mat-label>Expense Category</mat-label>
+                <mat-select formControlName="expenseCategoryId" required>
+                  <mat-option *ngFor="let cat of expenseCategories()" [value]="cat.id">
+                    {{ cat.name }}
+                  </mat-option>
+                </mat-select>
+                <mat-error *ngIf="group.controls['expenseCategoryId'].hasError('required')">
+                  Category is required.
+                </mat-error>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Amount ({{ getCurrencySymbol() }})</mat-label>
+                <input matInput type="number" formControlName="amount" step="0.01" min="0.01" required />
+                <mat-error *ngIf="group.controls['amount'].hasError('required')">Required.</mat-error>
+                <mat-error *ngIf="group.controls['amount'].hasError('min')">Must be > 0.</mat-error>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="col-span-2">
+                <mat-label>Description (Optional)</mat-label>
+                <input matInput formControlName="description" placeholder="e.g. Soil testing report fees" />
+              </mat-form-field>
+            </div>
+
+            <!-- Cascading Operational Linkages (Requirement: disabled until parent selected) -->
+            <div class="operational-linkages-section">
+              <div class="section-label">
+                <mat-icon>hub</mat-icon> Cascading Operational Linkages
+              </div>
+              <div class="linkages-grid">
+                <!-- Farm Area -->
+                <mat-form-field appearance="outline">
+                  <mat-label>Farm Area</mat-label>
+                  <mat-select
+                    formControlName="farmAreaId"
+                    (selectionChange)="onLineAreaChanged(i, $event.value)"
+                  >
+                    <mat-option value="">None / General Farm</mat-option>
+                    <mat-option *ngFor="let area of lineLookups()[i]?.areas" [value]="area.id">
+                      {{ area.name }}
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+
+                <!-- Plantation -->
+                <mat-form-field appearance="outline">
+                  <mat-label>Plantation</mat-label>
+                  <mat-select
+                    formControlName="plantationId"
+                    (selectionChange)="onLinePlantationChanged(i, $event.value)"
+                  >
+                    <mat-option value="">None</mat-option>
+                    <mat-option *ngFor="let p of lineLookups()[i]?.plantations" [value]="p.id">
+                      {{ p.plantationName }} - {{ p.cropName }} ({{ p.allocatedArea }} {{ p.areaUnitSymbol }})
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+
+                <!-- Crop Cycle -->
+                <mat-form-field appearance="outline">
+                  <mat-label>Crop Cycle</mat-label>
+                  <mat-select
+                    formControlName="cropCycleId"
+                    (selectionChange)="onLineCropCycleChanged(i, $event.value)"
+                  >
+                    <mat-option value="">None</mat-option>
+                    <mat-option *ngFor="let cycle of lineLookups()[i]?.cycles" [value]="cycle.id">
+                      {{ cycle.cycleName }} ({{ cycle.seasonYear }})
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+
+                <!-- Crop Cycle Stage -->
+                <mat-form-field appearance="outline">
+                  <mat-label>Crop Cycle Stage</mat-label>
+                  <mat-select formControlName="cropCycleStageId">
+                    <mat-option value="">None</mat-option>
+                    <mat-option *ngFor="let stg of lineLookups()[i]?.stages" [value]="stg.id">
+                      Stage {{ stg.sequenceNumber }}: {{ stg.stageName }} ({{ stg.status }})
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+              </div>
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Financial Totals & Summary Card -->
+    <mat-card class="form-card">
+      <mat-card-header>
+        <mat-card-title>Financial Breakdown</mat-card-title>
+      </mat-card-header>
+
+      <mat-card-content>
+        <div class="totals-grid">
+          <div class="totals-row">
+            <span>Subtotal:</span>
+            <strong>{{ getCurrencySymbol() }} {{ subtotal | number: '1.2-2' }}</strong>
+          </div>
+
+          <div class="totals-inputs">
+            <mat-form-field appearance="outline">
+              <mat-label>Tax Amount ({{ getCurrencySymbol() }})</mat-label>
+              <input matInput type="number" formControlName="taxAmount" step="0.01" min="0" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Other Charges ({{ getCurrencySymbol() }})</mat-label>
+              <input matInput type="number" formControlName="otherCharges" step="0.01" min="0" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Discount Amount ({{ getCurrencySymbol() }})</mat-label>
+              <input matInput type="number" formControlName="discountAmount" step="0.01" min="0" />
+            </mat-form-field>
+          </div>
+
+          <div class="totals-final">
+            <span>Total Invoice Amount:</span>
+            <span class="final-amount">
+              {{ getCurrencySymbol() }} {{ totalAmount | number: '1.2-2' }}
+            </span>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Additional Info Card -->
+    <mat-card class="form-card">
+      <mat-card-header>
+        <mat-card-title>Notes & Attachments</mat-card-title>
+      </mat-card-header>
+
+      <mat-card-content>
+        <div class="form-grid">
+          <mat-form-field appearance="outline" class="col-span-2">
+            <mat-label>Invoice Notes</mat-label>
+            <textarea matInput formControlName="notes" rows="3" placeholder="Additional remarks or notes..."></textarea>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Attachment Reference / Document Link</mat-label>
+            <input matInput formControlName="attachmentReference" placeholder="e.g. DOC-99812 / cloud-file-uri" />
+          </mat-form-field>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Sticky Form Actions -->
+    <div class="form-actions-bar">
+      <a mat-button routerLink="/expenses/invoices" [disabled]="isSubmitting()">Cancel</a>
+      <button
+        mat-raised-button
+        color="primary"
+        type="submit"
+        [disabled]="form.invalid || isSubmitting()"
+      >
+        <mat-spinner diameter="18" *ngIf="isSubmitting()"></mat-spinner>
+        <span *ngIf="!isSubmitting()">{{ isEdit() ? 'Save Changes' : 'Save Invoice Draft' }}</span>
+      </button>
+    </div>
+  </form>
+</div>

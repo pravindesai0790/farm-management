@@ -16,7 +16,7 @@ public sealed class PurchaseInvoiceLine
     public InvoiceLineType LineType { get; private set; }
     public Guid? InventoryItemId { get; private set; }
     public Guid? ExpenseCategoryId { get; private set; }
-    public string Description { get; private set; }
+    public string? Description { get; private set; }
     public decimal? Quantity { get; private set; }
     public Guid? StockUnitId { get; private set; }
     public decimal UnitPrice { get; private set; }
@@ -24,6 +24,7 @@ public sealed class PurchaseInvoiceLine
     public Guid? FarmAreaId { get; private set; }
     public Guid? PlantationId { get; private set; }
     public Guid? CropCycleId { get; private set; }
+    public Guid? CropCycleStageId { get; private set; }
     public int SortOrder { get; private set; }
 
     public PurchaseInvoice? PurchaseInvoice { get; private set; }
@@ -34,6 +35,7 @@ public sealed class PurchaseInvoiceLine
     public FarmArea? FarmArea { get; private set; }
     public CropPlantation? Plantation { get; private set; }
     public CropCycle? CropCycle { get; private set; }
+    public CropCycleStage? CropCycleStage { get; private set; }
     public ICollection<PurchaseInvoiceReceiptLine> ReceiptLines { get; private set; }
 
     public static PurchaseInvoiceLine CreateInventoryLine(
@@ -47,6 +49,7 @@ public sealed class PurchaseInvoiceLine
         Guid? farmAreaId = null,
         Guid? plantationId = null,
         Guid? cropCycleId = null,
+        Guid? cropCycleStageId = null,
         int sortOrder = 0)
     {
         if (organizationId == Guid.Empty) throw new ArgumentException("An organization is required.", nameof(organizationId));
@@ -69,10 +72,11 @@ public sealed class PurchaseInvoiceLine
             Quantity = quantity,
             UnitPrice = unitPrice,
             LineAmount = lineAmount,
-            Description = NormalizeOptional(description, 500) ?? "Inventory item line",
+            Description = NormalizeOptional(description, 500),
             FarmAreaId = farmAreaId,
             PlantationId = plantationId,
             CropCycleId = cropCycleId,
+            CropCycleStageId = cropCycleStageId,
             SortOrder = sortOrder,
             ReceiptLines = []
         };
@@ -82,18 +86,17 @@ public sealed class PurchaseInvoiceLine
         Guid organizationId,
         Guid purchaseInvoiceId,
         Guid expenseCategoryId,
-        string description,
         decimal amount,
+        string? description = null,
         Guid? farmAreaId = null,
         Guid? plantationId = null,
         Guid? cropCycleId = null,
+        Guid? cropCycleStageId = null,
         int sortOrder = 0)
     {
         if (organizationId == Guid.Empty) throw new ArgumentException("An organization is required.", nameof(organizationId));
         if (purchaseInvoiceId == Guid.Empty) throw new ArgumentException("A purchase invoice is required.", nameof(purchaseInvoiceId));
         if (expenseCategoryId == Guid.Empty) throw new ArgumentException("An expense category is required.", nameof(expenseCategoryId));
-        if (string.IsNullOrWhiteSpace(description)) throw new ArgumentException("A description is required for non-inventory lines.", nameof(description));
-        if (description.Trim().Length > 500) throw new ArgumentException("Description cannot exceed 500 characters.", nameof(description));
         if (amount <= 0m) throw new ArgumentOutOfRangeException(nameof(amount), "Amount must be greater than zero.");
 
         var roundedAmount = Math.Round(amount, 2, MidpointRounding.AwayFromZero);
@@ -105,7 +108,7 @@ public sealed class PurchaseInvoiceLine
             PurchaseInvoiceId = purchaseInvoiceId,
             LineType = InvoiceLineType.NonInventoryExpense,
             ExpenseCategoryId = expenseCategoryId,
-            Description = description.Trim(),
+            Description = NormalizeOptional(description, 500),
             UnitPrice = roundedAmount,
             LineAmount = roundedAmount,
             Quantity = null,
@@ -114,6 +117,7 @@ public sealed class PurchaseInvoiceLine
             FarmAreaId = farmAreaId,
             PlantationId = plantationId,
             CropCycleId = cropCycleId,
+            CropCycleStageId = cropCycleStageId,
             SortOrder = sortOrder,
             ReceiptLines = []
         };

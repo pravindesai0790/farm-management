@@ -1,0 +1,210 @@
+.page-container {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.loading-overlay {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 64px;
+}
+
+.detail-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+
+  .title-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 600;
+    }
+  }
+
+  .subtitle {
+    margin: 4px 0 0 0;
+    color: rgba(0, 0, 0, 0.6);
+    font-size: 14px;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+}
+
+.summary-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.summary-card {
+  mat-card-subtitle {
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 12px;
+  }
+}
+
+.info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+
+  .info-item {
+    display: flex;
+    justify-content: space-between;
+
+    .label {
+      color: rgba(0, 0, 0, 0.6);
+    }
+
+    .val {
+      font-weight: 500;
+    }
+
+    &.total-row {
+      padding-top: 8px;
+      border-top: 1px solid rgba(0, 0, 0, 0.12);
+      font-weight: 600;
+
+      .total-val {
+        font-size: 18px;
+        color: #1b5e20;
+      }
+    }
+  }
+}
+
+.lines-card {
+  .p-0 {
+    padding: 0;
+  }
+}
+
+.full-width-table {
+  width: 100%;
+}
+
+.type-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+
+  &.InventoryItem {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+  }
+
+  &.NonInventoryExpense {
+    background-color: #f3e5f5;
+    color: #7b1fa2;
+  }
+}
+
+.sku-tag {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.54);
+}
+
+.linkage-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+
+  .chip {
+    background-color: #e3f2fd;
+    color: #1565c0;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 4px;
+
+    &.stage-chip {
+      background-color: #fff3e0;
+      color: #e65100;
+    }
+  }
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+
+  &.status-draft {
+    background-color: #e3f2fd;
+    color: #0d47a1;
+  }
+
+  &.status-posted {
+    background-color: #e8f5e9;
+    color: #1b5e20;
+  }
+
+  &.status-reversed {
+    background-color: #ffebee;
+    color: #b71c1c;
+  }
+
+  &.payment-unpaid {
+    background-color: #fff3e0;
+    color: #e65100;
+  }
+
+  &.payment-partial {
+    background-color: #e0f7fa;
+    color: #006064;
+  }
+
+  &.payment-paid {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+  }
+}
+
+.text-right {
+  text-align: right;
+}
+
+.font-medium {
+  font-weight: 500;
+}
+
+.text-muted {
+  color: rgba(0, 0, 0, 0.38);
+}
+
+.text-success {
+  color: #2e7d32;
+}
+
+.text-danger {
+  color: #c62828;
+}
+
+.audit-card {
+  border-left: 4px solid #c62828;
+  background-color: #fff8f8;
+}

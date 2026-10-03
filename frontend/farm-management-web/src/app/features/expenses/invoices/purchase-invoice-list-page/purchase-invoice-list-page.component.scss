@@ -1,0 +1,193 @@
+.page-container {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  margin-bottom: 24px;
+
+  h1 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 600;
+  }
+
+  .subtitle {
+    margin: 4px 0 0 0;
+    color: rgba(0, 0, 0, 0.6);
+    font-size: 14px;
+  }
+}
+
+.filter-card {
+  margin-bottom: 24px;
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  align-items: center;
+
+  .search-field {
+    grid-column: span 2;
+    @media (max-width: 768px) {
+      grid-column: span 1;
+    }
+  }
+
+  .filter-actions {
+    display: flex;
+    align-items: center;
+    height: 56px;
+    margin-bottom: 22px;
+  }
+}
+
+.table-card {
+  position: relative;
+  overflow: hidden;
+
+  .p-0 {
+    padding: 0;
+  }
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.7);
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.full-width-table {
+  width: 100%;
+}
+
+.link-bold {
+  font-weight: 600;
+  color: #1976d2;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.font-medium {
+  font-weight: 500;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-muted {
+  color: rgba(0, 0, 0, 0.38);
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: capitalize;
+
+  &.status-draft {
+    background-color: #e3f2fd;
+    color: #0d47a1;
+  }
+
+  &.status-posted {
+    background-color: #e8f5e9;
+    color: #1b5e20;
+  }
+
+  &.status-reversed {
+    background-color: #ffebee;
+    color: #b71c1c;
+  }
+
+  &.payment-unpaid {
+    background-color: #fff3e0;
+    color: #e65100;
+  }
+
+  &.payment-partial {
+    background-color: #e0f7fa;
+    color: #006064;
+  }
+
+  &.payment-paid {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+  }
+}
+
+.due-chip {
+  margin-left: 6px;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+
+  &.due-overdue {
+    background-color: #ffebee;
+    color: #c62828;
+  }
+
+  &.due-soon {
+    background-color: #fff8e1;
+    color: #f57f17;
+  }
+
+  &.due-current {
+    background-color: #f1f8e9;
+    color: #33691e;
+  }
+}
+
+.color-success {
+  color: #2e7d32;
+}
+
+.color-danger {
+  color: #c62828;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  color: rgba(0, 0, 0, 0.38);
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 12px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 14px;
+  }
+}

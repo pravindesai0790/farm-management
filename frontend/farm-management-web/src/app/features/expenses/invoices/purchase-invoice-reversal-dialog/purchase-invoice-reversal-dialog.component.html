@@ -1,0 +1,42 @@
+<h2 mat-dialog-title>Reverse Supplier Invoice</h2>
+
+<mat-dialog-content>
+  <p class="dialog-description">
+    Reversing invoice <strong>{{ data.invoice.supplierInvoiceNumber }}</strong> from
+    <strong>{{ data.invoice.supplierName }}</strong> ({{ data.invoice.currencySymbol }} {{ data.invoice.totalAmount | number: '1.2-2' }})
+    will mark the invoice as <em>Reversed</em>. This operation cannot be undone.
+  </p>
+
+  <form [formGroup]="form" id="reversalForm" (ngSubmit)="onSubmit()">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Reversal Reason</mat-label>
+      <textarea
+        matInput
+        formControlName="reason"
+        rows="3"
+        placeholder="Enter mandatory reason for reversing this invoice..."
+        required
+      ></textarea>
+      <mat-error *ngIf="form.controls.reason.hasError('required')">
+        Reversal reason is required.
+      </mat-error>
+      <mat-error *ngIf="form.controls.reason.hasError('maxlength')">
+        Reason cannot exceed 500 characters.
+      </mat-error>
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close [disabled]="isSubmitting()">Cancel</button>
+  <button
+    mat-raised-button
+    color="warn"
+    type="submit"
+    form="reversalForm"
+    [disabled]="form.invalid || isSubmitting()"
+  >
+    <mat-spinner diameter="18" *ngIf="isSubmitting()"></mat-spinner>
+    <span *ngIf="!isSubmitting()">Confirm Reversal</span>
+  </button>
+</mat-dialog-actions>

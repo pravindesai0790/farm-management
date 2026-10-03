@@ -139,6 +139,7 @@ builder.Services.AddScoped<FarmManagement.Application.Interfaces.Inventory.IInve
 builder.Services.AddScoped<ISupplierService, SupplierService>();
 builder.Services.AddScoped<IExpenseCategoryService, ExpenseCategoryService>();
 builder.Services.AddScoped<IExpenseService, ExpenseService>();
+builder.Services.AddScoped<IPurchaseInvoiceService, PurchaseInvoiceService>();
 
 var app = builder.Build();
 
