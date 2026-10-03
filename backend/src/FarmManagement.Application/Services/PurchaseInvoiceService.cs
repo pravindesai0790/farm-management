@@ -180,6 +180,11 @@ public sealed class PurchaseInvoiceService(IPurchaseInvoiceStore store, IInvento
             throw new ValidationException("Cannot reverse a purchase invoice that has active, non-reversed stock receipts. Reverse the linked stock movements first.");
         }
 
+        if (invoice.PaymentAllocations.Any(a => a.SupplierPayment != null && a.SupplierPayment.Status == SupplierPaymentStatus.Completed))
+        {
+            throw new ValidationException("Cannot reverse a purchase invoice that has active completed supplier payments allocated to it. Reverse the payments first.");
+        }
+
         invoice.Reverse(request.Reason, actor.UserId);
         await store.UpdateAsync(invoice, cancellationToken);
         await AddAuditAsync(actor, invoice, "PurchaseInvoice.Reverse", new { invoice.SupplierInvoiceNumber, Reason = request.Reason.Trim(), Status = invoice.Status.ToString() }, ipAddress, cancellationToken);
@@ -773,7 +778,11 @@ public sealed class PurchaseInvoiceService(IPurchaseInvoiceStore store, IInvento
 
     private static PurchaseInvoiceResponse MapToResponse(PurchaseInvoice invoice)
     {
-        var amountPaid = 0m; // Payments implemented in Phase 6
+        var activeAllocations = invoice.PaymentAllocations
+            .Where(a => a.SupplierPayment != null && a.SupplierPayment.Status == SupplierPaymentStatus.Completed)
+            .ToList();
+
+        var amountPaid = Math.Round(activeAllocations.Sum(a => a.AllocatedAmount), 2, MidpointRounding.AwayFromZero);
         var outstandingBalance = invoice.Status == PurchaseInvoiceStatus.Reversed
             ? 0m
             : Math.Max(0m, invoice.TotalAmount - amountPaid);
@@ -856,6 +865,20 @@ public sealed class PurchaseInvoiceService(IPurchaseInvoiceStore store, IInvento
                 l.SortOrder))
             .ToList();
 
+        var paymentAllocationDtos = activeAllocations
+            .OrderByDescending(a => a.SupplierPayment?.PaymentDate)
+            .ThenByDescending(a => a.CreatedAt)
+            .Select(a => new InvoicePaymentAllocationSummaryResponse(
+                a.Id,
+                a.SupplierPaymentId,
+                a.SupplierPayment!.PaymentDate,
+                a.SupplierPayment.Amount,
+                a.AllocatedAmount,
+                a.SupplierPayment.PaymentMethod.ToString(),
+                a.SupplierPayment.Status.ToString(),
+                a.SupplierPayment.ReferenceNumber))
+            .ToList();
+
         return new PurchaseInvoiceResponse(
             invoice.Id,
             invoice.OrganizationId,
@@ -891,6 +914,7 @@ public sealed class PurchaseInvoiceService(IPurchaseInvoiceStore store, IInvento
             invoice.CreatedAt,
             invoice.CreatedBy,
             invoice.UpdatedAt,
-            lineDtos);
+            lineDtos,
+            paymentAllocationDtos);
     }
 }

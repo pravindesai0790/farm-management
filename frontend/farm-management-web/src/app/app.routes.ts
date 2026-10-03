@@ -494,6 +494,36 @@ export const routes: Routes = [
               ).then((module) => module.PurchaseInvoiceDetailPageComponent),
           },
           {
+            path: "payments",
+            title: "Supplier Payments",
+            canActivate: [permissionGuard],
+            data: { permission: "SupplierPayment.View" },
+            loadComponent: () =>
+              import(
+                "./features/expenses/payments/supplier-payment-list-page/supplier-payment-list-page.component"
+              ).then((module) => module.SupplierPaymentListPageComponent),
+          },
+          {
+            path: "payments/new",
+            title: "Record Supplier Payment",
+            canActivate: [permissionGuard],
+            data: { permission: "SupplierPayment.Create" },
+            loadComponent: () =>
+              import(
+                "./features/expenses/payments/supplier-payment-editor-page/supplier-payment-editor-page.component"
+              ).then((module) => module.SupplierPaymentEditorPageComponent),
+          },
+          {
+            path: "payments/:id",
+            title: "Supplier Payment Details",
+            canActivate: [permissionGuard],
+            data: { permission: "SupplierPayment.View" },
+            loadComponent: () =>
+              import(
+                "./features/expenses/payments/supplier-payment-detail-page/supplier-payment-detail-page.component"
+              ).then((module) => module.SupplierPaymentDetailPageComponent),
+          },
+          {
             path: "suppliers",
             title: "Suppliers",
             canActivate: [permissionGuard],

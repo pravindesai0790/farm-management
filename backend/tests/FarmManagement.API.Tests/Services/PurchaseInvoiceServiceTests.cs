@@ -420,6 +420,21 @@ public sealed class TestPurchaseInvoiceStore(TestInventoryStockStore stockStore)
     public Task<bool> StorageLocationBelongsToFarmAndActiveAsync(Guid storageLocationId, Guid farmId, Guid organizationId, CancellationToken cancellationToken = default) =>
         Task.FromResult(ValidLocations.Contains((storageLocationId, farmId, organizationId)));
 
+    public Task<IReadOnlyList<PurchaseInvoice>> GetInvoicesWithAllocationsAsync(IEnumerable<Guid> invoiceIds, Guid organizationId, CancellationToken cancellationToken = default)
+    {
+        var idSet = invoiceIds.ToHashSet();
+        var result = Invoices.Where(i => i.OrganizationId == organizationId && idSet.Contains(i.Id)).ToList();
+        return Task.FromResult<IReadOnlyList<PurchaseInvoice>>(result);
+    }
+
+    public Task<IReadOnlyList<PurchaseInvoice>> GetUnpaidInvoicesForSupplierAsync(Guid supplierId, Guid organizationId, Guid? currencyId = null, CancellationToken cancellationToken = default)
+    {
+        var result = Invoices
+            .Where(i => i.OrganizationId == organizationId && i.SupplierId == supplierId && i.Status == PurchaseInvoiceStatus.Posted && (!currencyId.HasValue || i.CurrencyId == currencyId.Value))
+            .ToList();
+        return Task.FromResult<IReadOnlyList<PurchaseInvoice>>(result);
+    }
+
     private IEnumerable<PurchaseInvoice> FilterInvoices(Guid organizationId, PurchaseInvoiceFilter filter)
     {
         var query = Invoices.Where(pi => pi.OrganizationId == organizationId);

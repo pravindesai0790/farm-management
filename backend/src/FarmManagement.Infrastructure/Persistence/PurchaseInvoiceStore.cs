@@ -40,6 +40,8 @@ public sealed class PurchaseInvoiceStore(ApplicationDbContext dbContext) : IPurc
                 .ThenInclude(l => l.CropCycle)
             .Include(pi => pi.Lines)
                 .ThenInclude(l => l.CropCycleStage)
+            .Include(pi => pi.PaymentAllocations)
+                .ThenInclude(pa => pa.SupplierPayment)
             .OrderByDescending(pi => pi.InvoiceDate)
             .ThenByDescending(pi => pi.CreatedAt)
             .Skip(skip)
@@ -72,6 +74,8 @@ public sealed class PurchaseInvoiceStore(ApplicationDbContext dbContext) : IPurc
                 .ThenInclude(l => l.CropCycleStage)
             .Include(pi => pi.ReceiptLines)
                 .ThenInclude(rl => rl.StockMovement)
+            .Include(pi => pi.PaymentAllocations)
+                .ThenInclude(pa => pa.SupplierPayment)
             .SingleOrDefaultAsync(pi => pi.Id == invoiceId && pi.OrganizationId == organizationId, cancellationToken);
     }
 
@@ -289,5 +293,57 @@ public sealed class PurchaseInvoiceStore(ApplicationDbContext dbContext) : IPurc
         }
 
         return query;
+    }
+
+    public async Task<IReadOnlyList<PurchaseInvoice>> GetInvoicesWithAllocationsAsync(
+        IEnumerable<Guid> invoiceIds,
+        Guid organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var ids = invoiceIds.Distinct().ToList();
+        return await dbContext.PurchaseInvoices
+            .Include(pi => pi.Supplier)
+            .Include(pi => pi.Currency)
+            .Include(pi => pi.PaymentAllocations)
+                .ThenInclude(pa => pa.SupplierPayment)
+            .Where(pi => pi.OrganizationId == organizationId && ids.Contains(pi.Id))
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<PurchaseInvoice>> GetUnpaidInvoicesForSupplierAsync(
+        Guid supplierId,
+        Guid organizationId,
+        Guid? currencyId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = dbContext.PurchaseInvoices
+            .AsNoTracking()
+            .Include(pi => pi.Supplier)
+            .Include(pi => pi.Currency)
+            .Include(pi => pi.PaymentAllocations)
+                .ThenInclude(pa => pa.SupplierPayment)
+            .Where(pi => pi.OrganizationId == organizationId &&
+                        pi.SupplierId == supplierId &&
+                        pi.Status == PurchaseInvoiceStatus.Posted);
+
+        if (currencyId.HasValue && currencyId.Value != Guid.Empty)
+        {
+            query = query.Where(pi => pi.CurrencyId == currencyId.Value);
+        }
+
+        var invoices = await query.ToListAsync(cancellationToken);
+
+        return invoices
+            .Where(pi =>
+            {
+                var paid = pi.PaymentAllocations
+                    .Where(a => a.SupplierPayment != null && a.SupplierPayment.Status == SupplierPaymentStatus.Completed)
+                    .Sum(a => a.AllocatedAmount);
+                return pi.TotalAmount > paid;
+            })
+            .OrderBy(pi => pi.DueDate.HasValue ? 0 : 1)
+            .ThenBy(pi => pi.DueDate)
+            .ThenBy(pi => pi.InvoiceDate)
+            .ToList();
     }
 }

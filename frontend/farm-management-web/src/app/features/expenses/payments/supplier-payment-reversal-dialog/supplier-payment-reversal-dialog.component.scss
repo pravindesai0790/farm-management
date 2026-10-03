@@ -1,0 +1,85 @@
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid #e0e0e0;
+
+  .dialog-title-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .dialog-icon.warning {
+      color: #d32f2f;
+      font-size: 28px;
+      width: 28px;
+      height: 28px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    .dialog-subtitle {
+      margin: 2px 0 0 0;
+      font-size: 0.85rem;
+      color: #666;
+    }
+  }
+}
+
+mat-dialog-content {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 480px;
+
+  .warning-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background-color: #fff3e0;
+    border: 1px solid #ffe0b2;
+    border-radius: 8px;
+    padding: 12px 16px;
+    color: #e65100;
+    font-size: 0.9rem;
+    line-height: 1.4;
+
+    mat-icon {
+      color: #ef6c00;
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+  }
+
+  .dialog-form {
+    display: flex;
+    flex-direction: column;
+    margin-top: 8px;
+
+    .full-width {
+      width: 100%;
+    }
+  }
+}
+
+mat-dialog-actions {
+  padding: 12px 24px 16px 24px;
+  border-top: 1px solid #e0e0e0;
+  gap: 8px;
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+}

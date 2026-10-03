@@ -1,0 +1,60 @@
+<div class="dialog-header">
+  <div class="dialog-title-group">
+    <mat-icon class="dialog-icon warning">undo</mat-icon>
+    <div>
+      <h2 mat-dialog-title>Reverse Supplier Payment</h2>
+      <p class="dialog-subtitle">
+        Payment for {{ data.payment.supplierName }} — {{ data.payment.currencySymbol }}{{ data.payment.amount | number:'1.2-2' }} ({{ data.payment.paymentDate | date:'dd-MMM-yyyy' }})
+      </p>
+    </div>
+  </div>
+  <button mat-icon-button mat-dialog-close [disabled]="isSubmitting()">
+    <mat-icon>close</mat-icon>
+  </button>
+</div>
+
+<mat-dialog-content>
+  <div class="warning-banner">
+    <mat-icon>warning</mat-icon>
+    <div>
+      <strong>Attention:</strong> Reversing this payment will restore the outstanding balances on all settled purchase invoices. This action cannot be undone.
+    </div>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" id="reversalForm" class="dialog-form">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Reason for Reversal</mat-label>
+      <textarea
+        matInput
+        formControlName="reason"
+        rows="3"
+        placeholder="Provide mandatory reason for payment reversal (min 5 characters)..."
+      ></textarea>
+      <mat-error *ngIf="form.get('reason')?.hasError('required')">
+        A reversal reason is required.
+      </mat-error>
+      <mat-error *ngIf="form.get('reason')?.hasError('minlength')">
+        Reason must be at least 5 characters long.
+      </mat-error>
+      <mat-error *ngIf="form.get('reason')?.hasError('maxlength')">
+        Reason cannot exceed 500 characters.
+      </mat-error>
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" mat-dialog-close [disabled]="isSubmitting()">
+    Cancel
+  </button>
+  <button
+    mat-flat-button
+    color="warn"
+    type="submit"
+    form="reversalForm"
+    [disabled]="form.invalid || isSubmitting()"
+  >
+    <mat-spinner diameter="18" *ngIf="isSubmitting()"></mat-spinner>
+    <span *ngIf="!isSubmitting()">Confirm Reversal</span>
+  </button>
+</mat-dialog-actions>

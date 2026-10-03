@@ -35,7 +35,8 @@ public sealed record PurchaseInvoiceResponse(
     DateTimeOffset CreatedAt,
     Guid CreatedBy,
     DateTimeOffset? UpdatedAt,
-    IReadOnlyList<PurchaseInvoiceLineResponse> Lines);
+    IReadOnlyList<PurchaseInvoiceLineResponse> Lines,
+    IReadOnlyList<InvoicePaymentAllocationSummaryResponse>? PaymentAllocations = null);
 
 public sealed record PurchaseInvoiceLineResponse(
     Guid Id,

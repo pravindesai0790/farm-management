@@ -1,0 +1,229 @@
+<div class="page-container">
+  <!-- Top Navigation Header -->
+  <div class="page-header">
+    <div class="title-group">
+      <button mat-icon-button routerLink="/expenses/payments">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <div>
+        <h1>Record Supplier Payment</h1>
+        <p class="subtitle">Settle credit purchase invoices and record accounts payable disbursements</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Payment Form -->
+  <form [formGroup]="headerForm" (ngSubmit)="onSubmit()" class="payment-form">
+    <!-- Header Details Card -->
+    <mat-card class="form-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon class="card-title-icon">receipt_long</mat-icon>
+          Payment Header Information
+        </mat-card-title>
+      </mat-card-header>
+
+      <mat-card-content class="form-grid">
+        <mat-form-field appearance="outline" class="form-col-6">
+          <mat-label>Supplier *</mat-label>
+          <mat-select formControlName="supplierId" (selectionChange)="onSupplierChange($event.value)">
+            <mat-option *ngFor="let s of suppliers()" [value]="s.id">
+              {{ s.name }}
+            </mat-option>
+          </mat-select>
+          <mat-error *ngIf="headerForm.get('supplierId')?.hasError('required')">
+            Supplier is required.
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="form-col-3">
+          <mat-label>Payment Date *</mat-label>
+          <input matInput [matDatepicker]="picker" [max]="maxDate" formControlName="paymentDate" />
+          <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+          <mat-datepicker #picker></mat-datepicker>
+          <mat-error *ngIf="headerForm.get('paymentDate')?.hasError('required')">
+            Payment date is required.
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="form-col-3">
+          <mat-label>Currency *</mat-label>
+          <mat-select formControlName="currencyId">
+            <mat-option *ngFor="let c of currencies()" [value]="c.id">
+              {{ c.code }} ({{ c.symbol }})
+            </mat-option>
+          </mat-select>
+          <mat-error *ngIf="headerForm.get('currencyId')?.hasError('required')">
+            Currency is required.
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="form-col-4">
+          <mat-label>Payment Method *</mat-label>
+          <mat-select formControlName="paymentMethod">
+            <mat-option *ngFor="let m of paymentMethods" [value]="m">
+              {{ m }}
+            </mat-option>
+          </mat-select>
+          <mat-error *ngIf="headerForm.get('paymentMethod')?.hasError('required')">
+            Payment method is required.
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="form-col-4">
+          <mat-label>Payment Amount *</mat-label>
+          <input matInput type="number" formControlName="amount" min="0.01" step="0.01" placeholder="0.00" />
+          <mat-error *ngIf="headerForm.get('amount')?.hasError('required')">
+            Amount is required.
+          </mat-error>
+          <mat-error *ngIf="headerForm.get('amount')?.hasError('min')">
+            Amount must be greater than zero.
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="form-col-4">
+          <mat-label>Reference / UTR / Cheque #</mat-label>
+          <input matInput formControlName="referenceNumber" placeholder="Bank ref, UTR, Cheque #..." />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="form-col-12">
+          <mat-label>Payment Notes</mat-label>
+          <textarea matInput formControlName="notes" rows="2" placeholder="Add internal notes or memo regarding this payment..."></textarea>
+        </mat-form-field>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Allocation Section Card -->
+    <mat-card class="form-card" *ngIf="headerForm.get('supplierId')?.value">
+      <mat-card-header class="allocation-header">
+        <mat-card-title>
+          <mat-icon class="card-title-icon">table_chart</mat-icon>
+          Settle Unpaid Invoices
+        </mat-card-title>
+
+        <div class="auto-actions" *ngIf="unpaidInvoices().length > 0">
+          <button mat-stroked-button color="primary" type="button" (click)="autoAllocateFifo()">
+            <mat-icon>bolt</mat-icon>
+            Auto-Allocate (FIFO)
+          </button>
+          <button mat-button color="warn" type="button" (click)="clearAllocations()">
+            <mat-icon>clear_all</mat-icon>
+            Clear
+          </button>
+        </div>
+      </mat-card-header>
+
+      <mat-card-content>
+        <!-- Loading -->
+        <div class="loading-box" *ngIf="isLoading()">
+          <mat-spinner diameter="32"></mat-spinner>
+          <span>Fetching unpaid invoices for supplier...</span>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-invoices" *ngIf="!isLoading() && unpaidInvoices().length === 0">
+          <mat-icon>check_circle</mat-icon>
+          <h3>No Outstanding Invoices</h3>
+          <p>This supplier currently has no posted unpaid or partially paid invoices.</p>
+        </div>
+
+        <!-- Invoices Table -->
+        <div class="table-responsive" *ngIf="!isLoading() && unpaidInvoices().length > 0">
+          <table class="allocation-table">
+            <thead>
+              <tr>
+                <th>Invoice #</th>
+                <th>Invoice Date</th>
+                <th>Due Date</th>
+                <th>Total Invoice Amount</th>
+                <th>Outstanding Balance</th>
+                <th>Allocated Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let group of allocationsArray.controls; let i = index" [formGroup]="$any(group)">
+                <td>
+                  <span class="inv-num">{{ group.get('supplierInvoiceNumber')?.value }}</span>
+                </td>
+                <td>{{ group.get('invoiceDate')?.value | date:'dd-MMM-yyyy' }}</td>
+                <td>
+                  <div class="due-cell">
+                    <span>{{ (group.get('dueDate')?.value | date:'dd-MMM-yyyy') || '—' }}</span>
+                  </div>
+                </td>
+                <td>₹{{ group.get('totalAmount')?.value | number:'1.2-2' }}</td>
+                <td>
+                  <span class="balance-badge">
+                    ₹{{ group.get('outstandingBalance')?.value | number:'1.2-2' }}
+                  </span>
+                </td>
+                <td>
+                  <mat-form-field appearance="outline" class="alloc-input">
+                    <input matInput type="number" formControlName="allocatedAmount" min="0" step="0.01" />
+                    <mat-error *ngIf="group.get('allocatedAmount')?.hasError('max')">
+                      Exceeds balance!
+                    </mat-error>
+                  </mat-form-field>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Live Reconciliation Panel -->
+    <mat-card class="reconciliation-card" *ngIf="headerForm.get('supplierId')?.value && unpaidInvoices().length > 0">
+      <div class="recon-grid">
+        <div class="recon-item">
+          <span class="recon-label">Payment Amount</span>
+          <span class="recon-val">₹{{ (headerForm.get('amount')?.value || 0) | number:'1.2-2' }}</span>
+        </div>
+        <div class="recon-divider">-</div>
+        <div class="recon-item">
+          <span class="recon-label">Allocated to Invoices</span>
+          <span class="recon-val green">₹{{ totalAllocated() | number:'1.2-2' }}</span>
+        </div>
+        <div class="recon-divider">=</div>
+        <div class="recon-item">
+          <span class="recon-label">Unallocated Difference</span>
+          <span class="recon-val" [ngClass]="unallocatedAmount() === 0 ? 'zero' : 'warn'">
+            ₹{{ unallocatedAmount() | number:'1.2-2' }}
+          </span>
+        </div>
+      </div>
+
+      <div class="recon-validation-msg" *ngIf="!isAllocationValid()">
+        <mat-icon>info</mat-icon>
+        <span>
+          <strong *ngIf="unallocatedAmount() > 0">
+            Unallocated amount remaining of ₹{{ unallocatedAmount() | number:'1.2-2' }}. Sum of allocated amounts across invoices must exactly match the payment amount. Use ⚡ Auto-Allocate (FIFO) to balance automatically.
+          </strong>
+          <strong *ngIf="unallocatedAmount() < 0">
+            Total allocated amount (₹{{ totalAllocated() | number:'1.2-2' }}) exceeds payment amount by ₹{{ -unallocatedAmount() | number:'1.2-2' }}. Reduce allocation amounts.
+          </strong>
+          <strong *ngIf="(headerForm.get('amount')?.value ?? 0) <= 0">
+            Please enter a valid payment amount.
+          </strong>
+        </span>
+      </div>
+    </mat-card>
+
+    <!-- Form Actions Footer -->
+    <div class="form-actions">
+      <button mat-button type="button" routerLink="/expenses/payments" [disabled]="isSubmitting()">
+        Cancel
+      </button>
+
+      <button
+        mat-flat-button
+        color="primary"
+        type="submit"
+        [disabled]="headerForm.invalid || !isAllocationValid() || isSubmitting()"
+      >
+        <mat-spinner diameter="18" *ngIf="isSubmitting()"></mat-spinner>
+        <span *ngIf="!isSubmitting()">Record & Save Payment</span>
+      </button>
+    </div>
+  </form>
+</div>

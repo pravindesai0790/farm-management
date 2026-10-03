@@ -37,6 +37,12 @@ export class ExpensesSubNavComponent {
       permission: "PurchaseInvoice.View",
     },
     {
+      label: "Supplier Payments",
+      route: "/expenses/payments",
+      icon: "payments",
+      permission: "SupplierPayment.View",
+    },
+    {
       label: "Suppliers",
       route: "/expenses/suppliers",
       icon: "store",

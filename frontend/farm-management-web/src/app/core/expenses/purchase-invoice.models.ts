@@ -33,6 +33,17 @@ export interface PurchaseInvoiceLineResponse {
   readonly sortOrder: number;
 }
 
+export interface InvoicePaymentAllocationSummaryResponse {
+  readonly id: string;
+  readonly supplierPaymentId: string;
+  readonly paymentDate: string;
+  readonly paymentTotalAmount: number;
+  readonly allocatedAmount: number;
+  readonly paymentMethod: string;
+  readonly status: string;
+  readonly referenceNumber?: string | null;
+}
+
 export interface PurchaseInvoiceResponse {
   readonly id: string;
   readonly organizationId: string;
@@ -69,6 +80,7 @@ export interface PurchaseInvoiceResponse {
   readonly createdBy: string;
   readonly updatedAt?: string | null;
   readonly lines: PurchaseInvoiceLineResponse[];
+  readonly paymentAllocations?: InvoicePaymentAllocationSummaryResponse[] | null;
 }
 
 export interface CreatePurchaseInvoiceLineRequest {

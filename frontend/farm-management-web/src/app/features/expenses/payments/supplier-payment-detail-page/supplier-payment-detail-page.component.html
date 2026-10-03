@@ -1,0 +1,164 @@
+<div class="page-container" *ngIf="!isLoading() && payment() as p">
+  <!-- Top Action Header -->
+  <div class="page-header">
+    <div class="title-group">
+      <button mat-icon-button routerLink="/expenses/payments">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <div>
+        <div class="header-badge-row">
+          <h1>Payment #{{ p.referenceNumber || p.id.substring(0, 8) }}</h1>
+          <span class="status-badge" [ngClass]="p.status.toLowerCase()">{{ p.status }}</span>
+        </div>
+        <p class="subtitle">Recorded on {{ p.paymentDate | date:'dd-MMM-yyyy' }} for {{ p.supplierName }}</p>
+      </div>
+    </div>
+
+    <div class="actions-group">
+      <button
+        mat-flat-button
+        color="warn"
+        *ngIf="p.status === 'Completed' && permissionService.has('SupplierPayment.Reverse')"
+        (click)="openReversalDialog()"
+      >
+        <mat-icon>undo</mat-icon> Reverse Payment
+      </button>
+    </div>
+  </div>
+
+  <!-- Reversal Warning Banner -->
+  <div class="reversal-banner" *ngIf="p.status === 'Reversed'">
+    <mat-icon>warning</mat-icon>
+    <div class="banner-content">
+      <strong>Payment Reversed:</strong> Reversed on {{ p.reversedAt | date:'dd-MMM-yyyy HH:mm' }}
+      <span *ngIf="p.reversalReason">— Reason: {{ p.reversalReason }}</span>
+    </div>
+  </div>
+
+  <!-- Details Grid Layout -->
+  <div class="details-grid">
+    <!-- Overview Card -->
+    <mat-card class="detail-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon class="card-title-icon">info</mat-icon>
+          Payment Summary
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content class="info-list">
+        <div class="info-row">
+          <span class="info-label">Supplier</span>
+          <span class="info-val font-semibold">{{ p.supplierName }}</span>
+        </div>
+
+        <div class="info-row">
+          <span class="info-label">Payment Date</span>
+          <span class="info-val">{{ p.paymentDate | date:'dd-MMM-yyyy' }}</span>
+        </div>
+
+        <div class="info-row">
+          <span class="info-label">Payment Method</span>
+          <span class="info-val">
+            <span class="badge" [ngClass]="getMethodBadgeClass(p.paymentMethod)">{{ p.paymentMethod }}</span>
+          </span>
+        </div>
+
+        <div class="info-row">
+          <span class="info-label">Reference / UTR</span>
+          <span class="info-val monospace">{{ p.referenceNumber || '—' }}</span>
+        </div>
+
+        <div class="info-row highlight-row">
+          <span class="info-label">Total Amount Settled</span>
+          <span class="info-val amount-val">
+            {{ p.currencySymbol }}{{ p.amount | number:'1.2-2' }} <small>{{ p.currencyCode }}</small>
+          </span>
+        </div>
+
+        <div class="info-row" *ngIf="p.notes">
+          <span class="info-label">Notes</span>
+          <span class="info-val notes-text">{{ p.notes }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Audit Meta Card -->
+    <mat-card class="detail-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon class="card-title-icon">history</mat-icon>
+          System Audit Information
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content class="info-list">
+        <div class="info-row">
+          <span class="info-label">Created At</span>
+          <span class="info-val">{{ p.createdAt | date:'medium' }}</span>
+        </div>
+
+        <div class="info-row" *ngIf="p.updatedAt">
+          <span class="info-label">Last Updated</span>
+          <span class="info-val">{{ p.updatedAt | date:'medium' }}</span>
+        </div>
+
+        <div class="info-row" *ngIf="p.reversedAt">
+          <span class="info-label">Reversed At</span>
+          <span class="info-val warn-text">{{ p.reversedAt | date:'medium' }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Settled Invoices Allocations Table -->
+  <mat-card class="detail-card table-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon class="card-title-icon">table_chart</mat-icon>
+        Settled Purchase Invoices ({{ p.allocations.length }})
+      </mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Invoice #</th>
+              <th>Invoice Date</th>
+              <th>Invoice Total</th>
+              <th>Allocated Amount</th>
+              <th class="text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let alloc of p.allocations">
+              <td>
+                <a class="inv-link" [routerLink]="['/expenses/invoices', alloc.purchaseInvoiceId]">
+                  {{ alloc.supplierInvoiceNumber }}
+                </a>
+              </td>
+              <td>{{ alloc.invoiceDate | date:'dd-MMM-yyyy' }}</td>
+              <td>{{ p.currencySymbol }}{{ alloc.invoiceTotalAmount | number:'1.2-2' }}</td>
+              <td>
+                <span class="allocated-val">
+                  {{ p.currencySymbol }}{{ alloc.allocatedAmount | number:'1.2-2' }}
+                </span>
+              </td>
+              <td class="text-right">
+                <a mat-icon-button color="primary" [routerLink]="['/expenses/invoices', alloc.purchaseInvoiceId]" title="View Invoice Details">
+                  <mat-icon>open_in_new</mat-icon>
+                </a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>
+
+<!-- Loading Spinner -->
+<div class="loading-state" *ngIf="isLoading()">
+  <mat-spinner diameter="48"></mat-spinner>
+  <span>Loading supplier payment details...</span>
+</div>

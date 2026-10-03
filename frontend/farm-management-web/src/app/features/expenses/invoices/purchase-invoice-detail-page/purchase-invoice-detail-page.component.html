@@ -52,6 +52,16 @@
           <mat-icon>inventory</mat-icon> Receive Items
         </button>
 
+        <a
+          mat-raised-button
+          color="accent"
+          [routerLink]="['/expenses/payments/new']"
+          [queryParams]="{ supplierId: inv.supplierId }"
+          *ngIf="inv.status === 'Posted' && inv.outstandingBalance > 0 && permissionService.has('SupplierPayment.Create')"
+        >
+          <mat-icon>payment</mat-icon> Record Payment
+        </a>
+
         <button
           mat-raised-button
           color="warn"
@@ -292,6 +302,54 @@
         </mat-card-content>
       </mat-card>
     }
+
+    <!-- Payments & Credit Settlements History Card -->
+    <mat-card class="lines-card" *ngIf="inv.paymentAllocations && inv.paymentAllocations.length > 0">
+      <mat-card-header class="section-header-flex">
+        <mat-card-title>Payments & Credit Settlements ({{ inv.paymentAllocations.length }})</mat-card-title>
+      </mat-card-header>
+
+      <mat-card-content class="p-0">
+        <div class="table-responsive">
+          <table class="receipt-items-table">
+            <thead>
+              <tr>
+                <th>Payment Date</th>
+                <th>Payment Method</th>
+                <th>Reference / UTR</th>
+                <th>Total Payment Amount</th>
+                <th>Amount Allocated To This Invoice</th>
+                <th>Status</th>
+                <th class="text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let pm of inv.paymentAllocations">
+                <td>{{ pm.paymentDate | date:'mediumDate' }}</td>
+                <td>
+                  <span class="type-badge InventoryItem">{{ pm.paymentMethod }}</span>
+                </td>
+                <td>{{ pm.referenceNumber || '—' }}</td>
+                <td>{{ inv.currencySymbol }} {{ pm.paymentTotalAmount | number:'1.2-2' }}</td>
+                <td class="font-medium text-success">
+                  {{ inv.currencySymbol }} {{ pm.allocatedAmount | number:'1.2-2' }}
+                </td>
+                <td>
+                  <span class="receipt-status-badge" [class.reversed]="pm.status === 'Reversed'" [class.received]="pm.status === 'Completed'">
+                    {{ pm.status }}
+                  </span>
+                </td>
+                <td class="text-right">
+                  <a mat-icon-button color="primary" [routerLink]="['/expenses/payments', pm.supplierPaymentId]" title="View Payment Details">
+                    <mat-icon>open_in_new</mat-icon>
+                  </a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </mat-card-content>
+    </mat-card>
 
     <!-- Reversal Warning / Audit Footer -->
     @if (inv.status === 'Reversed') {

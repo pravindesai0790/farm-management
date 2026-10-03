@@ -112,4 +112,15 @@ public interface IPurchaseInvoiceStore
         Guid farmId,
         Guid organizationId,
         CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<PurchaseInvoice>> GetInvoicesWithAllocationsAsync(
+        IEnumerable<Guid> invoiceIds,
+        Guid organizationId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<PurchaseInvoice>> GetUnpaidInvoicesForSupplierAsync(
+        Guid supplierId,
+        Guid organizationId,
+        Guid? currencyId = null,
+        CancellationToken cancellationToken = default);
 }

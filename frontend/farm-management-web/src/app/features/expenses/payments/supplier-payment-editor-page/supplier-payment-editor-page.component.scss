@@ -1,0 +1,222 @@
+.page-container {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page-header {
+  .title-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+    .subtitle {
+      margin: 2px 0 0 0;
+      color: #666;
+      font-size: 0.85rem;
+    }
+  }
+}
+
+.payment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-card {
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+
+  mat-card-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #eeeeee;
+
+    .card-title-icon {
+      margin-right: 8px;
+      color: #1976d2;
+      vertical-align: middle;
+    }
+
+    mat-card-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+    }
+
+    &.allocation-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      .auto-actions {
+        display: flex;
+        gap: 8px;
+      }
+    }
+  }
+
+  .form-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 20px;
+
+    .form-col-12 { flex: 1 1 100%; }
+    .form-col-6  { flex: 1 1 calc(50% - 16px); min-width: 280px; }
+    .form-col-4  { flex: 1 1 calc(33.33% - 16px); min-width: 200px; }
+    .form-col-3  { flex: 1 1 calc(25% - 16px); min-width: 160px; }
+  }
+}
+
+.loading-box {
+  padding: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #666;
+}
+
+.empty-invoices {
+  padding: 40px 20px;
+  text-align: center;
+  color: #666;
+
+  mat-icon {
+    font-size: 40px;
+    width: 40px;
+    height: 40px;
+    color: #2e7d32;
+  }
+
+  h3 {
+    margin: 8px 0 4px 0;
+    font-weight: 600;
+  }
+}
+
+.table-responsive {
+  overflow-x: auto;
+  padding: 12px;
+}
+
+.allocation-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+
+  th, td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #eeeeee;
+  }
+
+  th {
+    background-color: #fafafa;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #666;
+  }
+
+  .inv-num {
+    font-weight: 600;
+    color: #1976d2;
+  }
+
+  .balance-badge {
+    font-weight: 700;
+    color: #d32f2f;
+    background: #ffebee;
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
+
+  .alloc-input {
+    width: 160px;
+
+    input {
+      font-weight: 600;
+    }
+  }
+}
+
+// Live Reconciliation Card
+.reconciliation-card {
+  border-radius: 12px;
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  padding: 16px 20px;
+
+  .recon-grid {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 8px 0;
+
+    .recon-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+
+      .recon-label {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        color: #666;
+        font-weight: 600;
+      }
+
+      .recon-val {
+        font-size: 1.3rem;
+        font-weight: 700;
+        margin-top: 2px;
+
+        &.green { color: #2e7d32; }
+        &.zero { color: #2e7d32; }
+        &.warn { color: #d32f2f; }
+      }
+    }
+
+    .recon-divider {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #999;
+    }
+  }
+
+  .recon-validation-msg {
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: #fff3e0;
+    border: 1px solid #ffe0b2;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #e65100;
+    font-size: 0.85rem;
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+  }
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 8px;
+}
