@@ -234,66 +234,76 @@
     </mat-card>
 
     <!-- Delivery & Receipt History Card -->
-    <mat-card class="lines-card mt-6" *ngIf="receiptHistory().length > 0">
-      <mat-card-header>
-        <mat-card-title>Delivery & Stock Receipt History ({{ receiptHistory().length }} Delivery Batches)</mat-card-title>
-      </mat-card-header>
-      <mat-card-content class="p-4">
-        <div class="space-y-4">
-          <div *ngFor="let group of receiptHistory()" class="border rounded-lg p-4 bg-gray-50 mb-3">
-            <div class="flex flex-wrap justify-between items-center mb-2 pb-2 border-b">
-              <div>
-                <span class="font-semibold text-gray-800">Received on: {{ group.movementDate | date: 'mediumDate' }}</span>
-                <span class="text-sm text-gray-600 ml-3">Destination: <strong>{{ group.storageLocationName }}</strong></span>
+    @if (receiptHistory().length > 0) {
+      <mat-card class="lines-card receipt-history-card">
+        <mat-card-header>
+          <mat-card-title>Delivery & Stock Receipt History ({{ receiptHistory().length }} Delivery Batches)</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="receipt-batches-list">
+            @for (group of receiptHistory(); track group.movementDate) {
+              <div class="receipt-batch-card">
+                <div class="receipt-batch-header">
+                  <div class="batch-title">
+                    <span class="batch-date">Received on: {{ group.movementDate | date: 'mediumDate' }}</span>
+                    <span class="batch-dest">Destination: <strong>{{ group.storageLocationName }}</strong></span>
+                  </div>
+                  <div class="batch-meta">
+                    @if (group.referenceNumber) {
+                      <span class="batch-grn">GRN: <strong>{{ group.referenceNumber }}</strong></span>
+                    }
+                    <span class="batch-timestamp">Logged: {{ group.createdAt | date: 'short' }}</span>
+                  </div>
+                </div>
+                @if (group.notes) {
+                  <div class="batch-notes">Notes: {{ group.notes }}</div>
+                }
+                <div class="receipt-table-wrapper">
+                  <table class="receipt-items-table">
+                    <thead>
+                      <tr>
+                        <th>Item Name</th>
+                        <th>SKU</th>
+                        <th class="text-right">Quantity Received</th>
+                        <th>Unit</th>
+                        <th class="text-center">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (item of group.items; track item.inventoryItemName) {
+                        <tr>
+                          <td class="font-medium">{{ item.inventoryItemName }}</td>
+                          <td class="text-muted">{{ item.inventoryItemSku || '—' }}</td>
+                          <td class="text-right tabular-amount text-success">{{ item.receivedQuantity | number: '1.2-2' }}</td>
+                          <td>{{ item.stockUnitCode }}</td>
+                          <td class="text-center">
+                            <span class="receipt-status-badge" [class.reversed]="item.isReversed" [class.received]="!item.isReversed">
+                              {{ item.isReversed ? 'Reversed (' + (item.reversalReason || 'Stock Reversal') + ')' : 'Received into Stock' }}
+                            </span>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
               </div>
-              <div class="text-sm text-gray-500">
-                <span *ngIf="group.referenceNumber" class="mr-3">GRN: <strong>{{ group.referenceNumber }}</strong></span>
-                <span>Logged At: {{ group.createdAt | date: 'short' }}</span>
-              </div>
-            </div>
-            <div *ngIf="group.notes" class="text-sm text-gray-600 mb-2 italic">
-              Notes: {{ group.notes }}
-            </div>
-            <div class="overflow-x-auto">
-              <table class="w-full text-sm text-left text-gray-700 bg-white border rounded">
-                <thead class="text-xs text-gray-700 uppercase bg-gray-100">
-                  <tr>
-                    <th class="px-3 py-2">Item Name</th>
-                    <th class="px-3 py-2">SKU</th>
-                    <th class="px-3 py-2 text-right">Quantity Received</th>
-                    <th class="px-3 py-2">Unit</th>
-                    <th class="px-3 py-2 text-center">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let item of group.items" class="border-b">
-                    <td class="px-3 py-2 font-medium">{{ item.inventoryItemName }}</td>
-                    <td class="px-3 py-2 text-gray-500">{{ item.inventoryItemSku || '—' }}</td>
-                    <td class="px-3 py-2 text-right font-medium text-green-700">{{ item.receivedQuantity | number: '1.2-2' }}</td>
-                    <td class="px-3 py-2">{{ item.stockUnitCode }}</td>
-                    <td class="px-3 py-2 text-center">
-                      <span class="px-2 py-0.5 text-xs rounded font-medium" [ngClass]="item.isReversed ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'">
-                        {{ item.isReversed ? 'Reversed (' + (item.reversalReason || 'Stock Reversal') + ')' : 'Received into Stock' }}
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            }
           </div>
-        </div>
-      </mat-card-content>
-    </mat-card>
+        </mat-card-content>
+      </mat-card>
+    }
 
     <!-- Reversal Warning / Audit Footer -->
-    <mat-card class="audit-card" *ngIf="inv.status === 'Reversed'">
-      <mat-card-header>
-        <mat-card-title class="text-danger">Invoice Reversal Details</mat-card-title>
-      </mat-card-header>
-      <mat-card-content>
-        <p><strong>Reversed At:</strong> {{ inv.reversedAt | date: 'medium' }}</p>
-        <p><strong>Reversal Reason:</strong> {{ inv.reversalReason }}</p>
-      </mat-card-content>
-    </mat-card>
+    @if (inv.status === 'Reversed') {
+      <mat-card class="audit-card">
+        <mat-card-header>
+          <mat-card-title class="text-danger">Invoice Reversal Details</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <p><strong>Reversed At:</strong> {{ inv.reversedAt | date: 'medium' }}</p>
+          <p><strong>Reversal Reason:</strong> {{ inv.reversalReason }}</p>
+        </mat-card-content>
+      </mat-card>
+    }
   </div>
 </div>

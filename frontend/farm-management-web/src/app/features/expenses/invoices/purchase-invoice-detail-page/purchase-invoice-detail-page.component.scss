@@ -208,3 +208,112 @@
   border-left: 4px solid #c62828;
   background-color: #fff8f8;
 }
+
+.receipt-history-card {
+  margin-top: 16px;
+}
+
+.receipt-batches-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+}
+
+.receipt-batch-card {
+  border: 1px solid var(--app-border, #dce5de);
+  border-radius: 8px;
+  background-color: #fafbfc;
+  padding: 16px;
+
+  .receipt-batch-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #e0e0e0;
+
+    .batch-title {
+      display: flex;
+      gap: 12px;
+      font-size: 0.95rem;
+
+      .batch-date {
+        font-weight: 600;
+        color: var(--app-ink, #1c2a22);
+      }
+
+      .batch-dest {
+        color: var(--app-muted, #65746a);
+      }
+    }
+
+    .batch-meta {
+      font-size: 0.82rem;
+      color: #757575;
+      display: flex;
+      gap: 12px;
+    }
+  }
+
+  .batch-notes {
+    font-size: 0.85rem;
+    font-style: italic;
+    color: #616161;
+    margin-bottom: 10px;
+  }
+
+  .receipt-table-wrapper {
+    overflow-x: auto;
+  }
+
+  .receipt-items-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 0.88rem;
+
+    th {
+      background-color: #f5f5f5;
+      color: #424242;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      padding: 8px 12px;
+      letter-spacing: 0.04em;
+    }
+
+    td {
+      padding: 8px 12px;
+      border-top: 1px solid #eeeeee;
+
+      &.tabular-amount {
+        font-variant-numeric: tabular-nums;
+        font-weight: 600;
+      }
+    }
+  }
+
+  .receipt-status-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+
+    &.received {
+      background-color: #dcfce7;
+      color: #15803d;
+    }
+
+    &.reversed {
+      background-color: #fee2e2;
+      color: #991b1b;
+    }
+  }
+}

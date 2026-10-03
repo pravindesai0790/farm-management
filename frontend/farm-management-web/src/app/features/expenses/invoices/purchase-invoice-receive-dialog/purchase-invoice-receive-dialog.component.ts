@@ -12,6 +12,7 @@ import { MatTableModule } from '@angular/material/table';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { PurchaseInvoiceService } from '../../../../core/expenses/purchase-invoice.service';
 import { InventoryService } from '../../../../core/inventory/inventory.service';
@@ -22,6 +23,7 @@ import {
   ReceivePurchaseInvoiceItemLineRequest,
   ReceivePurchaseInvoiceItemsRequest,
 } from '../../../../core/expenses/purchase-invoice.models';
+import { formatDateOnly } from '../../../../core/utils/date.utils';
 
 export interface PurchaseInvoiceReceiveDialogData {
   invoice: PurchaseInvoiceResponse;
@@ -44,6 +46,7 @@ export interface PurchaseInvoiceReceiveDialogData {
     MatProgressSpinnerModule,
     MatIconModule,
     MatSnackBarModule,
+    MatTooltipModule,
   ],
   templateUrl: './purchase-invoice-receive-dialog.component.html',
   styleUrls: ['./purchase-invoice-receive-dialog.component.scss'],
@@ -79,13 +82,38 @@ export class PurchaseInvoiceReceiveDialogComponent implements OnInit {
 
   readonly displayedColumns: string[] = [
     'item',
-    'sku',
     'unit',
     'invoiced',
     'received',
     'remaining',
     'receiveQuantity',
   ];
+
+  setAllRemaining(): void {
+    this.remainingLines().forEach((line, index) => {
+      this.linesFormArray.at(index).patchValue({ quantity: line.remainingQuantity });
+    });
+  }
+
+  clearAll(): void {
+    this.remainingLines().forEach((_, index) => {
+      this.linesFormArray.at(index).patchValue({ quantity: 0 });
+    });
+  }
+
+  get totalReceivingQuantity(): number {
+    return this.linesFormArray.controls.reduce((sum, ctrl) => {
+      const q = Number(ctrl.value?.quantity) || 0;
+      return sum + (q > 0 ? q : 0);
+    }, 0);
+  }
+
+  get selectedLinesCount(): number {
+    return this.linesFormArray.controls.filter((ctrl) => {
+      const q = Number(ctrl.value?.quantity) || 0;
+      return q > 0;
+    }).length;
+  }
 
   ngOnInit(): void {
     this.loadData();
@@ -174,10 +202,7 @@ export class PurchaseInvoiceReceiveDialogComponent implements OnInit {
       return;
     }
 
-    const movementDateStr =
-      rawValues.movementDate instanceof Date
-        ? rawValues.movementDate.toISOString().split('T')[0]
-        : rawValues.movementDate;
+    const movementDateStr = formatDateOnly(rawValues.movementDate) || new Date().toISOString().split('T')[0];
 
     const payload: ReceivePurchaseInvoiceItemsRequest = {
       storageLocationId: rawValues.storageLocationId,

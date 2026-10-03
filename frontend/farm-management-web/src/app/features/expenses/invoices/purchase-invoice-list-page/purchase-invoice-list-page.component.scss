@@ -7,20 +7,108 @@
 .page-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-top: 16px;
-  margin-bottom: 24px;
+  align-items: flex-start;
+  margin-top: 12px;
+  margin-bottom: 20px;
+  gap: 16px;
 
-  h1 {
-    margin: 0;
-    font-size: 24px;
-    font-weight: 600;
+  .header-titles {
+    .eyebrow {
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      color: var(--app-primary, #2f6f4e);
+      margin: 0 0 4px 0;
+    }
+
+    h1 {
+      margin: 0 0 4px 0;
+      font-size: 1.75rem;
+      font-weight: 700;
+      font-family: Georgia, serif;
+      color: var(--app-ink, #1c2a22);
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--app-muted, #65746a);
+      font-size: 0.95rem;
+    }
   }
 
-  .subtitle {
-    margin: 4px 0 0 0;
-    color: rgba(0, 0, 0, 0.6);
-    font-size: 14px;
+  .header-actions {
+    display: flex;
+    gap: 8px;
+  }
+}
+
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+
+  .kpi-card {
+    mat-card-content {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px;
+    }
+
+    .kpi-icon-box {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+
+      &.primary {
+        background-color: #eaf3ed;
+        color: #2f6f4e;
+      }
+      &.warning {
+        background-color: #fef3c7;
+        color: #b45309;
+      }
+      &.danger {
+        background-color: #fee2e2;
+        color: #991b1b;
+      }
+      &.info {
+        background-color: #e0f2fe;
+        color: #0369a1;
+      }
+
+      mat-icon {
+        font-size: 24px;
+        width: 24px;
+        height: 24px;
+      }
+    }
+
+    .kpi-info {
+      display: flex;
+      flex-direction: column;
+
+      .kpi-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--app-muted, #65746a);
+      }
+
+      .kpi-value {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: var(--app-ink, #1c2a22);
+        font-variant-numeric: tabular-nums;
+      }
+    }
   }
 }
 

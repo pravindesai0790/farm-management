@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -34,6 +34,7 @@ import { ExpensesSubNavComponent } from '../../components/expenses-sub-nav/expen
 import { DirectExpenseDetailDialogComponent } from '../direct-expense-detail-dialog/direct-expense-detail-dialog.component';
 import { DirectExpenseEditorDialogComponent } from '../direct-expense-editor-dialog/direct-expense-editor-dialog.component';
 import { DirectExpenseReversalDialogComponent } from '../direct-expense-reversal-dialog/direct-expense-reversal-dialog.component';
+import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-direct-expense-list-page',
@@ -92,6 +93,15 @@ export class DirectExpenseListPageComponent implements OnInit {
   readonly farms = signal<readonly Farm[]>([]);
   readonly categories = signal<readonly ExpenseCategory[]>([]);
   readonly suppliers = signal<readonly Supplier[]>([]);
+
+  readonly totalPostedAmount = computed(() =>
+    this.expenses().filter((e) => e.status === 'Posted').reduce((acc, e) => acc + (e.amount || 0), 0),
+  );
+  readonly draftCount = computed(() => this.expenses().filter((e) => e.status === 'Draft').length);
+  readonly postedCount = computed(() => this.expenses().filter((e) => e.status === 'Posted').length);
+  readonly linkedCount = computed(() =>
+    this.expenses().filter((e) => !!(e.farmAreaId || e.cropCycleId || e.plantationId)).length,
+  );
 
   readonly filterForm = this.fb.group({
     search: [''],
@@ -228,26 +238,44 @@ export class DirectExpenseListPageComponent implements OnInit {
   }
 
   postExpense(expense: Expense): void {
-    if (!confirm(`Are you sure you want to post this expense of ${expense.currencySymbol} ${expense.amount}? Posted expenses cannot be edited.`)) {
-      return;
-    }
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '460px',
+      data: {
+        title: 'Post Direct Expense',
+        icon: 'send',
+        message: `Are you sure you want to post this expense? Once posted, this expense cannot be edited or deleted.`,
+        confirmText: 'Post Expense',
+        cancelText: 'Cancel',
+        color: 'primary',
+        details: [
+          { label: 'Category', value: expense.expenseCategoryName },
+          { label: 'Farm', value: expense.farmName },
+          { label: 'Expense Date', value: expense.expenseDate },
+          { label: 'Amount', value: `${expense.currencySymbol || '₹'} ${expense.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` },
+        ],
+      },
+    });
 
-    this.isLoading.set(true);
-    this.expenseService
-      .post(expense.id)
-      .pipe(
-        finalize(() => this.isLoading.set(false)),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe({
-        next: () => {
-          this.snack.open('Expense posted successfully.', 'Close', { duration: 3000 });
-          this.loadExpenses();
-        },
-        error: (err) => {
-          this.snack.open(getApiErrorMessage(err, 'Failed to post expense.'), 'Close', { duration: 5000 });
-        },
-      });
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (!confirmed) return;
+
+      this.isLoading.set(true);
+      this.expenseService
+        .post(expense.id)
+        .pipe(
+          finalize(() => this.isLoading.set(false)),
+          takeUntilDestroyed(this.destroyRef),
+        )
+        .subscribe({
+          next: () => {
+            this.snack.open('Expense posted successfully.', 'Close', { duration: 3000 });
+            this.loadExpenses();
+          },
+          error: (err) => {
+            this.snack.open(getApiErrorMessage(err, 'Failed to post expense.'), 'Close', { duration: 5000 });
+          },
+        });
+    });
   }
 
   openReverseDialog(expense: Expense): void {

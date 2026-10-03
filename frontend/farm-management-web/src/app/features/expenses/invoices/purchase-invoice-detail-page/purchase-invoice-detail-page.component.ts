@@ -18,6 +18,7 @@ import { getApiErrorMessage } from '../../../../core/models/api-error.model';
 import { ExpensesSubNavComponent } from '../../components/expenses-sub-nav/expenses-sub-nav.component';
 import { PurchaseInvoiceReceiveDialogComponent } from '../purchase-invoice-receive-dialog/purchase-invoice-receive-dialog.component';
 import { PurchaseInvoiceReversalDialogComponent } from '../purchase-invoice-reversal-dialog/purchase-invoice-reversal-dialog.component';
+import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-purchase-invoice-detail-page',
@@ -105,7 +106,10 @@ export class PurchaseInvoiceDetailPageComponent implements OnInit {
     if (!inv) return;
 
     const dialogRef = this.dialog.open(PurchaseInvoiceReceiveDialogComponent, {
-      width: '760px',
+      width: '920px',
+      maxWidth: '95vw',
+      maxHeight: '92vh',
+      panelClass: 'receive-items-dialog-panel',
       disableClose: true,
       data: { invoice: inv },
     });
@@ -121,26 +125,43 @@ export class PurchaseInvoiceDetailPageComponent implements OnInit {
     const inv = this.invoice();
     if (!inv) return;
 
-    if (!confirm(`Are you sure you want to post invoice ${inv.supplierInvoiceNumber}? Posted invoices cannot be edited.`)) {
-      return;
-    }
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '460px',
+      data: {
+        title: 'Post Supplier Invoice',
+        icon: 'send',
+        message: `Are you sure you want to post invoice #${inv.supplierInvoiceNumber}? Once posted, this invoice cannot be edited or deleted.`,
+        confirmText: 'Post Invoice',
+        cancelText: 'Cancel',
+        color: 'primary',
+        details: [
+          { label: 'Supplier', value: inv.supplierName },
+          { label: 'Invoice Date', value: inv.invoiceDate },
+          { label: 'Total Amount', value: `${inv.currencySymbol || '₹'} ${inv.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` },
+        ],
+      },
+    });
 
-    this.isPosting.set(true);
-    this.invoiceService
-      .post(inv.id)
-      .pipe(
-        finalize(() => this.isPosting.set(false)),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe({
-        next: (updated) => {
-          this.snack.open('Invoice posted successfully.', 'Close', { duration: 3000 });
-          this.invoice.set(updated);
-        },
-        error: (err) => {
-          this.snack.open(getApiErrorMessage(err, 'Failed to post invoice.'), 'Close', { duration: 5000 });
-        },
-      });
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (!confirmed) return;
+
+      this.isPosting.set(true);
+      this.invoiceService
+        .post(inv.id)
+        .pipe(
+          finalize(() => this.isPosting.set(false)),
+          takeUntilDestroyed(this.destroyRef),
+        )
+        .subscribe({
+          next: (updated) => {
+            this.snack.open('Invoice posted successfully.', 'Close', { duration: 3000 });
+            this.invoice.set(updated);
+          },
+          error: (err) => {
+            this.snack.open(getApiErrorMessage(err, 'Failed to post invoice.'), 'Close', { duration: 5000 });
+          },
+        });
+    });
   }
 
   openReverseDialog(): void {

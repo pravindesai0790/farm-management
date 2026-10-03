@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -35,6 +35,7 @@ import { getApiErrorMessage } from '../../../../core/models/api-error.model';
 import { formatDateOnly } from '../../../../core/utils/date.utils';
 import { ExpensesSubNavComponent } from '../../components/expenses-sub-nav/expenses-sub-nav.component';
 import { PurchaseInvoiceReversalDialogComponent } from '../purchase-invoice-reversal-dialog/purchase-invoice-reversal-dialog.component';
+import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-purchase-invoice-list-page',
@@ -95,6 +96,19 @@ export class PurchaseInvoiceListPageComponent implements OnInit {
 
   readonly farms = signal<readonly Farm[]>([]);
   readonly suppliers = signal<readonly Supplier[]>([]);
+
+  readonly totalInvoicedAmount = computed(() =>
+    this.invoices().filter((inv) => inv.status === 'Posted').reduce((sum, inv) => sum + (inv.totalAmount || 0), 0),
+  );
+  readonly totalOutstandingBalance = computed(() =>
+    this.invoices().filter((inv) => inv.status === 'Posted').reduce((sum, inv) => sum + (inv.outstandingBalance || 0), 0),
+  );
+  readonly overdueCount = computed(() =>
+    this.invoices().filter((inv) => inv.status === 'Posted' && inv.dueStatus === 'Overdue').length,
+  );
+  readonly awaitingDeliveryCount = computed(() =>
+    this.invoices().filter((inv) => inv.status === 'Posted' && inv.receiptStatus && inv.receiptStatus !== 'FullyReceived' && inv.receiptStatus !== 'NotApplicable').length,
+  );
 
   readonly filterForm = this.fb.group({
     search: [''],
@@ -196,26 +210,43 @@ export class PurchaseInvoiceListPageComponent implements OnInit {
   }
 
   postInvoice(invoice: PurchaseInvoiceResponse): void {
-    if (!confirm(`Are you sure you want to post invoice ${invoice.supplierInvoiceNumber}? Posted invoices cannot be edited.`)) {
-      return;
-    }
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '460px',
+      data: {
+        title: 'Post Supplier Invoice',
+        icon: 'send',
+        message: `Are you sure you want to post invoice #${invoice.supplierInvoiceNumber}? Once posted, this invoice cannot be edited or deleted.`,
+        confirmText: 'Post Invoice',
+        cancelText: 'Cancel',
+        color: 'primary',
+        details: [
+          { label: 'Supplier', value: invoice.supplierName },
+          { label: 'Invoice Date', value: invoice.invoiceDate },
+          { label: 'Total Amount', value: `${invoice.currencySymbol || '₹'} ${invoice.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` },
+        ],
+      },
+    });
 
-    this.isLoading.set(true);
-    this.invoiceService
-      .post(invoice.id)
-      .pipe(
-        finalize(() => this.isLoading.set(false)),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe({
-        next: () => {
-          this.snack.open('Invoice posted successfully.', 'Close', { duration: 3000 });
-          this.loadInvoices();
-        },
-        error: (err) => {
-          this.snack.open(getApiErrorMessage(err, 'Failed to post invoice.'), 'Close', { duration: 5000 });
-        },
-      });
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (!confirmed) return;
+
+      this.isLoading.set(true);
+      this.invoiceService
+        .post(invoice.id)
+        .pipe(
+          finalize(() => this.isLoading.set(false)),
+          takeUntilDestroyed(this.destroyRef),
+        )
+        .subscribe({
+          next: () => {
+            this.snack.open('Invoice posted successfully.', 'Close', { duration: 3000 });
+            this.loadInvoices();
+          },
+          error: (err) => {
+            this.snack.open(getApiErrorMessage(err, 'Failed to post invoice.'), 'Close', { duration: 5000 });
+          },
+        });
+    });
   }
 
   openReverseDialog(invoice: PurchaseInvoiceResponse): void {

@@ -1,29 +1,71 @@
 <div class="suppliers-container">
-  <div class="header-row">
-    <div>
-      <h1 class="page-title">Expense Management</h1>
-      <p class="page-subtitle">Manage suppliers, vendors, expense categories, and accounts payable.</p>
+  <app-expenses-sub-nav />
+
+  <div class="page-header">
+    <div class="header-titles">
+      <p class="eyebrow">Expenses & Accounts Payable &bull; Suppliers & Vendors</p>
+      <h1>Suppliers & Vendors</h1>
+      <p class="subtitle">Manage registered suppliers, contractors, service vendors, and payment terms.</p>
     </div>
-    @if (permissionService.has('Supplier.Create')) {
-      <button mat-flat-button color="primary" (click)="openCreateDialog()">
-        <mat-icon>add</mat-icon>
-        New Supplier
-      </button>
-    }
+    <div class="header-actions">
+      @if (permissionService.has('Supplier.Create')) {
+        <button mat-raised-button color="primary" (click)="openCreateDialog()">
+          <mat-icon>add</mat-icon>
+          <span>New Supplier</span>
+        </button>
+      }
+    </div>
   </div>
 
-  <app-expenses-sub-nav />
+  <!-- KPI Summary Strip -->
+  <div class="kpi-strip">
+    <mat-card class="kpi-card">
+      <mat-card-content>
+        <div class="kpi-icon-box primary">
+          <mat-icon>storefront</mat-icon>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Total Vendors</span>
+          <span class="kpi-value">{{ totalCount() }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="kpi-card">
+      <mat-card-content>
+        <div class="kpi-icon-box success">
+          <mat-icon>check_circle</mat-icon>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Active Vendors</span>
+          <span class="kpi-value">{{ activeCount() }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="kpi-card">
+      <mat-card-content>
+        <div class="kpi-icon-box danger">
+          <mat-icon>block</mat-icon>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Inactive Vendors</span>
+          <span class="kpi-value">{{ inactiveCount() }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
 
   <mat-card class="filter-card">
     <mat-card-content>
       <form [formGroup]="filterForm" class="filter-form">
-        <mat-form-field appearance="outline" class="search-field">
+        <mat-form-field appearance="outline" class="search-field" subscriptSizing="dynamic">
           <mat-label>Search suppliers</mat-label>
           <mat-icon matPrefix>search</mat-icon>
           <input matInput formControlName="search" placeholder="Search by name, contact, phone, or email" />
         </mat-form-field>
 
-        <mat-form-field appearance="outline" class="status-field">
+        <mat-form-field appearance="outline" class="status-field" subscriptSizing="dynamic">
           <mat-label>Status</mat-label>
           <mat-select formControlName="status">
             <mat-option value="all">All statuses</mat-option>

@@ -1,66 +1,74 @@
-<h2 mat-dialog-title>
-  {{ data?.supplier ? 'Edit Supplier' : 'New Supplier' }}
-</h2>
+<div class="dialog-container">
+  <div class="dialog-header">
+    <h2 mat-dialog-title>
+      <mat-icon>{{ data?.supplier ? 'edit_note' : 'storefront' }}</mat-icon>
+      {{ data?.supplier ? 'Edit Supplier' : 'New Supplier' }}
+    </h2>
+    <button mat-icon-button type="button" (click)="onCancel()" [disabled]="isSubmitting()" aria-label="Close dialog">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
 
-<form [formGroup]="form" (ngSubmit)="onSubmit()">
-  <mat-dialog-content class="dialog-content">
-    <div class="form-grid">
-      <mat-form-field appearance="outline" class="full-width">
-        <mat-label>Supplier Name *</mat-label>
-        <input matInput formControlName="name" placeholder="e.g., Agri Supplies Ltd" />
-        @if (form.controls.name.hasError('required') && form.controls.name.touched) {
-          <mat-error>Supplier name is required.</mat-error>
-        }
-        @if (form.controls.name.hasError('maxlength')) {
-          <mat-error>Supplier name cannot exceed 200 characters.</mat-error>
-        }
-      </mat-form-field>
-
-      <div class="two-column-row">
-        <mat-form-field appearance="outline">
-          <mat-label>Contact Person</mat-label>
-          <input matInput formControlName="contactPerson" placeholder="e.g., John Doe" />
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>Phone Number</mat-label>
-          <input matInput formControlName="phone" placeholder="e.g., +1 555-0199" />
-        </mat-form-field>
-      </div>
-
-      <div class="two-column-row">
-        <mat-form-field appearance="outline">
-          <mat-label>Email Address</mat-label>
-          <input matInput type="email" formControlName="email" placeholder="e.g., info@agrisupplies.com" />
-          @if (form.controls.email.hasError('email')) {
-            <mat-error>Please enter a valid email address.</mat-error>
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+    <mat-dialog-content class="dialog-content">
+      <div class="form-grid">
+        <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+          <mat-label>Supplier Name *</mat-label>
+          <input matInput formControlName="name" placeholder="e.g., Agri Supplies Ltd" />
+          @if (form.controls.name.hasError('required') && form.controls.name.touched) {
+            <mat-error>Supplier name is required.</mat-error>
+          }
+          @if (form.controls.name.hasError('maxlength')) {
+            <mat-error>Supplier name cannot exceed 200 characters.</mat-error>
           }
         </mat-form-field>
 
-        <mat-form-field appearance="outline">
-          <mat-label>Tax / Registration ID</mat-label>
-          <input matInput formControlName="registrationIdentifier" placeholder="e.g., GSTIN / VAT / EIN" />
+        <div class="two-column-row">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Contact Person</mat-label>
+            <input matInput formControlName="contactPerson" placeholder="e.g., John Doe" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Phone Number</mat-label>
+            <input matInput formControlName="phone" placeholder="e.g., +1 555-0199" />
+          </mat-form-field>
+        </div>
+
+        <div class="two-column-row">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Email Address</mat-label>
+            <input matInput type="email" formControlName="email" placeholder="e.g., info@agrisupplies.com" />
+            @if (form.controls.email.hasError('email')) {
+              <mat-error>Please enter a valid email address.</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Tax / Registration ID</mat-label>
+            <input matInput formControlName="registrationIdentifier" placeholder="e.g., GSTIN / VAT / EIN" />
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+          <mat-label>Address</mat-label>
+          <textarea matInput formControlName="address" rows="2" placeholder="Full postal address"></textarea>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+          <mat-label>Notes</mat-label>
+          <textarea matInput formControlName="notes" rows="2" placeholder="Additional vendor notes, payment terms, or remarks"></textarea>
         </mat-form-field>
       </div>
+    </mat-dialog-content>
 
-      <mat-form-field appearance="outline" class="full-width">
-        <mat-label>Address</mat-label>
-        <textarea matInput formControlName="address" rows="2" placeholder="Full postal address"></textarea>
-      </mat-form-field>
-
-      <mat-form-field appearance="outline" class="full-width">
-        <mat-label>Notes</mat-label>
-        <textarea matInput formControlName="notes" rows="2" placeholder="Additional vendor notes, payment terms, or remarks"></textarea>
-      </mat-form-field>
-    </div>
-  </mat-dialog-content>
-
-  <mat-dialog-actions align="end" class="dialog-actions">
-    <button mat-button type="button" (click)="onCancel()" [disabled]="isSubmitting()">
-      Cancel
-    </button>
-    <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || isSubmitting()">
-      {{ isSubmitting() ? 'Saving...' : (data?.supplier ? 'Save Changes' : 'Create Supplier') }}
-    </button>
-  </mat-dialog-actions>
-</form>
+    <mat-dialog-actions align="end" class="dialog-actions">
+      <button mat-button type="button" (click)="onCancel()" [disabled]="isSubmitting()">
+        Cancel
+      </button>
+      <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid || isSubmitting()">
+        {{ isSubmitting() ? 'Saving...' : (data?.supplier ? 'Save Changes' : 'Create Supplier') }}
+      </button>
+    </mat-dialog-actions>
+  </form>
+</div>

@@ -193,7 +193,35 @@ public class PurchaseInvoiceServiceTests
         Assert.Equal(15m, response.Items[0].ReceivedQuantity);
         Assert.Single(_stockStore.Movements);
         Assert.Equal(15m, _stockStore.Movements[0].Quantity);
+        Assert.Equal("GRN-001", _stockStore.Movements[0].ReferenceNumber);
+        Assert.Contains("INV-RCV-1", _stockStore.Movements[0].Notes);
+        Assert.Contains("Partial delivery 15 units", _stockStore.Movements[0].Notes);
         Assert.Single(_store.ReceiptLines);
+    }
+
+    [Fact]
+    public async Task ReceiveItemsAsync_WithoutReferenceAndNotes_DefaultsToInvoiceNumberAndSystemNote()
+    {
+        var invoice = PurchaseInvoice.CreateDraft(OrgId, SupplierId, FarmId, "INV-AUTONOTE-1", DateOnly.FromDateTime(DateTime.UtcNow), CurrencyId, UserId);
+        var invLine = PurchaseInvoiceLine.CreateInventoryLine(OrgId, invoice.Id, ItemId, UnitId, 10m, 5m);
+        invoice.Lines.Add(invLine);
+        invoice.Post(UserId);
+        _store.Invoices.Add(invoice);
+
+        var request = new ReceivePurchaseInvoiceItemsRequest(
+            LocationId,
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            new[] { new ReceivePurchaseInvoiceItemLineRequest(invLine.Id, 5m) },
+            ReferenceNumber: null,
+            Notes: null,
+            IdempotencyKey: "KEY-AUTONOTE");
+
+        var response = await _service.ReceiveItemsAsync(_actor, invoice.Id, request, "127.0.0.1");
+
+        Assert.NotNull(response);
+        Assert.Single(_stockStore.Movements);
+        Assert.Equal("INV-AUTONOTE-1", _stockStore.Movements[0].ReferenceNumber);
+        Assert.Contains("Stock received from Supplier Invoice #INV-AUTONOTE-1", _stockStore.Movements[0].Notes);
     }
 
     [Fact]

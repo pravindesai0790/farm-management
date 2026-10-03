@@ -1,29 +1,71 @@
 <div class="categories-container">
-  <div class="header-row">
-    <div>
-      <h1 class="page-title">Expense Management</h1>
-      <p class="page-subtitle">Configure system-standard and farm-specific expense categories.</p>
+  <app-expenses-sub-nav />
+
+  <div class="page-header">
+    <div class="header-titles">
+      <p class="eyebrow">Expenses & Accounts Payable &bull; Expense Categories</p>
+      <h1>Expense Categories</h1>
+      <p class="subtitle">Configure system-standard accounting categories and farm-specific operational expense heads.</p>
     </div>
-    @if (permissionService.has('ExpenseCategory.Manage')) {
-      <button mat-flat-button color="primary" (click)="openCreateDialog()">
-        <mat-icon>add</mat-icon>
-        New Category
-      </button>
-    }
+    <div class="header-actions">
+      @if (permissionService.has('ExpenseCategory.Manage')) {
+        <button mat-raised-button color="primary" (click)="openCreateDialog()">
+          <mat-icon>add</mat-icon>
+          <span>New Category</span>
+        </button>
+      }
+    </div>
   </div>
 
-  <app-expenses-sub-nav />
+  <!-- KPI Summary Strip -->
+  <div class="kpi-strip">
+    <mat-card class="kpi-card">
+      <mat-card-content>
+        <div class="kpi-icon-box primary">
+          <mat-icon>category</mat-icon>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Total Categories</span>
+          <span class="kpi-value">{{ totalCount() }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="kpi-card">
+      <mat-card-content>
+        <div class="kpi-icon-box info">
+          <mat-icon>lock</mat-icon>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">System Defaults</span>
+          <span class="kpi-value">{{ systemCount() }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="kpi-card">
+      <mat-card-content>
+        <div class="kpi-icon-box success">
+          <mat-icon>tune</mat-icon>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Custom Categories</span>
+          <span class="kpi-value">{{ customCount() }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
 
   <mat-card class="filter-card">
     <mat-card-content>
       <form [formGroup]="filterForm" class="filter-form">
-        <mat-form-field appearance="outline" class="search-field">
+        <mat-form-field appearance="outline" class="search-field" subscriptSizing="dynamic">
           <mat-label>Search categories</mat-label>
           <mat-icon matPrefix>search</mat-icon>
           <input matInput formControlName="search" placeholder="Search by category name or description" />
         </mat-form-field>
 
-        <mat-form-field appearance="outline" class="status-field">
+        <mat-form-field appearance="outline" class="status-field" subscriptSizing="dynamic">
           <mat-label>Status</mat-label>
           <mat-select formControlName="status">
             <mat-option value="all">All statuses</mat-option>

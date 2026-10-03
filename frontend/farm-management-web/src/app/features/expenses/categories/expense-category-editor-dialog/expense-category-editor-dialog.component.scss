@@ -1,13 +1,41 @@
+.dialog-container {
+  display: flex;
+  flex-direction: column;
+  max-width: 520px;
+  width: 100%;
+}
+
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--app-border, #dce5de);
+
+  h2 {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.25rem;
+    font-weight: 600;
+
+    mat-icon {
+      color: var(--app-primary, #2f6f4e);
+    }
+  }
+}
+
 .dialog-content {
-  min-width: 440px;
-  max-width: 540px;
-  padding-top: 16px;
+  padding: 20px 24px;
+  max-height: 75vh;
+  overflow-y: auto;
 }
 
 .form-grid {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 
 .full-width {
@@ -16,11 +44,6 @@
 
 .dialog-actions {
   padding: 16px 24px;
+  border-top: 1px solid var(--app-border, #dce5de);
   gap: 8px;
-}
-
-@media (max-width: 500px) {
-  .dialog-content {
-    min-width: 100%;
-  }
 }

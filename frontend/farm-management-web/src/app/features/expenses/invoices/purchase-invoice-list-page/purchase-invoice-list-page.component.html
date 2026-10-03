@@ -2,52 +2,109 @@
   <app-expenses-sub-nav></app-expenses-sub-nav>
 
   <div class="page-header">
-    <div class="header-title">
+    <div class="header-titles">
+      <p class="eyebrow">Expenses & Accounts Payable &bull; Supplier Invoices</p>
       <h1>Supplier Invoices</h1>
-      <p class="subtitle">Manage multi-line credit & cash supplier invoices and operational allocations.</p>
+      <p class="subtitle">Manage multi-line credit & cash supplier invoices, accounts payable, and inventory receipts.</p>
     </div>
     <div class="header-actions">
-      <a
-        mat-raised-button
-        color="primary"
-        routerLink="/expenses/invoices/new"
-        *ngIf="permissionService.has('PurchaseInvoice.Create')"
-      >
-        <mat-icon>add</mat-icon> Create Invoice
-      </a>
+      @if (permissionService.has('PurchaseInvoice.Create')) {
+        <a
+          mat-raised-button
+          color="primary"
+          routerLink="/expenses/invoices/new"
+        >
+          <mat-icon>add</mat-icon> Create Invoice
+        </a>
+      }
     </div>
+  </div>
+
+  <!-- Executive KPI Strip -->
+  <div class="kpi-strip">
+    <mat-card class="kpi-card">
+      <mat-card-content>
+        <div class="kpi-icon-box primary">
+          <mat-icon>request_quote</mat-icon>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Total Invoiced</span>
+          <span class="kpi-value">{{ totalInvoicedAmount() | number:'1.2-2' }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="kpi-card">
+      <mat-card-content>
+        <div class="kpi-icon-box warning">
+          <mat-icon>account_balance_wallet</mat-icon>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Payables Balance</span>
+          <span class="kpi-value">{{ totalOutstandingBalance() | number:'1.2-2' }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="kpi-card">
+      <mat-card-content>
+        <div class="kpi-icon-box danger">
+          <mat-icon>event_busy</mat-icon>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Overdue Bills</span>
+          <span class="kpi-value">{{ overdueCount() }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="kpi-card">
+      <mat-card-content>
+        <div class="kpi-icon-box info">
+          <mat-icon>local_shipping</mat-icon>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Awaiting Delivery</span>
+          <span class="kpi-value">{{ awaitingDeliveryCount() }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
   </div>
 
   <mat-card class="filter-card">
     <mat-card-content>
       <form [formGroup]="filterForm" class="filter-grid">
-        <mat-form-field appearance="outline" class="search-field">
+        <mat-form-field appearance="outline" class="search-field" subscriptSizing="dynamic">
           <mat-label>Search Invoice / Notes</mat-label>
           <input matInput formControlName="search" placeholder="Search by number, notes..." />
           <mat-icon matSuffix>search</mat-icon>
         </mat-form-field>
 
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>Farm</mat-label>
           <mat-select formControlName="farmId">
             <mat-option value="">All Farms</mat-option>
-            <mat-option *ngFor="let farm of farms()" [value]="farm.id">
-              {{ farm.name }}
-            </mat-option>
+            @for (farm of farms(); track farm.id) {
+              <mat-option [value]="farm.id">
+                {{ farm.name }}
+              </mat-option>
+            }
           </mat-select>
         </mat-form-field>
 
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>Supplier</mat-label>
           <mat-select formControlName="supplierId">
             <mat-option value="">All Suppliers</mat-option>
-            <mat-option *ngFor="let s of suppliers()" [value]="s.id">
-              {{ s.name }}
-            </mat-option>
+            @for (s of suppliers(); track s.id) {
+              <mat-option [value]="s.id">
+                {{ s.name }}
+              </mat-option>
+            }
           </mat-select>
         </mat-form-field>
 
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>Invoice Status</mat-label>
           <mat-select formControlName="status">
             <mat-option value="all">All Statuses</mat-option>
@@ -57,7 +114,7 @@
           </mat-select>
         </mat-form-field>
 
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>Payment Status</mat-label>
           <mat-select formControlName="paymentStatus">
             <mat-option value="all">All Payment Statuses</mat-option>
@@ -67,14 +124,14 @@
           </mat-select>
         </mat-form-field>
 
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>From Date</mat-label>
           <input matInput [matDatepicker]="fromPicker" formControlName="from" placeholder="From date" />
           <mat-datepicker-toggle matIconSuffix [for]="fromPicker"></mat-datepicker-toggle>
           <mat-datepicker #fromPicker></mat-datepicker>
         </mat-form-field>
 
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>To Date</mat-label>
           <input matInput [matDatepicker]="toPicker" formControlName="to" placeholder="To date" />
           <mat-datepicker-toggle matIconSuffix [for]="toPicker"></mat-datepicker-toggle>
@@ -82,8 +139,8 @@
         </mat-form-field>
 
         <div class="filter-actions">
-          <button mat-stroked-button type="button" (click)="resetFilters()">
-            <mat-icon>restart_alt</mat-icon> Reset
+          <button mat-button type="button" (click)="resetFilters()">
+            <mat-icon>refresh</mat-icon> Reset
           </button>
         </div>
       </form>
@@ -91,9 +148,11 @@
   </mat-card>
 
   <mat-card class="table-card">
-    <div class="loading-overlay" *ngIf="isLoading()">
-      <mat-spinner diameter="40"></mat-spinner>
-    </div>
+    @if (isLoading()) {
+      <div class="loading-overlay">
+        <mat-spinner diameter="40"></mat-spinner>
+      </div>
+    }
 
     <mat-card-content class="p-0">
       <table mat-table [dataSource]="invoices()" class="full-width-table">
@@ -114,15 +173,19 @@
         <ng-container matColumnDef="dueDate">
           <th mat-header-cell *matHeaderCellDef>Due Date</th>
           <td mat-cell *matCellDef="let row">
-            <span *ngIf="row.dueDate">{{ row.dueDate | date: 'mediumDate' }}</span>
-            <span *ngIf="!row.dueDate" class="text-muted">—</span>
-            <span
-              *ngIf="row.dueStatus && row.status === 'Posted' && row.paymentStatus !== 'Paid'"
-              class="due-chip"
-              [ngClass]="getDueStatusClass(row.dueStatus)"
-            >
-              {{ row.dueStatus }}
-            </span>
+            @if (row.dueDate) {
+              <span>{{ row.dueDate | date: 'mediumDate' }}</span>
+            } @else {
+              <span class="text-muted">—</span>
+            }
+            @if (row.dueStatus && row.status === 'Posted' && row.paymentStatus !== 'Paid') {
+              <span
+                class="due-chip"
+                [ngClass]="getDueStatusClass(row.dueStatus)"
+              >
+                {{ row.dueStatus }}
+              </span>
+            }
           </td>
         </ng-container>
 
@@ -179,32 +242,35 @@
                 <span>View Details</span>
               </a>
 
-              <a
-                mat-menu-item
-                [routerLink]="['/expenses/invoices', row.id, 'edit']"
-                *ngIf="row.status === 'Draft' && permissionService.has('PurchaseInvoice.UpdateDraft')"
-              >
-                <mat-icon>edit</mat-icon>
-                <span>Edit Draft</span>
-              </a>
+              @if (row.status === 'Draft' && permissionService.has('PurchaseInvoice.UpdateDraft')) {
+                <a
+                  mat-menu-item
+                  [routerLink]="['/expenses/invoices', row.id, 'edit']"
+                >
+                  <mat-icon>edit</mat-icon>
+                  <span>Edit Draft</span>
+                </a>
+              }
 
-              <button
-                mat-menu-item
-                (click)="postInvoice(row)"
-                *ngIf="row.status === 'Draft' && permissionService.has('PurchaseInvoice.Post')"
-              >
-                <mat-icon class="color-success">check_circle</mat-icon>
-                <span>Post Invoice</span>
-              </button>
+              @if (row.status === 'Draft' && permissionService.has('PurchaseInvoice.Post')) {
+                <button
+                  mat-menu-item
+                  (click)="postInvoice(row)"
+                >
+                  <mat-icon class="color-success">check_circle</mat-icon>
+                  <span>Post Invoice</span>
+                </button>
+              }
 
-              <button
-                mat-menu-item
-                (click)="openReverseDialog(row)"
-                *ngIf="row.status === 'Posted' && permissionService.has('PurchaseInvoice.Reverse')"
-              >
-                <mat-icon class="color-danger">undo</mat-icon>
-                <span>Reverse Invoice</span>
-              </button>
+              @if (row.status === 'Posted' && permissionService.has('PurchaseInvoice.Reverse')) {
+                <button
+                  mat-menu-item
+                  (click)="openReverseDialog(row)"
+                >
+                  <mat-icon class="color-danger">undo</mat-icon>
+                  <span>Reverse Invoice</span>
+                </button>
+              }
             </mat-menu>
           </td>
         </ng-container>

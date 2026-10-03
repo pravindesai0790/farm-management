@@ -5,8 +5,9 @@
   <!-- Page Header -->
   <div class="page-header">
     <div class="header-titles">
+      <p class="eyebrow">Expenses & Accounts Payable &bull; Direct Expenses</p>
       <h1>Direct Farm Expenses</h1>
-      <p class="subtitle">Record and track operational farm expenses, inputs, and overheads.</p>
+      <p class="subtitle">Record and track operational farm expenses, field inputs, utilities, and overhead allocations.</p>
     </div>
     <div class="header-actions">
       @if (permissionService.has('Expense.Create')) {
@@ -18,12 +19,63 @@
     </div>
   </div>
 
+  <!-- Executive KPI Strip -->
+  <div class="kpi-strip">
+    <mat-card class="kpi-card">
+      <mat-card-content>
+        <div class="kpi-icon-box primary">
+          <mat-icon>payments</mat-icon>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Total Posted Spent</span>
+          <span class="kpi-value">{{ totalPostedAmount() | number:'1.2-2' }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="kpi-card">
+      <mat-card-content>
+        <div class="kpi-icon-box warning">
+          <mat-icon>edit_note</mat-icon>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Draft Expenses</span>
+          <span class="kpi-value">{{ draftCount() }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="kpi-card">
+      <mat-card-content>
+        <div class="kpi-icon-box success">
+          <mat-icon>check_circle</mat-icon>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Posted Expenses</span>
+          <span class="kpi-value">{{ postedCount() }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="kpi-card">
+      <mat-card-content>
+        <div class="kpi-icon-box info">
+          <mat-icon>hub</mat-icon>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Crop/Area Linked</span>
+          <span class="kpi-value">{{ linkedCount() }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
   <!-- Filters Card -->
   <mat-card class="filter-card">
     <mat-card-content>
       <form [formGroup]="filterForm" class="filter-form">
         <!-- Search -->
-        <mat-form-field appearance="outline" class="search-field">
+        <mat-form-field appearance="outline" class="search-field" subscriptSizing="dynamic">
           <mat-label>Search</mat-label>
           <input
             matInput
@@ -34,7 +86,7 @@
         </mat-form-field>
 
         <!-- Farm Filter -->
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>Farm</mat-label>
           <mat-select formControlName="farmId">
             <mat-option value="">All Farms</mat-option>
@@ -45,7 +97,7 @@
         </mat-form-field>
 
         <!-- Category Filter -->
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>Category</mat-label>
           <mat-select formControlName="categoryId">
             <mat-option value="">All Categories</mat-option>
@@ -56,7 +108,7 @@
         </mat-form-field>
 
         <!-- Supplier Filter -->
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>Supplier</mat-label>
           <mat-select formControlName="supplierId">
             <mat-option value="">All Suppliers</mat-option>
@@ -67,7 +119,7 @@
         </mat-form-field>
 
         <!-- Status Filter -->
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>Status</mat-label>
           <mat-select formControlName="status">
             <mat-option value="all">All Statuses</mat-option>
@@ -78,7 +130,7 @@
         </mat-form-field>
 
         <!-- Date Range: From -->
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>From Date</mat-label>
           <input
             matInput
@@ -91,7 +143,7 @@
         </mat-form-field>
 
         <!-- Date Range: To -->
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>To Date</mat-label>
           <input
             matInput

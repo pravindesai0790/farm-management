@@ -5,6 +5,7 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/materia
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatButtonModule } from "@angular/material/button";
+import { MatIconModule } from "@angular/material/icon";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { ExpenseCategory } from "../../../../core/expenses/expense-category.models";
 import { ExpenseCategoryService } from "../../../../core/expenses/expense-category.service";
@@ -23,6 +24,7 @@ export interface ExpenseCategoryEditorDialogData {
     MatButtonModule,
     MatDialogModule,
     MatFormFieldModule,
+    MatIconModule,
     MatInputModule,
   ],
   templateUrl: "./expense-category-editor-dialog.component.html",

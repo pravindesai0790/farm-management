@@ -1,0 +1,43 @@
+<div class="confirm-dialog-wrapper">
+  <div class="dialog-header">
+    <div class="header-icon-badge" [ngClass]="data.color || 'primary'">
+      <mat-icon>{{ data.icon || 'help_outline' }}</mat-icon>
+    </div>
+    <div class="header-text">
+      <h2 mat-dialog-title class="dialog-title">{{ data.title }}</h2>
+    </div>
+  </div>
+
+  <mat-dialog-content class="dialog-content">
+    @if (data.message) {
+      <p class="dialog-message">{{ data.message }}</p>
+    }
+
+    @if (data.details && data.details.length > 0) {
+      <div class="details-panel">
+        @for (item of data.details; track item.label) {
+          <div class="detail-row">
+            <span class="detail-label">{{ item.label }}</span>
+            <span class="detail-value">{{ item.value }}</span>
+          </div>
+        }
+      </div>
+    }
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end" class="dialog-actions">
+    <button mat-button type="button" [mat-dialog-close]="false" class="btn-cancel">
+      {{ data.cancelText || 'Cancel' }}
+    </button>
+    <button
+      mat-flat-button
+      type="button"
+      [color]="data.color || 'primary'"
+      [mat-dialog-close]="true"
+      cdkFocusInitial
+      class="btn-confirm"
+    >
+      {{ data.confirmText || 'Confirm' }}
+    </button>
+  </mat-dialog-actions>
+</div>

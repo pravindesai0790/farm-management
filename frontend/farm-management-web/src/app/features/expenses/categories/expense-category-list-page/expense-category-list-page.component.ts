@@ -1,5 +1,5 @@
 import { CommonModule } from "@angular/common";
-import { Component, DestroyRef, OnInit, inject, signal } from "@angular/core";
+import { Component, DestroyRef, OnInit, computed, inject, signal } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { FormBuilder, ReactiveFormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
@@ -62,6 +62,9 @@ export class ExpenseCategoryListPageComponent implements OnInit {
   readonly pageIndex = signal(0);
   readonly pageSize = signal(50);
   readonly isLoading = signal(false);
+
+  readonly systemCount = computed(() => this.categories().filter((c) => c.isSystemDefault).length);
+  readonly customCount = computed(() => this.categories().filter((c) => !c.isSystemDefault).length);
 
   readonly filterForm = this.fb.nonNullable.group({
     search: [""],

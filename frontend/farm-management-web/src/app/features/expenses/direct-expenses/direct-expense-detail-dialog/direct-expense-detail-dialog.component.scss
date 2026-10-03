@@ -64,7 +64,7 @@
 }
 
 .amount-banner {
-  background: linear-gradient(135deg, #1b5e20, #2e7d32);
+  background: linear-gradient(135deg, #1c4a34, #2f6f4e);
   color: white;
   padding: 18px 24px;
   border-radius: 10px;
@@ -73,18 +73,21 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 4px 12px rgba(47, 111, 78, 0.2);
 
   .banner-label {
-    font-size: 0.82rem;
+    font-size: 0.78rem;
+    font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.8px;
-    opacity: 0.85;
+    opacity: 0.9;
     margin-bottom: 4px;
   }
 
   .banner-amount {
-    font-size: 2rem;
+    font-size: 2.1rem;
     font-weight: 700;
+    font-variant-numeric: tabular-nums;
   }
 
   .banner-currency {

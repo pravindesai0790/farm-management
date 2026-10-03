@@ -73,7 +73,7 @@ public sealed class PurchaseInvoiceService(IPurchaseInvoiceStore store, IInvento
         invoice.RecalculateTotals();
 
         await store.AddAsync(invoice, cancellationToken);
-        AddAudit(actor, invoice, "PurchaseInvoice.CreateDraft", new { invoice.SupplierInvoiceNumber, invoice.TotalAmount, LineCount = invoice.Lines.Count }, ipAddress);
+        await AddAuditAsync(actor, invoice, "PurchaseInvoice.CreateDraft", new { invoice.SupplierInvoiceNumber, invoice.TotalAmount, LineCount = invoice.Lines.Count }, ipAddress, cancellationToken);
 
         var created = await store.FindAsync(invoice.Id, actor.OrganizationId, cancellationToken);
         return MapToResponse(created!);
@@ -117,7 +117,7 @@ public sealed class PurchaseInvoiceService(IPurchaseInvoiceStore store, IInvento
         invoice.RecalculateTotals();
 
         await store.UpdateAsync(invoice, cancellationToken);
-        AddAudit(actor, invoice, "PurchaseInvoice.UpdateDraft", new { invoice.SupplierInvoiceNumber, invoice.TotalAmount, LineCount = invoice.Lines.Count }, ipAddress);
+        await AddAuditAsync(actor, invoice, "PurchaseInvoice.UpdateDraft", new { invoice.SupplierInvoiceNumber, invoice.TotalAmount, LineCount = invoice.Lines.Count }, ipAddress, cancellationToken);
 
         var updated = await store.FindAsync(invoice.Id, actor.OrganizationId, cancellationToken);
         return MapToResponse(updated!);
@@ -149,7 +149,7 @@ public sealed class PurchaseInvoiceService(IPurchaseInvoiceStore store, IInvento
 
         invoice.Post(actor.UserId);
         await store.UpdateAsync(invoice, cancellationToken);
-        AddAudit(actor, invoice, "PurchaseInvoice.Post", new { invoice.SupplierInvoiceNumber, invoice.TotalAmount, Status = invoice.Status.ToString() }, ipAddress);
+        await AddAuditAsync(actor, invoice, "PurchaseInvoice.Post", new { invoice.SupplierInvoiceNumber, invoice.TotalAmount, Status = invoice.Status.ToString() }, ipAddress, cancellationToken);
 
         var posted = await store.FindAsync(invoice.Id, actor.OrganizationId, cancellationToken);
         return MapToResponse(posted!);
@@ -182,7 +182,7 @@ public sealed class PurchaseInvoiceService(IPurchaseInvoiceStore store, IInvento
 
         invoice.Reverse(request.Reason, actor.UserId);
         await store.UpdateAsync(invoice, cancellationToken);
-        AddAudit(actor, invoice, "PurchaseInvoice.Reverse", new { invoice.SupplierInvoiceNumber, Reason = request.Reason.Trim(), Status = invoice.Status.ToString() }, ipAddress);
+        await AddAuditAsync(actor, invoice, "PurchaseInvoice.Reverse", new { invoice.SupplierInvoiceNumber, Reason = request.Reason.Trim(), Status = invoice.Status.ToString() }, ipAddress, cancellationToken);
 
         var reversed = await store.FindAsync(invoice.Id, actor.OrganizationId, cancellationToken);
         return MapToResponse(reversed!);
@@ -386,6 +386,12 @@ public sealed class PurchaseInvoiceService(IPurchaseInvoiceStore store, IInvento
             throw new ValidationException("At least one line item must be specified for receiving.");
         }
 
+        var lineIds = request.Lines.Select(l => l.PurchaseInvoiceLineId).ToList();
+        if (lineIds.Count != lineIds.Distinct().Count())
+        {
+            throw new ValidationException("Duplicate line items specified in receipt delivery request.");
+        }
+
         // Check Idempotency Key
         if (!string.IsNullOrWhiteSpace(request.IdempotencyKey))
         {
@@ -458,6 +464,17 @@ public sealed class PurchaseInvoiceService(IPurchaseInvoiceStore store, IInvento
                     balance.AddStock(item.Quantity, DateTimeOffset.UtcNow, actor.UserId);
                 }
 
+                var refNum = !string.IsNullOrWhiteSpace(request.ReferenceNumber)
+                    ? request.ReferenceNumber.Trim()
+                    : invoice.SupplierInvoiceNumber;
+
+                var supplierName = invoice.Supplier?.Name;
+                var supplierInfo = !string.IsNullOrWhiteSpace(supplierName) ? $" ({supplierName})" : string.Empty;
+                var systemNote = $"Stock received from Supplier Invoice #{invoice.SupplierInvoiceNumber}{supplierInfo} on {request.MovementDate:dd-MMM-yyyy}";
+                var finalNotes = !string.IsNullOrWhiteSpace(request.Notes)
+                    ? $"{systemNote} - {request.Notes.Trim()}"
+                    : systemNote;
+
                 // Create Phase 3.5 StockMovement record
                 var movement = new StockMovement(
                     organizationId: actor.OrganizationId,
@@ -469,8 +486,8 @@ public sealed class PurchaseInvoiceService(IPurchaseInvoiceStore store, IInvento
                     stockUnitId: line.StockUnitId!.Value,
                     movementDate: request.MovementDate,
                     createdBy: actor.UserId,
-                    referenceNumber: request.ReferenceNumber,
-                    notes: request.Notes,
+                    referenceNumber: refNum,
+                    notes: finalNotes,
                     parentTransactionId: null,
                     cropCycleId: line.CropCycleId,
                     cropCycleStageId: line.CropCycleStageId,
@@ -497,14 +514,14 @@ public sealed class PurchaseInvoiceService(IPurchaseInvoiceStore store, IInvento
             await stockStore.SaveChangesAsync(ct);
             await store.AddReceiptLinesAsync(linesToSave, ct);
 
-            AddAudit(actor, invoice, "PurchaseInvoice.ReceiveItems", new
+            await AddAuditAsync(actor, invoice, "PurchaseInvoice.ReceiveItems", new
             {
                 ReceiptGroupId = receiptGroupId,
                 request.StorageLocationId,
                 request.MovementDate,
                 request.ReferenceNumber,
                 LineCount = request.Lines.Count
-            }, ipAddress);
+            }, ipAddress, ct);
 
             return true;
         }, cancellationToken);
@@ -728,16 +745,22 @@ public sealed class PurchaseInvoiceService(IPurchaseInvoiceStore store, IInvento
         }
     }
 
-    private void AddAudit(ExpenseActor actor, PurchaseInvoice invoice, string action, object details, string? ipAddress)
+    private async Task AddAuditAsync(
+        ExpenseActor actor,
+        PurchaseInvoice invoice,
+        string action,
+        object details,
+        string? ipAddress,
+        CancellationToken cancellationToken = default)
     {
-        store.AddAuditLogAsync(new AuditLog(
+        await store.AddAuditLogAsync(new AuditLog(
             action,
             actor.OrganizationId,
             actor.UserId,
             nameof(PurchaseInvoice),
             invoice.Id,
             JsonSerializer.SerializeToDocument(details),
-            ipAddress));
+            ipAddress), cancellationToken);
     }
 
     private static void ValidateActor(ExpenseActor actor)
@@ -751,13 +774,15 @@ public sealed class PurchaseInvoiceService(IPurchaseInvoiceStore store, IInvento
     private static PurchaseInvoiceResponse MapToResponse(PurchaseInvoice invoice)
     {
         var amountPaid = 0m; // Payments implemented in Phase 6
-        var outstandingBalance = Math.Max(0m, invoice.TotalAmount - amountPaid);
+        var outstandingBalance = invoice.Status == PurchaseInvoiceStatus.Reversed
+            ? 0m
+            : Math.Max(0m, invoice.TotalAmount - amountPaid);
 
         // Derive Payment Status
         var paymentStatus = invoice.Status switch
         {
             PurchaseInvoiceStatus.Draft => "Draft",
-            PurchaseInvoiceStatus.Reversed => "Draft",
+            PurchaseInvoiceStatus.Reversed => "Reversed",
             _ => outstandingBalance == 0m ? "Paid" : amountPaid > 0m ? "PartiallyPaid" : "Unpaid"
         };
 
