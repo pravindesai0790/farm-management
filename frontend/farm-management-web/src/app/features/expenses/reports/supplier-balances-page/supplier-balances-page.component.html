@@ -1,0 +1,231 @@
+<app-expenses-sub-nav></app-expenses-sub-nav>
+
+<div class="page-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-title">
+      <h1>Supplier Balances & Accounts Payable</h1>
+      <p class="subtitle">Real-time payables aging analysis and outstanding vendor obligations.</p>
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
+  <mat-card class="filter-card">
+    <mat-card-content class="filter-bar">
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>As of Date</mat-label>
+        <input matInput type="date" [(ngModel)]="asOfDate" (change)="onFilterChange()" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Farm Location</mat-label>
+        <mat-select [(ngModel)]="selectedFarmId" (selectionChange)="onFilterChange()">
+          <mat-option [value]="null">All Farms</mat-option>
+          @for (farm of farms(); track farm.id) {
+            <mat-option [value]="farm.id">{{ farm.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <button mat-stroked-button (click)="loadBalances()" [disabled]="loading()">
+        <mat-icon>refresh</mat-icon> Refresh
+      </button>
+    </mat-card-content>
+  </mat-card>
+
+  @if (errorMessage()) {
+    <div class="alert alert-error">
+      <mat-icon>error</mat-icon>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  @if (responseData(); as data) {
+    <!-- Currency Tabs -->
+    @if (data.currencySummaries.length > 1) {
+      <div class="currency-tabs">
+        @for (curr of data.currencySummaries; track curr.currencyId) {
+          <button
+            mat-button
+            [class.active-tab]="curr.currencyId === activeCurrencySummary?.currencyId"
+            (click)="selectCurrency(curr.currencyId)"
+          >
+            {{ curr.currencyCode }} ({{ curr.currencySymbol }})
+          </button>
+        }
+      </div>
+    }
+
+    @if (activeCurrencySummary; as summary) {
+      <!-- Summary KPI Strip -->
+      <div class="kpi-grid">
+        <mat-card class="kpi-card kpi-outstanding">
+          <mat-card-content>
+            <div class="kpi-label">Total Outstanding Payables</div>
+            <div class="kpi-value">
+              {{ summary.currencySymbol }}{{ summary.totalOutstandingBalance | number:'1.2-2' }}
+            </div>
+            <div class="kpi-subtext">{{ summary.openInvoicesCount }} open invoices</div>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="kpi-card kpi-overdue">
+          <mat-card-content>
+            <div class="kpi-label">Total Overdue Amount</div>
+            <div class="kpi-value danger-text">
+              {{ summary.currencySymbol }}{{ summary.totalOverdueBalance | number:'1.2-2' }}
+            </div>
+            <div class="kpi-subtext">Past due payment obligations</div>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="kpi-card kpi-current">
+          <mat-card-content>
+            <div class="kpi-label">Current / Not Due</div>
+            <div class="kpi-value success-text">
+              {{ summary.currencySymbol }}{{ summary.totalCurrentNotDueBalance | number:'1.2-2' }}
+            </div>
+            <div class="kpi-subtext">Due in upcoming periods</div>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="kpi-card kpi-suppliers">
+          <mat-card-content>
+            <div class="kpi-label">Suppliers with Payables</div>
+            <div class="kpi-value">{{ summary.suppliersCount }}</div>
+            <div class="kpi-subtext">Active vendor accounts</div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+      <!-- Aging Analysis Breakdown Matrix -->
+      <mat-card class="aging-card">
+        <mat-card-header>
+          <mat-card-title>Accounts Payable Aging Matrix ({{ summary.currencyCode }})</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="aging-grid">
+            <div class="aging-box box-current">
+              <span class="box-title">Current (Not Due)</span>
+              <span class="box-amount">{{ summary.currencySymbol }}{{ summary.agingTotals.currentNotDue | number:'1.2-2' }}</span>
+            </div>
+            <div class="aging-box box-1-30">
+              <span class="box-title">1–30 Days Overdue</span>
+              <span class="box-amount">{{ summary.currencySymbol }}{{ summary.agingTotals.days1To30 | number:'1.2-2' }}</span>
+            </div>
+            <div class="aging-box box-31-60">
+              <span class="box-title">31–60 Days Overdue</span>
+              <span class="box-amount">{{ summary.currencySymbol }}{{ summary.agingTotals.days31To60 | number:'1.2-2' }}</span>
+            </div>
+            <div class="aging-box box-61-90">
+              <span class="box-title">61–90 Days Overdue</span>
+              <span class="box-amount">{{ summary.currencySymbol }}{{ summary.agingTotals.days61To90 | number:'1.2-2' }}</span>
+            </div>
+            <div class="aging-box box-over-90">
+              <span class="box-title">> 90 Days Overdue</span>
+              <span class="box-amount">{{ summary.currencySymbol }}{{ summary.agingTotals.daysOver90 | number:'1.2-2' }}</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Supplier Balances Accordion List -->
+      <div class="suppliers-section">
+        <h2>Supplier Balances Breakdown</h2>
+
+        @if (summary.supplierBalances.length === 0) {
+          <mat-card class="empty-card">
+            <mat-card-content>
+              <mat-icon class="empty-icon">check_circle</mat-icon>
+              <p>No outstanding supplier balances found for the selected criteria.</p>
+            </mat-card-content>
+          </mat-card>
+        } @else {
+          <mat-accordion multi="true">
+            @for (supplier of summary.supplierBalances; track supplier.supplierId) {
+              <mat-expansion-panel class="supplier-panel">
+                <mat-expansion-panel-header>
+                  <mat-panel-title class="supplier-header-title">
+                    <strong class="supplier-name">{{ supplier.supplierName }}</strong>
+                    @if (supplier.contactPerson || supplier.phone) {
+                      <span class="supplier-contact">({{ supplier.contactPerson || supplier.phone }})</span>
+                    }
+                  </mat-panel-title>
+                  <mat-panel-description class="supplier-header-desc">
+                    <div class="balance-summary-chips">
+                      <span class="chip chip-total">
+                        Total: {{ summary.currencySymbol }}{{ supplier.totalOutstandingBalance | number:'1.2-2' }}
+                      </span>
+                      @if (supplier.overdueBalance > 0) {
+                        <span class="chip chip-overdue">
+                          Overdue: {{ summary.currencySymbol }}{{ supplier.overdueBalance | number:'1.2-2' }}
+                        </span>
+                      }
+                    </div>
+                  </mat-panel-description>
+                </mat-expansion-panel-header>
+
+                <!-- Open Invoices Breakdown Table -->
+                <div class="invoices-table-container">
+                  <table class="invoices-table">
+                    <thead>
+                      <tr>
+                        <th>Invoice #</th>
+                        <th>Farm</th>
+                        <th>Invoice Date</th>
+                        <th>Due Date</th>
+                        <th>Days Overdue</th>
+                        <th class="text-right">Total Amount</th>
+                        <th class="text-right">Paid</th>
+                        <th class="text-right">Outstanding</th>
+                        <th>Status</th>
+                        <th class="text-center">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (inv of supplier.openInvoices; track inv.invoiceId) {
+                        <tr>
+                          <td>
+                            <a [routerLink]="['/expenses/invoices', inv.invoiceId]" class="invoice-link">
+                              {{ inv.supplierInvoiceNumber }}
+                            </a>
+                          </td>
+                          <td>{{ inv.farmName || '—' }}</td>
+                          <td>{{ inv.invoiceDate | date:'mediumDate' }}</td>
+                          <td>{{ inv.dueDate | date:'mediumDate' }}</td>
+                          <td>
+                            <span [class]="'days-badge ' + getOverdueBadgeClass(inv.daysOverdue)">
+                              {{ inv.daysOverdue > 0 ? inv.daysOverdue + 'd overdue' : 'Not Overdue' }}
+                            </span>
+                          </td>
+                          <td class="text-right">{{ summary.currencySymbol }}{{ inv.totalAmount | number:'1.2-2' }}</td>
+                          <td class="text-right">{{ summary.currencySymbol }}{{ inv.amountPaid | number:'1.2-2' }}</td>
+                          <td class="text-right bold-text">{{ summary.currencySymbol }}{{ inv.outstandingAmount | number:'1.2-2' }}</td>
+                          <td>
+                            <span class="status-pill" [class.partially-paid]="inv.paymentStatus === 'PARTIALLY_PAID'">
+                              {{ inv.paymentStatus }}
+                            </span>
+                          </td>
+                          <td class="text-center">
+                            <button
+                              mat-flat-button
+                              color="primary"
+                              class="btn-sm"
+                              (click)="recordPaymentForInvoice(supplier.supplierId, inv.invoiceId)"
+                            >
+                              <mat-icon>payment</mat-icon> Pay
+                            </button>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </mat-expansion-panel>
+            }
+          </mat-accordion>
+        }
+      </div>
+    }
+  }
+</div>

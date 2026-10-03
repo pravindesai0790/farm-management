@@ -543,6 +543,26 @@ export const routes: Routes = [
                 "./features/expenses/categories/expense-category-list-page/expense-category-list-page.component"
               ).then((module) => module.ExpenseCategoryListPageComponent),
           },
+          {
+            path: "balances",
+            title: "Supplier Balances",
+            canActivate: [permissionGuard],
+            data: { permission: "SupplierBalance.View" },
+            loadComponent: () =>
+              import(
+                "./features/expenses/reports/supplier-balances-page/supplier-balances-page.component"
+              ).then((module) => module.SupplierBalancesPageComponent),
+          },
+          {
+            path: "reports",
+            title: "Expense Reports",
+            canActivate: [permissionGuard],
+            data: { permission: "Expense.Report.View" },
+            loadComponent: () =>
+              import(
+                "./features/expenses/reports/expense-reports-page/expense-reports-page.component"
+              ).then((module) => module.ExpenseReportsPageComponent),
+          },
         ],
       },
       {

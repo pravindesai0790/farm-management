@@ -73,6 +73,8 @@ public static class DependencyInjection
         services.AddScoped<IExpenseStore, ExpenseStore>();
         services.AddScoped<IPurchaseInvoiceStore, PurchaseInvoiceStore>();
         services.AddScoped<ISupplierPaymentStore, SupplierPaymentStore>();
+        services.AddScoped<IExpenseReportStore, ExpenseReportStore>();
+        services.AddScoped<ISupplierBalanceStore, SupplierBalanceStore>();
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();
         services.AddScoped<IdentityDataSeeder>();
 

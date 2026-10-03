@@ -1,0 +1,263 @@
+<app-expenses-sub-nav></app-expenses-sub-nav>
+
+<div class="page-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-title">
+      <h1>Farm Expense Reports & Analytics</h1>
+      <p class="subtitle">Multi-currency financial analytics across direct expenses and supplier invoices.</p>
+    </div>
+  </div>
+
+  <!-- Filter Card -->
+  <mat-card class="filter-card">
+    <mat-card-content>
+      <!-- Preset Buttons -->
+      <div class="preset-buttons">
+        <button mat-stroked-button [class.active-preset]="activePreset() === 'this-month'" (click)="applyPeriodPreset('this-month')">
+          This Month
+        </button>
+        <button mat-stroked-button [class.active-preset]="activePreset() === 'last-month'" (click)="applyPeriodPreset('last-month')">
+          Last Month
+        </button>
+        <button mat-stroked-button [class.active-preset]="activePreset() === 'this-quarter'" (click)="applyPeriodPreset('this-quarter')">
+          This Quarter
+        </button>
+        <button mat-stroked-button [class.active-preset]="activePreset() === 'this-year'" (click)="applyPeriodPreset('this-year')">
+          This Year
+        </button>
+        <button mat-stroked-button [class.active-preset]="activePreset() === 'all'" (click)="applyPeriodPreset('all')">
+          All Time
+        </button>
+      </div>
+
+      <div class="filter-inputs">
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>From Date</mat-label>
+          <input matInput type="date" [(ngModel)]="fromDate" (change)="onFilterChange()" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>To Date</mat-label>
+          <input matInput type="date" [(ngModel)]="toDate" (change)="onFilterChange()" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Farm Location</mat-label>
+          <mat-select [(ngModel)]="selectedFarmId" (selectionChange)="onFilterChange()">
+            <mat-option [value]="null">All Farms</mat-option>
+            @for (farm of farms(); track farm.id) {
+              <mat-option [value]="farm.id">{{ farm.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Expense Category</mat-label>
+          <mat-select [(ngModel)]="selectedCategoryId" (selectionChange)="onFilterChange()">
+            <mat-option [value]="null">All Categories</mat-option>
+            @for (cat of categories(); track cat.id) {
+              <mat-option [value]="cat.id">{{ cat.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <button mat-flat-button color="primary" (click)="loadReport()" [disabled]="loading()">
+          <mat-icon>analytics</mat-icon> Generate
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  @if (errorMessage()) {
+    <div class="alert alert-error">
+      <mat-icon>error</mat-icon>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  @if (reportData(); as data) {
+    <!-- Currency Tabs -->
+    @if (data.currencySummaries.length > 1) {
+      <div class="currency-tabs">
+        @for (curr of data.currencySummaries; track curr.currencyId) {
+          <button
+            mat-button
+            [class.active-tab]="curr.currencyId === activeCurrencySummary?.currencyId"
+            (click)="selectCurrency(curr.currencyId)"
+          >
+            {{ curr.currencyCode }} ({{ curr.currencySymbol }})
+          </button>
+        }
+      </div>
+    }
+
+    @if (activeCurrencySummary; as summary) {
+      <!-- Summary KPI Cards -->
+      <div class="kpi-grid">
+        <mat-card class="kpi-card kpi-grand-total">
+          <mat-card-content>
+            <div class="kpi-label">Grand Total Expenses</div>
+            <div class="kpi-value">
+              {{ summary.currencySymbol }}{{ summary.grandTotalExpenses | number:'1.2-2' }}
+            </div>
+            <div class="kpi-subtext">Direct Expenses + Invoices</div>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="kpi-card kpi-direct">
+          <mat-card-content>
+            <div class="kpi-label">Direct Cash Expenses</div>
+            <div class="kpi-value info-text">
+              {{ summary.currencySymbol }}{{ summary.totalDirectExpensesAmount | number:'1.2-2' }}
+            </div>
+            <div class="kpi-subtext">{{ summary.directExpensesCount }} direct records</div>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="kpi-card kpi-invoiced">
+          <mat-card-content>
+            <div class="kpi-label">Supplier Invoices</div>
+            <div class="kpi-value purple-text">
+              {{ summary.currencySymbol }}{{ summary.totalInvoicedAmount | number:'1.2-2' }}
+            </div>
+            <div class="kpi-subtext">{{ summary.invoicesCount }} purchase invoices</div>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="kpi-card kpi-outstanding">
+          <mat-card-content>
+            <div class="kpi-label">Outstanding Payables</div>
+            <div class="kpi-value warning-text">
+              {{ summary.currencySymbol }}{{ summary.totalOutstandingPayables | number:'1.2-2' }}
+            </div>
+            <div class="kpi-subtext">Settled: {{ summary.currencySymbol }}{{ summary.totalSettledAmount | number:'1.2-2' }}</div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+      <!-- Overdue Invoices Banner Alert -->
+      @if (summary.topOverdueInvoices.length > 0) {
+        <mat-card class="overdue-banner">
+          <mat-card-content>
+            <div class="banner-header">
+              <mat-icon class="danger-icon">warning</mat-icon>
+              <div>
+                <strong>Overdue Supplier Invoices Alert</strong>
+                <p>You have past-due supplier invoices requiring immediate payment attention.</p>
+              </div>
+              <a mat-stroked-button color="warn" [routerLink]="['/expenses/balances']">
+                View All Balances
+              </a>
+            </div>
+            <div class="overdue-chips">
+              @for (inv of summary.topOverdueInvoices; track inv.invoiceId) {
+                <a [routerLink]="['/expenses/invoices', inv.invoiceId]" class="overdue-item-chip">
+                  <strong>{{ inv.supplierInvoiceNumber }}</strong> ({{ inv.supplierName }}) —
+                  <span class="danger-text">{{ summary.currencySymbol }}{{ inv.outstandingAmount | number:'1.2-2' }}</span>
+                  ({{ inv.daysOverdue }}d overdue)
+                </a>
+              }
+            </div>
+          </mat-card-content>
+        </mat-card>
+      }
+
+      <!-- Breakdowns Section: Category & Farm Side-by-Side -->
+      <div class="breakdown-grid">
+        <!-- Category Cost Distribution -->
+        <mat-card class="report-card">
+          <mat-card-header>
+            <mat-card-title>Expenses by Category</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            @if (summary.categoryBreakdown.length === 0) {
+              <p class="empty-text">No category data recorded in this period.</p>
+            } @else {
+              <div class="breakdown-list">
+                @for (cat of summary.categoryBreakdown; track cat.categoryId) {
+                  <div class="breakdown-item">
+                    <div class="item-info">
+                      <span class="item-name">{{ cat.categoryName }}</span>
+                      <span class="item-amount">
+                        {{ summary.currencySymbol }}{{ cat.totalAmount | number:'1.2-2' }} ({{ cat.percentage }}%)
+                      </span>
+                    </div>
+                    <mat-progress-bar mode="determinate" [value]="cat.percentage"></mat-progress-bar>
+                    <div class="item-sub-split">
+                      <span>Direct: {{ summary.currencySymbol }}{{ cat.directExpensesAmount | number:'1.2-2' }}</span>
+                      <span>Invoiced: {{ summary.currencySymbol }}{{ cat.invoicedAmount | number:'1.2-2' }}</span>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Farm Cost Distribution -->
+        <mat-card class="report-card">
+          <mat-card-header>
+            <mat-card-title>Expenses by Farm Location</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            @if (summary.farmBreakdown.length === 0) {
+              <p class="empty-text">No farm data recorded in this period.</p>
+            } @else {
+              <div class="breakdown-list">
+                @for (farm of summary.farmBreakdown; track farm.farmId) {
+                  <div class="breakdown-item">
+                    <div class="item-info">
+                      <span class="item-name">{{ farm.farmName }}</span>
+                      <span class="item-amount">
+                        {{ summary.currencySymbol }}{{ farm.totalAmount | number:'1.2-2' }} ({{ farm.percentage }}%)
+                      </span>
+                    </div>
+                    <mat-progress-bar mode="determinate" [value]="farm.percentage" color="accent"></mat-progress-bar>
+                    <div class="item-sub-split">
+                      <span>Direct: {{ summary.currencySymbol }}{{ farm.directExpensesAmount | number:'1.2-2' }}</span>
+                      <span>Invoiced: {{ summary.currencySymbol }}{{ farm.invoicedAmount | number:'1.2-2' }}</span>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+      <!-- Monthly Trend Progression Table -->
+      <mat-card class="report-card trend-card">
+        <mat-card-header>
+          <mat-card-title>Monthly Cost Progression Trend</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          @if (summary.monthlyTrend.length === 0) {
+            <p class="empty-text">No trend data available for the selected period.</p>
+          } @else {
+            <table class="trend-table">
+              <thead>
+                <tr>
+                  <th>Period</th>
+                  <th class="text-right">Direct Expenses</th>
+                  <th class="text-right">Supplier Invoices</th>
+                  <th class="text-right">Total Combined Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (month of summary.monthlyTrend; track month.year + '-' + month.month) {
+                  <tr>
+                    <td class="bold-text">{{ month.monthLabel }}</td>
+                    <td class="text-right">{{ summary.currencySymbol }}{{ month.directExpensesAmount | number:'1.2-2' }}</td>
+                    <td class="text-right">{{ summary.currencySymbol }}{{ month.invoicedAmount | number:'1.2-2' }}</td>
+                    <td class="text-right grand-cell">{{ summary.currencySymbol }}{{ month.totalAmount | number:'1.2-2' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </mat-card-content>
+      </mat-card>
+    }
+  }
+</div>

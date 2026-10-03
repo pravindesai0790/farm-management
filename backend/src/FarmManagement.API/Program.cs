@@ -145,6 +145,8 @@ builder.Services.AddScoped<IExpenseCategoryService, ExpenseCategoryService>();
 builder.Services.AddScoped<IExpenseService, ExpenseService>();
 builder.Services.AddScoped<IPurchaseInvoiceService, PurchaseInvoiceService>();
 builder.Services.AddScoped<ISupplierPaymentService, SupplierPaymentService>();
+builder.Services.AddScoped<IExpenseReportService, ExpenseReportService>();
+builder.Services.AddScoped<ISupplierBalanceService, SupplierBalanceService>();
 
 var app = builder.Build();
 
