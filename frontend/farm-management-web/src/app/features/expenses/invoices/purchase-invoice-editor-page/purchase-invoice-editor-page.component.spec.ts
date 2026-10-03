@@ -127,4 +127,24 @@ describe('PurchaseInvoiceEditorPageComponent', () => {
     expect(mockInvoiceService.createDraft).toHaveBeenCalled();
     expect(router.navigate).toHaveBeenCalledWith(['/expenses/invoices', 'inv-new']);
   });
+
+  it('should enable form when all required fields and an inventory line item are entered without toggling lineType', () => {
+    component.form.patchValue({
+      supplierId: 'sup-1',
+      farmId: 'farm-1',
+      supplierInvoiceNumber: 'INV-001',
+      invoiceDate: new Date(),
+      currencyId: 'cur-1',
+    });
+
+    const lineGroup = component.lineFormGroups[0];
+    // DO NOT touch lineType! User just selects inventory item and leaves quantity as default 1 and unit price as 10
+    lineGroup.patchValue({
+      inventoryItemId: 'item-1',
+      unitPrice: 10,
+    });
+
+    expect(lineGroup.valid).toBeTrue();
+    expect(component.form.valid).toBeTrue();
+  });
 });

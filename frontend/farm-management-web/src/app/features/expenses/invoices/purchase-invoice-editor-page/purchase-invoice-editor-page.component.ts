@@ -287,10 +287,10 @@ export class PurchaseInvoiceEditorPageComponent implements OnInit {
       stockUnitId: [''],
       stockUnitCode: [''],
       stockUnitName: [''],
-      quantity: [1, [Validators.min(0.0001)]],
-      unitPrice: [0, [Validators.min(0)]],
+      quantity: [1],
+      unitPrice: [0],
       expenseCategoryId: [''],
-      amount: [0, [Validators.min(0.01)]],
+      amount: [0],
       description: ['', Validators.maxLength(500)],
       farmAreaId: [{ value: '', disabled: true }],
       plantationId: [{ value: '', disabled: true }],
@@ -321,10 +321,10 @@ export class PurchaseInvoiceEditorPageComponent implements OnInit {
       stockUnitId: [line.stockUnitId || ''],
       stockUnitCode: [line.stockUnitCode || ''],
       stockUnitName: [line.stockUnitName || ''],
-      quantity: [line.quantity ?? 1, [Validators.min(0.0001)]],
-      unitPrice: [line.unitPrice ?? 0, [Validators.min(0)]],
+      quantity: [line.quantity ?? 1],
+      unitPrice: [line.unitPrice ?? 0],
       expenseCategoryId: [line.expenseCategoryId || ''],
-      amount: [line.lineAmount ?? 0, [Validators.min(0.01)]],
+      amount: [line.lineAmount ?? 0],
       description: [line.description || '', Validators.maxLength(500)],
       farmAreaId: [{ value: line.farmAreaId || '', disabled: !farmId }],
       plantationId: [{ value: line.plantationId || '', disabled: !line.farmAreaId }],
@@ -364,39 +364,47 @@ export class PurchaseInvoiceEditorPageComponent implements OnInit {
   }
 
   setupLineTypeValidators(group: FormGroup): void {
+    const applyValidators = (type: string | null | undefined) => {
+      const isInventory = type === 'InventoryItem';
+
+      const inventoryItemIdCtrl = group.get('inventoryItemId');
+      const quantityCtrl = group.get('quantity');
+      const unitPriceCtrl = group.get('unitPrice');
+      const expenseCategoryIdCtrl = group.get('expenseCategoryId');
+      const amountCtrl = group.get('amount');
+
+      if (isInventory) {
+        inventoryItemIdCtrl?.setValidators([Validators.required]);
+        quantityCtrl?.setValidators([Validators.required, Validators.min(0.0001)]);
+        unitPriceCtrl?.setValidators([Validators.required, Validators.min(0)]);
+
+        expenseCategoryIdCtrl?.clearValidators();
+        amountCtrl?.clearValidators();
+      } else {
+        expenseCategoryIdCtrl?.setValidators([Validators.required]);
+        amountCtrl?.setValidators([Validators.required, Validators.min(0.01)]);
+
+        inventoryItemIdCtrl?.clearValidators();
+        quantityCtrl?.clearValidators();
+        unitPriceCtrl?.clearValidators();
+      }
+
+      inventoryItemIdCtrl?.updateValueAndValidity({ emitEvent: false });
+      quantityCtrl?.updateValueAndValidity({ emitEvent: false });
+      unitPriceCtrl?.updateValueAndValidity({ emitEvent: false });
+      expenseCategoryIdCtrl?.updateValueAndValidity({ emitEvent: false });
+      amountCtrl?.updateValueAndValidity({ emitEvent: false });
+      group.updateValueAndValidity({ emitEvent: false });
+    };
+
     group.get('lineType')?.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((type) => {
-        if (type === 'InventoryItem') {
-          group.get('inventoryItemId')?.setValidators([Validators.required]);
-          group.get('quantity')?.setValidators([Validators.required, Validators.min(0.0001)]);
-          group.get('unitPrice')?.setValidators([Validators.required, Validators.min(0)]);
-          group.get('expenseCategoryId')?.clearValidators();
-          group.get('amount')?.clearValidators();
-        } else {
-          group.get('expenseCategoryId')?.setValidators([Validators.required]);
-          group.get('amount')?.setValidators([Validators.required, Validators.min(0.01)]);
-          group.get('inventoryItemId')?.clearValidators();
-          group.get('quantity')?.clearValidators();
-          group.get('unitPrice')?.clearValidators();
-        }
-        group.get('inventoryItemId')?.updateValueAndValidity();
-        group.get('quantity')?.updateValueAndValidity();
-        group.get('unitPrice')?.updateValueAndValidity();
-        group.get('expenseCategoryId')?.updateValueAndValidity();
-        group.get('amount')?.updateValueAndValidity();
+        applyValidators(type);
       });
 
-    // Trigger initially
-    const initialType = group.get('lineType')?.value;
-    if (initialType === 'InventoryItem') {
-      group.get('inventoryItemId')?.setValidators([Validators.required]);
-      group.get('quantity')?.setValidators([Validators.required, Validators.min(0.0001)]);
-      group.get('unitPrice')?.setValidators([Validators.required, Validators.min(0)]);
-    } else {
-      group.get('expenseCategoryId')?.setValidators([Validators.required]);
-      group.get('amount')?.setValidators([Validators.required, Validators.min(0.01)]);
-    }
+    // Run for initial state
+    applyValidators(group.get('lineType')?.value);
   }
 
   onInventoryItemSelect(index: number, itemId: string): void {

@@ -175,7 +175,7 @@ public sealed class PurchaseInvoiceService(IPurchaseInvoiceStore store, IInvento
             throw new ValidationException("A reversal reason is required.");
         }
 
-        if (invoice.ReceiptLines.Any(rl => !rl.StockMovement.IsReversed))
+        if (invoice.ReceiptLines.Any(rl => rl.StockMovement != null && !rl.StockMovement.IsReversed))
         {
             throw new ValidationException("Cannot reverse a purchase invoice that has active, non-reversed stock receipts. Reverse the linked stock movements first.");
         }

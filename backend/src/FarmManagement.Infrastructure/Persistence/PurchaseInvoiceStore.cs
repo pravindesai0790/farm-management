@@ -201,11 +201,11 @@ public sealed class PurchaseInvoiceStore(ApplicationDbContext dbContext) : IPurc
         return await dbContext.PurchaseInvoiceReceiptLines
             .AsNoTracking()
             .Include(rl => rl.PurchaseInvoiceLine)
-                .ThenInclude(l => l.InventoryItem)
+                .ThenInclude(l => l!.InventoryItem)
             .Include(rl => rl.PurchaseInvoiceLine)
-                .ThenInclude(l => l.StockUnit)
+                .ThenInclude(l => l!.StockUnit)
             .Include(rl => rl.StockMovement)
-                .ThenInclude(sm => sm.StorageLocation)
+                .ThenInclude(sm => sm!.StorageLocation)
             .Where(rl => rl.PurchaseInvoiceId == invoiceId && rl.OrganizationId == organizationId)
             .OrderBy(rl => rl.CreatedAt)
             .ToListAsync(cancellationToken);
@@ -220,11 +220,11 @@ public sealed class PurchaseInvoiceStore(ApplicationDbContext dbContext) : IPurc
         var normalizedKey = idempotencyKey.Trim();
         return await dbContext.PurchaseInvoiceReceiptLines
             .Include(rl => rl.PurchaseInvoiceLine)
-                .ThenInclude(l => l.InventoryItem)
+                .ThenInclude(l => l!.InventoryItem)
             .Include(rl => rl.PurchaseInvoiceLine)
-                .ThenInclude(l => l.StockUnit)
+                .ThenInclude(l => l!.StockUnit)
             .Include(rl => rl.StockMovement)
-                .ThenInclude(sm => sm.StorageLocation)
+                .ThenInclude(sm => sm!.StorageLocation)
             .Where(rl => rl.PurchaseInvoiceId == invoiceId && rl.OrganizationId == organizationId && rl.IdempotencyKey == normalizedKey)
             .OrderBy(rl => rl.CreatedAt)
             .ToListAsync(cancellationToken);
