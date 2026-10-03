@@ -1,6 +1,6 @@
 import { PagedResponse } from '../models/paged-response.model';
 
-export type PaymentMethod = 'Cash' | 'BankTransfer' | 'Cheque' | 'CreditCard' | 'DigitalWallet' | 'Other';
+export type PaymentMethod = 'BankTransfer' | 'Cash' | 'Upi' | 'Cheque' | 'Other';
 export type SupplierPaymentStatus = 'Completed' | 'Reversed';
 
 export interface SupplierPaymentAllocationRequest {

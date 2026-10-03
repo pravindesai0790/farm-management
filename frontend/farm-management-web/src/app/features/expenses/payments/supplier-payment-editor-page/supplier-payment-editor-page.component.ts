@@ -60,13 +60,12 @@ export class SupplierPaymentEditorPageComponent implements OnInit {
   readonly unpaidInvoices = signal<UnpaidPurchaseInvoiceSummaryResponse[]>([]);
   readonly maxDate = new Date();
 
-  readonly paymentMethods: PaymentMethod[] = [
-    'BankTransfer',
-    'Cash',
-    'Cheque',
-    'CreditCard',
-    'DigitalWallet',
-    'Other',
+  readonly paymentMethods: { value: PaymentMethod; label: string }[] = [
+    { value: 'BankTransfer', label: 'Bank Transfer' },
+    { value: 'Cash', label: 'Cash' },
+    { value: 'Upi', label: 'UPI' },
+    { value: 'Cheque', label: 'Cheque' },
+    { value: 'Other', label: 'Other' },
   ];
 
   readonly headerForm = this.fb.group({

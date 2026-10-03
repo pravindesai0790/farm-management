@@ -39,7 +39,11 @@ if (string.IsNullOrWhiteSpace(connectionString))
         "ConnectionStrings:DefaultConnection is not configured.");
 }
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
     options.InvalidModelStateResponseFactory = context =>

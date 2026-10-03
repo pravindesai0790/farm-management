@@ -66,8 +66,8 @@ public sealed class SupplierPaymentConfiguration : IEntityTypeConfiguration<Supp
         builder.Property(sp => sp.PaymentMethod)
             .HasColumnName("payment_method")
             .HasConversion(
-                method => method.ToString().ToUpperInvariant(),
-                value => Enum.Parse<PaymentMethod>(value.Replace("_", ""), true))
+                method => ConvertPaymentMethodToString(method),
+                value => ConvertStringToPaymentMethod(value))
             .HasMaxLength(30)
             .IsRequired();
 
@@ -132,4 +132,24 @@ public sealed class SupplierPaymentConfiguration : IEntityTypeConfiguration<Supp
             .HasFilter("idempotency_key IS NOT NULL")
             .IsUnique();
     }
+
+    private static string ConvertPaymentMethodToString(PaymentMethod method) => method switch
+    {
+        PaymentMethod.Cash => "CASH",
+        PaymentMethod.BankTransfer => "BANK_TRANSFER",
+        PaymentMethod.Upi => "UPI",
+        PaymentMethod.Cheque => "CHEQUE",
+        PaymentMethod.Other => "OTHER",
+        _ => method.ToString().ToUpperInvariant()
+    };
+
+    private static PaymentMethod ConvertStringToPaymentMethod(string value) => value.ToUpperInvariant() switch
+    {
+        "CASH" => PaymentMethod.Cash,
+        "BANK_TRANSFER" or "BANKTRANSFER" => PaymentMethod.BankTransfer,
+        "UPI" => PaymentMethod.Upi,
+        "CHEQUE" => PaymentMethod.Cheque,
+        "OTHER" => PaymentMethod.Other,
+        _ => Enum.Parse<PaymentMethod>(value.Replace("_", ""), true)
+    };
 }

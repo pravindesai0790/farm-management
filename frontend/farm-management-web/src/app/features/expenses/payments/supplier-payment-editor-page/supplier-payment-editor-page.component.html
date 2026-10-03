@@ -61,8 +61,8 @@
         <mat-form-field appearance="outline" class="form-col-4">
           <mat-label>Payment Method *</mat-label>
           <mat-select formControlName="paymentMethod">
-            <mat-option *ngFor="let m of paymentMethods" [value]="m">
-              {{ m }}
+            <mat-option *ngFor="let m of paymentMethods" [value]="m.value">
+              {{ m.label }}
             </mat-option>
           </mat-select>
           <mat-error *ngIf="headerForm.get('paymentMethod')?.hasError('required')">
