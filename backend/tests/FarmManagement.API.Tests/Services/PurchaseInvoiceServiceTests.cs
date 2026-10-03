@@ -10,7 +10,8 @@ namespace FarmManagement.API.Tests.Services;
 
 public class PurchaseInvoiceServiceTests
 {
-    private readonly TestPurchaseInvoiceStore _store = new();
+    private readonly TestInventoryStockStore _stockStore = new();
+    private readonly TestPurchaseInvoiceStore _store;
     private readonly PurchaseInvoiceService _service;
 
     private static readonly Guid OrgId = Guid.NewGuid();
@@ -19,6 +20,7 @@ public class PurchaseInvoiceServiceTests
 
     private static readonly Guid SupplierId = Guid.NewGuid();
     private static readonly Guid FarmId = Guid.NewGuid();
+    private static readonly Guid LocationId = Guid.NewGuid();
     private static readonly Guid CurrencyId = Guid.NewGuid();
     private static readonly Guid ItemId = Guid.NewGuid();
     private static readonly Guid UnitId = Guid.NewGuid();
@@ -30,7 +32,8 @@ public class PurchaseInvoiceServiceTests
 
     public PurchaseInvoiceServiceTests()
     {
-        _service = new PurchaseInvoiceService(_store);
+        _store = new TestPurchaseInvoiceStore(_stockStore);
+        _service = new PurchaseInvoiceService(_store, _stockStore);
 
         // Seed valid references in test store
         _store.ValidFarms.Add((FarmId, OrgId));
@@ -43,6 +46,7 @@ public class PurchaseInvoiceServiceTests
         _store.ValidPlantations.Add((PlantationId, FarmId, OrgId));
         _store.ValidCycles.Add((CycleId, FarmId, OrgId));
         _store.ValidStages.Add((StageId, CycleId));
+        _store.ValidLocations.Add((LocationId, FarmId, OrgId));
     }
 
     [Fact]
@@ -164,11 +168,98 @@ public class PurchaseInvoiceServiceTests
         Assert.Equal("Incorrect supplier billing number", result.ReversalReason);
         Assert.Equal("PurchaseInvoice.Reverse", _store.AuditLogs.Last().Action);
     }
+
+    [Fact]
+    public async Task ReceiveItemsAsync_ValidRequest_CreatesStockMovementAndReceiptLine()
+    {
+        var invoice = PurchaseInvoice.CreateDraft(OrgId, SupplierId, FarmId, "INV-RCV-1", DateOnly.FromDateTime(DateTime.UtcNow), CurrencyId, UserId);
+        var invLine = PurchaseInvoiceLine.CreateInventoryLine(OrgId, invoice.Id, ItemId, UnitId, 20m, 10m);
+        invoice.Lines.Add(invLine);
+        invoice.Post(UserId);
+        _store.Invoices.Add(invoice);
+
+        var request = new ReceivePurchaseInvoiceItemsRequest(
+            LocationId,
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            new[] { new ReceivePurchaseInvoiceItemLineRequest(invLine.Id, 15m) },
+            ReferenceNumber: "GRN-001",
+            Notes: "Partial delivery 15 units",
+            IdempotencyKey: "KEY-001");
+
+        var response = await _service.ReceiveItemsAsync(_actor, invoice.Id, request, "127.0.0.1");
+
+        Assert.NotNull(response);
+        Assert.Single(response.Items);
+        Assert.Equal(15m, response.Items[0].ReceivedQuantity);
+        Assert.Single(_stockStore.Movements);
+        Assert.Equal(15m, _stockStore.Movements[0].Quantity);
+        Assert.Single(_store.ReceiptLines);
+    }
+
+    [Fact]
+    public async Task ReceiveItemsAsync_OverReceipt_ThrowsValidationException()
+    {
+        var invoice = PurchaseInvoice.CreateDraft(OrgId, SupplierId, FarmId, "INV-RCV-OVER", DateOnly.FromDateTime(DateTime.UtcNow), CurrencyId, UserId);
+        var invLine = PurchaseInvoiceLine.CreateInventoryLine(OrgId, invoice.Id, ItemId, UnitId, 10m, 10m);
+        invoice.Lines.Add(invLine);
+        invoice.Post(UserId);
+        _store.Invoices.Add(invoice);
+
+        var request = new ReceivePurchaseInvoiceItemsRequest(
+            LocationId,
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            new[] { new ReceivePurchaseInvoiceItemLineRequest(invLine.Id, 15m) });
+
+        await Assert.ThrowsAsync<ValidationException>(() => _service.ReceiveItemsAsync(_actor, invoice.Id, request, "127.0.0.1"));
+    }
+
+    [Fact]
+    public async Task ReceiveItemsAsync_IdempotencyRetry_ReturnsExistingGroupWithoutReexecuting()
+    {
+        var invoice = PurchaseInvoice.CreateDraft(OrgId, SupplierId, FarmId, "INV-IDEM", DateOnly.FromDateTime(DateTime.UtcNow), CurrencyId, UserId);
+        var invLine = PurchaseInvoiceLine.CreateInventoryLine(OrgId, invoice.Id, ItemId, UnitId, 10m, 10m);
+        invoice.Lines.Add(invLine);
+        invoice.Post(UserId);
+        _store.Invoices.Add(invoice);
+
+        var request = new ReceivePurchaseInvoiceItemsRequest(
+            LocationId,
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            new[] { new ReceivePurchaseInvoiceItemLineRequest(invLine.Id, 5m) },
+            ReferenceNumber: "GRN-IDEM",
+            IdempotencyKey: "IDEM-KEY-99");
+
+        var first = await _service.ReceiveItemsAsync(_actor, invoice.Id, request, "127.0.0.1");
+        var second = await _service.ReceiveItemsAsync(_actor, invoice.Id, request, "127.0.0.1");
+
+        Assert.Equal(first.ReceiptGroupId, second.ReceiptGroupId);
+        Assert.Single(_stockStore.Movements);
+        Assert.Single(_store.ReceiptLines);
+    }
+
+    [Fact]
+    public async Task ReverseAsync_InvoiceWithActiveReceipts_ThrowsValidationException()
+    {
+        var invoice = PurchaseInvoice.CreateDraft(OrgId, SupplierId, FarmId, "INV-REV-BLOCKED", DateOnly.FromDateTime(DateTime.UtcNow), CurrencyId, UserId);
+        var invLine = PurchaseInvoiceLine.CreateInventoryLine(OrgId, invoice.Id, ItemId, UnitId, 10m, 10m);
+        invoice.Lines.Add(invLine);
+        invoice.Post(UserId);
+        _store.Invoices.Add(invoice);
+
+        var rcvRequest = new ReceivePurchaseInvoiceItemsRequest(
+            LocationId, DateOnly.FromDateTime(DateTime.UtcNow),
+            new[] { new ReceivePurchaseInvoiceItemLineRequest(invLine.Id, 5m) });
+        await _service.ReceiveItemsAsync(_actor, invoice.Id, rcvRequest, "127.0.0.1");
+
+        var revRequest = new ReversePurchaseInvoiceRequest("Mistake");
+        await Assert.ThrowsAsync<ValidationException>(() => _service.ReverseAsync(_actor, invoice.Id, revRequest, "127.0.0.1"));
+    }
 }
 
-public sealed class TestPurchaseInvoiceStore : IPurchaseInvoiceStore
+public sealed class TestPurchaseInvoiceStore(TestInventoryStockStore stockStore) : IPurchaseInvoiceStore
 {
     public List<PurchaseInvoice> Invoices { get; } = new();
+    public List<PurchaseInvoiceReceiptLine> ReceiptLines { get; } = new();
     public List<AuditLog> AuditLogs { get; } = new();
 
     public HashSet<(Guid FarmId, Guid OrgId)> ValidFarms { get; } = new();
@@ -181,6 +272,7 @@ public sealed class TestPurchaseInvoiceStore : IPurchaseInvoiceStore
     public HashSet<(Guid PlantationId, Guid FarmId, Guid OrgId)> ValidPlantations { get; } = new();
     public HashSet<(Guid CycleId, Guid FarmId, Guid OrgId)> ValidCycles { get; } = new();
     public HashSet<(Guid StageId, Guid CycleId)> ValidStages { get; } = new();
+    public HashSet<(Guid LocationId, Guid FarmId, Guid OrgId)> ValidLocations { get; } = new();
 
     public Task<int> CountAsync(Guid organizationId, PurchaseInvoiceFilter filter, CancellationToken cancellationToken = default) =>
         Task.FromResult(FilterInvoices(organizationId, filter).Count());
@@ -191,8 +283,22 @@ public sealed class TestPurchaseInvoiceStore : IPurchaseInvoiceStore
         return Task.FromResult<IReadOnlyList<PurchaseInvoice>>(result);
     }
 
-    public Task<PurchaseInvoice?> FindAsync(Guid invoiceId, Guid organizationId, CancellationToken cancellationToken = default) =>
-        Task.FromResult(Invoices.FirstOrDefault(pi => pi.Id == invoiceId && pi.OrganizationId == organizationId));
+    public Task<PurchaseInvoice?> FindAsync(Guid invoiceId, Guid organizationId, CancellationToken cancellationToken = default)
+    {
+        var inv = Invoices.FirstOrDefault(pi => pi.Id == invoiceId && pi.OrganizationId == organizationId);
+        if (inv != null)
+        {
+            var matchingLines = ReceiptLines.Where(rl => rl.PurchaseInvoiceId == inv.Id).ToList();
+            foreach (var line in matchingLines)
+            {
+                if (!inv.ReceiptLines.Contains(line))
+                {
+                    inv.ReceiptLines.Add(line);
+                }
+            }
+        }
+        return Task.FromResult(inv);
+    }
 
     public Task<bool> InvoiceNumberExistsAsync(Guid organizationId, Guid supplierId, string supplierInvoiceNumber, Guid? excludeInvoiceId = null, CancellationToken cancellationToken = default)
     {
@@ -256,6 +362,36 @@ public sealed class TestPurchaseInvoiceStore : IPurchaseInvoiceStore
         return Task.CompletedTask;
     }
 
+    public Task<IReadOnlyList<PurchaseInvoiceReceiptLine>> GetReceiptLinesByInvoiceAsync(Guid invoiceId, Guid organizationId, CancellationToken cancellationToken = default)
+    {
+        var res = ReceiptLines.Where(rl => rl.PurchaseInvoiceId == invoiceId && rl.OrganizationId == organizationId).ToList();
+        return Task.FromResult<IReadOnlyList<PurchaseInvoiceReceiptLine>>(res);
+    }
+
+    public Task<IReadOnlyList<PurchaseInvoiceReceiptLine>> FindReceiptGroupByInvoiceAndIdempotencyKeyAsync(Guid invoiceId, Guid organizationId, string idempotencyKey, CancellationToken cancellationToken = default)
+    {
+        var key = idempotencyKey.Trim();
+        var res = ReceiptLines.Where(rl => rl.PurchaseInvoiceId == invoiceId && rl.OrganizationId == organizationId && rl.IdempotencyKey == key).ToList();
+        return Task.FromResult<IReadOnlyList<PurchaseInvoiceReceiptLine>>(res);
+    }
+
+    public Task AddReceiptLinesAsync(IEnumerable<PurchaseInvoiceReceiptLine> receiptLines, CancellationToken cancellationToken = default)
+    {
+        foreach (var rl in receiptLines)
+        {
+            var movement = stockStore.Movements.FirstOrDefault(m => m.Id == rl.StockMovementId);
+            if (movement != null)
+            {
+                typeof(PurchaseInvoiceReceiptLine).GetProperty(nameof(PurchaseInvoiceReceiptLine.StockMovement))?.SetValue(rl, movement);
+            }
+            ReceiptLines.Add(rl);
+        }
+        return Task.CompletedTask;
+    }
+
+    public Task<bool> StorageLocationBelongsToFarmAndActiveAsync(Guid storageLocationId, Guid farmId, Guid organizationId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(ValidLocations.Contains((storageLocationId, farmId, organizationId)));
+
     private IEnumerable<PurchaseInvoice> FilterInvoices(Guid organizationId, PurchaseInvoiceFilter filter)
     {
         var query = Invoices.Where(pi => pi.OrganizationId == organizationId);
@@ -265,4 +401,44 @@ public sealed class TestPurchaseInvoiceStore : IPurchaseInvoiceStore
         if (filter.To.HasValue) query = query.Where(pi => pi.InvoiceDate <= filter.To.Value);
         return query;
     }
+}
+
+public sealed class TestInventoryStockStore : FarmManagement.Application.Interfaces.Inventory.IInventoryStockStore
+{
+    public List<StockBalance> Balances { get; } = new();
+    public List<StockMovement> Movements { get; } = new();
+    public List<AuditLog> AuditLogs { get; } = new();
+
+    public Task<InventoryItem?> FindItemAsync(Guid itemId, Guid organizationId, CancellationToken cancellationToken = default) => Task.FromResult<InventoryItem?>(null);
+    public Task<StorageLocation?> FindLocationAsync(Guid locationId, Guid organizationId, CancellationToken cancellationToken = default) => Task.FromResult<StorageLocation?>(null);
+    public Task<Farm?> FindFarmAsync(Guid farmId, Guid organizationId, CancellationToken cancellationToken = default) => Task.FromResult<Farm?>(null);
+    public Task<StockBalance?> FindBalanceAsync(Guid locationId, Guid itemId, Guid organizationId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(Balances.FirstOrDefault(b => b.StorageLocationId == locationId && b.InventoryItemId == itemId && b.OrganizationId == organizationId));
+    public Task<CropCycle?> FindCropCycleAsync(Guid cycleId, Guid organizationId, CancellationToken cancellationToken = default) => Task.FromResult<CropCycle?>(null);
+    public Task<CropCycleStage?> FindCropCycleStageAsync(Guid stageId, CancellationToken cancellationToken = default) => Task.FromResult<CropCycleStage?>(null);
+    public Task<CropPlantation?> FindPlantationAsync(Guid plantationId, Guid organizationId, CancellationToken cancellationToken = default) => Task.FromResult<CropPlantation?>(null);
+    public Task<FarmArea?> FindFarmAreaAsync(Guid areaId, Guid organizationId, CancellationToken cancellationToken = default) => Task.FromResult<FarmArea?>(null);
+    public Task<LaborActivity?> FindLaborActivityAsync(Guid activityId, Guid organizationId, CancellationToken cancellationToken = default) => Task.FromResult<LaborActivity?>(null);
+    public Task<StockMovement?> FindMovementAsync(Guid movementId, Guid organizationId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(Movements.FirstOrDefault(m => m.Id == movementId && m.OrganizationId == organizationId));
+    public Task<IReadOnlyList<StockMovement>> FindMovementsByParentTransactionIdAsync(Guid parentTransactionId, Guid organizationId, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<StockMovement>>(Array.Empty<StockMovement>());
+    public Task<StockBalance?> LockBalanceAsync(Guid locationId, Guid itemId, Guid organizationId, CancellationToken cancellationToken = default) =>
+        FindBalanceAsync(locationId, itemId, organizationId, cancellationToken);
+    public Task AcquireAdvisoryLockAsync(Guid locationId, Guid itemId, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<bool> HasOpeningStockAsync(Guid locationId, Guid itemId, CancellationToken cancellationToken = default) => Task.FromResult(false);
+    public Task<int> CountBalancesAsync(Guid organizationId, Guid? farmId, Guid? locationId, Guid? itemId, CancellationToken cancellationToken = default) => Task.FromResult(0);
+    public Task<IReadOnlyList<StockBalance>> ListBalancesAsync(Guid organizationId, Guid? farmId, Guid? locationId, Guid? itemId, int skip, int take, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<StockBalance>>(Array.Empty<StockBalance>());
+    public Task<int> CountMovementsAsync(Guid organizationId, Guid? farmId, Guid? locationId, Guid? itemId, StockMovementType? movementType, DateOnly? fromDate, DateOnly? toDate, Guid? cropCycleId = null, CancellationToken cancellationToken = default) => Task.FromResult(0);
+    public Task<IReadOnlyList<StockMovement>> ListMovementsAsync(Guid organizationId, Guid? farmId, Guid? locationId, Guid? itemId, StockMovementType? movementType, DateOnly? fromDate, DateOnly? toDate, int skip, int take, Guid? cropCycleId = null, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<StockMovement>>(Array.Empty<StockMovement>());
+
+    public async Task<T> ExecuteInTransactionAsync<T>(Func<CancellationToken, Task<T>> operation, CancellationToken cancellationToken = default) =>
+        await operation(cancellationToken);
+
+    public void AddBalance(StockBalance balance) => Balances.Add(balance);
+    public void AddMovement(StockMovement movement) => Movements.Add(movement);
+    public void AddAuditLog(AuditLog auditLog) => AuditLogs.Add(auditLog);
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 }

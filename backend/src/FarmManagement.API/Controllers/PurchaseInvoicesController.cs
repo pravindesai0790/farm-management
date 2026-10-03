@@ -109,6 +109,56 @@ public sealed class PurchaseInvoicesController(IPurchaseInvoiceService purchaseI
         return Ok(result);
     }
 
+    [HttpGet("{id:guid}/receipt-summary")]
+    [Authorize(Policy = "Permission:PurchaseInvoice.View")]
+    [ProducesResponseType(typeof(PurchaseInvoiceReceiptSummaryResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<PurchaseInvoiceReceiptSummaryResponse>> GetReceiptSummary(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await purchaseInvoiceService.GetReceiptSummaryAsync(GetUserContext(), id, cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpGet("{id:guid}/lines/remaining-to-receive")]
+    [Authorize(Policy = "Permission:PurchaseInvoice.View")]
+    [ProducesResponseType(typeof(IReadOnlyList<PurchaseInvoiceRemainingLineResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IReadOnlyList<PurchaseInvoiceRemainingLineResponse>>> GetRemainingToReceive(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await purchaseInvoiceService.GetRemainingToReceiveAsync(GetUserContext(), id, cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpGet("{id:guid}/receipts")]
+    [Authorize(Policy = "Permission:PurchaseInvoice.View")]
+    [ProducesResponseType(typeof(IReadOnlyList<PurchaseInvoiceReceiptGroupResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IReadOnlyList<PurchaseInvoiceReceiptGroupResponse>>> GetReceiptHistory(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await purchaseInvoiceService.GetReceiptHistoryAsync(GetUserContext(), id, cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpPost("{id:guid}/receipts")]
+    [Authorize(Policy = "Permission:PurchaseInvoice.ReceiveItems")]
+    [ProducesResponseType(typeof(PurchaseInvoiceReceiptGroupResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<PurchaseInvoiceReceiptGroupResponse>> ReceiveItems(
+        Guid id,
+        [FromBody] ReceivePurchaseInvoiceItemsRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await purchaseInvoiceService.ReceiveItemsAsync(GetUserContext(), id, request, GetIpAddress(), cancellationToken);
+        return CreatedAtAction(nameof(GetReceiptHistory), new { id }, result);
+    }
+
     private ExpenseActor GetUserContext() => UserContextHelper.GetUserContext<ExpenseActor>(User);
 
     private string? GetIpAddress() => HttpContext.Connection.RemoteIpAddress?.ToString();

@@ -121,3 +121,100 @@ public sealed record PurchaseInvoiceFilter(
     string? PaymentStatus = null,
     string? DueStatus = null,
     string? ReceiptStatus = null);
+
+// --- Phase 5 Receipt DTOs ---
+
+/// <summary>
+/// Payload to receive inventory items from a posted purchase invoice into a farm storage location.
+/// Supports partial delivery across one or more inventory lines.
+/// </summary>
+public sealed record ReceivePurchaseInvoiceItemsRequest(
+    Guid StorageLocationId,
+    DateOnly MovementDate,
+    IReadOnlyList<ReceivePurchaseInvoiceItemLineRequest> Lines,
+    string? ReferenceNumber = null,
+    string? Notes = null,
+    string? IdempotencyKey = null);
+
+/// <summary>
+/// Individual line item quantity payload for a receipt delivery.
+/// </summary>
+public sealed record ReceivePurchaseInvoiceItemLineRequest(
+    Guid PurchaseInvoiceLineId,
+    decimal Quantity);
+
+/// <summary>
+/// High-level summary of receipt progress for a purchase invoice.
+/// </summary>
+public sealed record PurchaseInvoiceReceiptSummaryResponse(
+    Guid InvoiceId,
+    string SupplierInvoiceNumber,
+    string SupplierName,
+    Guid FarmId,
+    string FarmName,
+    string ReceiptStatus,
+    int TotalInventoryLinesCount,
+    int FullyReceivedLinesCount,
+    int PartiallyReceivedLinesCount,
+    int UnreceivedLinesCount,
+    decimal TotalInvoicedQuantity,
+    decimal TotalReceivedQuantity,
+    decimal TotalRemainingQuantity,
+    int ReceiptsCount);
+
+/// <summary>
+/// Line-level details showing invoiced, received, and remaining quantities eligible to be received.
+/// </summary>
+public sealed record PurchaseInvoiceRemainingLineResponse(
+    Guid PurchaseInvoiceLineId,
+    Guid InventoryItemId,
+    string InventoryItemName,
+    string? InventoryItemSku,
+    Guid StockUnitId,
+    string StockUnitCode,
+    string StockUnitName,
+    decimal InvoicedQuantity,
+    decimal ReceivedQuantity,
+    decimal RemainingQuantity,
+    decimal UnitPrice,
+    Guid? FarmAreaId,
+    string? FarmAreaName,
+    Guid? PlantationId,
+    string? PlantationName,
+    Guid? CropCycleId,
+    string? CropCycleName,
+    Guid? CropCycleStageId,
+    string? CropCycleStageName,
+    bool IsEligibleForReceipt);
+
+/// <summary>
+/// Grouped delivery event response containing all items received together in a single batch.
+/// </summary>
+public sealed record PurchaseInvoiceReceiptGroupResponse(
+    Guid ReceiptGroupId,
+    Guid PurchaseInvoiceId,
+    DateOnly MovementDate,
+    string? ReferenceNumber,
+    string? Notes,
+    Guid StorageLocationId,
+    string StorageLocationName,
+    DateTimeOffset CreatedAt,
+    Guid CreatedBy,
+    string? IdempotencyKey,
+    IReadOnlyList<PurchaseInvoiceReceiptItemResponse> Items);
+
+/// <summary>
+/// Item-level receipt record linked to an inventory stock movement.
+/// </summary>
+public sealed record PurchaseInvoiceReceiptItemResponse(
+    Guid ReceiptLineId,
+    Guid PurchaseInvoiceLineId,
+    Guid StockMovementId,
+    Guid InventoryItemId,
+    string InventoryItemName,
+    string? InventoryItemSku,
+    decimal ReceivedQuantity,
+    string StockUnitCode,
+    bool IsReversed,
+    string? ReversalReason,
+    DateTimeOffset? ReversedAt);

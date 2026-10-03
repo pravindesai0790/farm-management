@@ -3,12 +3,13 @@ using FarmManagement.Application.Common.Exceptions;
 using FarmManagement.Application.Common.Models;
 using FarmManagement.Application.DTOs.Expenses;
 using FarmManagement.Application.Interfaces.Expenses;
+using FarmManagement.Application.Interfaces.Inventory;
 using FarmManagement.Domain.Entities;
 using FarmManagement.Domain.Enums;
 
 namespace FarmManagement.Application.Services;
 
-public sealed class PurchaseInvoiceService(IPurchaseInvoiceStore store) : IPurchaseInvoiceService
+public sealed class PurchaseInvoiceService(IPurchaseInvoiceStore store, IInventoryStockStore stockStore) : IPurchaseInvoiceService
 {
     private const int DefaultPageSize = 20;
     private const int MaximumPageSize = 100;
@@ -174,12 +175,342 @@ public sealed class PurchaseInvoiceService(IPurchaseInvoiceStore store) : IPurch
             throw new ValidationException("A reversal reason is required.");
         }
 
+        if (invoice.ReceiptLines.Any(rl => !rl.StockMovement.IsReversed))
+        {
+            throw new ValidationException("Cannot reverse a purchase invoice that has active, non-reversed stock receipts. Reverse the linked stock movements first.");
+        }
+
         invoice.Reverse(request.Reason, actor.UserId);
         await store.UpdateAsync(invoice, cancellationToken);
         AddAudit(actor, invoice, "PurchaseInvoice.Reverse", new { invoice.SupplierInvoiceNumber, Reason = request.Reason.Trim(), Status = invoice.Status.ToString() }, ipAddress);
 
         var reversed = await store.FindAsync(invoice.Id, actor.OrganizationId, cancellationToken);
         return MapToResponse(reversed!);
+    }
+
+    public async Task<PurchaseInvoiceReceiptSummaryResponse> GetReceiptSummaryAsync(
+        ExpenseActor actor,
+        Guid invoiceId,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        var invoice = await FindInvoiceOrThrowAsync(actor, invoiceId, cancellationToken);
+
+        var inventoryLines = invoice.Lines.Where(l => l.LineType == InvoiceLineType.InventoryItem).ToList();
+        var hasInventoryLines = inventoryLines.Count > 0;
+        var activeReceiptLines = invoice.ReceiptLines.Where(rl => rl.StockMovement != null && !rl.StockMovement.IsReversed).ToList();
+
+        var totalInvoicedQuantity = inventoryLines.Sum(l => l.Quantity ?? 0m);
+        var totalReceivedQuantity = activeReceiptLines.Sum(rl => rl.ReceivedQuantity);
+        var totalRemainingQuantity = Math.Max(0m, totalInvoicedQuantity - totalReceivedQuantity);
+
+        int fullyReceivedCount = 0;
+        int partiallyReceivedCount = 0;
+        int unreceivedCount = 0;
+
+        foreach (var line in inventoryLines)
+        {
+            var lineReceived = activeReceiptLines.Where(rl => rl.PurchaseInvoiceLineId == line.Id).Sum(rl => rl.ReceivedQuantity);
+            var lineInvoiced = line.Quantity ?? 0m;
+
+            if (lineReceived == 0m)
+            {
+                unreceivedCount++;
+            }
+            else if (lineReceived >= lineInvoiced)
+            {
+                fullyReceivedCount++;
+            }
+            else
+            {
+                partiallyReceivedCount++;
+            }
+        }
+
+        var receiptStatus = !hasInventoryLines
+            ? "NotApplicable"
+            : totalReceivedQuantity == 0m
+                ? "NotReceived"
+                : totalReceivedQuantity >= totalInvoicedQuantity
+                    ? "FullyReceived"
+                    : "PartiallyReceived";
+
+        var receiptsCount = invoice.ReceiptLines.Select(rl => rl.ReceiptGroupId).Distinct().Count();
+
+        return new PurchaseInvoiceReceiptSummaryResponse(
+            invoice.Id,
+            invoice.SupplierInvoiceNumber,
+            invoice.Supplier?.Name ?? "Unknown Supplier",
+            invoice.FarmId,
+            invoice.Farm?.Name ?? "Unknown Farm",
+            receiptStatus,
+            inventoryLines.Count,
+            fullyReceivedCount,
+            partiallyReceivedCount,
+            unreceivedCount,
+            totalInvoicedQuantity,
+            totalReceivedQuantity,
+            totalRemainingQuantity,
+            receiptsCount);
+    }
+
+    public async Task<IReadOnlyList<PurchaseInvoiceRemainingLineResponse>> GetRemainingToReceiveAsync(
+        ExpenseActor actor,
+        Guid invoiceId,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        var invoice = await FindInvoiceOrThrowAsync(actor, invoiceId, cancellationToken);
+
+        var result = new List<PurchaseInvoiceRemainingLineResponse>();
+        var inventoryLines = invoice.Lines
+            .Where(l => l.LineType == InvoiceLineType.InventoryItem)
+            .OrderBy(l => l.SortOrder)
+            .ThenBy(l => l.Id);
+
+        foreach (var line in inventoryLines)
+        {
+            var activeReceived = invoice.ReceiptLines
+                .Where(rl => rl.PurchaseInvoiceLineId == line.Id && rl.StockMovement != null && !rl.StockMovement.IsReversed)
+                .Sum(rl => rl.ReceivedQuantity);
+            var invoiced = line.Quantity ?? 0m;
+            var remaining = Math.Max(0m, invoiced - activeReceived);
+            var isEligible = invoice.Status == PurchaseInvoiceStatus.Posted && remaining > 0m;
+
+            result.Add(new PurchaseInvoiceRemainingLineResponse(
+                line.Id,
+                line.InventoryItemId!.Value,
+                line.InventoryItem?.Name ?? "Unknown Item",
+                line.InventoryItem?.Sku,
+                line.StockUnitId!.Value,
+                line.StockUnit?.Code ?? "",
+                line.StockUnit?.Name ?? "",
+                invoiced,
+                activeReceived,
+                remaining,
+                line.UnitPrice,
+                line.FarmAreaId,
+                line.FarmArea?.Name,
+                line.PlantationId,
+                line.Plantation?.PlantationName,
+                line.CropCycleId,
+                line.CropCycle?.CycleName,
+                line.CropCycleStageId,
+                line.CropCycleStage?.StageName,
+                isEligible));
+        }
+
+        return result;
+    }
+
+    public async Task<IReadOnlyList<PurchaseInvoiceReceiptGroupResponse>> GetReceiptHistoryAsync(
+        ExpenseActor actor,
+        Guid invoiceId,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        await FindInvoiceOrThrowAsync(actor, invoiceId, cancellationToken);
+
+        var receiptLines = await store.GetReceiptLinesByInvoiceAsync(invoiceId, actor.OrganizationId, cancellationToken);
+        if (receiptLines.Count == 0)
+        {
+            return Array.Empty<PurchaseInvoiceReceiptGroupResponse>();
+        }
+
+        var grouped = receiptLines
+            .GroupBy(rl => rl.ReceiptGroupId)
+            .OrderByDescending(g => g.First().CreatedAt);
+
+        var response = new List<PurchaseInvoiceReceiptGroupResponse>();
+        foreach (var group in grouped)
+        {
+            var first = group.First();
+            var items = group.Select(rl => new PurchaseInvoiceReceiptItemResponse(
+                rl.Id,
+                rl.PurchaseInvoiceLineId,
+                rl.StockMovementId,
+                rl.PurchaseInvoiceLine?.InventoryItemId ?? Guid.Empty,
+                rl.PurchaseInvoiceLine?.InventoryItem?.Name ?? "Unknown Item",
+                rl.PurchaseInvoiceLine?.InventoryItem?.Sku,
+                rl.ReceivedQuantity,
+                rl.PurchaseInvoiceLine?.StockUnit?.Code ?? "",
+                rl.StockMovement?.IsReversed ?? false,
+                rl.StockMovement?.ReversalReason,
+                rl.StockMovement?.IsReversed == true ? rl.StockMovement.CreatedAt : null)).ToList();
+
+            response.Add(new PurchaseInvoiceReceiptGroupResponse(
+                first.ReceiptGroupId,
+                first.PurchaseInvoiceId,
+                first.StockMovement?.MovementDate ?? DateOnly.FromDateTime(first.CreatedAt.DateTime),
+                first.StockMovement?.ReferenceNumber,
+                first.StockMovement?.Notes,
+                first.StockMovement?.StorageLocationId ?? Guid.Empty,
+                first.StockMovement?.StorageLocation?.Name ?? "Unknown Location",
+                first.CreatedAt,
+                first.CreatedBy,
+                first.IdempotencyKey,
+                items));
+        }
+
+        return response;
+    }
+
+    public async Task<PurchaseInvoiceReceiptGroupResponse> ReceiveItemsAsync(
+        ExpenseActor actor,
+        Guid invoiceId,
+        ReceivePurchaseInvoiceItemsRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        var invoice = await FindInvoiceOrThrowAsync(actor, invoiceId, cancellationToken);
+
+        if (invoice.Status != PurchaseInvoiceStatus.Posted)
+        {
+            throw new ValidationException($"Items can only be received for posted invoices. Invoice '{invoiceId}' is currently in '{invoice.Status}' status.");
+        }
+
+        if (request.StorageLocationId == Guid.Empty || !await store.StorageLocationBelongsToFarmAndActiveAsync(request.StorageLocationId, invoice.FarmId, actor.OrganizationId, cancellationToken))
+        {
+            throw new ValidationException($"Storage location '{request.StorageLocationId}' does not exist, is inactive, or does not belong to the invoice's farm.");
+        }
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        if (request.MovementDate > today)
+        {
+            throw new ValidationException("Receipt date cannot be in the future.");
+        }
+
+        if (request.Lines == null || request.Lines.Count == 0)
+        {
+            throw new ValidationException("At least one line item must be specified for receiving.");
+        }
+
+        // Check Idempotency Key
+        if (!string.IsNullOrWhiteSpace(request.IdempotencyKey))
+        {
+            var existingLines = await store.FindReceiptGroupByInvoiceAndIdempotencyKeyAsync(invoiceId, actor.OrganizationId, request.IdempotencyKey, cancellationToken);
+            if (existingLines.Count > 0)
+            {
+                var history = await GetReceiptHistoryAsync(actor, invoiceId, cancellationToken);
+                var existingGroup = history.FirstOrDefault(g => g.ReceiptGroupId == existingLines[0].ReceiptGroupId);
+                if (existingGroup != null)
+                {
+                    return existingGroup;
+                }
+            }
+        }
+
+        // Validate each item request line and calculate quantities
+        foreach (var item in request.Lines)
+        {
+            var line = invoice.Lines.FirstOrDefault(l => l.Id == item.PurchaseInvoiceLineId);
+            if (line == null)
+            {
+                throw new ValidationException($"Purchase invoice line '{item.PurchaseInvoiceLineId}' was not found on this invoice.");
+            }
+
+            if (line.LineType != InvoiceLineType.InventoryItem)
+            {
+                throw new ValidationException($"Line #{line.SortOrder} is a non-inventory expense line and cannot be received into stock.");
+            }
+
+            if (item.Quantity <= 0m)
+            {
+                throw new ValidationException($"Quantity received must be greater than zero for line #{line.SortOrder}.");
+            }
+
+            var activeReceived = invoice.ReceiptLines
+                .Where(rl => rl.PurchaseInvoiceLineId == line.Id && rl.StockMovement != null && !rl.StockMovement.IsReversed)
+                .Sum(rl => rl.ReceivedQuantity);
+
+            var remainingToReceive = Math.Max(0m, (line.Quantity ?? 0m) - activeReceived);
+
+            if (item.Quantity > remainingToReceive)
+            {
+                throw new ValidationException($"Cannot receive {item.Quantity:N2} for line #{line.SortOrder}. Maximum remaining quantity to receive is {remainingToReceive:N2}.");
+            }
+        }
+
+        // Perform stock updates and receipt creation atomically in a database transaction
+        var receiptGroupId = Guid.NewGuid();
+        await stockStore.ExecuteInTransactionAsync(async ct =>
+        {
+            var linesToSave = new List<PurchaseInvoiceReceiptLine>();
+
+            foreach (var item in request.Lines)
+            {
+                var line = invoice.Lines.First(l => l.Id == item.PurchaseInvoiceLineId);
+                var itemId = line.InventoryItemId!.Value;
+
+                // Acquire PostgreSQL advisory lock for storage location + inventory item
+                await stockStore.AcquireAdvisoryLockAsync(request.StorageLocationId, itemId, ct);
+
+                // Lock stock balance row for update
+                var balance = await stockStore.LockBalanceAsync(request.StorageLocationId, itemId, actor.OrganizationId, ct);
+                if (balance == null)
+                {
+                    balance = new StockBalance(actor.OrganizationId, invoice.FarmId, request.StorageLocationId, itemId, item.Quantity);
+                    stockStore.AddBalance(balance);
+                }
+                else
+                {
+                    balance.AddStock(item.Quantity, DateTimeOffset.UtcNow, actor.UserId);
+                }
+
+                // Create Phase 3.5 StockMovement record
+                var movement = new StockMovement(
+                    organizationId: actor.OrganizationId,
+                    movementType: StockMovementType.Receipt,
+                    inventoryItemId: itemId,
+                    farmId: invoice.FarmId,
+                    storageLocationId: request.StorageLocationId,
+                    quantity: item.Quantity,
+                    stockUnitId: line.StockUnitId!.Value,
+                    movementDate: request.MovementDate,
+                    createdBy: actor.UserId,
+                    referenceNumber: request.ReferenceNumber,
+                    notes: request.Notes,
+                    parentTransactionId: null,
+                    cropCycleId: line.CropCycleId,
+                    cropCycleStageId: line.CropCycleStageId,
+                    plantationId: line.PlantationId,
+                    farmAreaId: line.FarmAreaId,
+                    laborActivityId: null);
+
+                stockStore.AddMovement(movement);
+
+                // Create Phase 3.6 PurchaseInvoiceReceiptLine linking invoice line to stock movement
+                var receiptLine = PurchaseInvoiceReceiptLine.Create(
+                    organizationId: actor.OrganizationId,
+                    purchaseInvoiceId: invoice.Id,
+                    purchaseInvoiceLineId: line.Id,
+                    stockMovementId: movement.Id,
+                    receivedQuantity: item.Quantity,
+                    createdBy: actor.UserId,
+                    receiptGroupId: receiptGroupId,
+                    idempotencyKey: request.IdempotencyKey);
+
+                linesToSave.Add(receiptLine);
+            }
+
+            await stockStore.SaveChangesAsync(ct);
+            await store.AddReceiptLinesAsync(linesToSave, ct);
+
+            AddAudit(actor, invoice, "PurchaseInvoice.ReceiveItems", new
+            {
+                ReceiptGroupId = receiptGroupId,
+                request.StorageLocationId,
+                request.MovementDate,
+                request.ReferenceNumber,
+                LineCount = request.Lines.Count
+            }, ipAddress);
+
+            return true;
+        }, cancellationToken);
+
+        var historyList = await GetReceiptHistoryAsync(actor, invoiceId, cancellationToken);
+        return historyList.First(g => g.ReceiptGroupId == receiptGroupId);
     }
 
     private async Task<PurchaseInvoice> FindInvoiceOrThrowAsync(
@@ -440,9 +771,35 @@ public sealed class PurchaseInvoiceService(IPurchaseInvoiceStore store) : IPurch
             else dueStatus = "Upcoming";
         }
 
-        // Derive Receipt Status (Receipts implemented in Phase 5)
+        // Derive Receipt Status (Phase 5)
         var hasInventoryLines = invoice.Lines.Any(l => l.LineType == InvoiceLineType.InventoryItem);
-        var receiptStatus = hasInventoryLines ? "NotReceived" : "NotApplicable";
+        string receiptStatus;
+        if (!hasInventoryLines)
+        {
+            receiptStatus = "NotApplicable";
+        }
+        else
+        {
+            var totalOrdered = invoice.Lines
+                .Where(l => l.LineType == InvoiceLineType.InventoryItem)
+                .Sum(l => l.Quantity ?? 0m);
+            var totalReceived = invoice.ReceiptLines
+                .Where(rl => rl.StockMovement != null && !rl.StockMovement.IsReversed)
+                .Sum(rl => rl.ReceivedQuantity);
+
+            if (totalReceived == 0m)
+            {
+                receiptStatus = "NotReceived";
+            }
+            else if (totalReceived >= totalOrdered)
+            {
+                receiptStatus = "FullyReceived";
+            }
+            else
+            {
+                receiptStatus = "PartiallyReceived";
+            }
+        }
 
         var lineDtos = invoice.Lines
             .OrderBy(l => l.SortOrder)

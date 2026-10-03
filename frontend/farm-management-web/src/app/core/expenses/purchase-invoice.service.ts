@@ -6,7 +6,11 @@ import {
   CreatePurchaseInvoiceRequest,
   PurchaseInvoiceFilter,
   PurchaseInvoiceList,
+  PurchaseInvoiceReceiptGroupResponse,
+  PurchaseInvoiceReceiptSummaryResponse,
+  PurchaseInvoiceRemainingLineResponse,
   PurchaseInvoiceResponse,
+  ReceivePurchaseInvoiceItemsRequest,
   ReversePurchaseInvoiceRequest,
   UpdatePurchaseInvoiceRequest,
 } from './purchase-invoice.models';
@@ -58,5 +62,21 @@ export class PurchaseInvoiceService {
 
   reverse(id: string, request: ReversePurchaseInvoiceRequest): Observable<PurchaseInvoiceResponse> {
     return this.http.post<PurchaseInvoiceResponse>(`${this.api}/${id}/reverse`, request);
+  }
+
+  getReceiptSummary(id: string): Observable<PurchaseInvoiceReceiptSummaryResponse> {
+    return this.http.get<PurchaseInvoiceReceiptSummaryResponse>(`${this.api}/${id}/receipt-summary`);
+  }
+
+  getRemainingToReceive(id: string): Observable<PurchaseInvoiceRemainingLineResponse[]> {
+    return this.http.get<PurchaseInvoiceRemainingLineResponse[]>(`${this.api}/${id}/lines/remaining-to-receive`);
+  }
+
+  getReceiptHistory(id: string): Observable<PurchaseInvoiceReceiptGroupResponse[]> {
+    return this.http.get<PurchaseInvoiceReceiptGroupResponse[]>(`${this.api}/${id}/receipts`);
+  }
+
+  receiveItems(id: string, request: ReceivePurchaseInvoiceItemsRequest): Observable<PurchaseInvoiceReceiptGroupResponse> {
+    return this.http.post<PurchaseInvoiceReceiptGroupResponse>(`${this.api}/${id}/receipts`, request);
   }
 }

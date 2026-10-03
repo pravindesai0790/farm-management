@@ -42,4 +42,26 @@ public interface IPurchaseInvoiceService
         ReversePurchaseInvoiceRequest request,
         string? ipAddress,
         CancellationToken cancellationToken = default);
+
+    Task<PurchaseInvoiceReceiptSummaryResponse> GetReceiptSummaryAsync(
+        ExpenseActor actor,
+        Guid invoiceId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<PurchaseInvoiceRemainingLineResponse>> GetRemainingToReceiveAsync(
+        ExpenseActor actor,
+        Guid invoiceId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<PurchaseInvoiceReceiptGroupResponse>> GetReceiptHistoryAsync(
+        ExpenseActor actor,
+        Guid invoiceId,
+        CancellationToken cancellationToken = default);
+
+    Task<PurchaseInvoiceReceiptGroupResponse> ReceiveItemsAsync(
+        ExpenseActor actor,
+        Guid invoiceId,
+        ReceivePurchaseInvoiceItemsRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default);
 }

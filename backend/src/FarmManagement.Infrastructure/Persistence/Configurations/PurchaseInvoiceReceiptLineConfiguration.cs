@@ -4,6 +4,10 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace FarmManagement.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Entity Framework Core mapping configuration for PurchaseInvoiceReceiptLine.
+/// Configures table constraints, FK relationships, precision, and idempotency indexes.
+/// </summary>
 public sealed class PurchaseInvoiceReceiptLineConfiguration : IEntityTypeConfiguration<PurchaseInvoiceReceiptLine>
 {
     public void Configure(EntityTypeBuilder<PurchaseInvoiceReceiptLine> builder)
@@ -53,6 +57,15 @@ public sealed class PurchaseInvoiceReceiptLineConfiguration : IEntityTypeConfigu
             .HasConstraintName("fk_purchase_invoice_receipt_lines_movement")
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.Property(rl => rl.ReceiptGroupId)
+            .HasColumnName("receipt_group_id")
+            .IsRequired();
+
+        builder.Property(rl => rl.IdempotencyKey)
+            .HasColumnName("idempotency_key")
+            .HasMaxLength(100)
+            .IsRequired(false);
+
         builder.Property(rl => rl.ReceivedQuantity)
             .HasColumnName("received_quantity")
             .HasPrecision(18, 4)
@@ -78,5 +91,11 @@ public sealed class PurchaseInvoiceReceiptLineConfiguration : IEntityTypeConfigu
 
         builder.HasIndex(rl => rl.OrganizationId)
             .HasDatabaseName("ix_purchase_invoice_receipt_lines_org_id");
+
+        builder.HasIndex(rl => rl.ReceiptGroupId)
+            .HasDatabaseName("ix_purchase_invoice_receipt_lines_group_id");
+
+        builder.HasIndex(rl => new { rl.OrganizationId, rl.PurchaseInvoiceId, rl.IdempotencyKey })
+            .HasDatabaseName("ix_purchase_invoice_receipt_lines_idempotency");
     }
 }

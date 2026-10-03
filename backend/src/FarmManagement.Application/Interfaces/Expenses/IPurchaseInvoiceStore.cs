@@ -91,4 +91,25 @@ public interface IPurchaseInvoiceStore
     Task AddAuditLogAsync(
         AuditLog auditLog,
         CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<PurchaseInvoiceReceiptLine>> GetReceiptLinesByInvoiceAsync(
+        Guid invoiceId,
+        Guid organizationId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<PurchaseInvoiceReceiptLine>> FindReceiptGroupByInvoiceAndIdempotencyKeyAsync(
+        Guid invoiceId,
+        Guid organizationId,
+        string idempotencyKey,
+        CancellationToken cancellationToken = default);
+
+    Task AddReceiptLinesAsync(
+        IEnumerable<PurchaseInvoiceReceiptLine> receiptLines,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> StorageLocationBelongsToFarmAndActiveAsync(
+        Guid storageLocationId,
+        Guid farmId,
+        Guid organizationId,
+        CancellationToken cancellationToken = default);
 }

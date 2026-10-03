@@ -12,10 +12,11 @@ import { MatTableModule } from '@angular/material/table';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { PermissionService } from '../../../../core/auth/permission.service';
-import { PurchaseInvoiceResponse } from '../../../../core/expenses/purchase-invoice.models';
+import { PurchaseInvoiceReceiptGroupResponse, PurchaseInvoiceResponse } from '../../../../core/expenses/purchase-invoice.models';
 import { PurchaseInvoiceService } from '../../../../core/expenses/purchase-invoice.service';
 import { getApiErrorMessage } from '../../../../core/models/api-error.model';
 import { ExpensesSubNavComponent } from '../../components/expenses-sub-nav/expenses-sub-nav.component';
+import { PurchaseInvoiceReceiveDialogComponent } from '../purchase-invoice-receive-dialog/purchase-invoice-receive-dialog.component';
 import { PurchaseInvoiceReversalDialogComponent } from '../purchase-invoice-reversal-dialog/purchase-invoice-reversal-dialog.component';
 
 @Component({
@@ -46,6 +47,7 @@ export class PurchaseInvoiceDetailPageComponent implements OnInit {
   readonly permissionService = inject(PermissionService);
 
   readonly invoice = signal<PurchaseInvoiceResponse | null>(null);
+  readonly receiptHistory = signal<PurchaseInvoiceReceiptGroupResponse[]>([]);
   readonly isLoading = signal(true);
   readonly isPosting = signal(false);
 
@@ -77,12 +79,42 @@ export class PurchaseInvoiceDetailPageComponent implements OnInit {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: (res) => this.invoice.set(res),
+        next: (res) => {
+          this.invoice.set(res);
+          this.loadReceiptHistory(res.id);
+        },
         error: (err) => {
           this.snack.open(getApiErrorMessage(err, 'Failed to load invoice details.'), 'Close', { duration: 5000 });
           this.router.navigate(['/expenses/invoices']);
         },
       });
+  }
+
+  loadReceiptHistory(id: string): void {
+    this.invoiceService
+      .getReceiptHistory(id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (history) => this.receiptHistory.set(history),
+        error: (err) => console.error('Failed to load receipt history', err),
+      });
+  }
+
+  openReceiveDialog(): void {
+    const inv = this.invoice();
+    if (!inv) return;
+
+    const dialogRef = this.dialog.open(PurchaseInvoiceReceiveDialogComponent, {
+      width: '760px',
+      disableClose: true,
+      data: { invoice: inv },
+    });
+
+    dialogRef.afterClosed().subscribe((res) => {
+      if (res) {
+        this.loadInvoice(inv.id);
+      }
+    });
   }
 
   postInvoice(): void {

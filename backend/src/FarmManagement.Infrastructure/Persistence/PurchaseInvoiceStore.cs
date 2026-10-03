@@ -70,6 +70,8 @@ public sealed class PurchaseInvoiceStore(ApplicationDbContext dbContext) : IPurc
                 .ThenInclude(l => l.CropCycle)
             .Include(pi => pi.Lines)
                 .ThenInclude(l => l.CropCycleStage)
+            .Include(pi => pi.ReceiptLines)
+                .ThenInclude(rl => rl.StockMovement)
             .SingleOrDefaultAsync(pi => pi.Id == invoiceId && pi.OrganizationId == organizationId, cancellationToken);
     }
 
@@ -189,6 +191,62 @@ public sealed class PurchaseInvoiceStore(ApplicationDbContext dbContext) : IPurc
     {
         await dbContext.AuditLogs.AddAsync(auditLog, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<PurchaseInvoiceReceiptLine>> GetReceiptLinesByInvoiceAsync(
+        Guid invoiceId,
+        Guid organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        return await dbContext.PurchaseInvoiceReceiptLines
+            .AsNoTracking()
+            .Include(rl => rl.PurchaseInvoiceLine)
+                .ThenInclude(l => l.InventoryItem)
+            .Include(rl => rl.PurchaseInvoiceLine)
+                .ThenInclude(l => l.StockUnit)
+            .Include(rl => rl.StockMovement)
+                .ThenInclude(sm => sm.StorageLocation)
+            .Where(rl => rl.PurchaseInvoiceId == invoiceId && rl.OrganizationId == organizationId)
+            .OrderBy(rl => rl.CreatedAt)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<PurchaseInvoiceReceiptLine>> FindReceiptGroupByInvoiceAndIdempotencyKeyAsync(
+        Guid invoiceId,
+        Guid organizationId,
+        string idempotencyKey,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedKey = idempotencyKey.Trim();
+        return await dbContext.PurchaseInvoiceReceiptLines
+            .Include(rl => rl.PurchaseInvoiceLine)
+                .ThenInclude(l => l.InventoryItem)
+            .Include(rl => rl.PurchaseInvoiceLine)
+                .ThenInclude(l => l.StockUnit)
+            .Include(rl => rl.StockMovement)
+                .ThenInclude(sm => sm.StorageLocation)
+            .Where(rl => rl.PurchaseInvoiceId == invoiceId && rl.OrganizationId == organizationId && rl.IdempotencyKey == normalizedKey)
+            .OrderBy(rl => rl.CreatedAt)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task AddReceiptLinesAsync(
+        IEnumerable<PurchaseInvoiceReceiptLine> receiptLines,
+        CancellationToken cancellationToken = default)
+    {
+        await dbContext.PurchaseInvoiceReceiptLines.AddRangeAsync(receiptLines, cancellationToken);
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public Task<bool> StorageLocationBelongsToFarmAndActiveAsync(
+        Guid storageLocationId,
+        Guid farmId,
+        Guid organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        return dbContext.StorageLocations.AnyAsync(
+            loc => loc.Id == storageLocationId && loc.FarmId == farmId && loc.OrganizationId == organizationId && loc.IsActive,
+            cancellationToken);
     }
 
     private IQueryable<PurchaseInvoice> BuildQuery(Guid organizationId, PurchaseInvoiceFilter filter)

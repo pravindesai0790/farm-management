@@ -35,17 +35,18 @@ describe('PurchaseInvoiceDetailPageComponent', () => {
     status: 'Draft',
     paymentStatus: 'Unpaid',
     dueStatus: 'Current',
-    receiptStatus: 'Unlinked',
+    receiptStatus: 'NotReceived',
     lines: [],
   };
 
   beforeEach(async () => {
-    mockInvoiceService = jasmine.createSpyObj('PurchaseInvoiceService', ['get', 'post']);
+    mockInvoiceService = jasmine.createSpyObj('PurchaseInvoiceService', ['get', 'post', 'getReceiptHistory']);
     mockPermissionService = jasmine.createSpyObj('PermissionService', ['has']);
     mockSnackBar = jasmine.createSpyObj('MatSnackBar', ['open']);
     mockDialog = jasmine.createSpyObj('MatDialog', ['open']);
 
     mockInvoiceService.get.and.returnValue(of(mockInvoice as PurchaseInvoiceResponse));
+    mockInvoiceService.getReceiptHistory.and.returnValue(of([]));
     mockPermissionService.has.and.returnValue(true);
 
     await TestBed.configureTestingModule({

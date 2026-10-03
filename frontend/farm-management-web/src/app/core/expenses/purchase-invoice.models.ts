@@ -3,7 +3,7 @@ import { PagedResponse } from '../models/paged-response.model';
 export type PurchaseInvoiceStatus = 'Draft' | 'Posted' | 'Reversed';
 export type PurchaseInvoicePaymentStatus = 'Unpaid' | 'PartiallyPaid' | 'Paid';
 export type PurchaseInvoiceDueStatus = 'Overdue' | 'DueSoon' | 'Current';
-export type PurchaseInvoiceReceiptStatus = 'Unlinked' | 'PartiallyReceived' | 'FullyReceived';
+export type PurchaseInvoiceReceiptStatus = 'NotApplicable' | 'NotReceived' | 'PartiallyReceived' | 'FullyReceived';
 export type PurchaseInvoiceLineType = 'InventoryItem' | 'NonInventoryExpense';
 
 export interface PurchaseInvoiceLineResponse {
@@ -136,3 +136,87 @@ export interface PurchaseInvoiceFilter {
 }
 
 export type PurchaseInvoiceList = PagedResponse<PurchaseInvoiceResponse>;
+
+// --- Phase 5 Receipt DTOs ---
+
+export interface ReceivePurchaseInvoiceItemLineRequest {
+  readonly purchaseInvoiceLineId: string;
+  readonly quantity: number;
+}
+
+export interface ReceivePurchaseInvoiceItemsRequest {
+  readonly storageLocationId: string;
+  readonly movementDate: string;
+  readonly lines: ReceivePurchaseInvoiceItemLineRequest[];
+  readonly referenceNumber?: string | null;
+  readonly notes?: string | null;
+  readonly idempotencyKey?: string | null;
+}
+
+export interface PurchaseInvoiceReceiptSummaryResponse {
+  readonly invoiceId: string;
+  readonly supplierInvoiceNumber: string;
+  readonly supplierName: string;
+  readonly farmId: string;
+  readonly farmName: string;
+  readonly receiptStatus: PurchaseInvoiceReceiptStatus;
+  readonly totalInventoryLinesCount: number;
+  readonly fullyReceivedLinesCount: number;
+  readonly partiallyReceivedLinesCount: number;
+  readonly unreceivedLinesCount: number;
+  readonly totalInvoicedQuantity: number;
+  readonly totalReceivedQuantity: number;
+  readonly totalRemainingQuantity: number;
+  readonly receiptsCount: number;
+}
+
+export interface PurchaseInvoiceRemainingLineResponse {
+  readonly purchaseInvoiceLineId: string;
+  readonly inventoryItemId: string;
+  readonly inventoryItemName: string;
+  readonly inventoryItemSku?: string | null;
+  readonly stockUnitId: string;
+  readonly stockUnitCode: string;
+  readonly stockUnitName: string;
+  readonly invoicedQuantity: number;
+  readonly receivedQuantity: number;
+  readonly remainingQuantity: number;
+  readonly unitPrice: number;
+  readonly farmAreaId?: string | null;
+  readonly farmAreaName?: string | null;
+  readonly plantationId?: string | null;
+  readonly plantationName?: string | null;
+  readonly cropCycleId?: string | null;
+  readonly cropCycleName?: string | null;
+  readonly cropCycleStageId?: string | null;
+  readonly cropCycleStageName?: string | null;
+  readonly isEligibleForReceipt: boolean;
+}
+
+export interface PurchaseInvoiceReceiptItemResponse {
+  readonly receiptLineId: string;
+  readonly purchaseInvoiceLineId: string;
+  readonly stockMovementId: string;
+  readonly inventoryItemId: string;
+  readonly inventoryItemName: string;
+  readonly inventoryItemSku?: string | null;
+  readonly receivedQuantity: number;
+  readonly stockUnitCode: string;
+  readonly isReversed: boolean;
+  readonly reversalReason?: string | null;
+  readonly reversedAt?: string | null;
+}
+
+export interface PurchaseInvoiceReceiptGroupResponse {
+  readonly receiptGroupId: string;
+  readonly purchaseInvoiceId: string;
+  readonly movementDate: string;
+  readonly referenceNumber?: string | null;
+  readonly notes?: string | null;
+  readonly storageLocationId: string;
+  readonly storageLocationName: string;
+  readonly createdAt: string;
+  readonly createdBy: string;
+  readonly idempotencyKey?: string | null;
+  readonly items: PurchaseInvoiceReceiptItemResponse[];
+}
