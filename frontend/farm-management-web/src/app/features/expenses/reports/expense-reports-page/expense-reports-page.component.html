@@ -1,6 +1,6 @@
-<app-expenses-sub-nav></app-expenses-sub-nav>
-
 <div class="page-container">
+  <app-expenses-sub-nav></app-expenses-sub-nav>
+
   <!-- Page Header -->
   <div class="page-header">
     <div class="header-title">
@@ -32,17 +32,17 @@
       </div>
 
       <div class="filter-inputs">
-        <mat-form-field appearance="outline" class="filter-field">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-field">
           <mat-label>From Date</mat-label>
           <input matInput type="date" [(ngModel)]="fromDate" (change)="onFilterChange()" />
         </mat-form-field>
 
-        <mat-form-field appearance="outline" class="filter-field">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-field">
           <mat-label>To Date</mat-label>
           <input matInput type="date" [(ngModel)]="toDate" (change)="onFilterChange()" />
         </mat-form-field>
 
-        <mat-form-field appearance="outline" class="filter-field">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-field">
           <mat-label>Farm Location</mat-label>
           <mat-select [(ngModel)]="selectedFarmId" (selectionChange)="onFilterChange()">
             <mat-option [value]="null">All Farms</mat-option>
@@ -52,7 +52,7 @@
           </mat-select>
         </mat-form-field>
 
-        <mat-form-field appearance="outline" class="filter-field">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-field">
           <mat-label>Expense Category</mat-label>
           <mat-select [(ngModel)]="selectedCategoryId" (selectionChange)="onFilterChange()">
             <mat-option [value]="null">All Categories</mat-option>
@@ -61,6 +61,7 @@
             }
           </mat-select>
         </mat-form-field>
+
 
         <button mat-flat-button color="primary" (click)="loadReport()" [disabled]="loading()">
           <mat-icon>analytics</mat-icon> Generate

@@ -49,8 +49,8 @@
     color: #64748b;
 
     &.active-tab {
-      color: #2563eb;
-      border-bottom: 3px solid #2563eb;
+      color: #2f6f4e;
+      border-bottom: 3px solid #2f6f4e;
       border-radius: 0;
     }
   }
@@ -67,8 +67,9 @@
   border-left: 4px solid #cbd5e1;
 
   &.kpi-outstanding {
-    border-left-color: #2563eb;
+    border-left-color: #2f6f4e;
   }
+
 
   &.kpi-overdue {
     border-left-color: #ef4444;

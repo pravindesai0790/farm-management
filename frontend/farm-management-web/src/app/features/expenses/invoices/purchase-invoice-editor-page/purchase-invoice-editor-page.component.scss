@@ -1,26 +1,39 @@
 .page-container {
-  padding: 24px;
-  max-width: 1200px;
+  padding: 20px 24px;
+  max-width: 1400px;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 16px;
-  margin-bottom: 24px;
 
-  h1 {
-    margin: 0;
-    font-size: 24px;
-    font-weight: 600;
+  .header-title {
+    h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .subtitle {
+      margin: 2px 0 0 0;
+      color: #64748b;
+      font-size: 0.85rem;
+    }
   }
 
-  .subtitle {
-    margin: 4px 0 0 0;
-    color: rgba(0, 0, 0, 0.6);
-    font-size: 14px;
+  .header-actions {
+    a[mat-stroked-button] {
+      height: 36px;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
   }
 }
 
@@ -31,89 +44,223 @@
   padding: 64px;
 }
 
-.editor-form {
+// 2-Column Responsive Layout
+.editor-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 20px;
+  align-items: start;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.main-column {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
 }
 
-.form-card {
+.sidebar-column {
+  position: relative;
+}
+
+// Cards General Styling
+.form-card, .summary-card {
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  overflow: hidden;
+
   mat-card-header {
-    margin-bottom: 16px;
+    padding: 14px 18px;
+    border-bottom: 1px solid #f1f5f9;
+    background-color: #f8fafc;
+
+    mat-card-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+
+      .card-title-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+        color: var(--app-primary, #2f6f4e);
+      }
+    }
   }
 
-  &.lines-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  mat-card-content {
+    padding: 16px 18px;
   }
 }
 
+// Form Field Grid & Medium Sizing
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
 
   .col-span-2 {
     grid-column: span 2;
-    @media (max-width: 768px) {
+    @media (max-width: 640px) {
       grid-column: span 1;
     }
   }
 }
 
+// Lines Card Header & Add Button
 .lines-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   width: 100%;
+
+  .btn-compact {
+    height: 32px;
+    padding: 0 12px;
+    font-size: 0.8rem;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
 }
 
 .lines-container {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .line-item-card {
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
-  padding: 16px;
+  padding: 12px 14px;
   background-color: #fafafa;
+  transition: border-color 0.15s ease;
+
+  &:hover {
+    border-color: #cbd5e1;
+  }
 }
 
 .line-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   padding-bottom: 8px;
-  border-bottom: 1px dashed rgba(0, 0, 0, 0.12);
+  border-bottom: 1px dashed #e2e8f0;
 
-  .line-number {
-    font-weight: 600;
-    font-size: 14px;
-    color: #1976d2;
+  .line-title-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .line-number {
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: var(--app-primary, #2f6f4e);
+      background: #eaf3ed;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .line-type-toggle {
+      display: flex;
+      gap: 12px;
+
+      ::ng-deep .mdc-label {
+        font-size: 0.825rem;
+        font-weight: 500;
+      }
+    }
   }
 
-  .line-type-toggle {
-    mat-radio-button {
-      margin-right: 16px;
+  .line-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .linkage-toggle-btn {
+      height: 30px;
+      padding: 0 10px;
+      font-size: 0.775rem;
+      border-radius: 6px;
+      color: #475569;
+      background-color: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      position: relative;
+
+      mat-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+      }
+
+      .expand-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+        margin-left: 2px;
+      }
+
+      &.active {
+        background-color: #eaf3ed;
+        color: #2f6f4e;
+        border-color: #a3d9b1;
+        font-weight: 600;
+      }
+
+      .badge-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background-color: #2f6f4e;
+      }
+    }
+
+    .remove-line-btn {
+      width: 30px;
+      height: 30px;
+
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+      }
     }
   }
 }
 
 .line-fields-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
   align-items: center;
 
   .col-span-2 {
     grid-column: span 2;
-    @media (max-width: 768px) {
+    @media (max-width: 640px) {
       grid-column: span 1;
     }
+  }
+
+  .unit-suffix {
+    font-size: 0.75rem;
+    color: #64748b;
+    font-weight: 600;
   }
 }
 
@@ -122,88 +269,155 @@
   flex-direction: column;
   align-items: flex-end;
   justify-content: center;
-  height: 56px;
-  margin-bottom: 22px;
+  padding: 4px 8px;
 
-  label {
-    font-size: 12px;
-    color: rgba(0, 0, 0, 0.6);
+  .label {
+    font-size: 0.725rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #64748b;
+    font-weight: 600;
   }
 
   .amount-value {
-    font-size: 18px;
+    font-size: 1.1rem;
     font-weight: 700;
-    color: #2e7d32;
+    color: #1e293b;
+    font-variant-numeric: tabular-nums;
   }
 }
 
-.operational-linkages-section {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
+// Collapsible Operational Linkages Drawer
+.operational-linkages-drawer {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background-color: #f1f5f9;
+  border: 1px solid #e2e8f0;
 
-  .section-label {
+  .linkages-header {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 12px;
+    font-size: 0.775rem;
     font-weight: 600;
-    color: rgba(0, 0, 0, 0.6);
+    color: #334155;
     margin-bottom: 8px;
 
     mat-icon {
       font-size: 16px;
       width: 16px;
       height: 16px;
+      color: #2f6f4e;
     }
   }
 
   .linkages-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
   }
 }
 
-.totals-grid {
+// Sticky Sidebar Summary Card
+.sticky-card {
+  position: sticky;
+  top: 20px;
+}
+
+.summary-rows {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 
-  .totals-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 16px;
-  }
-
-  .totals-inputs {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 16px;
-  }
-
-  .totals-final {
+  .summary-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-top: 16px;
-    border-top: 2px solid rgba(0, 0, 0, 0.12);
-    font-size: 18px;
-    font-weight: 600;
+    font-size: 0.875rem;
+    color: #475569;
 
-    .final-amount {
-      font-size: 24px;
-      color: #1b5e20;
+    .row-val {
+      font-variant-numeric: tabular-nums;
+      color: #0f172a;
+    }
+  }
+
+  .summary-inputs-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .summary-divider {
+    height: 1px;
+    background-color: #e2e8f0;
+    margin: 4px 0;
+  }
+
+  .total-display-banner {
+    background: #eaf3ed;
+    border: 1px solid #bce1c7;
+    border-radius: 8px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    .total-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 700;
+      color: #24583d;
+    }
+
+    .total-amount {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #1b432e;
+      font-variant-numeric: tabular-nums;
     }
   }
 }
 
-.form-actions-bar {
+.sticky-actions {
   display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  padding: 16px 24px;
-  background: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 18px;
+  background-color: #f8fafc;
+  border-top: 1px solid #f1f5f9;
+
+  .w-full {
+    width: 100%;
+  }
+
+  .submit-btn {
+    height: 38px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border-radius: 6px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .cancel-btn {
+    height: 36px;
+    font-size: 0.85rem;
+    border-radius: 6px;
+  }
+}
+
+// Angular Material Overrides for Medium Control Heights
+::ng-deep {
+  .editor-layout {
+    .mat-mdc-form-field {
+      .mat-mdc-text-field-wrapper {
+        padding: 0 12px;
+      }
+    }
+  }
 }

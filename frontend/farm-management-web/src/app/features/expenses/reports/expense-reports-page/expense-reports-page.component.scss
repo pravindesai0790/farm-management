@@ -34,11 +34,13 @@
 
   button {
     font-size: 0.85rem;
+    height: 32px;
+    border-radius: 6px;
 
     &.active-preset {
-      background-color: #eff6ff;
-      color: #1d4ed8;
-      border-color: #93c5fd;
+      background-color: #eaf3ed;
+      color: #2f6f4e;
+      border-color: #bce1c7;
       font-weight: 600;
     }
   }
@@ -67,12 +69,13 @@
     color: #64748b;
 
     &.active-tab {
-      color: #2563eb;
-      border-bottom: 3px solid #2563eb;
+      color: #2f6f4e;
+      border-bottom: 3px solid #2f6f4e;
       border-radius: 0;
     }
   }
 }
+
 
 .kpi-grid {
   display: grid;

@@ -18,6 +18,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatSelectModule } from '@angular/material/select';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
@@ -73,6 +74,7 @@ export interface LineCascadingLookups {
     MatProgressSpinnerModule,
     MatRadioModule,
     MatSelectModule,
+    MatTooltipModule,
     ExpensesSubNavComponent,
   ],
   templateUrl: './purchase-invoice-editor-page.component.html',
@@ -105,6 +107,8 @@ export class PurchaseInvoiceEditorPageComponent implements OnInit {
 
   // Array of cascading lookups for each line in lines FormArray
   readonly lineLookups = signal<LineCascadingLookups[]>([]);
+  readonly expandedLinkages = signal<boolean[]>([]);
+
 
   readonly form = this.fb.group({
     supplierId: ['', Validators.required],
@@ -305,6 +309,7 @@ export class PurchaseInvoiceEditorPageComponent implements OnInit {
 
     const newLookups = [...this.lineLookups(), { areas: [], plantations: [], cycles: [], stages: [] }];
     this.lineLookups.set(newLookups);
+    this.expandedLinkages.update((arr) => [...arr, false]);
 
     if (farmId) {
       group.get('farmAreaId')?.enable();
@@ -337,6 +342,8 @@ export class PurchaseInvoiceEditorPageComponent implements OnInit {
 
     const newLookups = [...this.lineLookups(), { areas: [], plantations: [], cycles: [], stages: [] }];
     this.lineLookups.set(newLookups);
+    const isExpanded = !!(line.farmAreaId || line.plantationId || line.cropCycleId || line.cropCycleStageId);
+    this.expandedLinkages.update((arr) => [...arr, isExpanded]);
 
     if (farmId) {
       this.loadAreasForLine(index, farmId);
@@ -361,7 +368,30 @@ export class PurchaseInvoiceEditorPageComponent implements OnInit {
     const lookups = [...this.lineLookups()];
     lookups.splice(index, 1);
     this.lineLookups.set(lookups);
+
+    const expanded = [...this.expandedLinkages()];
+    expanded.splice(index, 1);
+    this.expandedLinkages.set(expanded);
   }
+
+  toggleLinkages(index: number): void {
+    this.expandedLinkages.update((arr) => {
+      const copy = [...arr];
+      copy[index] = !copy[index];
+      return copy;
+    });
+  }
+
+  hasOperationalLinkage(index: number): boolean {
+    const g = this.lineFormGroups[index];
+    return !!(
+      g?.get('farmAreaId')?.value ||
+      g?.get('plantationId')?.value ||
+      g?.get('cropCycleId')?.value ||
+      g?.get('cropCycleStageId')?.value
+    );
+  }
+
 
   setupLineTypeValidators(group: FormGroup): void {
     const applyValidators = (type: string | null | undefined) => {

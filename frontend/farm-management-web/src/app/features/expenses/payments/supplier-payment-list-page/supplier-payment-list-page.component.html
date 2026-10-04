@@ -67,13 +67,13 @@
   <!-- Filter Toolbar -->
   <mat-card class="filter-card" [formGroup]="filterForm">
     <mat-card-content class="filter-row">
-      <mat-form-field appearance="outline" class="filter-input search-field">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-input search-field">
         <mat-label>Search Reference / Notes</mat-label>
         <input matInput formControlName="search" placeholder="Ref #, Txn ID, Notes..." />
         <mat-icon matPrefix>search</mat-icon>
       </mat-form-field>
 
-      <mat-form-field appearance="outline" class="filter-input">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-input">
         <mat-label>Supplier</mat-label>
         <mat-select formControlName="supplierId">
           <mat-option value="">All Suppliers</mat-option>
@@ -83,7 +83,7 @@
         </mat-select>
       </mat-form-field>
 
-      <mat-form-field appearance="outline" class="filter-input">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-input">
         <mat-label>Status</mat-label>
         <mat-select formControlName="status">
           <mat-option value="">All Statuses</mat-option>
@@ -92,14 +92,14 @@
         </mat-select>
       </mat-form-field>
 
-      <mat-form-field appearance="outline" class="filter-input date-field">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-input date-field">
         <mat-label>From Date</mat-label>
         <input matInput [matDatepicker]="fromPicker" formControlName="from" />
         <mat-datepicker-toggle matIconSuffix [for]="fromPicker"></mat-datepicker-toggle>
         <mat-datepicker #fromPicker></mat-datepicker>
       </mat-form-field>
 
-      <mat-form-field appearance="outline" class="filter-input date-field">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-input date-field">
         <mat-label>To Date</mat-label>
         <input matInput [matDatepicker]="toPicker" formControlName="to" />
         <mat-datepicker-toggle matIconSuffix [for]="toPicker"></mat-datepicker-toggle>
@@ -111,6 +111,7 @@
       </button>
     </mat-card-content>
   </mat-card>
+
 
   <!-- Table Container -->
   <mat-card class="table-card">
