@@ -601,7 +601,7 @@ public sealed class InventoryStockService(IInventoryStockStore store) : IInvento
             b.InventoryItemId,
             b.InventoryItem?.Name ?? string.Empty,
             b.InventoryItem?.Sku,
-            b.InventoryItem?.Category,
+            b.InventoryItem?.Category?.Name,
             b.InventoryItem?.StockUnitId ?? Guid.Empty,
             b.InventoryItem?.StockUnit?.Code ?? string.Empty,
             b.InventoryItem?.StockUnit?.Name ?? string.Empty,
@@ -670,7 +670,7 @@ public sealed class InventoryStockService(IInventoryStockStore store) : IInvento
             m.ReversalMovementId,
             m.ReversedMovementId,
             m.ReversalReason,
-            item?.Category ?? m.InventoryItem?.Category);
+            item?.Category?.Name ?? m.InventoryItem?.Category?.Name);
 
     public async Task<StockMovementResponse> ReverseStockMovementAsync(
         InventoryActor actor,

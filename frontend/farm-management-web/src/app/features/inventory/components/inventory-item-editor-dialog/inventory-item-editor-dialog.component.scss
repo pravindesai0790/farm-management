@@ -15,3 +15,46 @@
 .full-width {
   width: 100%;
 }
+
+.category-option-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0;
+
+  .category-option-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    color: var(--app-primary, #2e7d32);
+    flex-shrink: 0;
+  }
+
+  .category-option-meta {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+
+    .category-option-name {
+      font-weight: 500;
+      font-size: 0.9rem;
+      color: var(--app-text, #1e293b);
+      line-height: 1.25;
+    }
+
+    .category-option-examples {
+      font-size: 0.72rem;
+      color: var(--app-muted, #64748b);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 320px;
+      line-height: 1.2;
+    }
+  }
+}
+
+.category-clear-option {
+  color: var(--app-muted, #64748b);
+  font-style: italic;
+}

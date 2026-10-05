@@ -16,12 +16,146 @@ export type StockMovementType =
   | "TransferInReversal"
   | "TransferOutReversal";
 
+export interface InventoryCategory {
+  readonly id: string;
+  readonly name: string;
+  readonly code: string;
+  readonly description: string;
+  readonly examples: string;
+  readonly icon: string;
+  readonly displayOrder: number;
+}
+
+export const FARM_INVENTORY_CATEGORIES: readonly InventoryCategory[] = [
+  {
+    id: "c1000000-0000-0000-0000-000000000001",
+    name: "Seeds & Planting Materials",
+    code: "SEEDS_PLANTING",
+    description: "Seeds, saplings, tubers, seedlings, and inoculants.",
+    examples: "Seeds, saplings, tubers, seedlings, inoculants",
+    icon: "spa",
+    displayOrder: 1,
+  },
+  {
+    id: "c1000000-0000-0000-0000-000000000002",
+    name: "Fertilizers & Soil Amendments",
+    code: "FERTILIZERS_SOIL",
+    description: "Nitrogen, phosphorus, potassium (NPK), organic compost, lime, and micronutrients.",
+    examples: "NPK, organic compost, lime, micronutrients",
+    icon: "compost",
+    displayOrder: 2,
+  },
+  {
+    id: "c1000000-0000-0000-0000-000000000003",
+    name: "Agrochemicals & Pest Control",
+    code: "AGROCHEMICALS_PEST_CONTROL",
+    description: "Herbicides, insecticides, fungicides, and rodenticides.",
+    examples: "Herbicides, insecticides, fungicides, rodenticides",
+    icon: "pest_control",
+    displayOrder: 3,
+  },
+  {
+    id: "c1000000-0000-0000-0000-000000000004",
+    name: "Feed & Animal Nutrition",
+    code: "FEED_ANIMAL_NUTRITION",
+    description: "Livestock feed, forage, grains, mineral blocks, and supplements.",
+    examples: "Livestock feed, forage, grains, mineral blocks, supplements",
+    icon: "pets",
+    displayOrder: 4,
+  },
+  {
+    id: "c1000000-0000-0000-0000-000000000005",
+    name: "Veterinary & Animal Health",
+    code: "VETERINARY_ANIMAL_HEALTH",
+    description: "Vaccines, medicines, dewormers, first-aid supplies, and tagging tools.",
+    examples: "Vaccines, medicines, dewormers, first-aid supplies, tagging tools",
+    icon: "medical_services",
+    displayOrder: 5,
+  },
+  {
+    id: "c1000000-0000-0000-0000-000000000006",
+    name: "Fuel, Oil & Lubricants",
+    code: "FUEL_OIL_LUBRICANTS",
+    description: "Diesel, gasoline, engine oil, and hydraulic fluid.",
+    examples: "Diesel, gasoline, engine oil, hydraulic fluid",
+    icon: "local_gas_station",
+    displayOrder: 6,
+  },
+  {
+    id: "c1000000-0000-0000-0000-000000000007",
+    name: "Tools & Hand Equipment",
+    code: "TOOLS_HAND_EQUIPMENT",
+    description: "Shovels, pruners, hoes, forks, and buckets.",
+    examples: "Shovels, pruners, hoes, forks, buckets",
+    icon: "handyman",
+    displayOrder: 7,
+  },
+  {
+    id: "c1000000-0000-0000-0000-000000000008",
+    name: "Machinery & Heavy Equipment Parts",
+    code: "MACHINERY_EQUIPMENT_PARTS",
+    description: "Tractor parts, belts, filters, tires, and harvester components.",
+    examples: "Tractor parts, belts, filters, tires, harvester components",
+    icon: "precision_manufacturing",
+    displayOrder: 8,
+  },
+  {
+    id: "c1000000-0000-0000-0000-000000000009",
+    name: "Irrigation & Plumbing",
+    code: "IRRIGATION_PLUMBING",
+    description: "Pipes, valves, sprinklers, drip tape, and fittings.",
+    examples: "Pipes, valves, sprinklers, drip tape, fittings",
+    icon: "water_drop",
+    displayOrder: 9,
+  },
+  {
+    id: "c1000000-0000-0000-0000-000000000010",
+    name: "Harvesting & Storage Supplies",
+    code: "HARVESTING_STORAGE_SUPPLIES",
+    description: "Crates, bins, bags, twine, and cold storage items.",
+    examples: "Crates, bins, bags, twine, cold storage items",
+    icon: "inventory_2",
+    displayOrder: 10,
+  },
+  {
+    id: "c1000000-0000-0000-0000-000000000011",
+    name: "Safety & Protective Gear",
+    code: "SAFETY_PROTECTIVE_GEAR",
+    description: "Gloves, respirators, eye protection, and first-aid.",
+    examples: "Gloves, respirators, eye protection, first-aid",
+    icon: "health_and_safety",
+    displayOrder: 11,
+  },
+  {
+    id: "c1000000-0000-0000-0000-000000000012",
+    name: "Building & Fencing Materials",
+    code: "BUILDING_FENCING",
+    description: "Posts, wire, netting, lumber, and fasteners.",
+    examples: "Posts, wire, netting, lumber, fasteners",
+    icon: "fence",
+    displayOrder: 12,
+  },
+  {
+    id: "c1000000-0000-0000-0000-000000000013",
+    name: "General & Cleaning Supplies",
+    code: "GENERAL_SUPPLIES",
+    description: "Disinfectants, sanitizers, cleaning and utility supplies.",
+    examples: "Disinfectants, sanitizers, utility supplies",
+    icon: "cleaning_services",
+    displayOrder: 13,
+  },
+];
+
 export interface InventoryItem {
   readonly id: string;
   readonly organizationId: string;
   readonly name: string;
   readonly sku?: string | null;
   readonly description?: string | null;
+  readonly categoryId?: string | null;
+  readonly categoryName?: string | null;
+  readonly categoryCode?: string | null;
+  readonly categoryIcon?: string | null;
   readonly category?: string | null;
   readonly stockUnitId: string;
   readonly stockUnitCode: string;
@@ -39,6 +173,7 @@ export type InventoryItemList = PagedResponse<InventoryItem>;
 export interface CreateInventoryItemRequest {
   readonly name: string;
   readonly stockUnitId: string;
+  readonly categoryId?: string | null;
   readonly sku?: string | null;
   readonly description?: string | null;
   readonly category?: string | null;
@@ -47,6 +182,7 @@ export interface CreateInventoryItemRequest {
 export interface UpdateInventoryItemRequest {
   readonly name: string;
   readonly stockUnitId: string;
+  readonly categoryId?: string | null;
   readonly sku?: string | null;
   readonly description?: string | null;
   readonly category?: string | null;

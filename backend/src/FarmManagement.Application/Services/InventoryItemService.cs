@@ -3,6 +3,7 @@ using FarmManagement.Application.Common.Exceptions;
 using FarmManagement.Application.Common.Models;
 using FarmManagement.Application.DTOs.Inventory;
 using FarmManagement.Application.Interfaces.Inventory;
+using FarmManagement.Domain.Constants;
 using FarmManagement.Domain.Entities;
 
 namespace FarmManagement.Application.Services;
@@ -17,7 +18,7 @@ public sealed class InventoryItemService(IInventoryItemStore store) : IInventory
         int page,
         int pageSize,
         string? search,
-        string? category,
+        Guid? categoryId,
         bool? isActive,
         CancellationToken cancellationToken = default)
     {
@@ -28,13 +29,13 @@ public sealed class InventoryItemService(IInventoryItemStore store) : IInventory
         }
 
         pageSize = NormalizePageSize(pageSize);
-        var totalCount = await store.CountAsync(actor.OrganizationId, search, category, isActive, cancellationToken);
+        var totalCount = await store.CountAsync(actor.OrganizationId, search, categoryId, isActive, cancellationToken);
         var items = await store.ListAsync(
             actor.OrganizationId,
             checked((page - 1) * pageSize),
             pageSize,
             search,
-            category,
+            categoryId,
             isActive,
             cancellationToken);
 
@@ -65,6 +66,16 @@ public sealed class InventoryItemService(IInventoryItemStore store) : IInventory
             throw Validation("stockUnitId", "The selected stock unit was not found or is inactive.");
         }
 
+        InventoryItemCategory? category = null;
+        if (request.CategoryId.HasValue && request.CategoryId.Value != Guid.Empty)
+        {
+            category = await store.FindCategoryAsync(request.CategoryId.Value, actor.OrganizationId, cancellationToken);
+            if (category is null)
+            {
+                throw Validation("categoryId", "The selected category was not found or is inactive.");
+            }
+        }
+
         if (!string.IsNullOrWhiteSpace(request.Sku))
         {
             var existingWithSku = await store.FindBySkuAsync(request.Sku, actor.OrganizationId, cancellationToken);
@@ -81,13 +92,13 @@ public sealed class InventoryItemService(IInventoryItemStore store) : IInventory
             actor.UserId,
             request.Sku,
             request.Description,
-            request.Category);
+            category?.Id);
 
         store.Add(item);
-        AddAudit(actor, item, "InventoryItem.Created", new { item.Name, item.Sku, item.Category, StockUnit = unit.Code }, ipAddress);
+        AddAudit(actor, item, "InventoryItem.Created", new { item.Name, item.Sku, Category = category?.Name, StockUnit = unit.Code }, ipAddress);
         await store.SaveChangesAsync(cancellationToken);
 
-        return ToResponse(item, unit);
+        return ToResponse(item, unit, category);
     }
 
     public async Task<InventoryItemResponse> UpdateAsync(
@@ -106,6 +117,16 @@ public sealed class InventoryItemService(IInventoryItemStore store) : IInventory
         if (unit is null)
         {
             throw Validation("stockUnitId", "The selected stock unit was not found or is inactive.");
+        }
+
+        InventoryItemCategory? category = null;
+        if (request.CategoryId.HasValue && request.CategoryId.Value != Guid.Empty)
+        {
+            category = await store.FindCategoryAsync(request.CategoryId.Value, actor.OrganizationId, cancellationToken);
+            if (category is null)
+            {
+                throw Validation("categoryId", "The selected category was not found or is inactive.");
+            }
         }
 
         // Enforce stock unit immutability once stock movements have been recorded to preserve transaction and balance integrity
@@ -127,20 +148,20 @@ public sealed class InventoryItemService(IInventoryItemStore store) : IInventory
             }
         }
 
-        var previous = new { item.Name, item.Sku, item.Category, item.StockUnitId };
+        var previous = new { item.Name, item.Sku, item.CategoryId, item.StockUnitId };
         item.Update(
             request.Name,
             request.StockUnitId,
             request.Sku,
             request.Description,
-            request.Category,
+            category?.Id,
             DateTimeOffset.UtcNow,
             actor.UserId);
 
-        AddAudit(actor, item, "InventoryItem.Updated", new { previous, current = new { item.Name, item.Sku, item.Category, item.StockUnitId } }, ipAddress);
+        AddAudit(actor, item, "InventoryItem.Updated", new { previous, current = new { item.Name, item.Sku, Category = category?.Name, item.StockUnitId } }, ipAddress);
         await store.SaveChangesAsync(cancellationToken);
 
-        return ToResponse(item, unit);
+        return ToResponse(item, unit, category);
     }
 
     public Task<bool> ActivateAsync(InventoryActor actor, Guid id, string? ipAddress, CancellationToken cancellationToken = default) =>
@@ -148,6 +169,45 @@ public sealed class InventoryItemService(IInventoryItemStore store) : IInventory
 
     public Task<bool> DeactivateAsync(InventoryActor actor, Guid id, string? ipAddress, CancellationToken cancellationToken = default) =>
         SetActiveAsync(actor, id, false, ipAddress, cancellationToken);
+
+    public async Task<IReadOnlyList<InventoryCategoryResponse>> GetCategoriesAsync(
+        InventoryActor actor,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        var categories = await store.ListCategoriesAsync(actor.OrganizationId, cancellationToken);
+
+        if (categories.Count > 0)
+        {
+            return categories
+                .Select(c => new InventoryCategoryResponse(
+                    c.Id,
+                    c.Name,
+                    c.Code,
+                    c.Description ?? string.Empty,
+                    c.Examples ?? string.Empty,
+                    c.Icon,
+                    c.DisplayOrder,
+                    c.IsSystem,
+                    c.IsActive))
+                .ToList();
+        }
+
+        // Fallback to in-memory definitions if table is not yet seeded (e.g. testing)
+        return FarmInventoryCategories.All
+            .OrderBy(c => c.DisplayOrder)
+            .Select(c => new InventoryCategoryResponse(
+                c.Id,
+                c.Name,
+                c.Code,
+                c.Description,
+                c.Examples,
+                c.Icon,
+                c.DisplayOrder,
+                true,
+                true))
+            .ToList();
+    }
 
     private async Task<bool> SetActiveAsync(
         InventoryActor actor,
@@ -200,16 +260,19 @@ public sealed class InventoryItemService(IInventoryItemStore store) : IInventory
             ipAddress: ipAddress));
 
     private static InventoryItemResponse ToResponse(InventoryItem item) =>
-        ToResponse(item, item.StockUnit);
+        ToResponse(item, item.StockUnit, item.Category);
 
-    private static InventoryItemResponse ToResponse(InventoryItem item, Unit? unit) =>
+    private static InventoryItemResponse ToResponse(InventoryItem item, Unit? unit, InventoryItemCategory? category) =>
         new(
             item.Id,
             item.OrganizationId,
             item.Name,
             item.Sku,
             item.Description,
-            item.Category,
+            item.CategoryId,
+            category?.Name,
+            category?.Code,
+            category?.Icon ?? "category",
             item.StockUnitId,
             unit?.Code ?? string.Empty,
             unit?.Name ?? string.Empty,

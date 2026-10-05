@@ -16,9 +16,25 @@
       <input matInput formControlName="sku" placeholder="e.g. FERT-UREA-01" />
     </mat-form-field>
 
-    <mat-form-field appearance="outline" class="full-width">
+    <mat-form-field appearance="outline" class="full-width category-select-field">
       <mat-label>Category</mat-label>
-      <input matInput formControlName="category" placeholder="e.g. Fertilizer, Pesticide, Seed, Fuel" />
+      <mat-select formControlName="categoryId">
+        <mat-option [value]="null">
+          <span class="category-clear-option">— None / Uncategorized —</span>
+        </mat-option>
+        @for (cat of categories(); track cat.id) {
+          <mat-option [value]="cat.id">
+            <div class="category-option-item">
+              <mat-icon class="category-option-icon">{{ cat.icon }}</mat-icon>
+              <div class="category-option-meta">
+                <span class="category-option-name">{{ cat.name }}</span>
+                <span class="category-option-examples">{{ cat.examples }}</span>
+              </div>
+            </div>
+          </mat-option>
+        }
+      </mat-select>
+      <mat-hint>Select standard farm inventory category</mat-hint>
     </mat-form-field>
 
     <mat-form-field appearance="outline" class="full-width">

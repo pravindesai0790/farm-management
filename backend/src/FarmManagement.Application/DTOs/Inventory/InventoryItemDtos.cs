@@ -3,16 +3,16 @@ namespace FarmManagement.Application.DTOs.Inventory;
 public sealed record CreateInventoryItemRequest(
     string Name,
     Guid StockUnitId,
+    Guid? CategoryId = null,
     string? Sku = null,
-    string? Description = null,
-    string? Category = null);
+    string? Description = null);
 
 public sealed record UpdateInventoryItemRequest(
     string Name,
     Guid StockUnitId,
+    Guid? CategoryId = null,
     string? Sku = null,
-    string? Description = null,
-    string? Category = null);
+    string? Description = null);
 
 public sealed record InventoryItemResponse(
     Guid Id,
@@ -20,7 +20,10 @@ public sealed record InventoryItemResponse(
     string Name,
     string? Sku,
     string? Description,
-    string? Category,
+    Guid? CategoryId,
+    string? CategoryName,
+    string? CategoryCode,
+    string? CategoryIcon,
     Guid StockUnitId,
     string StockUnitCode,
     string StockUnitName,
@@ -30,3 +33,14 @@ public sealed record InventoryItemResponse(
     Guid CreatedBy,
     DateTimeOffset? UpdatedAt = null,
     Guid? UpdatedBy = null);
+
+public sealed record InventoryCategoryResponse(
+    Guid Id,
+    string Name,
+    string Code,
+    string Description,
+    string Examples,
+    string Icon,
+    int DisplayOrder,
+    bool IsSystem = true,
+    bool IsActive = true);

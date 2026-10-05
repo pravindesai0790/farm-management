@@ -17,7 +17,7 @@ public sealed class InventoryItemsController(IInventoryItemService inventoryItem
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         [FromQuery] string? search = null,
-        [FromQuery] string? category = null,
+        [FromQuery] Guid? categoryId = null,
         [FromQuery] bool? isActive = null,
         CancellationToken cancellationToken = default)
     {
@@ -26,10 +26,18 @@ public sealed class InventoryItemsController(IInventoryItemService inventoryItem
             page,
             pageSize,
             search,
-            category,
+            categoryId,
             isActive,
             cancellationToken);
 
+        return Ok(result);
+    }
+
+    [HttpGet("categories")]
+    [Authorize(Policy = "Permission:InventoryItem.View")]
+    public async Task<IActionResult> GetCategories(CancellationToken cancellationToken)
+    {
+        var result = await inventoryItemService.GetCategoriesAsync(GetUserContext(), cancellationToken);
         return Ok(result);
     }
 

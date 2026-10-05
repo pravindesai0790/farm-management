@@ -71,6 +71,8 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
 
     public DbSet<LaborAttendance> LaborAttendances => Set<LaborAttendance>();
 
+    public DbSet<InventoryItemCategory> InventoryItemCategories => Set<InventoryItemCategory>();
+
     public DbSet<InventoryItem> InventoryItems => Set<InventoryItem>();
 
     public DbSet<StorageLocation> StorageLocations => Set<StorageLocation>();

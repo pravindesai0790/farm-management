@@ -10,7 +10,7 @@ public interface IInventoryItemService
         int page,
         int pageSize,
         string? search,
-        string? category,
+        Guid? categoryId,
         bool? isActive,
         CancellationToken cancellationToken = default);
 
@@ -42,5 +42,9 @@ public interface IInventoryItemService
         InventoryActor actor,
         Guid id,
         string? ipAddress,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<InventoryCategoryResponse>> GetCategoriesAsync(
+        InventoryActor actor,
         CancellationToken cancellationToken = default);
 }

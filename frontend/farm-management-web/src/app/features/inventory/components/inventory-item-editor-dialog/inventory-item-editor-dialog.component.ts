@@ -12,7 +12,7 @@ import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 
 import { FarmManagementService } from "../../../../core/farm-management/farm-management.service";
 import { Unit } from "../../../../core/farm-management/farm-management.models";
-import { InventoryItem } from "../../../../core/inventory/inventory.models";
+import { InventoryCategory, InventoryItem } from "../../../../core/inventory/inventory.models";
 import { InventoryService } from "../../../../core/inventory/inventory.service";
 import { getApiErrorMessage } from "../../../../core/models/api-error.model";
 
@@ -46,13 +46,14 @@ export class InventoryItemEditorDialogComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly units = signal<readonly Unit[]>([]);
+  readonly categories = signal<readonly InventoryCategory[]>([]);
   readonly isSubmitting = signal(false);
 
   readonly form = this.fb.group({
     name: [this.data?.item?.name || "", [Validators.required, Validators.maxLength(200)]],
     // SKU maximum length set to 50 to match database code_sku column constraint (character varying(50))
     sku: [this.data?.item?.sku || "", [Validators.maxLength(50)]],
-    category: [this.data?.item?.category || "", [Validators.maxLength(100)]],
+    categoryId: [this.data?.item?.categoryId || null],
     stockUnitId: [this.data?.item?.stockUnitId || "", [Validators.required]],
     description: [this.data?.item?.description || "", [Validators.maxLength(500)]],
   });
@@ -61,6 +62,19 @@ export class InventoryItemEditorDialogComponent implements OnInit {
     this.farmService.listUnits()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((u) => this.units.set(u));
+
+    this.inventoryService.getCategories()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((c) => {
+        this.categories.set(c);
+        // If editing an item that had no categoryId but has a categoryName or category text matching a category name, try to match it
+        if (this.data?.item && !this.data.item.categoryId && this.data.item.category) {
+          const match = c.find((x) => x.name.toLowerCase() === this.data?.item?.category?.toLowerCase());
+          if (match) {
+            this.form.patchValue({ categoryId: match.id });
+          }
+        }
+      });
   }
 
   submit(): void {
@@ -73,7 +87,7 @@ export class InventoryItemEditorDialogComponent implements OnInit {
       this.inventoryService.updateItem(this.data.item.id, {
         name: val.name!,
         sku: val.sku || null,
-        category: val.category || null,
+        categoryId: val.categoryId || null,
         stockUnitId: val.stockUnitId!,
         description: val.description || null,
       }).pipe(takeUntilDestroyed(this.destroyRef))
@@ -91,7 +105,7 @@ export class InventoryItemEditorDialogComponent implements OnInit {
       this.inventoryService.createItem({
         name: val.name!,
         sku: val.sku || null,
-        category: val.category || null,
+        categoryId: val.categoryId || null,
         stockUnitId: val.stockUnitId!,
         description: val.description || null,
       }).pipe(takeUntilDestroyed(this.destroyRef))

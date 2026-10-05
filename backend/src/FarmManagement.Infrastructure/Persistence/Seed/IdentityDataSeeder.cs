@@ -1,3 +1,4 @@
+using FarmManagement.Domain.Constants;
 using FarmManagement.Domain.Entities;
 using FarmManagement.Domain.Enums;
 using Microsoft.AspNetCore.Identity;
@@ -566,6 +567,7 @@ public sealed class IdentityDataSeeder(
         await SeedLaborActivityTypesAsync(cancellationToken);
         await SeedLaborCategoriesAsync(cancellationToken);
         await SeedExpenseCategoriesAsync(cancellationToken);
+        await SeedInventoryItemCategoriesAsync(cancellationToken);
         await SeedInitialSuperAdminAsync(organization, roles["SuperAdmin"], initialAdmin, cancellationToken);
 
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -852,6 +854,33 @@ public sealed class IdentityDataSeeder(
                     code: seedCategory.Code,
                     isSystemDefault: true,
                     description: seedCategory.Description));
+            }
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task SeedInventoryItemCategoriesAsync(CancellationToken cancellationToken)
+    {
+        foreach (var def in FarmInventoryCategories.All)
+        {
+            var exists = await dbContext.InventoryItemCategories.AnyAsync(
+                cat => cat.Id == def.Id || (cat.IsSystem && cat.OrganizationId == null && cat.Code == def.Code),
+                cancellationToken);
+
+            if (!exists)
+            {
+                dbContext.InventoryItemCategories.Add(new InventoryItemCategory(
+                    organizationId: null,
+                    name: def.Name,
+                    code: def.Code,
+                    description: def.Description,
+                    examples: def.Examples,
+                    icon: def.Icon,
+                    displayOrder: def.DisplayOrder,
+                    isSystem: true,
+                    createdBy: null,
+                    id: def.Id));
             }
         }
 

@@ -38,9 +38,14 @@ public sealed class InventoryItemConfiguration : IEntityTypeConfiguration<Invent
         builder.Property(item => item.Description)
             .HasColumnName("description");
 
-        builder.Property(item => item.Category)
-            .HasColumnName("category")
-            .HasMaxLength(100);
+        builder.Property(item => item.CategoryId)
+            .HasColumnName("category_id");
+
+        builder.HasOne(item => item.Category)
+            .WithMany()
+            .HasForeignKey(item => item.CategoryId)
+            .HasConstraintName("fk_inventory_items_category")
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.Property(item => item.StockUnitId)
             .HasColumnName("stock_unit_id")

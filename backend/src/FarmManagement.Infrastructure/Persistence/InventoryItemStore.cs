@@ -9,6 +9,7 @@ public sealed class InventoryItemStore(ApplicationDbContext dbContext) : IInvent
     public Task<InventoryItem?> FindAsync(Guid id, Guid organizationId, CancellationToken cancellationToken = default) =>
         dbContext.InventoryItems
             .Include(item => item.StockUnit)
+            .Include(item => item.Category)
             .SingleOrDefaultAsync(item => item.Id == id && item.OrganizationId == organizationId, cancellationToken);
 
     public Task<InventoryItem?> FindBySkuAsync(string sku, Guid organizationId, CancellationToken cancellationToken = default) =>
@@ -23,23 +24,37 @@ public sealed class InventoryItemStore(ApplicationDbContext dbContext) : IInvent
                     ((unit.IsSystem && unit.OrganizationId == null) || unit.OrganizationId == organizationId),
             cancellationToken);
 
+    public Task<InventoryItemCategory?> FindCategoryAsync(Guid categoryId, Guid organizationId, CancellationToken cancellationToken = default) =>
+        dbContext.InventoryItemCategories.SingleOrDefaultAsync(
+            cat => cat.Id == categoryId && cat.IsActive &&
+                   ((cat.IsSystem && cat.OrganizationId == null) || cat.OrganizationId == organizationId),
+            cancellationToken);
+
+    public async Task<IReadOnlyList<InventoryItemCategory>> ListCategoriesAsync(Guid organizationId, CancellationToken cancellationToken = default) =>
+        await dbContext.InventoryItemCategories
+            .AsNoTracking()
+            .Where(cat => cat.IsActive && ((cat.IsSystem && cat.OrganizationId == null) || cat.OrganizationId == organizationId))
+            .OrderBy(cat => cat.DisplayOrder)
+            .ThenBy(cat => cat.Name)
+            .ToListAsync(cancellationToken);
+
     public async Task<int> CountAsync(
         Guid organizationId,
         string? search,
-        string? category,
+        Guid? categoryId,
         bool? isActive,
         CancellationToken cancellationToken = default) =>
-        await BuildQuery(organizationId, search, category, isActive).CountAsync(cancellationToken);
+        await BuildQuery(organizationId, search, categoryId, isActive).CountAsync(cancellationToken);
 
     public async Task<IReadOnlyList<InventoryItem>> ListAsync(
         Guid organizationId,
         int skip,
         int take,
         string? search,
-        string? category,
+        Guid? categoryId,
         bool? isActive,
         CancellationToken cancellationToken = default) =>
-        await BuildQuery(organizationId, search, category, isActive)
+        await BuildQuery(organizationId, search, categoryId, isActive)
             .AsNoTracking()
             .OrderBy(item => item.Name)
             .ThenBy(item => item.Id)
@@ -80,11 +95,12 @@ public sealed class InventoryItemStore(ApplicationDbContext dbContext) : IInvent
     private IQueryable<InventoryItem> BuildQuery(
         Guid organizationId,
         string? search,
-        string? category,
+        Guid? categoryId,
         bool? isActive)
     {
         var query = dbContext.InventoryItems
             .Include(item => item.StockUnit)
+            .Include(item => item.Category)
             .Where(item => item.OrganizationId == organizationId);
 
         if (!string.IsNullOrWhiteSpace(search))
@@ -93,12 +109,12 @@ public sealed class InventoryItemStore(ApplicationDbContext dbContext) : IInvent
             query = query.Where(item =>
                 EF.Functions.ILike(item.Name, pattern) ||
                 (item.Sku != null && EF.Functions.ILike(item.Sku, pattern)) ||
-                (item.Category != null && EF.Functions.ILike(item.Category, pattern)));
+                (item.Category != null && EF.Functions.ILike(item.Category.Name, pattern)));
         }
 
-        if (!string.IsNullOrWhiteSpace(category))
+        if (categoryId.HasValue && categoryId.Value != Guid.Empty)
         {
-            query = query.Where(item => item.Category != null && item.Category.ToLower() == category.Trim().ToLower());
+            query = query.Where(item => item.CategoryId == categoryId.Value);
         }
 
         if (isActive.HasValue)

@@ -1,10 +1,12 @@
 import { HttpClient, HttpParams } from "@angular/common/http";
 import { Injectable, inject } from "@angular/core";
-import { Observable } from "rxjs";
+import { Observable, catchError, of, shareReplay } from "rxjs";
 import { environment } from "../../../environments/environment";
 import {
   CreateInventoryItemRequest,
   CreateStorageLocationRequest,
+  FARM_INVENTORY_CATEGORIES,
+  InventoryCategory,
   InventoryItem,
   InventoryItemList,
   RecordOpeningStockRequest,
@@ -28,12 +30,26 @@ export class InventoryService {
   private readonly http = inject(HttpClient);
   private readonly api = `${environment.apiUrl}/inventory`;
 
+  private categoriesCache$?: Observable<readonly InventoryCategory[]>;
+
+  getCategories(): Observable<readonly InventoryCategory[]> {
+    if (!this.categoriesCache$) {
+      this.categoriesCache$ = this.http
+        .get<readonly InventoryCategory[]>(`${this.api}/items/categories`)
+        .pipe(
+          catchError(() => of(FARM_INVENTORY_CATEGORIES)),
+          shareReplay(1)
+        );
+    }
+    return this.categoriesCache$;
+  }
+
   // Items
   listItems(
     page: number = 1,
     pageSize: number = 20,
     search?: string | null,
-    category?: string | null,
+    categoryId?: string | null,
     isActive?: boolean | null,
   ): Observable<InventoryItemList> {
     let params = new HttpParams()
@@ -41,7 +57,7 @@ export class InventoryService {
       .set("pageSize", pageSize.toString());
 
     if (search) params = params.set("search", search.trim());
-    if (category) params = params.set("category", category.trim());
+    if (categoryId) params = params.set("categoryId", categoryId.trim());
     if (isActive !== null && isActive !== undefined) {
       params = params.set("isActive", isActive.toString());
     }

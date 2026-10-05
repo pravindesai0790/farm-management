@@ -342,9 +342,14 @@ export class CropCycleInputsTabComponent implements OnChanges {
   getCategoryBadgeClass(category?: string | null): string {
     if (!category) return "cat-general";
     const cat = category.toLowerCase();
-    if (cat.includes("fertilizer") || cat.includes("nutrient") || cat.includes("npx")) return "cat-fertilizer";
-    if (cat.includes("seed") || cat.includes("seedling") || cat.includes("plant")) return "cat-seed";
+    if (cat.includes("seed") || cat.includes("plant")) return "cat-seed";
+    if (cat.includes("fertilizer") || cat.includes("soil") || cat.includes("npk") || cat.includes("nutrient")) return "cat-fertilizer";
     if (cat.includes("chemical") || cat.includes("pesticide") || cat.includes("herbicide") || cat.includes("spray")) return "cat-chemical";
+    if (cat.includes("irrigation") || cat.includes("plumb")) return "cat-irrigation";
+    if (cat.includes("harvest") || cat.includes("storage")) return "cat-harvest";
+    if (cat.includes("safety") || cat.includes("protect")) return "cat-safety";
+    if (cat.includes("tool") || cat.includes("equipment")) return "cat-tools";
+    if (cat.includes("fuel") || cat.includes("oil")) return "cat-fuel";
     return "cat-general";
   }
 }

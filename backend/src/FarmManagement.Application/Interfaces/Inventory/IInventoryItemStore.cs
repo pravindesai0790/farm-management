@@ -7,8 +7,10 @@ public interface IInventoryItemStore
     Task<InventoryItem?> FindAsync(Guid id, Guid organizationId, CancellationToken cancellationToken = default);
     Task<InventoryItem?> FindBySkuAsync(string sku, Guid organizationId, CancellationToken cancellationToken = default);
     Task<Unit?> FindUnitAsync(Guid unitId, Guid organizationId, CancellationToken cancellationToken = default);
-    Task<int> CountAsync(Guid organizationId, string? search, string? category, bool? isActive, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<InventoryItem>> ListAsync(Guid organizationId, int skip, int take, string? search, string? category, bool? isActive, CancellationToken cancellationToken = default);
+    Task<InventoryItemCategory?> FindCategoryAsync(Guid categoryId, Guid organizationId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<InventoryItemCategory>> ListCategoriesAsync(Guid organizationId, CancellationToken cancellationToken = default);
+    Task<int> CountAsync(Guid organizationId, string? search, Guid? categoryId, bool? isActive, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<InventoryItem>> ListAsync(Guid organizationId, int skip, int take, string? search, Guid? categoryId, bool? isActive, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Calculates the sum of all positive on-hand stock quantities for an inventory item across all storage locations in an organization.

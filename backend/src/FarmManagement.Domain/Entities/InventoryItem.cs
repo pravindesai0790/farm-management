@@ -14,7 +14,7 @@ public sealed class InventoryItem
         Guid createdBy,
         string? sku = null,
         string? description = null,
-        string? category = null)
+        Guid? categoryId = null)
     {
         if (organizationId == Guid.Empty)
         {
@@ -42,7 +42,7 @@ public sealed class InventoryItem
         StockUnitId = stockUnitId;
         Sku = NormalizeOptional(sku);
         Description = NormalizeOptional(description);
-        Category = NormalizeOptional(category);
+        CategoryId = categoryId;
         IsActive = true;
         CreatedAt = DateTimeOffset.UtcNow;
         CreatedBy = createdBy;
@@ -53,7 +53,7 @@ public sealed class InventoryItem
     public string Name { get; private set; }
     public string? Sku { get; private set; }
     public string? Description { get; private set; }
-    public string? Category { get; private set; }
+    public Guid? CategoryId { get; private set; }
     public Guid StockUnitId { get; private set; }
     public bool IsActive { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
@@ -63,13 +63,14 @@ public sealed class InventoryItem
 
     public Organization? Organization { get; private set; }
     public Unit? StockUnit { get; private set; }
+    public InventoryItemCategory? Category { get; private set; }
 
     public void Update(
         string name,
         Guid stockUnitId,
         string? sku,
         string? description,
-        string? category,
+        Guid? categoryId,
         DateTimeOffset now,
         Guid updatedBy)
     {
@@ -92,7 +93,7 @@ public sealed class InventoryItem
         StockUnitId = stockUnitId;
         Sku = NormalizeOptional(sku);
         Description = NormalizeOptional(description);
-        Category = NormalizeOptional(category);
+        CategoryId = categoryId;
         UpdatedAt = now;
         UpdatedBy = updatedBy;
     }

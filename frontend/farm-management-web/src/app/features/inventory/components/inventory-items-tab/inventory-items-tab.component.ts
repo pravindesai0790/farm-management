@@ -20,7 +20,7 @@ import { debounceTime, distinctUntilChanged, finalize, merge } from "rxjs";
 import { PermissionService } from "../../../../core/auth/permission.service";
 import { FarmManagementService } from "../../../../core/farm-management/farm-management.service";
 import { Unit } from "../../../../core/farm-management/farm-management.models";
-import { InventoryItem } from "../../../../core/inventory/inventory.models";
+import { InventoryCategory, InventoryItem } from "../../../../core/inventory/inventory.models";
 import { InventoryService } from "../../../../core/inventory/inventory.service";
 import { getApiErrorMessage } from "../../../../core/models/api-error.model";
 import { InventoryItemEditorDialogComponent } from "../inventory-item-editor-dialog/inventory-item-editor-dialog.component";
@@ -61,6 +61,7 @@ export class InventoryItemsTabComponent implements OnInit {
   readonly columns = ["name", "sku", "category", "unit", "status", "actions"];
   readonly items = signal<readonly InventoryItem[]>([]);
   readonly units = signal<readonly Unit[]>([]);
+  readonly categories = signal<readonly InventoryCategory[]>([]);
   readonly totalCount = signal(0);
   readonly pageIndex = signal(0);
   readonly pageSize = signal(20);
@@ -68,14 +69,17 @@ export class InventoryItemsTabComponent implements OnInit {
 
   readonly filterForm = this.fb.nonNullable.group({
     search: [""],
+    category: ["all"],
     status: ["all"],
   });
 
   ngOnInit(): void {
     this.loadUnits();
+    this.loadCategories();
 
     merge(
       this.filterForm.controls.search.valueChanges.pipe(debounceTime(300), distinctUntilChanged()),
+      this.filterForm.controls.category.valueChanges,
       this.filterForm.controls.status.valueChanges,
     )
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -93,8 +97,15 @@ export class InventoryItemsTabComponent implements OnInit {
       .subscribe((u) => this.units.set(u));
   }
 
+  private loadCategories(): void {
+    this.inventoryService.getCategories()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((c) => this.categories.set(c));
+  }
+
   load(): void {
     const status = this.filterForm.controls.status.value;
+    const category = this.filterForm.controls.category.value;
     this.isLoading.set(true);
 
     this.inventoryService
@@ -102,7 +113,7 @@ export class InventoryItemsTabComponent implements OnInit {
         this.pageIndex() + 1,
         this.pageSize(),
         this.filterForm.controls.search.value,
-        null,
+        category === "all" ? null : category,
         status === "all" ? null : status === "active",
       )
       .pipe(
@@ -160,5 +171,31 @@ export class InventoryItemsTabComponent implements OnInit {
         },
         error: (e) => this.snack.open(getApiErrorMessage(e, "Operation failed."), "Dismiss"),
       });
+  }
+
+  getCategoryIcon(categoryName?: string | null): string {
+    if (!categoryName) return "category";
+    const found = this.categories().find(
+      (c) => c.name.toLowerCase() === categoryName.trim().toLowerCase()
+    );
+    return found?.icon || "category";
+  }
+
+  getCategoryBadgeClass(categoryName?: string | null): string {
+    if (!categoryName) return "cat-general";
+    const cat = categoryName.toLowerCase();
+    if (cat.includes("seed") || cat.includes("plant")) return "cat-seed";
+    if (cat.includes("fertilizer") || cat.includes("soil") || cat.includes("npk")) return "cat-fertilizer";
+    if (cat.includes("chemical") || cat.includes("pest") || cat.includes("spray")) return "cat-chemical";
+    if (cat.includes("feed") || cat.includes("nutrition")) return "cat-feed";
+    if (cat.includes("vet") || cat.includes("health")) return "cat-vet";
+    if (cat.includes("fuel") || cat.includes("oil") || cat.includes("lubricant")) return "cat-fuel";
+    if (cat.includes("tool") || cat.includes("equipment")) return "cat-tools";
+    if (cat.includes("machin") || cat.includes("part")) return "cat-machinery";
+    if (cat.includes("irrigation") || cat.includes("plumb")) return "cat-irrigation";
+    if (cat.includes("harvest") || cat.includes("storage")) return "cat-harvest";
+    if (cat.includes("safety") || cat.includes("protect")) return "cat-safety";
+    if (cat.includes("build") || cat.includes("fence")) return "cat-building";
+    return "cat-general";
   }
 }

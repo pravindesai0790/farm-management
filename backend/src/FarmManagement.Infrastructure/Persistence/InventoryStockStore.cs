@@ -208,6 +208,8 @@ public sealed class InventoryStockStore(ApplicationDbContext dbContext) : IInven
             .Include(b => b.StorageLocation)
             .Include(b => b.InventoryItem)
                 .ThenInclude(i => i!.StockUnit)
+            .Include(b => b.InventoryItem)
+                .ThenInclude(i => i!.Category)
             .Where(b => b.OrganizationId == organizationId);
 
         if (farmId.HasValue) query = query.Where(b => b.FarmId == farmId.Value);
@@ -231,6 +233,9 @@ public sealed class InventoryStockStore(ApplicationDbContext dbContext) : IInven
             .Include(m => m.Farm)
             .Include(m => m.StorageLocation)
             .Include(m => m.InventoryItem)
+                .ThenInclude(i => i!.Category)
+            .Include(m => m.InventoryItem)
+                .ThenInclude(i => i!.StockUnit)
             .Include(m => m.StockUnit)
             .Include(m => m.CropCycle)
             .Include(m => m.CropCycleStage)

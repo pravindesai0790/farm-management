@@ -52,6 +52,111 @@
   width: 160px;
 }
 
+.category-filter-field {
+  width: 220px;
+}
+
+.category-select-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  .category-select-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: var(--app-primary, #2e7d32);
+  }
+}
+
+.category-chip-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 16px;
+  line-height: 1.2;
+
+  .category-chip-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.text-muted {
+  color: var(--app-muted, #94a3b8);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.cat-seed {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.cat-fertilizer {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.cat-chemical {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.cat-feed {
+  background: #fef9c3;
+  color: #a16207;
+}
+
+.cat-vet {
+  background: #fce7f3;
+  color: #be185d;
+}
+
+.cat-fuel {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.cat-tools {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.cat-machinery {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.cat-irrigation {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+.cat-harvest {
+  background: #fae8ff;
+  color: #86198f;
+}
+
+.cat-safety {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.cat-building {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.cat-general {
+  background: #f1f5f9;
+  color: #475569;
+}
+
 .table-container {
   background: #fff;
   border-radius: 8px;
