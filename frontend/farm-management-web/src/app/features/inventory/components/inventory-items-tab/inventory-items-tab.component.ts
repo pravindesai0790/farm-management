@@ -97,6 +97,12 @@ export class InventoryItemsTabComponent implements OnInit {
       .subscribe((u) => this.units.set(u));
   }
 
+  getSelectedFilterCategory(): InventoryCategory | undefined {
+    const id = this.filterForm.controls.category.value;
+    if (!id || id === "all") return undefined;
+    return this.categories().find((c) => c.id === id);
+  }
+
   private loadCategories(): void {
     this.inventoryService.getCategories()
       .pipe(takeUntilDestroyed(this.destroyRef))

@@ -24,6 +24,17 @@
       <mat-form-field appearance="outline" class="filter-field category-filter-field">
         <mat-label>Category</mat-label>
         <mat-select formControlName="category">
+          <mat-select-trigger>
+            @if (getSelectedFilterCategory(); as selected) {
+              <div class="category-select-option">
+                <mat-icon class="category-select-icon">{{ selected.icon }}</mat-icon>
+                <span>{{ selected.name }}</span>
+              </div>
+            } @else {
+              <span>All categories</span>
+            }
+          </mat-select-trigger>
+
           <mat-option value="all">All categories</mat-option>
           @for (cat of categories(); track cat.id) {
             <mat-option [value]="cat.id">

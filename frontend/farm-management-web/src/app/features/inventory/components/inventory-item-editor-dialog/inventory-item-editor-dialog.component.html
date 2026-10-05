@@ -19,6 +19,15 @@
     <mat-form-field appearance="outline" class="full-width category-select-field">
       <mat-label>Category</mat-label>
       <mat-select formControlName="categoryId">
+        <mat-select-trigger>
+          @if (getSelectedCategory(); as selected) {
+            <div class="category-trigger-value">
+              <mat-icon class="category-trigger-icon">{{ selected.icon }}</mat-icon>
+              <span class="category-trigger-name">{{ selected.name }}</span>
+            </div>
+          }
+        </mat-select-trigger>
+
         <mat-option [value]="null">
           <span class="category-clear-option">— None / Uncategorized —</span>
         </mat-option>

@@ -54,6 +54,26 @@
   }
 }
 
+.category-trigger-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  vertical-align: middle;
+
+  .category-trigger-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: var(--app-primary, #2e7d32);
+    vertical-align: middle;
+  }
+
+  .category-trigger-name {
+    font-weight: 500;
+    color: var(--app-text, #1e293b);
+  }
+}
+
 .category-clear-option {
   color: var(--app-muted, #64748b);
   font-style: italic;

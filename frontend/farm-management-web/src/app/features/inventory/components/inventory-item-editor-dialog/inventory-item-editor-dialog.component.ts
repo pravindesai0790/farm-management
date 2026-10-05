@@ -58,6 +58,12 @@ export class InventoryItemEditorDialogComponent implements OnInit {
     description: [this.data?.item?.description || "", [Validators.maxLength(500)]],
   });
 
+  getSelectedCategory(): InventoryCategory | undefined {
+    const id = this.form.controls.categoryId.value;
+    if (!id) return undefined;
+    return this.categories().find((c) => c.id === id);
+  }
+
   ngOnInit(): void {
     this.farmService.listUnits()
       .pipe(takeUntilDestroyed(this.destroyRef))
