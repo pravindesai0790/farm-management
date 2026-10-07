@@ -253,13 +253,14 @@ All status values across the application must use the unified `.status-pill` str
 </span>
 ```
 
-### 7.2 Available Status Modifiers
-- `status-pill--active` (Active, In Progress, On Duty)
-- `status-pill--planned` (Planned, Scheduled, Draft)
-- `status-pill--completed` (Completed, Reconciled, Settled)
-- `status-pill--harvested` (Harvested, In Review)
-- `status-pill--terminated` / `status-pill--inactive` (Terminated, Inactive, Fallow)
-- `status-pill--cancelled` (Cancelled, Rejected, Voided)
+### 7.2 Available Status Modifiers & Semantic Colors
+- `status-pill--in-progress` / `.status-in-progress`: **Oceanic Blue** (`#eff6ff` bg, `#0369a1` text, `#bae6fd` border, `#0284c7` dot) — Active execution, In Progress, In flight. *Must be clearly differentiated from Completed.*
+- `status-pill--completed` / `.status-completed`: **Forest Emerald Green** (`#ecfdf5` bg, `#15803d` text, `#a7f3d0` border, `#16a34a` dot) — Finished, Completed, Reconciled, Settled.
+- `status-pill--active` / `.status-active`: **Brand Green** (`#eaf5ee` bg, `#1b7340` text, `#c4e5ce` border) — Permanent active master entities (Active Farm, Active Plantation, Active Worker).
+- `status-pill--planned` / `.status-planned` / `.status-not-started`: **Warm Amber** (`#fff8e6` bg, `#996200` text, `#fae4a7` border) — Planned, Scheduled, Draft, Not Started.
+- `status-pill--harvested` / `.status-harvested`: **Purple** (`#fdf2f8` bg, `#9d174d` text, `#fbcfe8` border) — Harvested, In Review.
+- `status-pill--terminated` / `status-pill--cancelled`: **Rose / Red** (`#fef0f0` bg, `#b91c1c` text, `#fbcaca` border) — Cancelled, Terminated, Voided.
+- `status-pill--archived` / `status-pill-inactive`: **Neutral Muted Gray** (`#f1f4f2` bg, `#64756a` text, `#d6e0d9` border) — Inactive, Archived, Fallow.
 
 ---
 

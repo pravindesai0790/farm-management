@@ -13,7 +13,7 @@
   }
 </div>
 
-<mat-card>
+<mat-card class="content-card">
   <mat-card-content>
     <form class="filters" [formGroup]="filterForm">
       <mat-form-field appearance="outline" subscriptSizing="dynamic" class="search-field">
@@ -102,12 +102,12 @@
           </ng-container>
 
           <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef class="actions-header">Actions</th>
-            <td mat-cell *matCellDef="let farm" class="actions-cell">
+            <th mat-header-cell *matHeaderCellDef class="actions-header text-right">Actions</th>
+            <td mat-cell *matCellDef="let farm" class="actions-cell text-right">
               <div class="actions-group">
                 <a
-                  mat-stroked-button
-                  class="btn-row-action"
+                  mat-button
+                  class="action-btn"
                   [routerLink]="['/farms', farm.id]"
                 >
                   View
@@ -115,7 +115,7 @@
                 @if (permissionService.has("Farm.Update")) {
                   <a
                     mat-icon-button
-                    class="btn-icon-action"
+                    class="action-icon-btn"
                     [routerLink]="['/farms', farm.id, 'edit']"
                     matTooltip="Edit farm"
                     aria-label="Edit farm"
@@ -126,7 +126,7 @@
                 @if (farm.isActive && permissionService.has("Farm.Deactivate")) {
                   <button
                     mat-icon-button
-                    class="btn-icon-action"
+                    class="action-icon-btn"
                     (click)="changeStatus(farm, false)"
                     [disabled]="actionInProgress()"
                     matTooltip="Deactivate farm"
@@ -139,7 +139,7 @@
                 ) {
                   <button
                     mat-icon-button
-                    class="btn-icon-action"
+                    class="action-icon-btn"
                     (click)="changeStatus(farm, true)"
                     [disabled]="actionInProgress()"
                     matTooltip="Activate farm"

@@ -180,13 +180,13 @@
               </div>
               <span
                 class="status-pill"
-                [class.status-pill--active]="cycle.status === 'IN_PROGRESS'"
+                [class.status-pill--in-progress]="cycle.status === 'IN_PROGRESS' || cycle.status === 'ACTIVE'"
                 [class.status-pill--planned]="cycle.status === 'PLANNED'"
                 [class.status-pill--completed]="cycle.status === 'COMPLETED'"
                 [class.status-pill--terminated]="cycle.status === 'CANCELLED'"
               >
                 <span class="status-pill__dot"></span>
-                {{ cycle.status }}
+                {{ cycle.status === 'IN_PROGRESS' || cycle.status === 'ACTIVE' ? 'In Progress' : (cycle.status === 'COMPLETED' ? 'Completed' : (cycle.status === 'PLANNED' ? 'Planned' : (cycle.status === 'CANCELLED' ? 'Cancelled' : cycle.status))) }}
               </span>
             </div>
           }

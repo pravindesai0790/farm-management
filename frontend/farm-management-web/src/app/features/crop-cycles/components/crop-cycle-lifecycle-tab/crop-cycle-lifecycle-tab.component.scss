@@ -186,6 +186,10 @@
   letter-spacing: 0.02em;
   white-space: nowrap;
 
+  &::before {
+    display: none !important;
+  }
+
   .status-dot {
     width: 6px;
     height: 6px;
@@ -201,17 +205,17 @@
   }
 
   &.status-in-progress {
-    background: #ecfdf5;
-    color: #047857;
-    border: 1px solid #a7f3d0;
-    .status-dot { background-color: #10b981; }
+    background: #eff6ff;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+    .status-dot { background-color: #0284c7; }
   }
 
   &.status-completed {
-    background: #f0fdf4;
+    background: #ecfdf5;
     color: #15803d;
-    border: 1px solid #bbf7d0;
-    .status-dot { background-color: #22c55e; }
+    border: 1px solid #a7f3d0;
+    .status-dot { background-color: #16a34a; }
   }
 
   &.status-skipped {

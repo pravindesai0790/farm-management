@@ -16,14 +16,14 @@
         <span class="season-badge">Season {{ c.seasonYear }}</span>
         <span
           class="status-pill"
-          [class.status-pill--active]="c.status === 'ACTIVE' || c.status === 'IN_PROGRESS'"
+          [class.status-pill--in-progress]="c.status === 'ACTIVE' || c.status === 'IN_PROGRESS'"
           [class.status-pill--planned]="c.status === 'PLANNED'"
           [class.status-pill--harvested]="c.status === 'HARVESTED'"
           [class.status-pill--completed]="c.status === 'COMPLETED'"
           [class.status-pill--terminated]="c.status === 'CANCELLED'"
         >
           <span class="status-pill__dot"></span>
-          {{ c.status === 'ACTIVE' ? 'In Progress' : c.status }}
+          {{ c.status === 'ACTIVE' || c.status === 'IN_PROGRESS' ? 'In Progress' : (c.status === 'COMPLETED' ? 'Completed' : (c.status === 'PLANNED' ? 'Planned' : (c.status === 'HARVESTED' ? 'Harvested' : (c.status === 'CANCELLED' ? 'Cancelled' : c.status)))) }}
         </span>
       </div>
       <h2>{{ c.cycleName }}</h2>

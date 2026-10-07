@@ -67,6 +67,15 @@
   font-weight: 500;
 }
 
+.content-card {
+  padding: 0;
+  overflow: hidden;
+
+  mat-card-content {
+    padding: 14px 18px;
+  }
+}
+
 .actions-header {
   text-align: right;
   padding-right: 14px !important;
@@ -82,39 +91,37 @@
     align-items: center;
     justify-content: flex-end;
     gap: 4px;
-  }
 
-  .btn-row-action {
-    height: 28px;
-    line-height: 28px;
-    padding: 0 10px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    border-radius: 6px;
-    border-color: #d2ddd4;
-    color: var(--app-primary);
+    .action-btn {
+      height: 30px;
+      line-height: 30px;
+      padding: 0 10px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--app-primary, #2d6e4b);
 
-    &:hover {
-      background: var(--app-primary-light);
-    }
-  }
-
-  .btn-icon-action {
-    width: 28px;
-    height: 28px;
-    line-height: 28px;
-    color: var(--app-muted);
-    border-radius: 6px;
-
-    mat-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
+      &:hover {
+        background: var(--app-primary-light, #eaf5ee);
+      }
     }
 
-    &:hover {
-      color: var(--app-ink);
-      background: rgba(0, 0, 0, 0.04);
+    .action-icon-btn {
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      color: var(--app-muted);
+      border-radius: 6px;
+
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+      }
+
+      &:hover {
+        color: var(--app-ink);
+        background: rgba(0, 0, 0, 0.04);
+      }
     }
   }
 }

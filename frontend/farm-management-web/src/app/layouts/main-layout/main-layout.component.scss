@@ -263,7 +263,10 @@
   mat-icon { font-size: 18px; }
 }
 
-.content-container { min-width: 0; }
+.content-container {
+  min-width: 0;
+  overflow-x: hidden;
+}
 
 .topbar {
   height: 54px;
@@ -518,7 +521,7 @@
 .page-shell {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 20px 28px 36px;
+  padding: 14px 24px 20px;
 }
 
 .breadcrumbs-bar {

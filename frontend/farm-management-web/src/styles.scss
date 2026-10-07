@@ -46,6 +46,7 @@ html,
 body {
   height: 100%;
   margin: 0;
+  overflow-x: hidden;
 }
 
 body {
@@ -108,7 +109,7 @@ a {
   justify-content: space-between;
   align-items: center;
   gap: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 
   .header-content {
     display: flex;
@@ -332,64 +333,150 @@ a {
     flex-shrink: 0;
   }
 
+  // Prevent double dot when HTML already includes an explicit dot element
+  &:has(.status-dot),
+  &:has(.status-pill__dot) {
+    &::before {
+      display: none !important;
+    }
+  }
+
+  .status-dot,
+  .status-pill__dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: currentColor;
+    flex-shrink: 0;
+  }
+
+  /* 1. In Progress / Active Execution (Vibrant Oceanic Blue) */
+  &.status-in-progress,
+  &.in-progress,
+  &.status-pill--in-progress {
+    background: #eff6ff !important;
+    color: #0369a1 !important;
+    border-color: #bae6fd !important;
+
+    &::before,
+    .status-dot,
+    .status-pill__dot {
+      background-color: #0284c7 !important;
+    }
+  }
+
+  /* 2. Completed / Success (Forest Emerald Green) */
+  &.status-completed,
+  &.completed,
+  &.status-pill--completed {
+    background: #ecfdf5 !important;
+    color: #15803d !important;
+    border-color: #a7f3d0 !important;
+
+    &::before,
+    .status-dot,
+    .status-pill__dot {
+      background-color: #16a34a !important;
+    }
+  }
+
+  /* 3. General Active Entity (e.g. Active Plantation / Active Master Data) */
   &.status-active,
   &.active,
-  &:not(.status-pill-inactive):not(.status-inactive):not(.status-terminated):not(.status-planned):not(.status-cancelled) {
+  &.status-pill--active {
     background: #eaf5ee;
     color: #1b7340;
     border-color: #c4e5ce;
+
+    &::before,
+    .status-dot,
+    .status-pill__dot {
+      background-color: #1b7340;
+    }
   }
 
-  &.status-pill-inactive,
-  &.status-inactive,
-  &.inactive {
-    background: #f1f4f2;
-    color: #64756a;
-    border-color: #d6e0d9;
-  }
-
+  /* 4. Planned / Not Started (Warm Amber) */
   &.status-planned,
-  &.planned {
+  &.planned,
+  &.status-pill--planned,
+  &.status-not-started,
+  &.not-started {
     background: #fff8e6;
     color: #996200;
     border-color: #fae4a7;
+
+    &::before,
+    .status-dot,
+    .status-pill__dot {
+      background-color: #ca8a04;
+    }
   }
 
-  &.status-in-progress,
-  &.in-progress {
-    background: #edf7ff;
-    color: #0b6bc7;
-    border-color: #c0e0fd;
+  /* 5. Inactive / Archived */
+  &.status-pill-inactive,
+  &.status-inactive,
+  &.inactive,
+  &.status-archived,
+  &.archived,
+  &.status-pill--archived {
+    background: #f1f4f2;
+    color: #64756a;
+    border-color: #d6e0d9;
+
+    &::before,
+    .status-dot,
+    .status-pill__dot {
+      background-color: #8c9b91;
+    }
   }
 
-  &.status-completed,
-  &.completed {
-    background: #eaf5ee;
-    color: #1b7340;
-    border-color: #c4e5ce;
+  /* 6. Skipped Stage (Amber) */
+  &.status-skipped,
+  &.skipped,
+  &.status-pill--skipped {
+    background: #fffbeb;
+    color: #b45309;
+    border-color: #fde68a;
+
+    &::before,
+    .status-dot,
+    .status-pill__dot {
+      background-color: #f59e0b;
+    }
   }
 
+  /* 7. Harvested Stage (Purple) */
   &.status-harvested,
-  &.harvested {
+  &.harvested,
+  &.status-pill--harvested {
     background: #fdf2f8;
     color: #9d174d;
     border-color: #fbcfe8;
+
+    &::before,
+    .status-dot,
+    .status-pill__dot {
+      background-color: #db2777;
+    }
   }
 
+  /* 8. Cancelled / Terminated (Red) */
   &.status-terminated,
   &.terminated,
+  &.status-pill--terminated,
   &.status-cancelled,
-  &.cancelled {
+  &.cancelled,
+  &.status-pill--cancelled {
     background: #fef0f0;
     color: #b91c1c;
     border-color: #fbcaca;
-  }
 
-  &.status-archived,
-  &.archived {
-    background: #f0f2f1;
-    color: #6b7a70;
-    border-color: #d4dad6;
+    &::before,
+    .status-dot,
+    .status-pill__dot {
+      background-color: #ef4444;
+    }
   }
 }
 
