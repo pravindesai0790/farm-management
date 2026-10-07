@@ -83,9 +83,7 @@ export class MainLayoutComponent {
   readonly breadcrumbs = this.breadcrumbService.breadcrumbs;
 
   readonly currentUrl = signal<string>(this.router.url);
-  readonly expandedMenus = signal<ReadonlySet<string>>(
-    new Set<string>(["farms", "plantations", "activities", "labor", "inventory", "expenses"]),
-  );
+  readonly expandedMenus = signal<ReadonlySet<string>>(new Set<string>());
 
   readonly organizationName = computed(
     () => this.currentUser()?.organizationName || "Farm Management",
