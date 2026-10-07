@@ -1,21 +1,23 @@
 <div class="section-heading">
   <div>
-    <p class="eyebrow">Land structure</p>
-    <h2>Farm areas</h2>
-    <p>Review top-level areas and their sub-areas across your farms.</p>
+    <p class="eyebrow">Land Parcelation</p>
+    <h2>Farm Areas</h2>
+    <p class="subtitle">Manage zones, blocks, and plots across your agricultural properties.</p>
   </div>
   @if (permissionService.has("FarmArea.Create")) {
-    <a mat-flat-button color="primary" routerLink="/farm-areas/new">Add area</a>
+    <a mat-flat-button color="primary" routerLink="/farm-areas/new">
+      <mat-icon>add</mat-icon> Add Area
+    </a>
   }
 </div>
 
-<mat-card>
+<mat-card class="content-card">
   <mat-card-content>
     <div class="filters-row">
-      <mat-form-field appearance="outline">
-        <mat-label>Farm</mat-label>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="farm-filter">
+        <mat-label>Filter by Farm</mat-label>
         <mat-select [value]="selectedFarmId()" (valueChange)="onFarmChange($event)">
-          <mat-option value="">All farms</mat-option>
+          <mat-option value="">All Farms</mat-option>
           @for (farm of farms(); track farm.id) {
             <mat-option [value]="farm.id">{{ farm.name }}</mat-option>
           }
@@ -23,72 +25,93 @@
       </mat-form-field>
 
       @if (hasActiveFilters()) {
-        <button mat-stroked-button class="clear-btn" (click)="clearFilter()">
-          <mat-icon>clear</mat-icon>Clear filter
+        <button mat-stroked-button class="clear-filter-btn" (click)="clearFilter()">
+          <mat-icon>clear</mat-icon> Clear Filter
         </button>
       }
     </div>
 
     @if (isLoading()) {
       <div class="loading-state">
-        <mat-spinner diameter="36" />
+        <mat-spinner diameter="32" />
+        <p>Loading farm areas...</p>
       </div>
     } @else if (areas().length === 0) {
       <div class="empty-state">
         <mat-icon>map</mat-icon>
         <h3>No farm areas found</h3>
+        <p>There are no parcels or plots configured for the selected criteria.</p>
+        @if (permissionService.has("FarmArea.Create")) {
+          <a mat-stroked-button color="primary" routerLink="/farm-areas/new">
+            <mat-icon>add</mat-icon> Create First Area
+          </a>
+        }
       </div>
     } @else {
       <div class="table-wrap">
-        <table mat-table [dataSource]="areas()">
+        <table mat-table [dataSource]="areas()" class="dense-table">
           <ng-container matColumnDef="farm">
             <th mat-header-cell *matHeaderCellDef>Farm</th>
             <td mat-cell *matCellDef="let area">
-              <strong>{{ area.farmName || farmNames()[area.farmId] || "—" }}</strong>
+              <span class="cell-farm-name">{{ area.farmName || farmNames()[area.farmId] || "—" }}</span>
             </td>
           </ng-container>
 
           <ng-container matColumnDef="area">
-            <th mat-header-cell *matHeaderCellDef>Area</th>
+            <th mat-header-cell *matHeaderCellDef>Area / Block</th>
             <td mat-cell *matCellDef="let area">
-              <strong>{{ area.name }}</strong>
-              <small
-                >{{ area.parentFarmAreaId ? "Sub-area" : "Top-level" }}</small
-              >
+              <div class="cell-area-info">
+                <a [routerLink]="['/farm-areas', area.id]" class="area-name-link">
+                  {{ area.name }}
+                </a>
+                <span class="hierarchy-tag" [class.sub-area]="area.parentFarmAreaId">
+                  {{ area.parentFarmAreaId ? "Sub-area" : "Top-level" }}
+                </span>
+              </div>
             </td>
           </ng-container>
 
           <ng-container matColumnDef="size">
-            <th mat-header-cell *matHeaderCellDef>Size</th>
-            <td mat-cell *matCellDef="let area">
-              {{ area.totalArea }} {{ area.areaUnitSymbol }}
+            <th mat-header-cell *matHeaderCellDef class="text-right">Total Size</th>
+            <td mat-cell *matCellDef="let area" class="text-right">
+              <span class="metric-value">{{ area.totalArea | number:'1.1-2' }}</span>
+              <span class="metric-unit">{{ area.areaUnitSymbol }}</span>
             </td>
           </ng-container>
 
           <ng-container matColumnDef="status">
             <th mat-header-cell *matHeaderCellDef>Status</th>
             <td mat-cell *matCellDef="let area">
-              {{ area.isActive ? "Active" : "Inactive" }}
+              <span class="status-pill" [class.status-pill--active]="area.isActive" [class.status-pill--inactive]="!area.isActive">
+                <span class="status-pill__dot"></span>
+                {{ area.isActive ? "Active" : "Inactive" }}
+              </span>
             </td>
           </ng-container>
 
           <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef>Actions</th>
-            <td mat-cell *matCellDef="let area">
-              <a mat-button [routerLink]="['/farm-areas', area.id]">View</a>
-              @if (permissionService.has("FarmArea.Update")) {
-                <a
-                  mat-icon-button
-                  [routerLink]="['/farm-areas', area.id, 'edit']"
-                >
-                  <mat-icon>edit</mat-icon>
+            <th mat-header-cell *matHeaderCellDef class="text-right">Actions</th>
+            <td mat-cell *matCellDef="let area" class="text-right">
+              <div class="actions-group">
+                <a mat-button class="action-btn" [routerLink]="['/farm-areas', area.id]">
+                  View
                 </a>
-              }
+                @if (permissionService.has("FarmArea.Update")) {
+                  <a
+                    mat-icon-button
+                    class="action-icon-btn"
+                    matTooltip="Edit area"
+                    [routerLink]="['/farm-areas', area.id, 'edit']"
+                  >
+                    <mat-icon>edit</mat-icon>
+                  </a>
+                }
+              </div>
             </td>
           </ng-container>
 
           <tr mat-header-row *matHeaderRowDef="columns"></tr>
-          <tr mat-row *matRowDef="let row; columns: columns"></tr>
+          <tr mat-row *matRowDef="let row; columns: columns" class="interactive-row"></tr>
         </table>
       </div>
     }
@@ -100,6 +123,7 @@
       [pageSizeOptions]="[10, 20, 50]"
       (page)="pageChanged($event)"
       aria-label="Farm areas pages"
+      class="compact-paginator"
     />
   </mat-card-content>
 </mat-card>

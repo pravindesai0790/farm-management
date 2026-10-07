@@ -1,17 +1,32 @@
-<div class="section-heading">
-  <a mat-button routerLink="/plantations">← Back to plantations</a>
-  <p class="eyebrow">Growing operation</p>
-  <h2>{{ id ? "Edit plantation" : "New plantation" }}</h2>
+<div class="back-link-bar">
+  <a mat-button routerLink="/plantations">
+    <mat-icon>arrow_back</mat-icon> Back to Plantations
+  </a>
+</div>
+
+<div class="page-header-strip">
+  <div>
+    <p class="eyebrow">Growing Operations</p>
+    <h2>{{ id ? "Edit Plantation" : "New Plantation" }}</h2>
+    <p class="subtitle">Assign a crop variety to a designated parcel and schedule planting timeline.</p>
+  </div>
 </div>
 
 @if (isLoading()) {
   <div class="loading-state">
-    <mat-spinner diameter="36" />
+    <mat-spinner diameter="32" />
+    <p>Loading plantation details...</p>
   </div>
 } @else {
-  <mat-card>
+  <mat-card class="form-card">
     <mat-card-content>
       <form [formGroup]="form" (ngSubmit)="submit()">
+        <!-- Section 1: Plot & Crop Selection -->
+        <div class="form-section-title">
+          <mat-icon>domain</mat-icon>
+          <span>Plot & Crop Selection</span>
+        </div>
+
         <div class="form-grid">
           <mat-form-field appearance="outline">
             <mat-label>Farm</mat-label>
@@ -23,10 +38,13 @@
                 <mat-option [value]="farm.id">{{ farm.name }}</mat-option>
               }
             </mat-select>
+            @if (form.controls.farmId.hasError("required")) {
+              <mat-error>Farm is required.</mat-error>
+            }
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Farm area</mat-label>
+            <mat-label>Farm Area / Plot</mat-label>
             <mat-select
               formControlName="farmAreaId"
               (selectionChange)="onAreaChange($event.value)"
@@ -37,9 +55,9 @@
                   @if (area.isFullyUtilized) {
                     ({{ area.totalArea }} {{ area.areaUnitSymbol }} — Fully utilized)
                   } @else if (area.availableArea !== undefined && area.availableArea < area.totalArea) {
-                    ({{ area.availableArea }} {{ area.areaUnitSymbol }} available / {{ area.totalArea }} {{ area.areaUnitSymbol }})
+                    ({{ area.availableArea }} {{ area.areaUnitSymbol }} avail / {{ area.totalArea }} {{ area.areaUnitSymbol }})
                   } @else {
-                    ({{ area.totalArea }} {{ area.areaUnitSymbol }} available)
+                    ({{ area.totalArea }} {{ area.areaUnitSymbol }} avail)
                   }
                 </mat-option>
               }
@@ -51,6 +69,9 @@
                 Available: {{ selectedArea()?.availableArea }} {{ selectedArea()?.areaUnitSymbol }} of {{ selectedArea()?.totalArea }} {{ selectedArea()?.areaUnitSymbol }}
               </mat-hint>
             }
+            @if (form.controls.farmAreaId.hasError("required")) {
+              <mat-error>Area is required.</mat-error>
+            }
           </mat-form-field>
 
           <mat-form-field appearance="outline">
@@ -60,56 +81,87 @@
               (selectionChange)="onCropChange($event.value)"
             >
               @for (crop of crops(); track crop.id) {
-                <mat-option [value]="crop.id"
-                  >{{ crop.name }}</mat-option
-                >
+                <mat-option [value]="crop.id">{{ crop.name }}</mat-option>
               }
             </mat-select>
+            @if (form.controls.cropId.hasError("required")) {
+              <mat-error>Crop is required.</mat-error>
+            }
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Variety</mat-label>
+            <mat-label>Crop Variety (Optional)</mat-label>
             <mat-select formControlName="varietyId">
-              <mat-option [value]="null">No variety</mat-option>
+              <mat-option [value]="null">— No Variety Specified —</mat-option>
               @for (v of varieties(); track v.id) {
                 <mat-option [value]="v.id">{{ v.name }}</mat-option>
               }
             </mat-select>
           </mat-form-field>
+        </div>
 
-          <mat-form-field appearance="outline">
-            <mat-label>Plantation name</mat-label>
-            <input matInput formControlName="plantationName" />
+        <!-- Section 2: Plantation Identity & Allocation -->
+        <div class="form-section-title">
+          <mat-icon>layers</mat-icon>
+          <span>Plantation Identity & Area</span>
+        </div>
+
+        <div class="form-grid">
+          <mat-form-field appearance="outline" class="col-span-2">
+            <mat-label>Plantation Name</mat-label>
+            <input matInput formControlName="plantationName" placeholder="e.g. North Block Crimson Seedless 2026" />
+            @if (form.controls.plantationName.hasError("required")) {
+              <mat-error>Plantation name is required.</mat-error>
+            }
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Allocated area</mat-label>
+            <mat-label>Allocated Area</mat-label>
             <input
               matInput
               type="number"
+              step="any"
               min="0.01"
               formControlName="allocatedArea"
+              placeholder="e.g. 5.0"
             />
             @if (selectedArea()?.availableArea !== undefined) {
               <mat-hint>
                 Max available: {{ selectedArea()?.availableArea }} {{ selectedArea()?.areaUnitSymbol }}
               </mat-hint>
             }
+            @if (form.controls.allocatedArea.hasError("required")) {
+              <mat-error>Allocated area is required.</mat-error>
+            }
+            @if (form.controls.allocatedArea.hasError("min")) {
+              <mat-error>Allocated area must be greater than 0.</mat-error>
+            }
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Area unit</mat-label>
+            <mat-label>Area Unit</mat-label>
             <mat-select formControlName="areaUnitId">
               @for (unit of units(); track unit.id) {
-                <mat-option [value]="unit.id"
-                  >{{ unit.name }} ({{ unit.symbol }})</mat-option
-                >
+                <mat-option [value]="unit.id">
+                  {{ unit.name }} ({{ unit.symbol }})
+                </mat-option>
               }
             </mat-select>
+            @if (form.controls.areaUnitId.hasError("required")) {
+              <mat-error>Area unit is required.</mat-error>
+            }
           </mat-form-field>
+        </div>
 
+        <!-- Section 3: Planting Timeline -->
+        <div class="form-section-title">
+          <mat-icon>calendar_today</mat-icon>
+          <span>Planting Timeline</span>
+        </div>
+
+        <div class="form-grid">
           <mat-form-field appearance="outline">
-            <mat-label>Planting date</mat-label>
+            <mat-label>Planting Date</mat-label>
             <input
               matInput
               [matDatepicker]="plantingDatePicker"
@@ -118,15 +170,18 @@
             />
             <mat-datepicker-toggle matIconSuffix [for]="plantingDatePicker" />
             <mat-datepicker #plantingDatePicker />
+            @if (form.controls.plantingDate.hasError("required")) {
+              <mat-error>Planting date is required.</mat-error>
+            }
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Expected end date</mat-label>
+            <mat-label>Expected End / Termination Date</mat-label>
             <input
               matInput
               [matDatepicker]="expectedEndDatePicker"
               formControlName="expectedEndDate"
-              placeholder="Choose a date"
+              placeholder="Choose a date (optional)"
             />
             <mat-datepicker-toggle matIconSuffix [for]="expectedEndDatePicker" />
             <mat-datepicker #expectedEndDatePicker />
@@ -140,7 +195,10 @@
         <div class="form-actions">
           <a mat-button routerLink="/plantations">Cancel</a>
           <button mat-flat-button color="primary" [disabled]="isSubmitting()">
-            {{ id ? "Save changes" : "Create plantation" }}
+            @if (isSubmitting()) {
+              <mat-spinner diameter="16" />
+            }
+            {{ id ? "Save Changes" : "Create Plantation" }}
           </button>
         </div>
       </form>

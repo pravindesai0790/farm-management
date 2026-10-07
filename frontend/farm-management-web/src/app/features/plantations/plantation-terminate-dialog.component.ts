@@ -16,6 +16,7 @@ import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatDatepickerModule } from "@angular/material/datepicker";
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
 import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { MatSelectModule } from "@angular/material/select";
@@ -45,27 +46,30 @@ export interface PlantationTerminateDialogResult {
     MatButtonModule,
     MatDatepickerModule,
     MatFormFieldModule,
+    MatIconModule,
     MatSelectModule,
     MatInputModule,
     MatCheckboxModule,
     MatProgressSpinnerModule,
   ],
   template: `
-    <h2 mat-dialog-title>Terminate Plantation</h2>
+    <h2 mat-dialog-title class="dialog-title">
+      <mat-icon class="title-icon">warning_amber</mat-icon>
+      Terminate Plantation
+    </h2>
     <mat-dialog-content>
       <p class="dialog-description">
-        Terminating <strong>{{ data.plantationName }}</strong>
-        will conclude operations for this plot and release the allocated area.
+        Terminating <strong>{{ data.plantationName }}</strong> will conclude operations for this plot and release the allocated area.
       </p>
 
       @if (isLoadingReasons()) {
         <div class="loading-reasons">
-          <mat-spinner diameter="32"></mat-spinner>
+          <mat-spinner diameter="28"></mat-spinner>
           <span>Loading termination reasons…</span>
         </div>
       } @else {
         <form [formGroup]="form" class="terminate-form">
-          <mat-form-field appearance="outline" class="full-width">
+          <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
             <mat-label>End Reason</mat-label>
             <mat-select formControlName="endReasonId" required>
               @for (reason of endReasons(); track reason.id) {
@@ -79,7 +83,7 @@ export interface PlantationTerminateDialogResult {
             }
           </mat-form-field>
 
-          <mat-form-field appearance="outline" class="full-width">
+          <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
             <mat-label>Termination Date</mat-label>
             <input
               matInput
@@ -95,8 +99,8 @@ export interface PlantationTerminateDialogResult {
             }
           </mat-form-field>
 
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Notes</mat-label>
+          <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+            <mat-label>Notes & Reason Details</mat-label>
             <textarea
               matInput
               rows="3"
@@ -114,7 +118,7 @@ export interface PlantationTerminateDialogResult {
       }
     </mat-dialog-content>
 
-    <mat-dialog-actions align="end">
+    <mat-dialog-actions align="end" class="dialog-actions">
       <button mat-button type="button" (click)="onCancel()">Cancel</button>
       <button
         mat-flat-button
@@ -128,35 +132,59 @@ export interface PlantationTerminateDialogResult {
     </mat-dialog-actions>
   `,
   styles: `
+    .dialog-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #b91c1c;
+      margin: 0;
+      padding: 18px 24px 12px;
+
+      .title-icon {
+        font-size: 22px;
+        width: 22px;
+        height: 22px;
+        color: #dc2626;
+      }
+    }
     .dialog-description {
-      margin-bottom: 1rem;
-      color: #4a5568;
-      font-size: 0.95rem;
+      margin-bottom: 14px;
+      color: #475569;
+      font-size: 0.875rem;
       line-height: 1.5;
     }
     .loading-reasons {
       display: flex;
       align-items: center;
-      gap: 1rem;
-      padding: 1.5rem 0;
-      color: #718096;
+      gap: 12px;
+      padding: 20px 0;
+      color: #64748b;
+      font-size: 0.85rem;
     }
     .terminate-form {
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
+      gap: 12px;
       min-width: 420px;
     }
     .full-width {
       width: 100%;
     }
     .checkbox-row {
-      margin-top: 0.25rem;
-      margin-bottom: 0.5rem;
+      margin-top: 4px;
+      margin-bottom: 4px;
+      font-size: 0.85rem;
     }
-    mat-dialog-actions {
-      padding: 1rem 1.5rem;
-      gap: 0.5rem;
+    .dialog-actions {
+      padding: 12px 24px 18px;
+      gap: 8px;
+
+      button {
+        height: 36px;
+        font-size: 0.85rem;
+      }
     }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,

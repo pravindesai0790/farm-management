@@ -1,30 +1,45 @@
-<div class="section-heading">
-  <a mat-button routerLink="/crop-cycles">← Back to cycles</a>
-  <p class="eyebrow">Production season</p>
-  <h2>{{ id ? (isStarted() ? "Cycle details (Locked)" : "Edit cycle") : "New cycle" }}</h2>
+<div class="back-link-bar">
+  <a mat-button routerLink="/crop-cycles">
+    <mat-icon>arrow_back</mat-icon> Back to Cycles
+  </a>
+</div>
+
+<div class="page-header-strip">
+  <div>
+    <p class="eyebrow">Production Seasons</p>
+    <h2>{{ id ? (isStarted() ? "Crop Cycle Details (Locked)" : "Edit Crop Cycle") : "New Crop Cycle" }}</h2>
+    <p class="subtitle">Configure production season boundaries, lifecycle workflow template, and planned dates.</p>
+  </div>
 </div>
 
 @if (isLoading()) {
   <div class="loading-state">
-    <mat-spinner diameter="36" />
+    <mat-spinner diameter="32" />
+    <p>Loading crop cycle details...</p>
   </div>
 } @else {
-  <mat-card>
+  <mat-card class="form-card">
     <mat-card-content>
       @if (isStarted()) {
         <div class="started-banner">
           <mat-icon>lock</mat-icon>
           <div>
-            <strong>This crop cycle is {{ cycleStatus() }} and cannot be modified.</strong>
-            <p>Only planned crop cycles can be edited. Stages and actual progression are managed in the cycle's Lifecycle tab.</p>
+            <strong>Cycle is {{ cycleStatus() }} and locked from direct edits.</strong>
+            <p>Stages and progression are executed in the cycle's Lifecycle tab.</p>
           </div>
         </div>
       }
 
       <form [formGroup]="form" (ngSubmit)="submit()">
+        <!-- Section 1: Plantation & Season -->
+        <div class="form-section-title">
+          <mat-icon>spa</mat-icon>
+          <span>Plantation & Season Assignment</span>
+        </div>
+
         <div class="form-grid">
-          <mat-form-field appearance="outline">
-            <mat-label>Plantation</mat-label>
+          <mat-form-field appearance="outline" class="col-span-2">
+            <mat-label>Assigned Plantation</mat-label>
             <mat-select formControlName="plantationId">
               @for (p of plantations(); track p.id) {
                 <mat-option [value]="p.id">
@@ -40,39 +55,44 @@
             @if (isLoadingPlantations()) {
               <mat-hint>Loading available plantations…</mat-hint>
             }
+            @if (form.controls.plantationId.hasError("required")) {
+              <mat-error>Plantation selection is required.</mat-error>
+            }
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Cycle name</mat-label>
-            <input matInput formControlName="cycleName" />
+            <mat-label>Season Year</mat-label>
+            <input matInput type="number" formControlName="seasonYear" placeholder="e.g. 2026" />
+            @if (form.controls.seasonYear.hasError("required")) {
+              <mat-error>Season year is required.</mat-error>
+            }
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Season year</mat-label>
-            <input matInput type="number" formControlName="seasonYear" />
+            <mat-label>Season Name (Optional)</mat-label>
+            <input matInput formControlName="seasonName" placeholder="e.g. Kharif / Spring" />
+          </mat-form-field>
+        </div>
+
+        <!-- Section 2: Cycle Identity & Template -->
+        <div class="form-section-title">
+          <mat-icon>schema</mat-icon>
+          <span>Cycle Identification & Lifecycle Template</span>
+        </div>
+
+        <div class="form-grid">
+          <mat-form-field appearance="outline">
+            <mat-label>Cycle Name</mat-label>
+            <input matInput formControlName="cycleName" placeholder="e.g. 2026 Table Grapes Season" />
+            @if (form.controls.cycleName.hasError("required")) {
+              <mat-error>Cycle name is required.</mat-error>
+            }
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Season name</mat-label>
-            <input matInput formControlName="seasonName" placeholder="Kharif" />
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>Planned start</mat-label>
-            <input
-              matInput
-              [matDatepicker]="plannedStartDatePicker"
-              formControlName="plannedStartDate"
-              placeholder="Choose a date"
-            />
-            <mat-datepicker-toggle matIconSuffix [for]="plannedStartDatePicker" />
-            <mat-datepicker #plannedStartDatePicker />
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>Lifecycle template</mat-label>
+            <mat-label>Lifecycle Template</mat-label>
             <mat-select formControlName="lifecycleTemplateId">
-              <mat-option [value]="null">None (Draft without template)</mat-option>
+              <mat-option [value]="null">— None (Draft without template) —</mat-option>
               @for (t of lifecycleTemplates(); track t.id) {
                 <mat-option [value]="t.id">
                   {{ t.name }}{{ t.isDefault ? ' (Default)' : '' }}
@@ -92,14 +112,37 @@
               <mat-hint>Select a plantation to view active templates</mat-hint>
             }
           </mat-form-field>
+        </div>
+
+        <!-- Section 3: Planned Timeline -->
+        <div class="form-section-title">
+          <mat-icon>calendar_today</mat-icon>
+          <span>Scheduled Timeline</span>
+        </div>
+
+        <div class="form-grid">
+          <mat-form-field appearance="outline">
+            <mat-label>Planned Start Date</mat-label>
+            <input
+              matInput
+              [matDatepicker]="plannedStartDatePicker"
+              formControlName="plannedStartDate"
+              placeholder="Choose a date"
+            />
+            <mat-datepicker-toggle matIconSuffix [for]="plannedStartDatePicker" />
+            <mat-datepicker #plannedStartDatePicker />
+            @if (form.controls.plannedStartDate.hasError("required")) {
+              <mat-error>Planned start date is required.</mat-error>
+            }
+          </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Expected end</mat-label>
+            <mat-label>Expected End Date</mat-label>
             <input
               matInput
               [matDatepicker]="expectedEndDatePicker"
               formControlName="expectedEndDate"
-              placeholder="Choose a date"
+              placeholder="Choose a date (optional)"
             />
             <mat-datepicker-toggle matIconSuffix [for]="expectedEndDatePicker" />
             <mat-datepicker #expectedEndDatePicker />
@@ -114,11 +157,14 @@
           <a mat-button routerLink="/crop-cycles">Cancel</a>
           @if (!isStarted()) {
             <button mat-flat-button color="primary" [disabled]="isSubmitting()">
-              {{ id ? "Save changes" : "Create cycle" }}
+              @if (isSubmitting()) {
+                <mat-spinner diameter="16" />
+              }
+              {{ id ? "Save Changes" : "Create Cycle" }}
             </button>
           } @else {
             <a mat-flat-button color="primary" [routerLink]="['/crop-cycles', id]">
-              View cycle details
+              View Cycle Details
             </a>
           }
         </div>

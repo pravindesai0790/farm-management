@@ -7,8 +7,10 @@ import {
   signal,
 } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { DecimalPipe } from "@angular/common";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
+import { MatIconModule } from "@angular/material/icon";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { ActivatedRoute, RouterLink } from "@angular/router";
 import { forkJoin } from "rxjs";
@@ -23,8 +25,10 @@ import {
   selector: "app-farm-area-detail-page",
   standalone: true,
   imports: [
+    DecimalPipe,
     MatButtonModule,
     MatCardModule,
+    MatIconModule,
     MatProgressSpinnerModule,
     RouterLink,
   ],

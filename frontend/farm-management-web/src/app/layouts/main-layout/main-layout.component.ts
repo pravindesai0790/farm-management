@@ -254,7 +254,16 @@ export class MainLayoutComponent {
           label: "Expenses",
           icon: "receipt_long",
           route: "/expenses",
-          permissions: ["Expense.View", "PurchaseInvoice.View", "Supplier.View", "ExpenseCategory.View"],
+          exactMatch: true,
+          permissions: [
+            "Expense.View",
+            "PurchaseInvoice.View",
+            "SupplierPayment.View",
+            "SupplierBalance.View",
+            "Expense.Report.View",
+            "Supplier.View",
+            "ExpenseCategory.View",
+          ],
           children: [
             {
               label: "Direct Expenses",
@@ -265,6 +274,21 @@ export class MainLayoutComponent {
               label: "Supplier Invoices",
               route: "/expenses/invoices",
               permissions: ["PurchaseInvoice.View"],
+            },
+            {
+              label: "Supplier Payments",
+              route: "/expenses/payments",
+              permissions: ["SupplierPayment.View"],
+            },
+            {
+              label: "Supplier Balances",
+              route: "/expenses/balances",
+              permissions: ["SupplierBalance.View"],
+            },
+            {
+              label: "Expense Reports",
+              route: "/expenses/reports",
+              permissions: ["Expense.Report.View"],
             },
             {
               label: "Suppliers",

@@ -12,10 +12,12 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
+import { DecimalPipe } from "@angular/common";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { MatSelectModule } from "@angular/material/select";
 import { MatTableModule } from "@angular/material/table";
+import { MatTooltipModule } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
 import { finalize } from "rxjs";
 import { PermissionService } from "../../core/auth/permission.service";
@@ -26,6 +28,7 @@ import { Farm, FarmArea } from "../../core/farm-management/farm-management.model
   selector: "app-farm-areas-page",
   standalone: true,
   imports: [
+    DecimalPipe,
     MatButtonModule,
     MatCardModule,
     MatFormFieldModule,
@@ -34,6 +37,7 @@ import { Farm, FarmArea } from "../../core/farm-management/farm-management.model
     MatProgressSpinnerModule,
     MatSelectModule,
     MatTableModule,
+    MatTooltipModule,
     RouterLink,
   ],
   templateUrl: "./farm-areas-page.component.html",

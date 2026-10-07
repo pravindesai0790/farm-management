@@ -4,12 +4,12 @@
 
 .plantations-container-card {
   border: 1px solid var(--app-border, #dce5de);
-  border-radius: 16px;
+  border-radius: 10px;
   background: var(--app-surface, #ffffff);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 
   mat-card-content {
-    padding: 24px;
+    padding: 16px 20px;
   }
 }
 
@@ -17,79 +17,91 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 14px;
 
   h3 {
-    font-family: Georgia, serif;
-    font-size: 1.25rem;
+    font-size: 1rem;
+    font-weight: 700;
     color: var(--app-ink, #1c2a22);
-    margin: 0 0 4px 0;
+    margin: 0 0 2px 0;
   }
 
   p {
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     color: var(--app-muted, #65746a);
     margin: 0;
+  }
+
+  a[mat-stroked-button] {
+    height: 32px;
+    line-height: 32px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0 12px;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
   }
 }
 
 .empty-state {
   text-align: center;
-  padding: 40px 16px;
+  padding: 32px 16px;
   color: var(--app-muted, #65746a);
 
   mat-icon {
-    font-size: 48px;
-    width: 48px;
-    height: 48px;
+    font-size: 36px;
+    width: 36px;
+    height: 36px;
     color: #a5b4ab;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
   }
 
   p {
-    font-size: 0.95rem;
-    margin: 0 0 16px 0;
+    font-size: 0.85rem;
+    margin: 0 0 12px 0;
   }
 }
 
 .table-responsive {
   overflow-x: auto;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
 }
 
 .plantations-table {
   width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
+  border-collapse: collapse;
 
   th.mat-mdc-header-cell {
-    font-size: 0.75rem;
+    font-size: 0.71rem;
     font-weight: 700;
     text-transform: uppercase;
-    color: var(--app-muted, #65746a);
-    border-bottom: 2px solid #edf2ee;
-    padding: 12px 16px;
+    letter-spacing: 0.05em;
+    color: #4b5e50;
+    background: #f7faf7;
+    border-bottom: 1px solid var(--app-border);
+    padding: 8px 12px;
+    white-space: nowrap;
   }
 
   td.mat-mdc-cell {
-    font-size: 0.875rem;
-    padding: 14px 16px;
-    border-bottom: 1px solid #edf2ee;
+    font-size: 0.8125rem;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--app-border-light);
   }
 
   tr.mat-mdc-row:hover {
-    background-color: #fbfdfb;
+    background-color: #f7faf8;
   }
 }
 
 .item-name {
-  display: block;
   color: var(--app-ink, #1c2a22);
-}
-
-.item-code {
-  display: block;
-  font-size: 0.75rem;
-  color: var(--app-muted, #65746a);
+  font-weight: 600;
 }
 
 .crop-info {
@@ -103,9 +115,9 @@
   }
 
   .variety-tag {
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     font-weight: 600;
-    padding: 2px 6px;
+    padding: 1px 6px;
     border-radius: 4px;
     background: #f3e5f5;
     color: #7b1fa2;
@@ -125,11 +137,11 @@
 .stage-progress-cell {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 
   .mini-bar {
-    width: 100px;
-    height: 5px;
+    width: 80px;
+    height: 4px;
     background: #e2e8e2;
     border-radius: 9999px;
     overflow: hidden;
@@ -142,7 +154,7 @@
   }
 
   .stage-text {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     color: var(--app-ink, #1c2a22);
     font-weight: 500;
   }
@@ -152,39 +164,23 @@
   color: var(--app-muted, #65746a);
 }
 
-.status-pill {
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  padding: 3px 8px;
-  border-radius: 4px;
-  background: #e0e0e0;
-  color: #424242;
-
-  &.active {
-    background: #e8f5e9;
-    color: #2e7d32;
-  }
-
-  &.planned {
-    background: #e3f2fd;
-    color: #1565c0;
-  }
-
-  &.terminated {
-    background: #ffebee;
-    color: #c62828;
-  }
-}
-
 .text-right {
   text-align: right;
+
+  a[mat-button] {
+    height: 28px;
+    line-height: 28px;
+    padding: 0 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
 }
 
 @media (max-width: 600px) {
   .tab-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
+    gap: 10px;
   }
 }
+

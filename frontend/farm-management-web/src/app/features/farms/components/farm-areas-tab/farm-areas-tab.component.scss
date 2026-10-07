@@ -4,12 +4,12 @@
 
 .areas-container-card {
   border: 1px solid var(--app-border, #dce5de);
-  border-radius: 16px;
+  border-radius: 10px;
   background: var(--app-surface, #ffffff);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 
   mat-card-content {
-    padding: 24px;
+    padding: 16px 20px;
   }
 }
 
@@ -17,65 +17,79 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 14px;
 
   h3 {
-    font-family: Georgia, serif;
-    font-size: 1.25rem;
+    font-size: 1rem;
+    font-weight: 700;
     color: var(--app-ink, #1c2a22);
-    margin: 0 0 4px 0;
+    margin: 0 0 2px 0;
   }
 
   p {
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     color: var(--app-muted, #65746a);
     margin: 0;
+  }
+
+  a[mat-stroked-button] {
+    height: 32px;
+    line-height: 32px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0 12px;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
   }
 }
 
 .empty-state {
   text-align: center;
-  padding: 40px 16px;
+  padding: 32px 16px;
   color: var(--app-muted, #65746a);
 
   mat-icon {
-    font-size: 48px;
-    width: 48px;
-    height: 48px;
+    font-size: 36px;
+    width: 36px;
+    height: 36px;
     color: #a5b4ab;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
   }
 
   p {
-    font-size: 0.95rem;
-    margin: 0 0 16px 0;
+    font-size: 0.85rem;
+    margin: 0 0 12px 0;
   }
 }
 
 .plots-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  gap: 12px;
 }
 
 .plot-card {
   border: 1px solid var(--app-border, #dce5de);
-  border-radius: 14px;
+  border-radius: 8px;
   background: #ffffff;
-  padding: 16px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 
   &:hover {
     border-color: var(--app-primary, #2f6f4e);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   }
 
   &.fallow-card {
     border-style: dashed;
-    border-color: #c5d5ca;
+    border-color: #cbd8cf;
     background: #fafcfa;
   }
 }
@@ -84,49 +98,41 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 12px;
-
-  .plot-code {
-    font-size: 0.7rem;
-    font-family: monospace;
-    font-weight: 700;
-    text-transform: uppercase;
-    color: var(--app-muted, #65746a);
-  }
+  margin-bottom: 10px;
 
   .plot-name {
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-weight: 700;
     color: var(--app-ink, #1c2a22);
-    margin: 2px 0 0 0;
+    margin: 0;
   }
 
   .plot-type {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     color: var(--app-muted, #65746a);
   }
 
   .plot-size-badge {
-    font-size: 0.85rem;
-    font-weight: 700;
-    padding: 4px 10px;
-    border-radius: 8px;
-    background: #f6f8f5;
-    border: 1px solid #e2e8e2;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: #f4f7f4;
+    border: 1px solid #dce5de;
     color: var(--app-ink, #1c2a22);
   }
 }
 
 .plot-body {
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 
 .crop-status-box {
-  padding: 10px 12px;
-  border-radius: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
 
   &.active-crop {
-    background: #f3e5f5;
+    background: #f5edf7;
     border: 1px solid #e1bee7;
   }
 
@@ -135,14 +141,14 @@
     border: 1px solid #e0e0e0;
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 0.8rem;
+    gap: 6px;
+    font-size: 0.75rem;
     color: var(--app-muted, #65746a);
 
     .fallow-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
       color: #757575;
     }
   }
@@ -151,29 +157,29 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
 
     .crop-title {
       display: flex;
       align-items: center;
       gap: 4px;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       font-weight: 700;
       color: #4a148c;
 
       mat-icon {
-        font-size: 16px;
-        width: 16px;
-        height: 16px;
+        font-size: 15px;
+        width: 15px;
+        height: 15px;
       }
     }
 
     .variety-chip {
-      font-size: 0.7rem;
+      font-size: 0.65rem;
       font-weight: 600;
       background: #ffffff;
       color: #7b1fa2;
-      padding: 2px 6px;
+      padding: 1px 6px;
       border-radius: 4px;
     }
   }
@@ -181,7 +187,7 @@
   .cycle-progress-line {
     display: flex;
     justify-content: space-between;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     color: #6a1b9a;
 
     strong {
@@ -193,7 +199,7 @@
     }
 
     .status-tag {
-      font-size: 0.7rem;
+      font-size: 0.68rem;
       font-weight: 700;
       text-transform: uppercase;
       color: #2e7d32;
@@ -205,11 +211,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: 10px;
+  padding-top: 8px;
   border-top: 1px solid #edf2ee;
 
   .view-link {
-    font-size: 0.8rem;
+    font-size: 0.76rem;
     font-weight: 600;
     color: var(--app-primary, #2f6f4e);
     text-decoration: none;
@@ -220,9 +226,10 @@
   }
 
   .plant-btn {
-    font-size: 0.75rem;
-    height: 28px;
-    line-height: 28px;
+    font-size: 0.72rem;
+    height: 26px;
+    line-height: 26px;
+    padding: 0 8px;
   }
 }
 
@@ -240,6 +247,7 @@
   .tab-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
+    gap: 10px;
   }
 }
+

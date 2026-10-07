@@ -125,7 +125,7 @@
         <h4>Detailed Application History</h4>
 
         <div class="filter-controls">
-          <mat-form-field appearance="outline" class="search-field">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="search-field">
             <mat-label>Search movements</mat-label>
             <input
               matInput
@@ -135,7 +135,7 @@
             <mat-icon matPrefix>search</mat-icon>
           </mat-form-field>
 
-          <mat-form-field appearance="outline" class="category-filter">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="category-filter">
             <mat-label>Category</mat-label>
             <mat-select [(ngModel)]="selectedCategory">
               <mat-option value="all">All Categories</mat-option>

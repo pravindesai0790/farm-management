@@ -1,17 +1,32 @@
-<div class="section-heading">
-  <a mat-button [routerLink]="farmId ? ['/farms', farmId] : '/farms'">← Back</a>
-  <p class="eyebrow">Farm area</p>
-  <h2>{{ areaId ? "Edit area" : "New area" }}</h2>
+<div class="back-link-bar">
+  <a mat-button [routerLink]="farmId ? ['/farms', farmId] : '/farms'">
+    <mat-icon>arrow_back</mat-icon> {{ farmId ? "Back to Farm" : "Back to Farms" }}
+  </a>
+</div>
+
+<div class="page-header-strip">
+  <div>
+    <p class="eyebrow">Land Parcelation</p>
+    <h2>{{ areaId ? "Edit Farm Area" : "New Farm Area" }}</h2>
+    <p class="subtitle">Configure zone boundary, area hierarchy, and land allocation properties.</p>
+  </div>
 </div>
 
 @if (isLoading()) {
   <div class="loading-state">
-    <mat-spinner diameter="36" />
+    <mat-spinner diameter="32" />
+    <p>Loading area details...</p>
   </div>
 } @else {
-  <mat-card>
+  <mat-card class="form-card">
     <mat-card-content>
       <form [formGroup]="form" (ngSubmit)="submit()">
+        <!-- Section 1: Hierarchy -->
+        <div class="form-section-title">
+          <mat-icon>domain</mat-icon>
+          <span>Farm & Hierarchy</span>
+        </div>
+
         <div class="form-grid">
           <mat-form-field appearance="outline">
             <mat-label>Farm</mat-label>
@@ -20,53 +35,76 @@
                 <mat-option [value]="farm.id">{{ farm.name }}</mat-option>
               }
             </mat-select>
+            @if (form.controls.farmId.hasError("required")) {
+              <mat-error>Farm selection is required.</mat-error>
+            }
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Parent area (optional)</mat-label>
+            <mat-label>Parent Area (Optional)</mat-label>
             <mat-select formControlName="parentFarmAreaId">
-              <mat-option [value]="null">Top-level area</mat-option>
+              <mat-option [value]="null">— None (Top-level Zone) —</mat-option>
               @for (area of parentAreas(); track area.id) {
                 <mat-option [value]="area.id">{{ area.name }}</mat-option>
               }
             </mat-select>
           </mat-form-field>
+        </div>
 
-          <mat-form-field appearance="outline">
-            <mat-label>Name</mat-label>
-            <input matInput formControlName="name" />
+        <!-- Section 2: Area Specifications -->
+        <div class="form-section-title">
+          <mat-icon>straighten</mat-icon>
+          <span>Area Specifications</span>
+        </div>
+
+        <div class="form-grid">
+          <mat-form-field appearance="outline" class="col-span-2">
+            <mat-label>Area / Plot Name</mat-label>
+            <input matInput formControlName="name" placeholder="e.g. North Orchard Block A" />
             @if (form.controls.name.hasError("required")) {
-              <mat-error>Name is required.</mat-error>
+              <mat-error>Area name is required.</mat-error>
             }
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Total area</mat-label>
+            <mat-label>Total Size</mat-label>
             <input
               matInput
               type="number"
+              step="any"
               min="0.01"
               formControlName="totalArea"
+              placeholder="e.g. 12.5"
             />
+            @if (form.controls.totalArea.hasError("required")) {
+              <mat-error>Total area size is required.</mat-error>
+            }
+            @if (form.controls.totalArea.hasError("min")) {
+              <mat-error>Area must be greater than 0.</mat-error>
+            }
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Area unit</mat-label>
+            <mat-label>Measurement Unit</mat-label>
             <mat-select formControlName="areaUnitId">
               @for (unit of units(); track unit.id) {
-                <mat-option [value]="unit.id"
-                  >{{ unit.name }} ({{ unit.symbol }})</mat-option
-                >
+                <mat-option [value]="unit.id">
+                  {{ unit.name }} ({{ unit.symbol }})
+                </mat-option>
               }
             </mat-select>
+            @if (form.controls.areaUnitId.hasError("required")) {
+              <mat-error>Measurement unit is required.</mat-error>
+            }
           </mat-form-field>
 
-          <mat-form-field appearance="outline" class="wide">
-            <mat-label>Description</mat-label>
+          <mat-form-field appearance="outline" class="col-span-2">
+            <mat-label>Description & Notes</mat-label>
             <textarea
               matInput
               rows="3"
               formControlName="description"
+              placeholder="Soil type, topography, irrigation notes, or orientation..."
             ></textarea>
           </mat-form-field>
         </div>
@@ -76,11 +114,14 @@
         }
 
         <div class="form-actions">
-          <a mat-button [routerLink]="farmId ? ['/farms', farmId] : '/farms'"
-            >Cancel</a
-          >
+          <a mat-button [routerLink]="farmId ? ['/farms', farmId] : '/farms'">
+            Cancel
+          </a>
           <button mat-flat-button color="primary" [disabled]="isSubmitting()">
-            {{ areaId ? "Save changes" : "Create area" }}
+            @if (isSubmitting()) {
+              <mat-spinner diameter="16" />
+            }
+            {{ areaId ? "Save Changes" : "Create Area" }}
           </button>
         </div>
       </form>

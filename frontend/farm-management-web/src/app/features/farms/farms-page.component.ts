@@ -18,12 +18,14 @@ import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { MatSelectModule } from "@angular/material/select";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { MatTableModule } from "@angular/material/table";
+import { MatTooltipModule } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
 import { debounceTime, distinctUntilChanged, finalize, merge } from "rxjs";
 import { PermissionService } from "../../core/auth/permission.service";
 import { FarmManagementService } from "../../core/farm-management/farm-management.service";
 import { Farm } from "../../core/farm-management/farm-management.models";
 import { getApiErrorMessage } from "../../core/models/api-error.model";
+import { DecimalPipe } from "@angular/common";
 
 @Component({
   selector: "app-farms-page",
@@ -38,8 +40,10 @@ import { getApiErrorMessage } from "../../core/models/api-error.model";
     MatProgressSpinnerModule,
     MatSelectModule,
     MatTableModule,
+    MatTooltipModule,
     ReactiveFormsModule,
     RouterLink,
+    DecimalPipe
   ],
   templateUrl: "./farms-page.component.html",
   styleUrl: "./farms-page.component.scss",

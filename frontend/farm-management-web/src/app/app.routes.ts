@@ -440,8 +440,23 @@ export const routes: Routes = [
         children: [
           {
             path: "",
-            pathMatch: "full",
-            redirectTo: "direct",
+            title: "Expenses",
+            canActivate: [permissionGuard],
+            data: {
+              permissions: [
+                "Expense.View",
+                "PurchaseInvoice.View",
+                "SupplierPayment.View",
+                "SupplierBalance.View",
+                "Expense.Report.View",
+                "Supplier.View",
+                "ExpenseCategory.View",
+              ],
+            },
+            loadComponent: () =>
+              import(
+                "./features/expenses/expenses-page.component"
+              ).then((module) => module.ExpensesPageComponent),
           },
           {
             path: "direct",

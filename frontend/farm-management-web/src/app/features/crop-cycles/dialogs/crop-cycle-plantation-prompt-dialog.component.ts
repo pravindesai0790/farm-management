@@ -56,59 +56,66 @@ export interface CropCyclePlantationPromptDialogData {
     .dialog-header {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
-      padding: 1.5rem 1.5rem 0.5rem;
+      gap: 8px;
+      padding: 18px 24px 10px;
     }
     .header-icon {
-      font-size: 2rem;
-      width: 2rem;
-      height: 2rem;
+      font-size: 22px;
+      width: 22px;
+      height: 22px;
     }
     h2[mat-dialog-title] {
       margin: 0;
       padding: 0;
-      font-size: 1.25rem;
+      font-size: 1.15rem;
       font-weight: 600;
     }
     mat-dialog-content {
-      font-size: 0.95rem;
-      line-height: 1.55;
+      font-size: 0.875rem;
+      line-height: 1.5;
       color: #374151;
+      padding: 8px 24px 12px !important;
     }
     .dialog-lead {
-      font-size: 1rem;
-      margin-bottom: 0.75rem;
+      font-size: 0.95rem;
+      margin-bottom: 8px;
     }
     .dialog-text {
-      margin-bottom: 1rem;
+      margin-bottom: 12px;
     }
     .callout-box {
       display: flex;
-      gap: 0.75rem;
+      gap: 10px;
       align-items: flex-start;
-      background-color: #f3f4f6;
-      border-left: 4px solid #3b82f6;
+      background-color: #f0f9ff;
+      border-left: 3px solid #0284c7;
       border-radius: 4px;
-      padding: 0.85rem 1rem;
-      margin-bottom: 1rem;
-      font-size: 0.88rem;
-      color: #1e293b;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+      font-size: 0.825rem;
+      color: #0369a1;
     }
     .callout-icon {
-      color: #2563eb;
-      font-size: 1.25rem;
-      width: 1.25rem;
-      height: 1.25rem;
-      margin-top: 2px;
+      color: #0284c7;
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      margin-top: 1px;
+      flex-shrink: 0;
     }
     .dialog-subtext {
       font-weight: 500;
       color: #111827;
-      margin-bottom: 0.5rem;
+      margin-bottom: 4px;
     }
     mat-dialog-actions {
-      padding: 1rem 1.5rem;
-      gap: 0.5rem;
+      padding: 12px 24px 18px;
+      gap: 8px;
+
+      button {
+        height: 36px;
+        font-size: 0.85rem;
+      }
     }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,

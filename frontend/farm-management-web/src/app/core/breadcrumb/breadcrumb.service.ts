@@ -281,6 +281,44 @@ export class BreadcrumbService {
         }
         break;
 
+      case "expenses":
+        items.push({ label: "Expenses", route: "/expenses" });
+        if (segments[1] === "direct") {
+          items.push({ label: "Direct Expenses" });
+        } else if (segments[1] === "invoices") {
+          items.push({ label: "Supplier Invoices", route: "/expenses/invoices" });
+          if (segments[2] === "new") {
+            items.push({ label: "Create invoice" });
+          } else if (segments[2]) {
+            const invId = segments[2];
+            const invName = this.labelCache.get(invId) ?? "Invoice details";
+            if (segments[3] === "edit") {
+              items.push({ label: invName, route: ["/expenses/invoices", invId] });
+              items.push({ label: "Edit" });
+            } else {
+              items.push({ label: invName });
+            }
+          }
+        } else if (segments[1] === "payments") {
+          items.push({ label: "Supplier Payments", route: "/expenses/payments" });
+          if (segments[2] === "new") {
+            items.push({ label: "Record payment" });
+          } else if (segments[2]) {
+            const paymentId = segments[2];
+            const paymentName = this.labelCache.get(paymentId) ?? "Payment details";
+            items.push({ label: paymentName });
+          }
+        } else if (segments[1] === "balances") {
+          items.push({ label: "Supplier Balances" });
+        } else if (segments[1] === "reports") {
+          items.push({ label: "Expense Reports" });
+        } else if (segments[1] === "suppliers") {
+          items.push({ label: "Suppliers" });
+        } else if (segments[1] === "categories") {
+          items.push({ label: "Expense Categories" });
+        }
+        break;
+
       default: {
         const readable = section.charAt(0).toUpperCase() + section.slice(1).replace(/-/g, " ");
         items.push({ label: readable });

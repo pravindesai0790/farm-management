@@ -2,86 +2,171 @@
   display: block;
 }
 
-.loading-state {
+.cycle-header-strip {
   display: flex;
-  justify-content: center;
   align-items: center;
-  padding: 3rem 0;
-}
-
-.section-heading {
-  display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
+  gap: 16px;
 
-  h2 {
-    margin: 4px 0;
-    font-weight: 700;
+  .header-main {
+    h2 {
+      margin: 4px 0;
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--app-text, #1e293b);
+    }
+
+    .cycle-context {
+      font-size: 0.825rem;
+      color: var(--app-muted, #64748b);
+      margin: 0;
+    }
   }
 
-  .eyebrow {
-    font-size: 0.85rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--app-primary);
-    margin: 0 0 0.25rem 0;
+  .header-eyebrow-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .season-badge {
+      font-size: 0.725rem;
+      font-weight: 600;
+      padding: 1px 7px;
+      border-radius: 4px;
+      background: #e0f2fe;
+      color: #0369a1;
+    }
   }
 
-  p {
-    color: var(--app-muted);
-    margin: 0;
+  .header-actions {
+    display: flex;
+    align-items: center;
+
+    .action-btn {
+      height: 36px;
+      font-size: 0.825rem;
+      font-weight: 500;
+
+      mat-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+        margin-right: 4px;
+      }
+    }
   }
 }
 
 .tabs-wrapper {
-  margin-top: 1rem;
+  margin-top: 12px;
 }
 
 .tab-icon {
-  margin-right: 0.5rem;
-  font-size: 1.1rem;
-  width: 1.1rem;
-  height: 1.1rem;
+  margin-right: 6px;
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
   vertical-align: middle;
 }
 
 .tab-content {
-  padding-top: 1.25rem;
+  padding-top: 14px;
 }
 
-.details {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 20px;
+.details-card {
+  border-radius: var(--app-radius-sm, 6px);
+  border: 1px solid var(--app-border, #e2e8f0);
 
-  span {
-    display: block;
-    color: var(--app-muted);
-    font-size: 0.85rem;
+  mat-card-content {
+    padding: 20px 22px;
   }
 
-  strong {
-    display: block;
-    margin-top: 8px;
-    font-size: 1rem;
+  .details-section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--app-border-light, #f1f5f9);
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: var(--app-primary, #15803d);
+    }
+
+    h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin: 0;
+      color: var(--app-text, #1e293b);
+    }
+  }
+
+  .details-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px 20px;
+
+    .detail-item {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+
+      .detail-label {
+        font-size: 0.725rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--app-muted, #64748b);
+      }
+
+      .detail-value {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--app-text, #1e293b);
+      }
+    }
+  }
+
+  .workflow-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--app-border-light, #f1f5f9);
+
+    .action-btn {
+      height: 36px;
+      font-size: 0.825rem;
+      font-weight: 500;
+
+      mat-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+        margin-right: 4px;
+      }
+    }
   }
 }
 
-.actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 28px;
-}
+@media (max-width: 768px) {
+  .cycle-header-strip {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 
-@media (max-width: 640px) {
-  .details {
+  .details-card .details-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+}
 
-  .section-heading {
-    flex-direction: column;
-    gap: 12px;
+@media (max-width: 480px) {
+  .details-card .details-grid {
+    grid-template-columns: 1fr;
   }
 }

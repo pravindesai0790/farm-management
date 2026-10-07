@@ -1,53 +1,111 @@
 @if (isLoading()) {
   <div class="loading-state">
-    <mat-spinner diameter="36" />
+    <mat-spinner diameter="32" />
+    <p>Loading area details...</p>
   </div>
 } @else if (area(); as item) {
-  <div class="section-heading">
-    <a mat-button [routerLink]="['/farms', item.farmId]">← Back to farm</a>
-    <h2>{{ item.name }}</h2>
+  <div class="back-link-bar">
+    <a mat-button [routerLink]="['/farms', item.farmId]">
+      <mat-icon>arrow_back</mat-icon> Back to Farm
+    </a>
+  </div>
+
+  <div class="area-header-strip">
+    <div class="header-main">
+      <div class="header-badges">
+        <span class="hierarchy-pill" [class.sub-area]="item.parentFarmAreaId">
+          {{ item.parentFarmAreaId ? "Sub-area" : "Top-level Area" }}
+        </span>
+        <span class="status-pill" [class.status-pill--active]="item.isActive" [class.status-pill--inactive]="!item.isActive">
+          <span class="status-pill__dot"></span>
+          {{ item.isActive ? "Active" : "Inactive" }}
+        </span>
+      </div>
+      <h2>{{ item.name }}</h2>
+    </div>
+
     @if (permissionService.has("FarmArea.Update")) {
-      <a mat-stroked-button [routerLink]="['/farm-areas', item.id, 'edit']"
-        >Edit area</a
-      >
+      <div class="header-actions">
+        <a mat-stroked-button [routerLink]="['/farm-areas', item.id, 'edit']" class="edit-btn">
+          <mat-icon>edit</mat-icon> Edit Area
+        </a>
+      </div>
     }
   </div>
 
-  <div class="metrics">
-    <mat-card>
+  <div class="metrics-grid">
+    <mat-card class="metric-card">
       <mat-card-content>
-        <span>Total area</span>
-        <strong>{{ item.totalArea }} {{ item.areaUnitSymbol }}</strong>
+        <div class="metric-card__header">
+          <span class="metric-label">Total Area</span>
+          <div class="metric-icon-wrap total">
+            <mat-icon>square_foot</mat-icon>
+          </div>
+        </div>
+        <div class="metric-card__value">
+          {{ item.totalArea | number:'1.1-2' }}
+          <span class="unit">{{ item.areaUnitSymbol }}</span>
+        </div>
+        <div class="metric-card__subtext">Gross parcel capacity</div>
       </mat-card-content>
     </mat-card>
-    <mat-card>
+
+    <mat-card class="metric-card">
       <mat-card-content>
-        <span>Allocated</span>
-        <strong
-          >{{ availability()?.allocatedArea ?? "—" }}
-          {{ item.areaUnitSymbol }}</strong
-        >
+        <div class="metric-card__header">
+          <span class="metric-label">Allocated to Plantations</span>
+          <div class="metric-icon-wrap allocated">
+            <mat-icon>pie_chart</mat-icon>
+          </div>
+        </div>
+        <div class="metric-card__value">
+          {{ availability()?.allocatedArea != null ? (availability()?.allocatedArea | number:'1.1-2') : "—" }}
+          <span class="unit">{{ item.areaUnitSymbol }}</span>
+        </div>
+        <div class="metric-card__subtext">Currently occupied / planted</div>
       </mat-card-content>
     </mat-card>
-    <mat-card>
+
+    <mat-card class="metric-card">
       <mat-card-content>
-        <span>Available</span>
-        <strong
-          >{{ availability()?.availableArea ?? "—" }}
-          {{ item.areaUnitSymbol }}</strong
-        >
+        <div class="metric-card__header">
+          <span class="metric-label">Available for Planting</span>
+          <div class="metric-icon-wrap available">
+            <mat-icon>check_circle_outline</mat-icon>
+          </div>
+        </div>
+        <div class="metric-card__value" [class.positive]="(availability()?.availableArea ?? 0) > 0">
+          {{ availability()?.availableArea != null ? (availability()?.availableArea | number:'1.1-2') : "—" }}
+          <span class="unit">{{ item.areaUnitSymbol }}</span>
+        </div>
+        <div class="metric-card__subtext">Free unallocated land</div>
       </mat-card-content>
     </mat-card>
   </div>
 
-  <mat-card>
+  <mat-card class="details-card">
     <mat-card-content>
-      <h3>Area details</h3>
-      <p>{{ item.description || "No description provided." }}</p>
-      <p class="muted">
-        {{ item.parentFarmAreaId ? "Sub-area" : "Top-level farm area" }} ·
-        {{ item.isActive ? "Active" : "Inactive" }}
-      </p>
+      <div class="details-section-header">
+        <mat-icon>info_outline</mat-icon>
+        <h3>Area Properties & Specification</h3>
+      </div>
+      
+      <div class="details-grid">
+        <div class="detail-item">
+          <span class="detail-label">Area Classification</span>
+          <span class="detail-value">{{ item.parentFarmAreaId ? "Sub-zone / Block" : "Primary Top-level Zone" }}</span>
+        </div>
+        
+        <div class="detail-item">
+          <span class="detail-label">Operational Status</span>
+          <span class="detail-value">{{ item.isActive ? "Active (In Service)" : "Inactive (Fallow/Retired)" }}</span>
+        </div>
+
+        <div class="detail-item col-span-2">
+          <span class="detail-label">Description & Agronomic Notes</span>
+          <p class="description-text">{{ item.description || "No agronomic description or notes provided for this parcel." }}</p>
+        </div>
+      </div>
     </mat-card-content>
   </mat-card>
 }

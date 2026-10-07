@@ -51,7 +51,7 @@
 
   <form [formGroup]="form" class="action-form">
     @if (data.actionMode === 'override') {
-      <mat-form-field appearance="outline" class="full-width">
+      <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
         <mat-label>Target Status</mat-label>
         <mat-select formControlName="targetStatus" required>
           <mat-option value="NOT_STARTED">Not Started</mat-option>
@@ -67,7 +67,7 @@
     }
 
     @if (data.actionMode === 'override') {
-      <mat-form-field appearance="outline" class="full-width">
+      <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
         <mat-label>Actual Start Date</mat-label>
         <input
           matInput
@@ -81,7 +81,7 @@
     }
 
     @if (data.actionMode === 'complete' || data.actionMode === 'override') {
-      <mat-form-field appearance="outline" class="full-width">
+      <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
         <mat-label>Actual Completion Date</mat-label>
         <input
           matInput
@@ -101,7 +101,7 @@
     }
 
     @if (data.actionMode === 'skip') {
-      <mat-form-field appearance="outline" class="full-width">
+      <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
         <mat-label>Skip Date</mat-label>
         <input
           matInput
@@ -115,7 +115,7 @@
     }
 
     @if (data.actionMode === 'skip' || data.actionMode === 'reopen' || data.actionMode === 'override') {
-      <mat-form-field appearance="outline" class="full-width">
+      <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
         <mat-label>Reason (Mandatory)</mat-label>
         <textarea
           matInput
@@ -138,7 +138,7 @@
     }
 
     @if (data.actionMode === 'complete') {
-      <mat-form-field appearance="outline" class="full-width">
+      <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
         <mat-label>Notes (Optional)</mat-label>
         <textarea
           matInput

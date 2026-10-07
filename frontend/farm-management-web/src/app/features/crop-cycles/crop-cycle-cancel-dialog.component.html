@@ -1,18 +1,21 @@
-<h2 mat-dialog-title>Cancel Crop Cycle</h2>
+<h2 mat-dialog-title class="dialog-title">
+  <mat-icon class="title-icon">warning_amber</mat-icon>
+  Cancel Crop Cycle
+</h2>
 
 <mat-dialog-content>
   <p class="dialog-description">
-    Cancelling <strong>{{ data.cycleName }}</strong> will stop active production tracking for this season.
+    Cancelling <strong>{{ data.cycleName }}</strong> will stop active production tracking and stages for this season.
   </p>
 
   @if (isLoadingReasons()) {
     <div class="loading-reasons">
-      <mat-spinner diameter="32" />
+      <mat-spinner diameter="28" />
       <span>Loading cancellation reasons…</span>
     </div>
   } @else {
     <form [formGroup]="form" class="cancel-form">
-      <mat-form-field appearance="outline" class="full-width">
+      <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
         <mat-label>Cancellation Reason</mat-label>
         <mat-select formControlName="cancellationReasonId" required>
           @for (reason of cancellationReasons(); track reason.id) {
@@ -26,7 +29,7 @@
         }
       </mat-form-field>
 
-      <mat-form-field appearance="outline" class="full-width">
+      <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
         <mat-label>Cancellation Date</mat-label>
         <input
           matInput
@@ -42,20 +45,20 @@
         }
       </mat-form-field>
 
-      <mat-form-field appearance="outline" class="full-width">
-        <mat-label>Notes</mat-label>
+      <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+        <mat-label>Notes & Reason Details</mat-label>
         <textarea
           matInput
           rows="3"
           formControlName="notes"
-          placeholder="Reason details or remarks…"
+          placeholder="Reason details or operational remarks…"
         ></textarea>
       </mat-form-field>
     </form>
   }
 </mat-dialog-content>
 
-<mat-dialog-actions align="end">
+<mat-dialog-actions align="end" class="dialog-actions">
   <button mat-button type="button" (click)="onCancel()">Back</button>
   <button
     mat-flat-button

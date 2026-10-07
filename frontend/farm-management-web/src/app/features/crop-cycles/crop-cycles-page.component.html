@@ -1,57 +1,55 @@
 <div class="section-heading">
   <div>
-    <p class="eyebrow">Production seasons</p>
-    <h2>Crop cycles</h2>
-    <p>
-      Plan seasons and follow them from start through harvest and completion.
-    </p>
+    <p class="eyebrow">Production Seasons</p>
+    <h2>Crop Cycles</h2>
+    <p class="subtitle">Plan, track, and execute crop production seasons from planting through harvest.</p>
   </div>
   @if (permissionService.has("CropCycle.Create")) {
     <a mat-flat-button color="primary" routerLink="/crop-cycles/new">
-      <mat-icon>add</mat-icon>Add cycle
+      <mat-icon>add</mat-icon> Add Cycle
     </a>
   }
 </div>
 
-<mat-card>
+<mat-card class="content-card">
   <mat-card-content>
     <div class="filters-row">
-      <mat-form-field appearance="outline">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-item">
         <mat-label>Farm</mat-label>
         <mat-select [value]="farmId()" (valueChange)="onFarmChange($event)">
-          <mat-option value="">All farms</mat-option>
+          <mat-option value="">All Farms</mat-option>
           @for (farm of farms(); track farm.id) {
             <mat-option [value]="farm.id">{{ farm.name }}</mat-option>
           }
         </mat-select>
       </mat-form-field>
 
-      <mat-form-field appearance="outline">
-        <mat-label>Farm area</mat-label>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-item">
+        <mat-label>Farm Area</mat-label>
         <mat-select [value]="farmAreaId()" (valueChange)="onAreaChange($event)" [disabled]="!farmId()">
-          <mat-option value="">All areas</mat-option>
+          <mat-option value="">All Areas</mat-option>
           @for (area of areas(); track area.id) {
             <mat-option [value]="area.id">{{ area.name }}</mat-option>
           }
         </mat-select>
       </mat-form-field>
 
-      <mat-form-field appearance="outline">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-item">
         <mat-label>Plantation</mat-label>
         <mat-select [value]="plantationId()" (valueChange)="onPlantationChange($event)">
-          <mat-option value="">All plantations</mat-option>
+          <mat-option value="">All Plantations</mat-option>
           @for (p of plantations(); track p.id) {
             <mat-option [value]="p.id">{{ p.plantationName }} ({{ p.cropName }})</mat-option>
           }
         </mat-select>
       </mat-form-field>
 
-      <mat-form-field appearance="outline">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-item">
         <mat-label>Status</mat-label>
         <mat-select [value]="status()" (valueChange)="onStatusChange($event)">
-          <mat-option value="">All statuses</mat-option>
+          <mat-option value="">All Statuses</mat-option>
           <mat-option value="PLANNED">Planned</mat-option>
-          <mat-option value="ACTIVE">Active</mat-option>
+          <mat-option value="ACTIVE">Active (In Progress)</mat-option>
           <mat-option value="HARVESTED">Harvested</mat-option>
           <mat-option value="COMPLETED">Completed</mat-option>
           <mat-option value="CANCELLED">Cancelled</mat-option>
@@ -59,89 +57,122 @@
       </mat-form-field>
 
       @if (hasActiveFilters()) {
-        <button mat-stroked-button class="clear-btn" (click)="clearFilters()">
-          <mat-icon>clear</mat-icon>Clear filters
+        <button mat-stroked-button class="clear-filter-btn" (click)="clearFilters()">
+          <mat-icon>clear</mat-icon> Clear Filters
         </button>
       }
     </div>
 
     @if (isLoading()) {
       <div class="loading-state">
-        <mat-spinner diameter="36" />
+        <mat-spinner diameter="32" />
+        <p>Loading crop cycles...</p>
       </div>
     } @else if (cycles().length === 0) {
       <div class="empty-state">
         <mat-icon>calendar_month</mat-icon>
         <h3>No crop cycles found</h3>
+        <p>No agricultural cycles match the current criteria.</p>
+        @if (permissionService.has("CropCycle.Create")) {
+          <a mat-stroked-button color="primary" routerLink="/crop-cycles/new">
+            <mat-icon>add</mat-icon> Schedule First Cycle
+          </a>
+        }
       </div>
     } @else {
       <div class="table-wrap">
-        <table mat-table [dataSource]="cycles()">
+        <table mat-table [dataSource]="cycles()" class="dense-table">
           <ng-container matColumnDef="cycle">
-            <th mat-header-cell *matHeaderCellDef>Cycle</th>
+            <th mat-header-cell *matHeaderCellDef>Cycle & Season</th>
             <td mat-cell *matCellDef="let c">
-              <strong>{{ c.cycleName }}</strong>
-              <small>Season {{ c.seasonYear }}</small>
-              @if (c.lifecycleTemplateName) {
-                <small class="template-name">{{ c.lifecycleTemplateName }}</small>
-              }
+              <div class="cell-cycle-info">
+                <a [routerLink]="['/crop-cycles', c.id]" class="cycle-link">
+                  {{ c.cycleName }}
+                </a>
+                <div class="cycle-tags">
+                  <span class="season-badge">Season {{ c.seasonYear }}</span>
+                  @if (c.lifecycleTemplateName) {
+                    <span class="template-tag">{{ c.lifecycleTemplateName }}</span>
+                  }
+                </div>
+              </div>
             </td>
           </ng-container>
 
           <ng-container matColumnDef="farm">
             <th mat-header-cell *matHeaderCellDef>Farm</th>
             <td mat-cell *matCellDef="let c">
-              <strong>{{ c.farmName || "—" }}</strong>
+              <span class="cell-farm">{{ c.farmName || "—" }}</span>
             </td>
           </ng-container>
 
           <ng-container matColumnDef="area">
             <th mat-header-cell *matHeaderCellDef>Area</th>
             <td mat-cell *matCellDef="let c">
-              {{ c.farmAreaName || "—" }}
+              <span class="cell-area">{{ c.farmAreaName || "—" }}</span>
             </td>
           </ng-container>
 
           <ng-container matColumnDef="plantation">
             <th mat-header-cell *matHeaderCellDef>Plantation</th>
             <td mat-cell *matCellDef="let c">
-              {{ c.plantationName }}
-              <small>{{ c.cropName }}</small>
+              <div class="cell-plantation-info">
+                <span class="plantation-name">{{ c.plantationName }}</span>
+                <span class="crop-sub">{{ c.cropName }}</span>
+              </div>
             </td>
           </ng-container>
 
           <ng-container matColumnDef="dates">
-            <th mat-header-cell *matHeaderCellDef>Planned start</th>
-            <td mat-cell *matCellDef="let c">{{ c.plannedStartDate }}</td>
+            <th mat-header-cell *matHeaderCellDef>Planned Start</th>
+            <td mat-cell *matCellDef="let c">
+              <span class="cell-date">{{ c.plannedStartDate || "—" }}</span>
+            </td>
           </ng-container>
 
           <ng-container matColumnDef="status">
             <th mat-header-cell *matHeaderCellDef>Status</th>
             <td mat-cell *matCellDef="let c">
-              <span class="status-pill">{{ c.status }}</span>
+              <span
+                class="status-pill"
+                [class.status-pill--active]="c.status === 'ACTIVE' || c.status === 'IN_PROGRESS'"
+                [class.status-pill--planned]="c.status === 'PLANNED'"
+                [class.status-pill--harvested]="c.status === 'HARVESTED'"
+                [class.status-pill--completed]="c.status === 'COMPLETED'"
+                [class.status-pill--terminated]="c.status === 'CANCELLED'"
+              >
+                <span class="status-pill__dot"></span>
+                {{ c.status === 'ACTIVE' ? 'In Progress' : c.status }}
+              </span>
             </td>
           </ng-container>
 
           <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef>Actions</th>
-            <td mat-cell *matCellDef="let c">
-              <a mat-button [routerLink]="['/crop-cycles', c.id]">View</a>
-              @if (
-                c.status === "PLANNED" &&
-                permissionService.has("CropCycle.Update")
-              ) {
-                <a
-                  mat-icon-button
-                  [routerLink]="['/crop-cycles', c.id, 'edit']"
-                >
-                  <mat-icon>edit</mat-icon>
+            <th mat-header-cell *matHeaderCellDef class="text-right">Actions</th>
+            <td mat-cell *matCellDef="let c" class="text-right">
+              <div class="actions-group">
+                <a mat-button class="action-btn" [routerLink]="['/crop-cycles', c.id]">
+                  View
                 </a>
-              }
+                @if (
+                  c.status === "PLANNED" &&
+                  permissionService.has("CropCycle.Update")
+                ) {
+                  <a
+                    mat-icon-button
+                    class="action-icon-btn"
+                    matTooltip="Edit cycle"
+                    [routerLink]="['/crop-cycles', c.id, 'edit']"
+                  >
+                    <mat-icon>edit</mat-icon>
+                  </a>
+                }
+              </div>
             </td>
           </ng-container>
 
           <tr mat-header-row *matHeaderRowDef="columns"></tr>
-          <tr mat-row *matRowDef="let row; columns: columns"></tr>
+          <tr mat-row *matRowDef="let row; columns: columns" class="interactive-row"></tr>
         </table>
       </div>
     }
@@ -153,6 +184,7 @@
       [pageSizeOptions]="[10, 20, 50]"
       (page)="pageChanged($event)"
       aria-label="Crop cycles pages"
+      class="compact-paginator"
     />
   </mat-card-content>
 </mat-card>

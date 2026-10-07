@@ -22,6 +22,9 @@ The Angular frontend follows a feature-first structure:
 
 Keep frontend business logic in services and stores under `core`, keep screens thin, and prefer feature-specific code over shared abstractions until reuse is proven.
 
+### Frontend UI/UX Standards
+All frontend features, screens, dialogs, tables, and form controls must strictly adhere to the design system rules, spacing scale, density specifications, and typography hierarchy defined in [`UI_UX_GUIDE.md`](UI_UX_GUIDE.md). Avoid creating duplicate page-specific styling; always leverage shared design tokens and global component classes.
+
 ## Current Implementation Snapshot
 
 Use this as the starting point for feature work. All core Phase 1, Phase 2, and Phase 3 capabilities are implemented across the backend and frontend.

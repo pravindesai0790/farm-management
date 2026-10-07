@@ -16,6 +16,7 @@ import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { MatSelectModule } from "@angular/material/select";
 import { MatTableModule } from "@angular/material/table";
+import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { RouterLink } from "@angular/router";
 import { finalize } from "rxjs";
@@ -41,6 +42,7 @@ import { getApiErrorMessage } from "../../core/models/api-error.model";
     MatProgressSpinnerModule,
     MatSelectModule,
     MatTableModule,
+    MatTooltipModule,
     RouterLink,
   ],
   templateUrl: "./crop-cycles-page.component.html",
