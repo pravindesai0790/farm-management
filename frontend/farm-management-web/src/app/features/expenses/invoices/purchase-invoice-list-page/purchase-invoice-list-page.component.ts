@@ -19,7 +19,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router, RouterLink } from '@angular/router';
-import { debounceTime, distinctUntilChanged, finalize, map, merge } from 'rxjs';
+import { debounceTime, distinctUntilChanged, finalize, map, merge, auditTime, catchError, of, switchMap, Subject, tap } from 'rxjs';
 import { PermissionService } from '../../../../core/auth/permission.service';
 import {
   PurchaseInvoiceFilter,
@@ -171,14 +171,56 @@ export class PurchaseInvoiceListPageComponent implements OnInit {
     return val?.dueStatus === 'Overdue';
   });
 
+  private readonly loadTrigger$ = new Subject<void>();
+
   ngOnInit(): void {
     this.loadFilterLookups();
 
-    merge(
-      this.filterForm.controls.search.valueChanges.pipe(
-        debounceTime(300),
-        distinctUntilChanged(),
-      ),
+    // 1. Reactive invoice loading pipeline using switchMap for in-flight cancellation
+    this.loadTrigger$
+      .pipe(
+        tap(() => this.isLoading.set(true)),
+        switchMap(() => {
+          const val = this.filterForm.getRawValue();
+          const filter: PurchaseInvoiceFilter = {
+            search: val.search?.trim() || null,
+            farmId: val.farmId || null,
+            supplierId: val.supplierId || null,
+            status: val.status === 'all' || !val.status ? null : (val.status as PurchaseInvoiceStatus),
+            paymentStatus: val.paymentStatus === 'all' || !val.paymentStatus ? null : (val.paymentStatus as any),
+            dueStatus: val.dueStatus === 'all' || !val.dueStatus ? null : (val.dueStatus as any),
+            receiptStatus: val.receiptStatus === 'all' || !val.receiptStatus ? null : (val.receiptStatus as any),
+            from: formatDateOnly(val.from),
+            to: formatDateOnly(val.to),
+          };
+
+          return this.invoiceService
+            .list(filter, this.pageIndex() + 1, this.pageSize())
+            .pipe(
+              catchError((err) => {
+                this.snack.open(getApiErrorMessage(err, 'Failed to load supplier invoices.'), 'Close', { duration: 5000 });
+                return of({ items: [], totalCount: 0, page: 1, pageSize: this.pageSize(), totalPages: 0 });
+              }),
+            );
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (response) => {
+          this.invoices.set(response.items);
+          this.totalCount.set(response.totalCount);
+          this.isLoading.set(false);
+        },
+      });
+
+    // 2. Search control stream debounced 300ms
+    const search$ = this.filterForm.controls.search.valueChanges.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+    );
+
+    // 3. Other controls batched via auditTime(0) so multi-control resets or changes emit exactly once
+    const otherControls$ = merge(
       this.filterForm.controls.farmId.valueChanges,
       this.filterForm.controls.supplierId.valueChanges,
       this.filterForm.controls.status.valueChanges,
@@ -187,14 +229,20 @@ export class PurchaseInvoiceListPageComponent implements OnInit {
       this.filterForm.controls.receiptStatus.valueChanges,
       this.filterForm.controls.from.valueChanges,
       this.filterForm.controls.to.valueChanges,
-    )
+    ).pipe(
+      auditTime(0),
+    );
+
+    // 4. Any filter change resets page to 0 and triggers the loading pipeline
+    merge(search$, otherControls$)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
         this.pageIndex.set(0);
-        this.loadInvoices();
+        this.loadTrigger$.next();
       });
 
-    this.loadInvoices();
+    // Initial load
+    this.loadTrigger$.next();
   }
 
   loadFilterLookups(): void {
@@ -210,36 +258,7 @@ export class PurchaseInvoiceListPageComponent implements OnInit {
   }
 
   loadInvoices(): void {
-    this.isLoading.set(true);
-
-    const val = this.filterForm.getRawValue();
-    const filter: PurchaseInvoiceFilter = {
-      search: val.search?.trim() || null,
-      farmId: val.farmId || null,
-      supplierId: val.supplierId || null,
-      status: val.status === 'all' || !val.status ? null : (val.status as PurchaseInvoiceStatus),
-      paymentStatus: val.paymentStatus === 'all' || !val.paymentStatus ? null : (val.paymentStatus as any),
-      dueStatus: val.dueStatus === 'all' || !val.dueStatus ? null : (val.dueStatus as any),
-      receiptStatus: val.receiptStatus === 'all' || !val.receiptStatus ? null : (val.receiptStatus as any),
-      from: formatDateOnly(val.from),
-      to: formatDateOnly(val.to),
-    };
-
-    this.invoiceService
-      .list(filter, this.pageIndex() + 1, this.pageSize())
-      .pipe(
-        finalize(() => this.isLoading.set(false)),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe({
-        next: (response) => {
-          this.invoices.set(response.items);
-          this.totalCount.set(response.totalCount);
-        },
-        error: (err) => {
-          this.snack.open(getApiErrorMessage(err, 'Failed to load supplier invoices.'), 'Close', { duration: 5000 });
-        },
-      });
+    this.loadTrigger$.next();
   }
 
   toggleFilters(): void {
@@ -247,8 +266,7 @@ export class PurchaseInvoiceListPageComponent implements OnInit {
   }
 
   toggleAwaitingDeliveryFilter(): void {
-    const current = this.filterForm.value.receiptStatus;
-    if (current === 'AwaitingDelivery') {
+    if (this.isAwaitingDeliveryFilterActive()) {
       this.filterForm.patchValue({ receiptStatus: 'all' });
     } else {
       this.filterForm.patchValue({ receiptStatus: 'AwaitingDelivery' });
@@ -256,8 +274,7 @@ export class PurchaseInvoiceListPageComponent implements OnInit {
   }
 
   toggleOverdueFilter(): void {
-    const current = this.filterForm.value.dueStatus;
-    if (current === 'Overdue') {
+    if (this.isOverdueFilterActive()) {
       this.filterForm.patchValue({ dueStatus: 'all' });
     } else {
       this.filterForm.patchValue({ dueStatus: 'Overdue' });
@@ -267,11 +284,11 @@ export class PurchaseInvoiceListPageComponent implements OnInit {
   onPageChange(event: PageEvent): void {
     this.pageIndex.set(event.pageIndex);
     this.pageSize.set(event.pageSize);
-    this.loadInvoices();
+    this.loadTrigger$.next();
   }
 
   resetFilters(): void {
-    this.filterForm.reset({
+    this.filterForm.setValue({
       search: '',
       farmId: '',
       supplierId: '',
