@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -19,7 +19,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router, RouterLink } from '@angular/router';
-import { debounceTime, distinctUntilChanged, finalize, merge } from 'rxjs';
+import { debounceTime, distinctUntilChanged, finalize, map, merge } from 'rxjs';
 import { PermissionService } from '../../../../core/auth/permission.service';
 import {
   PurchaseInvoiceFilter,
@@ -35,6 +35,7 @@ import { getApiErrorMessage } from '../../../../core/models/api-error.model';
 import { formatDateOnly } from '../../../../core/utils/date.utils';
 import { ExpensesSubNavComponent } from '../../components/expenses-sub-nav/expenses-sub-nav.component';
 import { PurchaseInvoiceReversalDialogComponent } from '../purchase-invoice-reversal-dialog/purchase-invoice-reversal-dialog.component';
+import { PurchaseInvoiceReceiveDialogComponent } from '../purchase-invoice-receive-dialog/purchase-invoice-receive-dialog.component';
 import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
 
 @Component({
@@ -84,6 +85,7 @@ export class PurchaseInvoiceListPageComponent implements OnInit {
     'lines',
     'totalAmount',
     'paymentStatus',
+    'deliveryStatus',
     'status',
     'actions',
   ];
@@ -96,6 +98,7 @@ export class PurchaseInvoiceListPageComponent implements OnInit {
 
   readonly farms = signal<readonly Farm[]>([]);
   readonly suppliers = signal<readonly Supplier[]>([]);
+  readonly isFiltersExpanded = signal<boolean>(false);
 
   readonly totalInvoicedAmount = computed(() =>
     this.invoices().filter((inv) => inv.status === 'Posted').reduce((sum, inv) => sum + (inv.totalAmount || 0), 0),
@@ -117,8 +120,55 @@ export class PurchaseInvoiceListPageComponent implements OnInit {
     status: ['all'],
     paymentStatus: ['all'],
     dueStatus: ['all'],
+    receiptStatus: ['all'],
     from: [null as Date | string | null],
     to: [null as Date | string | null],
+  });
+
+  readonly filterValues = toSignal(
+    this.filterForm.valueChanges.pipe(map(() => this.filterForm.getRawValue())),
+    { initialValue: this.filterForm.getRawValue() }
+  );
+
+  readonly hasActiveFilters = computed(() => {
+    const val = this.filterValues();
+    if (!val) return false;
+    return !!(
+      val.search?.trim() ||
+      val.farmId ||
+      val.supplierId ||
+      (val.status && val.status !== 'all') ||
+      (val.paymentStatus && val.paymentStatus !== 'all') ||
+      (val.dueStatus && val.dueStatus !== 'all') ||
+      (val.receiptStatus && val.receiptStatus !== 'all') ||
+      val.from ||
+      val.to
+    );
+  });
+
+  readonly activeFilterCount = computed(() => {
+    const val = this.filterValues();
+    if (!val) return 0;
+    let count = 0;
+    if (val.search?.trim()) count++;
+    if (val.farmId) count++;
+    if (val.supplierId) count++;
+    if (val.status && val.status !== 'all') count++;
+    if (val.paymentStatus && val.paymentStatus !== 'all') count++;
+    if (val.dueStatus && val.dueStatus !== 'all') count++;
+    if (val.receiptStatus && val.receiptStatus !== 'all') count++;
+    if (val.from || val.to) count++;
+    return count;
+  });
+
+  readonly isAwaitingDeliveryFilterActive = computed(() => {
+    const val = this.filterValues();
+    return val?.receiptStatus === 'AwaitingDelivery' || val?.receiptStatus === 'NotReceived';
+  });
+
+  readonly isOverdueFilterActive = computed(() => {
+    const val = this.filterValues();
+    return val?.dueStatus === 'Overdue';
   });
 
   ngOnInit(): void {
@@ -134,6 +184,7 @@ export class PurchaseInvoiceListPageComponent implements OnInit {
       this.filterForm.controls.status.valueChanges,
       this.filterForm.controls.paymentStatus.valueChanges,
       this.filterForm.controls.dueStatus.valueChanges,
+      this.filterForm.controls.receiptStatus.valueChanges,
       this.filterForm.controls.from.valueChanges,
       this.filterForm.controls.to.valueChanges,
     )
@@ -169,6 +220,7 @@ export class PurchaseInvoiceListPageComponent implements OnInit {
       status: val.status === 'all' || !val.status ? null : (val.status as PurchaseInvoiceStatus),
       paymentStatus: val.paymentStatus === 'all' || !val.paymentStatus ? null : (val.paymentStatus as any),
       dueStatus: val.dueStatus === 'all' || !val.dueStatus ? null : (val.dueStatus as any),
+      receiptStatus: val.receiptStatus === 'all' || !val.receiptStatus ? null : (val.receiptStatus as any),
       from: formatDateOnly(val.from),
       to: formatDateOnly(val.to),
     };
@@ -190,6 +242,28 @@ export class PurchaseInvoiceListPageComponent implements OnInit {
       });
   }
 
+  toggleFilters(): void {
+    this.isFiltersExpanded.update((v) => !v);
+  }
+
+  toggleAwaitingDeliveryFilter(): void {
+    const current = this.filterForm.value.receiptStatus;
+    if (current === 'AwaitingDelivery') {
+      this.filterForm.patchValue({ receiptStatus: 'all' });
+    } else {
+      this.filterForm.patchValue({ receiptStatus: 'AwaitingDelivery' });
+    }
+  }
+
+  toggleOverdueFilter(): void {
+    const current = this.filterForm.value.dueStatus;
+    if (current === 'Overdue') {
+      this.filterForm.patchValue({ dueStatus: 'all' });
+    } else {
+      this.filterForm.patchValue({ dueStatus: 'Overdue' });
+    }
+  }
+
   onPageChange(event: PageEvent): void {
     this.pageIndex.set(event.pageIndex);
     this.pageSize.set(event.pageSize);
@@ -204,9 +278,53 @@ export class PurchaseInvoiceListPageComponent implements OnInit {
       status: 'all',
       paymentStatus: 'all',
       dueStatus: 'all',
+      receiptStatus: 'all',
       from: null,
       to: null,
     });
+  }
+
+  clearSearch(): void {
+    this.filterForm.patchValue({ search: '' });
+  }
+
+  removeFilter(field: string): void {
+    switch (field) {
+      case 'status':
+        this.filterForm.patchValue({ status: 'all' });
+        break;
+      case 'paymentStatus':
+        this.filterForm.patchValue({ paymentStatus: 'all' });
+        break;
+      case 'receiptStatus':
+        this.filterForm.patchValue({ receiptStatus: 'all' });
+        break;
+      case 'dueStatus':
+        this.filterForm.patchValue({ dueStatus: 'all' });
+        break;
+      case 'dateRange':
+        this.filterForm.patchValue({ from: null, to: null });
+        break;
+      case 'farmId':
+        this.filterForm.patchValue({ farmId: '' });
+        break;
+      case 'supplierId':
+        this.filterForm.patchValue({ supplierId: '' });
+        break;
+      case 'search':
+        this.filterForm.patchValue({ search: '' });
+        break;
+    }
+  }
+
+  getFarmName(farmId: string | null | undefined): string {
+    if (!farmId) return '';
+    return this.farms().find((f) => f.id === farmId)?.name || 'Farm';
+  }
+
+  getSupplierName(supplierId: string | null | undefined): string {
+    if (!supplierId) return '';
+    return this.suppliers().find((s) => s.id === supplierId)?.name || 'Supplier';
   }
 
   postInvoice(invoice: PurchaseInvoiceResponse): void {
@@ -261,6 +379,80 @@ export class PurchaseInvoiceListPageComponent implements OnInit {
         this.loadInvoices();
       }
     });
+  }
+
+  openReceiveDialog(invoice: PurchaseInvoiceResponse): void {
+    const dialogRef = this.dialog.open(PurchaseInvoiceReceiveDialogComponent, {
+      width: '920px',
+      maxWidth: '95vw',
+      maxHeight: '92vh',
+      panelClass: 'receive-items-dialog-panel',
+      disableClose: true,
+      data: { invoice },
+    });
+
+    dialogRef.afterClosed().subscribe((res) => {
+      if (res) {
+        this.loadInvoices();
+      }
+    });
+  }
+
+  isAwaitingDelivery(invoice: PurchaseInvoiceResponse): boolean {
+    return (
+      invoice.status === 'Posted' &&
+      !!invoice.receiptStatus &&
+      invoice.receiptStatus !== 'FullyReceived' &&
+      invoice.receiptStatus !== 'NotApplicable'
+    );
+  }
+
+  getDeliveryBadgeClass(invoice: PurchaseInvoiceResponse): string {
+    if (invoice.status !== 'Posted') return '';
+    switch (invoice.receiptStatus) {
+      case 'FullyReceived':
+        return 'delivery-received';
+      case 'PartiallyReceived':
+        return 'delivery-partial';
+      case 'NotReceived':
+      case 'AwaitingDelivery':
+        return 'delivery-awaiting';
+      default:
+        return '';
+    }
+  }
+
+  getDeliveryBadgeText(invoice: PurchaseInvoiceResponse): string {
+    if (invoice.status !== 'Posted') return '—';
+    const pendingCount = invoice.pendingDeliveryLinesCount ?? invoice.totalInventoryLinesCount ?? 0;
+    switch (invoice.receiptStatus) {
+      case 'FullyReceived':
+        return 'Received';
+      case 'PartiallyReceived':
+        return `Partial (${pendingCount} pending)`;
+      case 'NotReceived':
+      case 'AwaitingDelivery':
+        return pendingCount > 0 ? `Awaiting (${pendingCount} ${pendingCount === 1 ? 'item' : 'items'})` : 'Awaiting';
+      case 'NotApplicable':
+        return '—';
+      default:
+        return invoice.receiptStatus || '—';
+    }
+  }
+
+  getDeliveryTooltip(invoice: PurchaseInvoiceResponse): string {
+    if (invoice.status !== 'Posted') {
+      return invoice.status === 'Draft' ? 'Invoice must be posted before receiving inventory' : 'Invoice is reversed';
+    }
+    if (invoice.receiptStatus === 'NotApplicable') {
+      return 'Non-inventory expense invoice (no items to receive)';
+    }
+    if (invoice.receiptStatus === 'FullyReceived') {
+      return 'All inventory line items received into stock';
+    }
+    const pending = invoice.pendingDeliveryLinesCount ?? invoice.totalInventoryLinesCount ?? 0;
+    const total = invoice.totalInventoryLinesCount ?? 0;
+    return `${pending} of ${total} inventory items awaiting delivery into storage location`;
   }
 
   getStatusClass(status: string): string {

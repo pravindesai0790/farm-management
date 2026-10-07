@@ -3,7 +3,7 @@ import { PagedResponse } from '../models/paged-response.model';
 export type PurchaseInvoiceStatus = 'Draft' | 'Posted' | 'Reversed';
 export type PurchaseInvoicePaymentStatus = 'Unpaid' | 'PartiallyPaid' | 'Paid';
 export type PurchaseInvoiceDueStatus = 'Overdue' | 'DueSoon' | 'Current';
-export type PurchaseInvoiceReceiptStatus = 'NotApplicable' | 'NotReceived' | 'PartiallyReceived' | 'FullyReceived';
+export type PurchaseInvoiceReceiptStatus = 'NotApplicable' | 'NotReceived' | 'PartiallyReceived' | 'FullyReceived' | 'AwaitingDelivery';
 export type PurchaseInvoiceLineType = 'InventoryItem' | 'NonInventoryExpense';
 
 export interface PurchaseInvoiceLineResponse {
@@ -81,6 +81,10 @@ export interface PurchaseInvoiceResponse {
   readonly updatedAt?: string | null;
   readonly lines: PurchaseInvoiceLineResponse[];
   readonly paymentAllocations?: InvoicePaymentAllocationSummaryResponse[] | null;
+  readonly totalInventoryLinesCount?: number;
+  readonly pendingDeliveryLinesCount?: number;
+  readonly totalOrderedQuantity?: number;
+  readonly totalReceivedQuantity?: number;
 }
 
 export interface CreatePurchaseInvoiceLineRequest {

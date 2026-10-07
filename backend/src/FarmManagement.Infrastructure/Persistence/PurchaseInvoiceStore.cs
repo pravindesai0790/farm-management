@@ -42,6 +42,8 @@ public sealed class PurchaseInvoiceStore(ApplicationDbContext dbContext) : IPurc
                 .ThenInclude(l => l.CropCycleStage)
             .Include(pi => pi.PaymentAllocations)
                 .ThenInclude(pa => pa.SupplierPayment)
+            .Include(pi => pi.ReceiptLines)
+                .ThenInclude(rl => rl.StockMovement)
             .OrderByDescending(pi => pi.InvoiceDate)
             .ThenByDescending(pi => pi.CreatedAt)
             .Skip(skip)
@@ -290,6 +292,61 @@ public sealed class PurchaseInvoiceStore(ApplicationDbContext dbContext) : IPurc
         if (filter.To.HasValue)
         {
             query = query.Where(pi => pi.InvoiceDate <= filter.To.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.PaymentStatus) && filter.PaymentStatus != "all")
+        {
+            var pStatus = filter.PaymentStatus.Trim();
+            if (pStatus.Equals("Paid", StringComparison.OrdinalIgnoreCase))
+            {
+                query = query.Where(pi => pi.Status == PurchaseInvoiceStatus.Posted &&
+                    pi.TotalAmount <= pi.PaymentAllocations
+                        .Where(pa => pa.SupplierPayment != null && pa.SupplierPayment.Status == SupplierPaymentStatus.Completed)
+                        .Sum(pa => pa.AllocatedAmount));
+            }
+            else if (pStatus.Equals("PartiallyPaid", StringComparison.OrdinalIgnoreCase))
+            {
+                query = query.Where(pi => pi.Status == PurchaseInvoiceStatus.Posted &&
+                    pi.PaymentAllocations.Any(pa => pa.SupplierPayment != null && pa.SupplierPayment.Status == SupplierPaymentStatus.Completed && pa.AllocatedAmount > 0) &&
+                    pi.TotalAmount > pi.PaymentAllocations
+                        .Where(pa => pa.SupplierPayment != null && pa.SupplierPayment.Status == SupplierPaymentStatus.Completed)
+                        .Sum(pa => pa.AllocatedAmount));
+            }
+            else if (pStatus.Equals("Unpaid", StringComparison.OrdinalIgnoreCase))
+            {
+                query = query.Where(pi => pi.Status == PurchaseInvoiceStatus.Posted &&
+                    !pi.PaymentAllocations.Any(pa => pa.SupplierPayment != null && pa.SupplierPayment.Status == SupplierPaymentStatus.Completed && pa.AllocatedAmount > 0));
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.ReceiptStatus) && filter.ReceiptStatus != "all")
+        {
+            var rStatus = filter.ReceiptStatus.Trim();
+            if (rStatus.Equals("AwaitingDelivery", StringComparison.OrdinalIgnoreCase) || rStatus.Equals("Awaiting", StringComparison.OrdinalIgnoreCase))
+            {
+                query = query.Where(pi => pi.Status == PurchaseInvoiceStatus.Posted &&
+                    pi.Lines.Any(l => l.LineType == InvoiceLineType.InventoryItem) &&
+                    pi.ReceiptLines.Where(rl => rl.StockMovement != null && !rl.StockMovement.IsReversed).Sum(rl => rl.ReceivedQuantity) <
+                    pi.Lines.Where(l => l.LineType == InvoiceLineType.InventoryItem).Sum(l => l.Quantity ?? 0m));
+            }
+            else if (rStatus.Equals("FullyReceived", StringComparison.OrdinalIgnoreCase))
+            {
+                query = query.Where(pi => pi.Lines.Any(l => l.LineType == InvoiceLineType.InventoryItem) &&
+                    pi.ReceiptLines.Where(rl => rl.StockMovement != null && !rl.StockMovement.IsReversed).Sum(rl => rl.ReceivedQuantity) >=
+                    pi.Lines.Where(l => l.LineType == InvoiceLineType.InventoryItem).Sum(l => l.Quantity ?? 0m));
+            }
+            else if (rStatus.Equals("PartiallyReceived", StringComparison.OrdinalIgnoreCase))
+            {
+                query = query.Where(pi => pi.Lines.Any(l => l.LineType == InvoiceLineType.InventoryItem) &&
+                    pi.ReceiptLines.Any(rl => rl.StockMovement != null && !rl.StockMovement.IsReversed && rl.ReceivedQuantity > 0) &&
+                    pi.ReceiptLines.Where(rl => rl.StockMovement != null && !rl.StockMovement.IsReversed).Sum(rl => rl.ReceivedQuantity) <
+                    pi.Lines.Where(l => l.LineType == InvoiceLineType.InventoryItem).Sum(l => l.Quantity ?? 0m));
+            }
+            else if (rStatus.Equals("NotReceived", StringComparison.OrdinalIgnoreCase))
+            {
+                query = query.Where(pi => pi.Lines.Any(l => l.LineType == InvoiceLineType.InventoryItem) &&
+                    !pi.ReceiptLines.Any(rl => rl.StockMovement != null && !rl.StockMovement.IsReversed && rl.ReceivedQuantity > 0));
+            }
         }
 
         return query;

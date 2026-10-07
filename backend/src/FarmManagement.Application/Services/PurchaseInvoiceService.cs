@@ -806,26 +806,45 @@ public sealed class PurchaseInvoiceService(IPurchaseInvoiceStore store, IInvento
         }
 
         // Derive Receipt Status (Phase 5)
-        var hasInventoryLines = invoice.Lines.Any(l => l.LineType == InvoiceLineType.InventoryItem);
+        var inventoryLines = invoice.Lines.Where(l => l.LineType == InvoiceLineType.InventoryItem).ToList();
+        var hasInventoryLines = inventoryLines.Count > 0;
         string receiptStatus;
+        int totalInventoryLinesCount = inventoryLines.Count;
+        int pendingDeliveryLinesCount = 0;
+        decimal totalOrderedQuantity = 0m;
+        decimal totalReceivedQuantity = 0m;
+
         if (!hasInventoryLines)
         {
             receiptStatus = "NotApplicable";
         }
         else
         {
-            var totalOrdered = invoice.Lines
-                .Where(l => l.LineType == InvoiceLineType.InventoryItem)
-                .Sum(l => l.Quantity ?? 0m);
-            var totalReceived = invoice.ReceiptLines
+            var activeReceiptLines = invoice.ReceiptLines
                 .Where(rl => rl.StockMovement != null && !rl.StockMovement.IsReversed)
-                .Sum(rl => rl.ReceivedQuantity);
+                .ToList();
 
-            if (totalReceived == 0m)
+            totalOrderedQuantity = inventoryLines.Sum(l => l.Quantity ?? 0m);
+            totalReceivedQuantity = activeReceiptLines.Sum(rl => rl.ReceivedQuantity);
+
+            foreach (var line in inventoryLines)
+            {
+                var lineInvoiced = line.Quantity ?? 0m;
+                var lineReceived = activeReceiptLines
+                    .Where(rl => rl.PurchaseInvoiceLineId == line.Id)
+                    .Sum(rl => rl.ReceivedQuantity);
+
+                if (lineReceived < lineInvoiced)
+                {
+                    pendingDeliveryLinesCount++;
+                }
+            }
+
+            if (totalReceivedQuantity == 0m)
             {
                 receiptStatus = "NotReceived";
             }
-            else if (totalReceived >= totalOrdered)
+            else if (totalReceivedQuantity >= totalOrderedQuantity)
             {
                 receiptStatus = "FullyReceived";
             }
@@ -915,6 +934,10 @@ public sealed class PurchaseInvoiceService(IPurchaseInvoiceStore store, IInvento
             invoice.CreatedBy,
             invoice.UpdatedAt,
             lineDtos,
-            paymentAllocationDtos);
+            paymentAllocationDtos,
+            totalInventoryLinesCount,
+            pendingDeliveryLinesCount,
+            totalOrderedQuantity,
+            totalReceivedQuantity);
     }
 }

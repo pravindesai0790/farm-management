@@ -282,6 +282,30 @@ public class PurchaseInvoiceServiceTests
         var revRequest = new ReversePurchaseInvoiceRequest("Mistake");
         await Assert.ThrowsAsync<ValidationException>(() => _service.ReverseAsync(_actor, invoice.Id, revRequest, "127.0.0.1"));
     }
+
+    [Fact]
+    public async Task ListAsync_WithReceivedItems_MapsReceiptStatusFullyReceivedAndMetrics()
+    {
+        var invoice = PurchaseInvoice.CreateDraft(OrgId, SupplierId, FarmId, "INV-LIST-RCV", DateOnly.FromDateTime(DateTime.UtcNow), CurrencyId, UserId);
+        var invLine = PurchaseInvoiceLine.CreateInventoryLine(OrgId, invoice.Id, ItemId, UnitId, 10m, 10m);
+        invoice.Lines.Add(invLine);
+        invoice.Post(UserId);
+        _store.Invoices.Add(invoice);
+
+        var rcvRequest = new ReceivePurchaseInvoiceItemsRequest(
+            LocationId, DateOnly.FromDateTime(DateTime.UtcNow),
+            new[] { new ReceivePurchaseInvoiceItemLineRequest(invLine.Id, 10m) });
+        await _service.ReceiveItemsAsync(_actor, invoice.Id, rcvRequest, "127.0.0.1");
+
+        var response = await _service.ListAsync(_actor, new PurchaseInvoiceFilter(), 1, 10);
+        var item = Assert.Single(response.Items, i => i.SupplierInvoiceNumber == "INV-LIST-RCV");
+
+        Assert.Equal("FullyReceived", item.ReceiptStatus);
+        Assert.Equal(1, item.TotalInventoryLinesCount);
+        Assert.Equal(0, item.PendingDeliveryLinesCount);
+        Assert.Equal(10m, item.TotalOrderedQuantity);
+        Assert.Equal(10m, item.TotalReceivedQuantity);
+    }
 }
 
 public sealed class TestPurchaseInvoiceStore(TestInventoryStockStore stockStore) : IPurchaseInvoiceStore
@@ -308,6 +332,17 @@ public sealed class TestPurchaseInvoiceStore(TestInventoryStockStore stockStore)
     public Task<IReadOnlyList<PurchaseInvoice>> ListAsync(Guid organizationId, PurchaseInvoiceFilter filter, int skip, int take, CancellationToken cancellationToken = default)
     {
         var result = FilterInvoices(organizationId, filter).Skip(skip).Take(take).ToList();
+        foreach (var inv in result)
+        {
+            var matchingLines = ReceiptLines.Where(rl => rl.PurchaseInvoiceId == inv.Id).ToList();
+            foreach (var line in matchingLines)
+            {
+                if (!inv.ReceiptLines.Contains(line))
+                {
+                    inv.ReceiptLines.Add(line);
+                }
+            }
+        }
         return Task.FromResult<IReadOnlyList<PurchaseInvoice>>(result);
     }
 

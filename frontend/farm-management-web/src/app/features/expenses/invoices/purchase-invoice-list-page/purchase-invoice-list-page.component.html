@@ -20,7 +20,7 @@
     </div>
   </div>
 
-  <!-- Executive KPI Strip -->
+  <!-- Executive KPI Strip (Interactive Quick Filters) -->
   <div class="kpi-strip">
     <mat-card class="kpi-card">
       <mat-card-content>
@@ -46,7 +46,12 @@
       </mat-card-content>
     </mat-card>
 
-    <mat-card class="kpi-card">
+    <mat-card
+      class="kpi-card clickable"
+      [class.active-filter]="isOverdueFilterActive()"
+      (click)="toggleOverdueFilter()"
+      matTooltip="Click to toggle filter for Overdue bills"
+    >
       <mat-card-content>
         <div class="kpi-icon-box danger">
           <mat-icon>event_busy</mat-icon>
@@ -55,10 +60,18 @@
           <span class="kpi-label">Overdue Bills</span>
           <span class="kpi-value">{{ overdueCount() }}</span>
         </div>
+        @if (isOverdueFilterActive()) {
+          <mat-icon class="active-badge-icon">filter_alt</mat-icon>
+        }
       </mat-card-content>
     </mat-card>
 
-    <mat-card class="kpi-card">
+    <mat-card
+      class="kpi-card clickable"
+      [class.active-filter]="isAwaitingDeliveryFilterActive()"
+      (click)="toggleAwaitingDeliveryFilter()"
+      matTooltip="Click to toggle filter for Invoices awaiting delivery"
+    >
       <mat-card-content>
         <div class="kpi-icon-box info">
           <mat-icon>local_shipping</mat-icon>
@@ -67,90 +80,240 @@
           <span class="kpi-label">Awaiting Delivery</span>
           <span class="kpi-value">{{ awaitingDeliveryCount() }}</span>
         </div>
+        @if (isAwaitingDeliveryFilterActive()) {
+          <mat-icon class="active-badge-icon">filter_alt</mat-icon>
+        }
       </mat-card-content>
     </mat-card>
   </div>
 
-  <mat-card class="filter-card">
-    <mat-card-content>
-      <form [formGroup]="filterForm" class="filter-grid">
-        <mat-form-field appearance="outline" class="search-field" subscriptSizing="dynamic">
-          <mat-label>Search Invoice / Notes</mat-label>
-          <input matInput formControlName="search" placeholder="Search by number, notes..." />
+  <!-- Compact Filter Bar with Expandable Advanced Filters Drawer -->
+  <div class="filter-toolbar-container">
+    <div class="filter-main-bar">
+      <!-- Search Input -->
+      <mat-form-field appearance="outline" class="filter-control search-control" subscriptSizing="dynamic">
+        <mat-label>Search Invoice / Notes</mat-label>
+        <input matInput [formControl]="filterForm.controls.search" placeholder="Invoice #, notes, supplier..." />
+        @if (filterForm.controls.search.value) {
+          <button mat-icon-button matSuffix type="button" (click)="clearSearch()" aria-label="Clear search">
+            <mat-icon>close</mat-icon>
+          </button>
+        } @else {
           <mat-icon matSuffix>search</mat-icon>
-        </mat-form-field>
+        }
+      </mat-form-field>
 
-        <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-label>Farm</mat-label>
-          <mat-select formControlName="farmId">
-            <mat-option value="">All Farms</mat-option>
-            @for (farm of farms(); track farm.id) {
-              <mat-option [value]="farm.id">
-                {{ farm.name }}
-              </mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
+      <!-- Farm Quick Selector -->
+      <mat-form-field appearance="outline" class="filter-control select-control" subscriptSizing="dynamic">
+        <mat-label>Farm</mat-label>
+        <mat-select [formControl]="filterForm.controls.farmId">
+          <mat-option value="">All Farms</mat-option>
+          @for (farm of farms(); track farm.id) {
+            <mat-option [value]="farm.id">{{ farm.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
 
-        <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-label>Supplier</mat-label>
-          <mat-select formControlName="supplierId">
-            <mat-option value="">All Suppliers</mat-option>
-            @for (s of suppliers(); track s.id) {
-              <mat-option [value]="s.id">
-                {{ s.name }}
-              </mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
+      <!-- Supplier Quick Selector -->
+      <mat-form-field appearance="outline" class="filter-control select-control" subscriptSizing="dynamic">
+        <mat-label>Supplier</mat-label>
+        <mat-select [formControl]="filterForm.controls.supplierId">
+          <mat-option value="">All Suppliers</mat-option>
+          @for (s of suppliers(); track s.id) {
+            <mat-option [value]="s.id">{{ s.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
 
-        <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-label>Invoice Status</mat-label>
-          <mat-select formControlName="status">
-            <mat-option value="all">All Statuses</mat-option>
-            <mat-option value="Draft">Draft</mat-option>
-            <mat-option value="Posted">Posted</mat-option>
-            <mat-option value="Reversed">Reversed</mat-option>
-          </mat-select>
-        </mat-form-field>
+      <!-- Toggle Advanced Filters Button -->
+      <button
+        mat-stroked-button
+        type="button"
+        class="filter-toggle-btn"
+        [class.active]="activeFilterCount() > 0"
+        [class.expanded]="isFiltersExpanded()"
+        (click)="toggleFilters()"
+      >
+        <mat-icon>{{ isFiltersExpanded() ? 'expand_less' : 'tune' }}</mat-icon>
+        <span>Filters</span>
+        @if (activeFilterCount() > 0) {
+          <span class="filter-count-badge">{{ activeFilterCount() }}</span>
+        }
+      </button>
 
-        <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-label>Payment Status</mat-label>
-          <mat-select formControlName="paymentStatus">
-            <mat-option value="all">All Payment Statuses</mat-option>
-            <mat-option value="Unpaid">Unpaid</mat-option>
-            <mat-option value="PartiallyPaid">Partially Paid</mat-option>
-            <mat-option value="Paid">Paid</mat-option>
-          </mat-select>
-        </mat-form-field>
+      <!-- Clear Filters Button (Always clearly visible in top row whenever ANY filter is active) -->
+      @if (hasActiveFilters()) {
+        <button
+          mat-stroked-button
+          color="warn"
+          type="button"
+          class="clear-filters-btn"
+          (click)="resetFilters()"
+          matTooltip="Clear all applied filters"
+        >
+          <mat-icon>filter_alt_off</mat-icon>
+          <span>Clear Filters</span>
+        </button>
+      }
+    </div>
 
-        <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-label>From Date</mat-label>
-          <input matInput [matDatepicker]="fromPicker" formControlName="from" placeholder="From date" />
-          <mat-datepicker-toggle matIconSuffix [for]="fromPicker"></mat-datepicker-toggle>
-          <mat-datepicker #fromPicker></mat-datepicker>
-        </mat-form-field>
+    <!-- Active Filter Chips Tag Bar (ALWAYS shown when any filter is active, even if 2nd row is minimized) -->
+    @if (hasActiveFilters()) {
+      <div class="active-chips-bar">
+        <span class="active-chips-label">
+          <mat-icon class="filter-icon">filter_alt</mat-icon>
+          Filtered by:
+        </span>
 
-        <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-label>To Date</mat-label>
-          <input matInput [matDatepicker]="toPicker" formControlName="to" placeholder="To date" />
-          <mat-datepicker-toggle matIconSuffix [for]="toPicker"></mat-datepicker-toggle>
-          <mat-datepicker #toPicker></mat-datepicker>
-        </mat-form-field>
+        @if (filterValues().search?.trim()) {
+          <span class="filter-chip">
+            Search: "{{ filterValues().search }}"
+            <mat-icon (click)="removeFilter('search')" matTooltip="Remove search">close</mat-icon>
+          </span>
+        }
+        @if (filterValues().farmId) {
+          <span class="filter-chip">
+            Farm: {{ getFarmName(filterValues().farmId) }}
+            <mat-icon (click)="removeFilter('farmId')" matTooltip="Remove farm filter">close</mat-icon>
+          </span>
+        }
+        @if (filterValues().supplierId) {
+          <span class="filter-chip">
+            Supplier: {{ getSupplierName(filterValues().supplierId) }}
+            <mat-icon (click)="removeFilter('supplierId')" matTooltip="Remove supplier filter">close</mat-icon>
+          </span>
+        }
+        @if (filterValues().status && filterValues().status !== 'all') {
+          <span class="filter-chip chip-status">
+            Status: {{ filterValues().status }}
+            <mat-icon (click)="removeFilter('status')" matTooltip="Remove status filter">close</mat-icon>
+          </span>
+        }
+        @if (filterValues().paymentStatus && filterValues().paymentStatus !== 'all') {
+          <span class="filter-chip chip-payment">
+            Payment: {{ filterValues().paymentStatus }}
+            <mat-icon (click)="removeFilter('paymentStatus')" matTooltip="Remove payment filter">close</mat-icon>
+          </span>
+        }
+        @if (filterValues().receiptStatus && filterValues().receiptStatus !== 'all') {
+          <span class="filter-chip chip-delivery">
+            Delivery: {{ filterValues().receiptStatus }}
+            <mat-icon (click)="removeFilter('receiptStatus')" matTooltip="Remove delivery filter">close</mat-icon>
+          </span>
+        }
+        @if (filterValues().dueStatus && filterValues().dueStatus !== 'all') {
+          <span class="filter-chip chip-overdue">
+            Due: {{ filterValues().dueStatus }}
+            <mat-icon (click)="removeFilter('dueStatus')" matTooltip="Remove due filter">close</mat-icon>
+          </span>
+        }
+        @if (filterValues().from || filterValues().to) {
+          <span class="filter-chip">
+            Date range
+            <mat-icon (click)="removeFilter('dateRange')" matTooltip="Remove date range">close</mat-icon>
+          </span>
+        }
 
-        <div class="filter-actions">
-          <button mat-button type="button" (click)="resetFilters()">
-            <mat-icon>refresh</mat-icon> Reset
+        <button mat-button class="chip-clear-all" (click)="resetFilters()">
+          Clear All
+        </button>
+      </div>
+    }
+
+    <!-- Collapsible Advanced Filters Drawer -->
+    @if (isFiltersExpanded()) {
+      <div class="filter-drawer">
+        <form [formGroup]="filterForm" class="filter-drawer-grid">
+          <!-- Invoice Status -->
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="drawer-control">
+            <mat-label>Invoice Status</mat-label>
+            <mat-select formControlName="status">
+              <mat-option value="all">All Statuses</mat-option>
+              <mat-option value="Draft">Draft</mat-option>
+              <mat-option value="Posted">Posted</mat-option>
+              <mat-option value="Reversed">Reversed</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <!-- Payment Status -->
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="drawer-control">
+            <mat-label>Payment Status</mat-label>
+            <mat-select formControlName="paymentStatus">
+              <mat-option value="all">All Payment Statuses</mat-option>
+              <mat-option value="Unpaid">Unpaid</mat-option>
+              <mat-option value="PartiallyPaid">Partially Paid</mat-option>
+              <mat-option value="Paid">Paid</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <!-- Delivery Status -->
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="drawer-control">
+            <mat-label>Delivery Status</mat-label>
+            <mat-select formControlName="receiptStatus">
+              <mat-option value="all">All Deliveries</mat-option>
+              <mat-option value="AwaitingDelivery">Awaiting Delivery</mat-option>
+              <mat-option value="PartiallyReceived">Partially Received</mat-option>
+              <mat-option value="FullyReceived">Fully Received</mat-option>
+              <mat-option value="NotApplicable">Not Applicable (Expense)</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <!-- Due Status -->
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="drawer-control">
+            <mat-label>Due Status</mat-label>
+            <mat-select formControlName="dueStatus">
+              <mat-option value="all">All Due Statuses</mat-option>
+              <mat-option value="Overdue">Overdue</mat-option>
+              <mat-option value="DueSoon">Due Soon</mat-option>
+              <mat-option value="Current">Current</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <!-- From Date -->
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="drawer-control">
+            <mat-label>From Date</mat-label>
+            <input matInput [matDatepicker]="fromPicker" formControlName="from" placeholder="From date" />
+            <mat-datepicker-toggle matIconSuffix [for]="fromPicker"></mat-datepicker-toggle>
+            <mat-datepicker #fromPicker></mat-datepicker>
+          </mat-form-field>
+
+          <!-- To Date -->
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="drawer-control">
+            <mat-label>To Date</mat-label>
+            <input matInput [matDatepicker]="toPicker" formControlName="to" placeholder="To date" />
+            <mat-datepicker-toggle matIconSuffix [for]="toPicker"></mat-datepicker-toggle>
+            <mat-datepicker #toPicker></mat-datepicker>
+          </mat-form-field>
+        </form>
+
+        <div class="drawer-actions-bar">
+          <button mat-button color="warn" type="button" (click)="resetFilters()" [disabled]="!hasActiveFilters()">
+            <mat-icon>clear_all</mat-icon> Clear Filters
+          </button>
+          <button mat-button type="button" (click)="toggleFilters()">
+            <mat-icon>expand_less</mat-icon> Hide More Filters
           </button>
         </div>
-      </form>
-    </mat-card-content>
-  </mat-card>
+      </div>
+    }
+  </div>
 
   <mat-card class="table-card">
     @if (isLoading()) {
       <div class="loading-overlay">
         <mat-spinner diameter="40"></mat-spinner>
+      </div>
+    }
+
+    @if (hasActiveFilters()) {
+      <div class="table-filter-indicator">
+        <div class="indicator-info">
+          <mat-icon>filter_list</mat-icon>
+          <span>Filtered Results: <strong>{{ totalCount() }}</strong> {{ totalCount() === 1 ? 'invoice' : 'invoices' }} match the active filters</span>
+        </div>
+        <button mat-button color="warn" class="indicator-clear-btn" (click)="resetFilters()">
+          Clear Filters
+        </button>
       </div>
     }
 
@@ -220,6 +383,31 @@
           </td>
         </ng-container>
 
+        <!-- Dedicated Delivery Column (Placed immediately after Payment) -->
+        <ng-container matColumnDef="deliveryStatus">
+          <th mat-header-cell *matHeaderCellDef>Delivery</th>
+          <td mat-cell *matCellDef="let row">
+            @if (row.status === 'Posted' && row.receiptStatus && row.receiptStatus !== 'NotApplicable') {
+              <span
+                class="badge"
+                [ngClass]="getDeliveryBadgeClass(row)"
+                [matTooltip]="getDeliveryTooltip(row)"
+              >
+                @if (row.receiptStatus === 'FullyReceived') {
+                  <mat-icon class="badge-icon">check_circle</mat-icon>
+                } @else if (row.receiptStatus === 'PartiallyReceived') {
+                  <mat-icon class="badge-icon">hourglass_bottom</mat-icon>
+                } @else {
+                  <mat-icon class="badge-icon">local_shipping</mat-icon>
+                }
+                {{ getDeliveryBadgeText(row) }}
+              </span>
+            } @else {
+              <span class="text-muted" [matTooltip]="getDeliveryTooltip(row)">—</span>
+            }
+          </td>
+        </ng-container>
+
         <ng-container matColumnDef="status">
           <th mat-header-cell *matHeaderCellDef>Status</th>
           <td mat-cell *matCellDef="let row">
@@ -241,6 +429,16 @@
                 <mat-icon>visibility</mat-icon>
                 <span>View Details</span>
               </a>
+
+              @if (isAwaitingDelivery(row) && permissionService.has('StockMovement.Create')) {
+                <button
+                  mat-menu-item
+                  (click)="openReceiveDialog(row)"
+                >
+                  <mat-icon class="color-primary">local_shipping</mat-icon>
+                  <span>Receive Items...</span>
+                </button>
+              }
 
               @if (row.status === 'Draft' && permissionService.has('PurchaseInvoice.UpdateDraft')) {
                 <a
@@ -276,7 +474,11 @@
         </ng-container>
 
         <tr mat-header-row *matHeaderRowDef="columns"></tr>
-        <tr mat-row *matRowDef="let row; columns: columns"></tr>
+        <tr
+          mat-row
+          *matRowDef="let row; columns: columns"
+          [class.awaiting-delivery-row]="isAwaitingDelivery(row)"
+        ></tr>
 
         <tr class="mat-row" *matNoDataRow>
           <td class="mat-cell empty-row" [attr.colspan]="columns.length">
