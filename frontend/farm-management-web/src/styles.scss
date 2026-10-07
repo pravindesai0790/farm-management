@@ -548,3 +548,80 @@ mat-dialog-actions {
   }
 }
 
+/* -------------------------------------------------------------
+   Enterprise Tab Groups (Standard Compact Tabs & Active Highlight)
+   ------------------------------------------------------------- */
+.mat-mdc-tab-group {
+  --mat-tab-header-active-indicator-color: var(--app-primary, #2d6e4b);
+  --mat-tab-header-active-indicator-height: 3px;
+  --mat-tab-header-active-label-text-color: var(--app-primary, #2d6e4b);
+  --mat-tab-header-inactive-label-text-color: var(--app-muted, #5e7064);
+  --mat-tab-header-active-focus-label-text-color: var(--app-primary, #2d6e4b);
+  --mat-tab-header-active-hover-label-text-color: var(--app-primary, #2d6e4b);
+  --mat-tab-header-inactive-hover-label-text-color: var(--app-ink, #19261f);
+  --mat-tab-header-active-focus-indicator-color: var(--app-primary, #2d6e4b);
+  --mat-tab-header-active-hover-indicator-color: var(--app-primary, #2d6e4b);
+
+  .mat-mdc-tab-header {
+    border-bottom: 1px solid var(--app-border, #dce5de);
+  }
+
+  .mat-mdc-tab {
+    height: 42px;
+    min-height: 42px;
+    padding: 0 16px;
+    opacity: 1;
+
+    .mdc-tab__text-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.835rem;
+      font-weight: 500;
+      color: var(--app-muted, #5e7064);
+      transition: color 0.15s ease;
+
+      .tab-icon,
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+        color: var(--app-muted, #5e7064);
+        transition: color 0.15s ease;
+      }
+    }
+
+    &:hover:not(.mdc-tab--active) .mdc-tab__text-label {
+      color: var(--app-ink, #19261f);
+
+      .tab-icon,
+      mat-icon {
+        color: var(--app-ink, #19261f);
+      }
+    }
+
+    &.mdc-tab--active {
+      .mdc-tab__text-label {
+        color: var(--app-primary, #2d6e4b) !important;
+        font-weight: 600 !important;
+
+        .tab-icon,
+        mat-icon {
+          color: var(--app-primary, #2d6e4b) !important;
+        }
+      }
+
+      .mdc-tab-indicator__content--underline {
+        border-color: var(--app-primary, #2d6e4b) !important;
+        border-top-width: 3px !important;
+        border-radius: 3px 3px 0 0;
+      }
+    }
+
+    .mdc-tab-indicator .mdc-tab-indicator__content--underline {
+      border-color: var(--app-primary, #2d6e4b) !important;
+    }
+  }
+}
+
+

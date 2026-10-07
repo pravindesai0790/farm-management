@@ -302,9 +302,17 @@ All status values across the application must use the unified `.status-pill` str
   - Subtext row: Subtle supporting text (`0.725rem`, `#64748b`).
 
 ### 10.2 Tabs (`mat-tab-group`)
-- Tab header height: Clean compact `42px` height.
-- Tab labels: Include inline icon + label text (`font-size: 0.85rem; font-weight: 600;`).
-- Tab content: `padding-top: 14px;`.
+- **Global Styling**: Built globally in `styles.scss` via `.mat-mdc-tab-group` so all modules maintain unified visual behavior.
+- **Tab Dimensions**: `42px` height per tab (`.mat-mdc-tab { height: 42px; min-height: 42px; }`). Never constrain `.mat-mdc-tab-header` with fixed height directly, as it clips the MDC indicator underline.
+- **Active Tab Highlight**:
+  - Text: Primary green (`var(--app-primary, #2d6e4b)`), `font-weight: 600`.
+  - Icon: Primary green (`var(--app-primary, #2d6e4b)`), `18px` size.
+  - Ink Indicator: Prominent `3px` solid underline in `var(--app-primary, #2d6e4b)` with `border-radius: 3px 3px 0 0`.
+- **Inactive Tabs**:
+  - Text: Muted (`var(--app-muted, #5e7064)`), `font-weight: 500`.
+  - Icon: Muted (`var(--app-muted, #5e7064)`).
+  - Hover: Text and icon transition smoothly to `--app-ink` (`#19261f`).
+- **Tab Content**: `padding-top: 14px;` (or `tab-content-container` spacing).
 
 ---
 
