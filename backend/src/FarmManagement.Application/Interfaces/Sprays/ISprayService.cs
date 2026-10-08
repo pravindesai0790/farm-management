@@ -48,4 +48,11 @@ public interface ISprayService
         StartSprayRequest request,
         string? ipAddress,
         CancellationToken cancellationToken = default);
+
+    Task<SprayDetailsResponse> SaveExecutionAsync(
+        SprayActor actor,
+        Guid id,
+        UpdateSprayExecutionRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default);
 }

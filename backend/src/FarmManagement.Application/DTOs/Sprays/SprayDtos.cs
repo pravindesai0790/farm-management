@@ -154,3 +154,20 @@ public sealed record StartSprayProductItemRequest(
     Guid StorageLocationId,
     decimal ActualQuantity,
     string? Dosage = null);
+
+public sealed record UpdateSprayExecutionRequest(
+    DateTimeOffset ActualApplicationDateTime,
+    decimal? ActualTreatedArea = null,
+    Guid? ActualTreatedAreaUnitId = null,
+    decimal? WaterQuantity = null,
+    Guid? WaterUnitId = null,
+    Guid? TargetId = null,
+    Guid? ApplicationMethodId = null,
+    string? PurposeReason = null,
+    IReadOnlyList<UpdateSprayExecutionProductItemRequest>? Products = null);
+
+public sealed record UpdateSprayExecutionProductItemRequest(
+    Guid InventoryItemId,
+    decimal ActualQuantity,
+    string? Dosage = null);
+
