@@ -44,6 +44,19 @@ public class IdentityDataSeederTests
         Assert.Contains("PurchaseInvoice.ReceiveItems", permissions);
         Assert.Contains("SupplierPayment.View", permissions);
         Assert.Contains("SupplierBalance.View", permissions);
+
+        // Assert Phase 3.7 Spray Permissions
+        Assert.Contains("Spray.View", permissions);
+        Assert.Contains("Spray.Create", permissions);
+        Assert.Contains("Spray.Update", permissions);
+        Assert.Contains("Spray.Schedule", permissions);
+        Assert.Contains("Spray.Start", permissions);
+        Assert.Contains("Spray.Complete", permissions);
+        Assert.Contains("Spray.Cancel", permissions);
+        Assert.Contains("PlantProtectionProduct.View", permissions);
+        Assert.Contains("ProductType.View", permissions);
+        Assert.Contains("Target.View", permissions);
+        Assert.Contains("ApplicationMethod.View", permissions);
     }
 
     [Fact]
@@ -79,6 +92,35 @@ public class IdentityDataSeederTests
         Assert.Contains("SupplierPayment.Create", permissions);
         Assert.Contains("SupplierPayment.Reverse", permissions);
         Assert.Contains("SupplierBalance.View", permissions);
+
+        // Assert Phase 3.7 Permissions
+        Assert.Contains("Spray.View", permissions);
+        Assert.Contains("Spray.Create", permissions);
+        Assert.Contains("Spray.Update", permissions);
+        Assert.Contains("Spray.Schedule", permissions);
+        Assert.Contains("Spray.Start", permissions);
+        Assert.Contains("Spray.Complete", permissions);
+        Assert.Contains("Spray.Cancel", permissions);
+        Assert.Contains("PlantProtectionProduct.View", permissions);
+        Assert.Contains("PlantProtectionProduct.Create", permissions);
+        Assert.Contains("PlantProtectionProduct.Update", permissions);
+        Assert.Contains("PlantProtectionProduct.Activate", permissions);
+        Assert.Contains("PlantProtectionProduct.Deactivate", permissions);
+        Assert.Contains("ProductType.View", permissions);
+        Assert.Contains("ProductType.Create", permissions);
+        Assert.Contains("ProductType.Update", permissions);
+        Assert.Contains("ProductType.Activate", permissions);
+        Assert.Contains("ProductType.Deactivate", permissions);
+        Assert.Contains("Target.View", permissions);
+        Assert.Contains("Target.Create", permissions);
+        Assert.Contains("Target.Update", permissions);
+        Assert.Contains("Target.Activate", permissions);
+        Assert.Contains("Target.Deactivate", permissions);
+        Assert.Contains("ApplicationMethod.View", permissions);
+        Assert.Contains("ApplicationMethod.Create", permissions);
+        Assert.Contains("ApplicationMethod.Update", permissions);
+        Assert.Contains("ApplicationMethod.Activate", permissions);
+        Assert.Contains("ApplicationMethod.Deactivate", permissions);
     }
 
     [Fact]
@@ -101,5 +143,14 @@ public class IdentityDataSeederTests
         Assert.Contains("Attendance.View", permissions);
         Assert.Contains("Attendance.Create", permissions);
         Assert.Contains("LaborActivity.Create", permissions);
+
+        // Assert Phase 3.7 Spray Permissions
+        Assert.Contains("Spray.View", permissions);
+        Assert.Contains("Spray.Start", permissions);
+        Assert.Contains("Spray.Complete", permissions);
+        Assert.Contains("PlantProtectionProduct.View", permissions);
+        Assert.Contains("ProductType.View", permissions);
+        Assert.Contains("Target.View", permissions);
+        Assert.Contains("ApplicationMethod.View", permissions);
     }
 }

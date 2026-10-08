@@ -169,7 +169,34 @@ public sealed class IdentityDataSeeder(
         new("SupplierPayment.View", "View supplier payments.", "Supplier Payments"),
         new("SupplierPayment.Create", "Record supplier payments.", "Supplier Payments"),
         new("SupplierPayment.Reverse", "Reverse supplier payments.", "Supplier Payments"),
-        new("SupplierBalance.View", "View supplier balances and payables.", "Supplier Payments")
+        new("SupplierBalance.View", "View supplier balances and payables.", "Supplier Payments"),
+        new("PlantProtectionProduct.View", "View plant protection products.", "Plant Protection Products"),
+        new("PlantProtectionProduct.Create", "Create plant protection products.", "Plant Protection Products"),
+        new("PlantProtectionProduct.Update", "Update plant protection products.", "Plant Protection Products"),
+        new("PlantProtectionProduct.Activate", "Activate plant protection products.", "Plant Protection Products"),
+        new("PlantProtectionProduct.Deactivate", "Deactivate plant protection products.", "Plant Protection Products"),
+        new("ProductType.View", "View product types.", "Product Types"),
+        new("ProductType.Create", "Create product types.", "Product Types"),
+        new("ProductType.Update", "Update product types.", "Product Types"),
+        new("ProductType.Activate", "Activate product types.", "Product Types"),
+        new("ProductType.Deactivate", "Deactivate product types.", "Product Types"),
+        new("Target.View", "View targets.", "Targets"),
+        new("Target.Create", "Create targets.", "Targets"),
+        new("Target.Update", "Update targets.", "Targets"),
+        new("Target.Activate", "Activate targets.", "Targets"),
+        new("Target.Deactivate", "Deactivate targets.", "Targets"),
+        new("ApplicationMethod.View", "View application methods.", "Application Methods"),
+        new("ApplicationMethod.Create", "Create application methods.", "Application Methods"),
+        new("ApplicationMethod.Update", "Update application methods.", "Application Methods"),
+        new("ApplicationMethod.Activate", "Activate application methods.", "Application Methods"),
+        new("ApplicationMethod.Deactivate", "Deactivate application methods.", "Application Methods"),
+        new("Spray.View", "View spray applications.", "Sprays"),
+        new("Spray.Create", "Create spray applications.", "Sprays"),
+        new("Spray.Update", "Update draft spray applications.", "Sprays"),
+        new("Spray.Schedule", "Schedule and reschedule spray applications.", "Sprays"),
+        new("Spray.Start", "Start spray application executions.", "Sprays"),
+        new("Spray.Complete", "Complete spray applications and consume stock.", "Sprays"),
+        new("Spray.Cancel", "Cancel spray applications.", "Sprays")
     ];
 
     private static readonly IReadOnlySet<string> OrganizationAdminPermissions =
@@ -311,7 +338,34 @@ public sealed class IdentityDataSeeder(
             "SupplierPayment.View",
             "SupplierPayment.Create",
             "SupplierPayment.Reverse",
-            "SupplierBalance.View"
+            "SupplierBalance.View",
+            "PlantProtectionProduct.View",
+            "PlantProtectionProduct.Create",
+            "PlantProtectionProduct.Update",
+            "PlantProtectionProduct.Activate",
+            "PlantProtectionProduct.Deactivate",
+            "ProductType.View",
+            "ProductType.Create",
+            "ProductType.Update",
+            "ProductType.Activate",
+            "ProductType.Deactivate",
+            "Target.View",
+            "Target.Create",
+            "Target.Update",
+            "Target.Activate",
+            "Target.Deactivate",
+            "ApplicationMethod.View",
+            "ApplicationMethod.Create",
+            "ApplicationMethod.Update",
+            "ApplicationMethod.Activate",
+            "ApplicationMethod.Deactivate",
+            "Spray.View",
+            "Spray.Create",
+            "Spray.Update",
+            "Spray.Schedule",
+            "Spray.Start",
+            "Spray.Complete",
+            "Spray.Cancel"
         };
 
     /// <summary>
@@ -378,7 +432,18 @@ public sealed class IdentityDataSeeder(
             "PurchaseInvoice.ReceiveItems",
             "SupplierPayment.View",
             "SupplierPayment.Create",
-            "SupplierBalance.View"
+            "SupplierBalance.View",
+            "PlantProtectionProduct.View",
+            "ProductType.View",
+            "Target.View",
+            "ApplicationMethod.View",
+            "Spray.View",
+            "Spray.Create",
+            "Spray.Update",
+            "Spray.Schedule",
+            "Spray.Start",
+            "Spray.Complete",
+            "Spray.Cancel"
         };
 
     /// <summary>
@@ -408,7 +473,14 @@ public sealed class IdentityDataSeeder(
             "InventoryItem.View",
             "StorageLocation.View",
             "InventoryStock.View",
-            "InventoryTransaction.Create"
+            "InventoryTransaction.Create",
+            "PlantProtectionProduct.View",
+            "ProductType.View",
+            "Target.View",
+            "ApplicationMethod.View",
+            "Spray.View",
+            "Spray.Start",
+            "Spray.Complete"
         };
 
     private static readonly IReadOnlyList<SeedFarmOwnershipType> SeedFarmOwnershipTypes =
@@ -530,6 +602,49 @@ public sealed class IdentityDataSeeder(
         new("Specialized", "Specialized farming or technical labor")
     ];
 
+    private static readonly IReadOnlyList<SeedProductType> SeedProductTypes =
+    [
+        new("FUNGICIDE", "Fungicide", 10, "Controls fungal infections and diseases."),
+        new("INSECTICIDE", "Insecticide", 20, "Controls insect pests."),
+        new("MITICIDE", "Miticide", 30, "Controls mites and ticks (acaricide)."),
+        new("BACTERICIDE", "Bactericide", 40, "Controls bacterial infections."),
+        new("HERBICIDE", "Herbicide", 50, "Controls weeds and unwanted vegetation."),
+        new("NEMATICIDE", "Nematicide", 60, "Controls parasitic plant nematodes."),
+        new("BIOLOGICAL", "Biological", 70, "Biological control agents and bio-pesticides."),
+        new("ADJUVANT", "Adjuvant", 80, "Spreading agents, stickers, and tank-mix adjuvants."),
+        new("OTHER", "Other", 90, "Other plant protection and spray products.")
+    ];
+
+    private static readonly IReadOnlyList<SeedTarget> SeedTargets =
+    [
+        new("POWDERY_MILDEW", "Powdery Mildew", TargetType.Disease, 10, "Fungal disease causing white powdery spots on leaves and stems."),
+        new("DOWNY_MILDEW", "Downy Mildew", TargetType.Disease, 20, "Fungal-like organism causing yellow patches and mold underneath leaves."),
+        new("ANTHRACNOSE", "Anthracnose", TargetType.Disease, 30, "Fungal disease causing dark, sunken lesions on leaves, stems, or fruit."),
+        new("BACTERIAL_DISEASE", "Bacterial Disease", TargetType.Disease, 40, "General bacterial blight, spot, or wilt."),
+        new("OTHER_DISEASE", "Other Disease", TargetType.Disease, 50, "Other plant diseases."),
+        new("THRIPS", "Thrips", TargetType.Insect, 60, "Minute insects feeding on sap causing curled leaves and silvering."),
+        new("MEALYBUG", "Mealybug", TargetType.Insect, 70, "Unarmored scale insects secreting honeydew and causing sooty mold."),
+        new("APHIDS", "Aphids", TargetType.Insect, 80, "Sap-sucking insects causing stunted growth and leaf distortion."),
+        new("FRUIT_FLY", "Fruit Fly", TargetType.Insect, 90, "Pest larvae infesting fruit flesh."),
+        new("OTHER_INSECT", "Other Insect", TargetType.Insect, 100, "Other insect pests."),
+        new("RED_SPIDER_MITE", "Red Spider Mite", TargetType.Mite, 110, "Tetranychid mite causing yellow stippling and webbing on leaves."),
+        new("OTHER_MITE", "Other Mite", TargetType.Mite, 120, "Other mite pests."),
+        new("GENERAL_WEED", "General Weed", TargetType.Weed, 130, "General annual and perennial weed control."),
+        new("OTHER_WEED", "Other Weed", TargetType.Weed, 140, "Other broadleaf or grassy weeds."),
+        new("GENERAL_PREVENTIVE", "General Preventive", TargetType.Other, 150, "Preventive, prophylactic spray application."),
+        new("OTHER", "Other", TargetType.Other, 160, "Other targets.")
+    ];
+
+    private static readonly IReadOnlyList<SeedApplicationMethod> SeedApplicationMethods =
+    [
+        new("KNAPSACK_SPRAYER", "Knapsack Sprayer", 10, "Manual or battery-operated backpack knapsack sprayer."),
+        new("POWER_SPRAYER", "Power Sprayer", 20, "Engine or motor-driven high-pressure power sprayer."),
+        new("TRACTOR_SPRAYER", "Tractor Sprayer", 30, "Tractor-mounted boom or air-blast sprayer."),
+        new("DRONE_SPRAYER", "Drone Sprayer", 40, "Agricultural spraying drone (UAV)."),
+        new("MANUAL", "Manual", 50, "Manual drenching, brush, or hand application."),
+        new("OTHER", "Other", 60, "Other application equipment or methods.")
+    ];
+
     public async Task SeedAsync(CancellationToken cancellationToken = default)
     {
         var initialAdmin = ReadInitialAdminConfiguration();
@@ -568,6 +683,9 @@ public sealed class IdentityDataSeeder(
         await SeedLaborCategoriesAsync(cancellationToken);
         await SeedExpenseCategoriesAsync(cancellationToken);
         await SeedInventoryItemCategoriesAsync(cancellationToken);
+        await SeedProductTypesAsync(cancellationToken);
+        await SeedTargetsAsync(cancellationToken);
+        await SeedApplicationMethodsAsync(cancellationToken);
         await SeedInitialSuperAdminAsync(organization, roles["SuperAdmin"], initialAdmin, cancellationToken);
 
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -887,6 +1005,76 @@ public sealed class IdentityDataSeeder(
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
+    private async Task SeedProductTypesAsync(CancellationToken cancellationToken)
+    {
+        foreach (var seedType in SeedProductTypes)
+        {
+            var exists = await dbContext.ProductTypes.AnyAsync(
+                type => type.IsSystem && type.OrganizationId == null && type.Code == seedType.Code,
+                cancellationToken);
+
+            if (!exists)
+            {
+                dbContext.ProductTypes.Add(new ProductType(
+                    organizationId: null,
+                    code: seedType.Code,
+                    name: seedType.Name,
+                    isSystem: true,
+                    description: seedType.Description,
+                    displayOrder: seedType.DisplayOrder));
+            }
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task SeedTargetsAsync(CancellationToken cancellationToken)
+    {
+        foreach (var seedTarget in SeedTargets)
+        {
+            var exists = await dbContext.Targets.AnyAsync(
+                target => target.IsSystem && target.OrganizationId == null && target.Code == seedTarget.Code,
+                cancellationToken);
+
+            if (!exists)
+            {
+                dbContext.Targets.Add(new Target(
+                    organizationId: null,
+                    code: seedTarget.Code,
+                    name: seedTarget.Name,
+                    targetType: seedTarget.TargetType,
+                    isSystem: true,
+                    description: seedTarget.Description,
+                    displayOrder: seedTarget.DisplayOrder));
+            }
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task SeedApplicationMethodsAsync(CancellationToken cancellationToken)
+    {
+        foreach (var seedMethod in SeedApplicationMethods)
+        {
+            var exists = await dbContext.ApplicationMethods.AnyAsync(
+                method => method.IsSystem && method.OrganizationId == null && method.Code == seedMethod.Code,
+                cancellationToken);
+
+            if (!exists)
+            {
+                dbContext.ApplicationMethods.Add(new ApplicationMethod(
+                    organizationId: null,
+                    code: seedMethod.Code,
+                    name: seedMethod.Name,
+                    isSystem: true,
+                    description: seedMethod.Description,
+                    displayOrder: seedMethod.DisplayOrder));
+            }
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
     private async Task<Organization> SeedOrganizationAsync(CancellationToken cancellationToken)
     {
         var organization = await dbContext.Organizations
@@ -1185,6 +1373,12 @@ public sealed class IdentityDataSeeder(
     ];
 
     private sealed record SeedExpenseCategory(string Name, string Code, string? Description = null);
+
+    private sealed record SeedProductType(string Code, string Name, int DisplayOrder, string? Description = null);
+
+    private sealed record SeedTarget(string Code, string Name, TargetType TargetType, int DisplayOrder, string? Description = null);
+
+    private sealed record SeedApplicationMethod(string Code, string Name, int DisplayOrder, string? Description = null);
 
     private sealed record InitialAdminConfiguration(string Email, string Password);
 }

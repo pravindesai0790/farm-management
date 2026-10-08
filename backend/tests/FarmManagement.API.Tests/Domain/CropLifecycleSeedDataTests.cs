@@ -8,6 +8,7 @@ using Xunit;
 
 namespace FarmManagement.API.Tests.Domain;
 
+[Collection("DatabaseSeeder")]
 public sealed class CropLifecycleSeedDataTests
 {
     private const string TestConnectionString =
