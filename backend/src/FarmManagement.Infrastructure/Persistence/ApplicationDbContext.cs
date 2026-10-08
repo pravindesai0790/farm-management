@@ -96,6 +96,18 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     public DbSet<SupplierPayment> SupplierPayments => Set<SupplierPayment>();
 
     public DbSet<SupplierPaymentAllocation> SupplierPaymentAllocations => Set<SupplierPaymentAllocation>();
+ 
+    public DbSet<ProductType> ProductTypes => Set<ProductType>();
+
+    public DbSet<Target> Targets => Set<Target>();
+
+    public DbSet<ApplicationMethod> ApplicationMethods => Set<ApplicationMethod>();
+
+    public DbSet<PlantProtectionProduct> PlantProtectionProducts => Set<PlantProtectionProduct>();
+
+    public DbSet<Spray> Sprays => Set<Spray>();
+
+    public DbSet<SprayProduct> SprayProducts => Set<SprayProduct>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

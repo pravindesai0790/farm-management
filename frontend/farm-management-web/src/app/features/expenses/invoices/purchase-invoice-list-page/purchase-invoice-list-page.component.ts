@@ -79,7 +79,6 @@ export class PurchaseInvoiceListPageComponent implements OnInit {
   readonly columns = [
     'invoiceNumber',
     'invoiceDate',
-    'dueDate',
     'supplierName',
     'farmName',
     'lines',
@@ -446,10 +445,10 @@ export class PurchaseInvoiceListPageComponent implements OnInit {
       case 'FullyReceived':
         return 'Received';
       case 'PartiallyReceived':
-        return `Partial (${pendingCount} pending)`;
+        return pendingCount > 0 ? `Partial (${pendingCount})` : 'Partial';
       case 'NotReceived':
       case 'AwaitingDelivery':
-        return pendingCount > 0 ? `Awaiting (${pendingCount} ${pendingCount === 1 ? 'item' : 'items'})` : 'Awaiting';
+        return pendingCount > 0 ? `Awaiting (${pendingCount})` : 'Awaiting';
       case 'NotApplicable':
         return '—';
       default:

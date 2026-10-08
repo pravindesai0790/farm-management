@@ -139,6 +139,15 @@ public sealed class StockMovementConfiguration : IEntityTypeConfiguration<StockM
             .HasConstraintName("fk_stock_movements_labor_activity")
             .OnDelete(DeleteBehavior.SetNull);
 
+        builder.Property(movement => movement.SprayId)
+            .HasColumnName("spray_id");
+
+        builder.HasOne(movement => movement.Spray)
+            .WithMany()
+            .HasForeignKey(movement => movement.SprayId)
+            .HasConstraintName("fk_stock_movements_spray")
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.Property(movement => movement.IsReversed)
             .HasColumnName("is_reversed")
             .HasDefaultValue(false)
@@ -206,6 +215,10 @@ public sealed class StockMovementConfiguration : IEntityTypeConfiguration<StockM
         builder.HasIndex(movement => movement.LaborActivityId)
             .HasDatabaseName("ix_stock_movements_labor_activity")
             .HasFilter("labor_activity_id IS NOT NULL");
+
+        builder.HasIndex(movement => movement.SprayId)
+            .HasDatabaseName("ix_stock_movements_spray")
+            .HasFilter("spray_id IS NOT NULL");
 
         builder.HasIndex(movement => movement.ReversalMovementId)
             .HasDatabaseName("ix_stock_movements_reversal_movement")

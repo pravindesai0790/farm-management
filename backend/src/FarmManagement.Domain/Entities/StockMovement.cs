@@ -26,7 +26,8 @@ public sealed class StockMovement
         Guid? plantationId = null,
         Guid? farmAreaId = null,
         Guid? laborActivityId = null,
-        Guid? reversedMovementId = null)
+        Guid? reversedMovementId = null,
+        Guid? sprayId = null)
     {
         if (organizationId == Guid.Empty)
         {
@@ -86,6 +87,7 @@ public sealed class StockMovement
         FarmAreaId = farmAreaId;
         LaborActivityId = laborActivityId;
         ReversedMovementId = reversedMovementId;
+        SprayId = sprayId;
         IsReversed = false;
         CreatedAt = DateTimeOffset.UtcNow;
         CreatedBy = createdBy;
@@ -108,6 +110,7 @@ public sealed class StockMovement
     public Guid? PlantationId { get; private set; }
     public Guid? FarmAreaId { get; private set; }
     public Guid? LaborActivityId { get; private set; }
+    public Guid? SprayId { get; private set; }
     public bool IsReversed { get; private set; }
     public Guid? ReversalMovementId { get; private set; }
     public Guid? ReversedMovementId { get; private set; }
@@ -125,6 +128,7 @@ public sealed class StockMovement
     public CropPlantation? Plantation { get; private set; }
     public FarmArea? FarmArea { get; private set; }
     public LaborActivity? LaborActivity { get; private set; }
+    public Spray? Spray { get; private set; }
     public StockMovement? ReversalMovement { get; private set; }
     public StockMovement? ReversedMovement { get; private set; }
 
