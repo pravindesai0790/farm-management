@@ -100,3 +100,40 @@ public sealed record SprayDetailsResponse(
     Guid CreatedBy,
     DateTimeOffset? UpdatedAt,
     Guid? UpdatedBy);
+
+public sealed record CreateSprayDraftRequest(
+    Guid FarmId,
+    Guid? FarmAreaId = null,
+    Guid? PlantationId = null,
+    Guid? CropCycleId = null,
+    Guid? CropCycleStageId = null,
+    DateOnly? PlannedDate = null,
+    decimal? PlannedArea = null,
+    Guid? PlannedAreaUnitId = null,
+    decimal? WaterQuantity = null,
+    Guid? WaterUnitId = null,
+    Guid? TargetId = null,
+    Guid? ApplicationMethodId = null,
+    string? PurposeReason = null,
+    IReadOnlyList<SprayProductItemRequest>? Products = null);
+
+public sealed record UpdateSprayDraftRequest(
+    Guid FarmId,
+    Guid? FarmAreaId = null,
+    Guid? PlantationId = null,
+    Guid? CropCycleId = null,
+    Guid? CropCycleStageId = null,
+    DateOnly? PlannedDate = null,
+    decimal? PlannedArea = null,
+    Guid? PlannedAreaUnitId = null,
+    decimal? WaterQuantity = null,
+    Guid? WaterUnitId = null,
+    Guid? TargetId = null,
+    Guid? ApplicationMethodId = null,
+    string? PurposeReason = null,
+    IReadOnlyList<SprayProductItemRequest>? Products = null);
+
+public sealed record SprayProductItemRequest(
+    Guid InventoryItemId,
+    decimal? PlannedQuantity = null,
+    string? Dosage = null);

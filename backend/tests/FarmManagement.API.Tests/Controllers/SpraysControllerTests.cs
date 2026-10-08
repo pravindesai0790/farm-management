@@ -23,7 +23,9 @@ public class SpraysControllerTests
         {
             new(ClaimTypes.NameIdentifier, _userId.ToString()),
             new(AuthorizationConstants.OrganizationIdClaimType, _orgId.ToString()),
-            new("permissions", "Spray.View")
+            new("permissions", "Spray.View"),
+            new("permissions", "Spray.Create"),
+            new("permissions", "Spray.Update")
         };
 
         controller.ControllerContext = new ControllerContext
@@ -71,6 +73,46 @@ public class SpraysControllerTests
         Assert.Equal(sprayId, result.Id);
     }
 
+    [Fact]
+    public async Task Create_ReturnsCreatedAtActionWithDetails()
+    {
+        // Arrange
+        var fakeService = new FakeSprayService();
+        var controller = CreateController(fakeService);
+        var request = new CreateSprayDraftRequest(
+            FarmId: Guid.NewGuid(),
+            PlannedDate: DateOnly.FromDateTime(DateTime.UtcNow));
+
+        // Act
+        var actionResult = await controller.Create(request);
+
+        // Assert
+        var createdResult = Assert.IsType<CreatedAtActionResult>(actionResult);
+        Assert.Equal(nameof(SpraysController.Get), createdResult.ActionName);
+        var result = Assert.IsType<SprayDetailsResponse>(createdResult.Value);
+        Assert.Equal(request.FarmId, result.FarmId);
+    }
+
+    [Fact]
+    public async Task Update_ReturnsOkWithDetails()
+    {
+        // Arrange
+        var fakeService = new FakeSprayService();
+        var controller = CreateController(fakeService);
+        var sprayId = Guid.NewGuid();
+        var request = new UpdateSprayDraftRequest(
+            FarmId: Guid.NewGuid(),
+            PlannedDate: DateOnly.FromDateTime(DateTime.UtcNow));
+
+        // Act
+        var actionResult = await controller.Update(sprayId, request);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(actionResult);
+        var result = Assert.IsType<SprayDetailsResponse>(okResult.Value);
+        Assert.Equal(sprayId, result.Id);
+    }
+
     private sealed class FakeSprayService : ISprayService
     {
         public Task<PagedResponse<SprayListItemResponse>> ListAsync(SprayActor actor, SprayListQuery query, CancellationToken cancellationToken = default)
@@ -106,11 +148,28 @@ public class SpraysControllerTests
 
         public Task<SprayDetailsResponse> GetAsync(SprayActor actor, Guid id, CancellationToken cancellationToken = default)
         {
-            var details = new SprayDetailsResponse(
+            var details = CreateTestDetails(id, actor.OrganizationId, Guid.NewGuid(), actor.UserId);
+            return Task.FromResult(details);
+        }
+
+        public Task<SprayDetailsResponse> CreateDraftAsync(SprayActor actor, CreateSprayDraftRequest request, string? ipAddress, CancellationToken cancellationToken = default)
+        {
+            var details = CreateTestDetails(Guid.NewGuid(), actor.OrganizationId, request.FarmId, actor.UserId);
+            return Task.FromResult(details);
+        }
+
+        public Task<SprayDetailsResponse> UpdateDraftAsync(SprayActor actor, Guid id, UpdateSprayDraftRequest request, string? ipAddress, CancellationToken cancellationToken = default)
+        {
+            var details = CreateTestDetails(id, actor.OrganizationId, request.FarmId, actor.UserId);
+            return Task.FromResult(details);
+        }
+
+        private static SprayDetailsResponse CreateTestDetails(Guid id, Guid organizationId, Guid farmId, Guid userId) =>
+            new(
                 Id: id,
                 ReferenceNumber: "SP-12345678",
-                OrganizationId: actor.OrganizationId,
-                FarmId: Guid.NewGuid(),
+                OrganizationId: organizationId,
+                FarmId: farmId,
                 FarmName: "Test Farm",
                 FarmAreaId: null,
                 FarmAreaName: null,
@@ -120,11 +179,11 @@ public class SpraysControllerTests
                 CropCycleName: null,
                 CropCycleStageId: null,
                 CropCycleStageName: null,
-                Status: SprayStatus.Scheduled,
-                StatusName: "Scheduled",
+                Status: SprayStatus.Draft,
+                StatusName: "DRAFT",
                 IsOverdue: false,
-                PlannedDate: null,
-                ScheduledDateTime: DateTimeOffset.UtcNow,
+                PlannedDate: DateOnly.FromDateTime(DateTime.UtcNow),
+                ScheduledDateTime: null,
                 ActualApplicationDateTime: null,
                 PlannedArea: null,
                 PlannedAreaUnitId: null,
@@ -144,11 +203,8 @@ public class SpraysControllerTests
                 CancellationReason: null,
                 Products: [],
                 CreatedAt: DateTimeOffset.UtcNow,
-                CreatedBy: actor.UserId,
+                CreatedBy: userId,
                 UpdatedAt: null,
                 UpdatedBy: null);
-
-            return Task.FromResult(details);
-        }
     }
 }

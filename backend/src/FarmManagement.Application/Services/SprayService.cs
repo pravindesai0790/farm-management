@@ -1,3 +1,4 @@
+using System.Text.Json;
 using FarmManagement.Application.Common.Exceptions;
 using FarmManagement.Application.Common.Models;
 using FarmManagement.Application.DTOs.Sprays;
@@ -65,6 +66,473 @@ public sealed class SprayService(ISprayStore store) : ISprayService
         var now = DateTimeOffset.UtcNow;
         return ToDetailsResponse(spray, now);
     }
+
+    public async Task<SprayDetailsResponse> CreateDraftAsync(
+        SprayActor actor,
+        CreateSprayDraftRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (request.FarmId == Guid.Empty)
+        {
+            throw Validation("farmId", "A farm is required.");
+        }
+
+        if (!request.PlannedDate.HasValue)
+        {
+            throw Validation("plannedDate", "A planned date is required for planned spray.");
+        }
+
+        await ValidateHierarchyAsync(
+            actor.OrganizationId,
+            request.FarmId,
+            request.FarmAreaId,
+            request.PlantationId,
+            request.CropCycleId,
+            request.CropCycleStageId,
+            cancellationToken);
+
+        await ValidateAreaAndUnitsAsync(actor.OrganizationId, request.PlannedArea, request.PlannedAreaUnitId, cancellationToken);
+        await ValidateWaterAndUnitsAsync(actor.OrganizationId, request.WaterQuantity, request.WaterUnitId, cancellationToken);
+        await ValidateTargetAsync(actor.OrganizationId, request.TargetId, cancellationToken);
+        await ValidateApplicationMethodAsync(actor.OrganizationId, request.ApplicationMethodId, cancellationToken);
+        await ValidateProductsAsync(actor.OrganizationId, request.Products, cancellationToken);
+
+        var spray = new Spray(
+            organizationId: actor.OrganizationId,
+            farmId: request.FarmId,
+            createdBy: actor.UserId,
+            farmAreaId: request.FarmAreaId,
+            plantationId: request.PlantationId,
+            cropCycleId: request.CropCycleId,
+            cropCycleStageId: request.CropCycleStageId,
+            status: SprayStatus.Draft,
+            plannedDate: request.PlannedDate,
+            plannedArea: request.PlannedArea,
+            plannedAreaUnitId: request.PlannedAreaUnitId,
+            waterQuantity: request.WaterQuantity,
+            waterUnitId: request.WaterUnitId,
+            targetId: request.TargetId,
+            applicationMethodId: request.ApplicationMethodId,
+            purposeReason: request.PurposeReason);
+
+        if (request.Products is not null)
+        {
+            foreach (var item in request.Products)
+            {
+                var product = new SprayProduct(
+                    sprayId: spray.Id,
+                    inventoryItemId: item.InventoryItemId,
+                    createdBy: actor.UserId,
+                    plannedQuantity: item.PlannedQuantity,
+                    dosage: item.Dosage);
+                spray.AddProduct(product);
+            }
+        }
+
+        store.Add(spray);
+
+        AddAudit(
+            actor,
+            spray,
+            "Spray.Created",
+            new
+            {
+                spray.Id,
+                spray.FarmId,
+                spray.FarmAreaId,
+                spray.PlantationId,
+                spray.CropCycleId,
+                spray.CropCycleStageId,
+                spray.PlannedDate,
+                ProductCount = spray.Products.Count
+            },
+            ipAddress);
+
+        await store.SaveChangesAsync(cancellationToken);
+
+        return await GetAsync(actor, spray.Id, cancellationToken);
+    }
+
+    public async Task<SprayDetailsResponse> UpdateDraftAsync(
+        SprayActor actor,
+        Guid id,
+        UpdateSprayDraftRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (id == Guid.Empty)
+        {
+            throw new ResourceNotFoundException("The spray was not found.");
+        }
+
+        var spray = await store.FindAsync(id, actor.OrganizationId, cancellationToken)
+            ?? throw new ResourceNotFoundException("The spray was not found.");
+
+        if (spray.Status != SprayStatus.Draft)
+        {
+            throw new ConflictException("Only draft sprays can be modified.");
+        }
+
+        if (request.FarmId == Guid.Empty)
+        {
+            throw Validation("farmId", "A farm is required.");
+        }
+
+        if (!request.PlannedDate.HasValue)
+        {
+            throw Validation("plannedDate", "A planned date is required for planned spray.");
+        }
+
+        await ValidateHierarchyAsync(
+            actor.OrganizationId,
+            request.FarmId,
+            request.FarmAreaId,
+            request.PlantationId,
+            request.CropCycleId,
+            request.CropCycleStageId,
+            cancellationToken);
+
+        await ValidateAreaAndUnitsAsync(actor.OrganizationId, request.PlannedArea, request.PlannedAreaUnitId, cancellationToken);
+        await ValidateWaterAndUnitsAsync(actor.OrganizationId, request.WaterQuantity, request.WaterUnitId, cancellationToken);
+        await ValidateTargetAsync(actor.OrganizationId, request.TargetId, cancellationToken);
+        await ValidateApplicationMethodAsync(actor.OrganizationId, request.ApplicationMethodId, cancellationToken);
+        await ValidateProductsAsync(actor.OrganizationId, request.Products, cancellationToken);
+
+        var now = DateTimeOffset.UtcNow;
+
+        spray.UpdateDraft(
+            farmId: request.FarmId,
+            farmAreaId: request.FarmAreaId,
+            plantationId: request.PlantationId,
+            cropCycleId: request.CropCycleId,
+            cropCycleStageId: request.CropCycleStageId,
+            plannedDate: request.PlannedDate,
+            plannedArea: request.PlannedArea,
+            plannedAreaUnitId: request.PlannedAreaUnitId,
+            waterQuantity: request.WaterQuantity,
+            waterUnitId: request.WaterUnitId,
+            targetId: request.TargetId,
+            applicationMethodId: request.ApplicationMethodId,
+            purposeReason: request.PurposeReason,
+            now: now,
+            updatedBy: actor.UserId);
+
+        var incomingProductList = request.Products ?? [];
+        var incomingItemIds = incomingProductList.Select(p => p.InventoryItemId).ToHashSet();
+
+        // 1. Remove products not in incoming list
+        var productsToRemove = spray.Products.Where(p => !incomingItemIds.Contains(p.InventoryItemId)).ToList();
+        foreach (var product in productsToRemove)
+        {
+            spray.RemoveProduct(product.InventoryItemId);
+            store.RemoveSprayProduct(product);
+        }
+
+        // 2. Update existing or add new
+        foreach (var item in incomingProductList)
+        {
+            var existing = spray.Products.FirstOrDefault(p => p.InventoryItemId == item.InventoryItemId);
+            if (existing is not null)
+            {
+                existing.UpdateDraft(item.PlannedQuantity, item.Dosage, now, actor.UserId);
+            }
+            else
+            {
+                var newProduct = new SprayProduct(
+                    sprayId: spray.Id,
+                    inventoryItemId: item.InventoryItemId,
+                    createdBy: actor.UserId,
+                    plannedQuantity: item.PlannedQuantity,
+                    dosage: item.Dosage);
+                spray.AddProduct(newProduct);
+            }
+        }
+
+        AddAudit(
+            actor,
+            spray,
+            "Spray.DraftUpdated",
+            new
+            {
+                spray.Id,
+                spray.FarmId,
+                spray.FarmAreaId,
+                spray.PlantationId,
+                spray.CropCycleId,
+                spray.CropCycleStageId,
+                spray.PlannedDate,
+                ProductCount = spray.Products.Count
+            },
+            ipAddress);
+
+        await store.SaveChangesAsync(cancellationToken);
+
+        return await GetAsync(actor, spray.Id, cancellationToken);
+    }
+
+    private async Task ValidateHierarchyAsync(
+        Guid organizationId,
+        Guid farmId,
+        Guid? farmAreaId,
+        Guid? plantationId,
+        Guid? cropCycleId,
+        Guid? cropCycleStageId,
+        CancellationToken cancellationToken)
+    {
+        var farm = await store.FindFarmAsync(farmId, organizationId, cancellationToken)
+            ?? throw new ResourceNotFoundException("The farm was not found.");
+
+        if (!farm.IsActive)
+        {
+            throw Validation("farmId", "The selected farm is inactive.");
+        }
+
+        if (farmAreaId.HasValue && farmAreaId.Value != Guid.Empty)
+        {
+            var area = await store.FindFarmAreaAsync(farmAreaId.Value, organizationId, cancellationToken)
+                ?? throw new ResourceNotFoundException("The farm area was not found.");
+
+            if (area.FarmId != farm.Id)
+            {
+                throw Validation("farmAreaId", "The farm area does not belong to the selected farm.");
+            }
+
+            if (!area.IsActive)
+            {
+                throw Validation("farmAreaId", "The selected farm area is inactive.");
+            }
+        }
+
+        if (plantationId.HasValue && plantationId.Value != Guid.Empty)
+        {
+            if (!farmAreaId.HasValue || farmAreaId.Value == Guid.Empty)
+            {
+                throw Validation("plantationId", "A farm area is required when specifying a plantation.");
+            }
+
+            var plantation = await store.FindPlantationAsync(plantationId.Value, organizationId, cancellationToken)
+                ?? throw new ResourceNotFoundException("The plantation was not found.");
+
+            if (plantation.FarmId != farm.Id)
+            {
+                throw Validation("plantationId", "The plantation does not belong to the selected farm.");
+            }
+
+            if (plantation.FarmAreaId != farmAreaId.Value)
+            {
+                throw Validation("plantationId", "The plantation does not belong to the selected farm area.");
+            }
+        }
+
+        if (cropCycleId.HasValue && cropCycleId.Value != Guid.Empty)
+        {
+            if (!plantationId.HasValue || plantationId.Value == Guid.Empty)
+            {
+                throw Validation("cropCycleId", "A plantation is required when specifying a crop cycle.");
+            }
+
+            var cycle = await store.FindCropCycleAsync(cropCycleId.Value, organizationId, cancellationToken)
+                ?? throw new ResourceNotFoundException("The crop cycle was not found.");
+
+            if (cycle.PlantationId != plantationId.Value)
+            {
+                throw Validation("cropCycleId", "The crop cycle does not belong to the selected plantation.");
+            }
+        }
+
+        if (cropCycleStageId.HasValue && cropCycleStageId.Value != Guid.Empty)
+        {
+            if (!cropCycleId.HasValue || cropCycleId.Value == Guid.Empty)
+            {
+                throw Validation("cropCycleStageId", "A crop cycle is required when specifying a crop cycle stage.");
+            }
+
+            var stage = await store.FindCropCycleStageAsync(cropCycleStageId.Value, organizationId, cancellationToken)
+                ?? throw new ResourceNotFoundException("The crop cycle stage was not found.");
+
+            if (stage.CropCycleId != cropCycleId.Value)
+            {
+                throw Validation("cropCycleStageId", "The crop cycle stage does not belong to the selected crop cycle.");
+            }
+        }
+    }
+
+    private async Task ValidateAreaAndUnitsAsync(
+        Guid organizationId,
+        decimal? plannedArea,
+        Guid? plannedAreaUnitId,
+        CancellationToken cancellationToken)
+    {
+        if (plannedArea.HasValue && plannedArea.Value <= 0)
+        {
+            throw Validation("plannedArea", "Planned area must be greater than zero.");
+        }
+
+        if (plannedArea.HasValue && !plannedAreaUnitId.HasValue)
+        {
+            throw Validation("plannedAreaUnitId", "An area unit is required when planned area is specified.");
+        }
+
+        if (!plannedArea.HasValue && plannedAreaUnitId.HasValue)
+        {
+            throw Validation("plannedArea", "A planned area is required when area unit is specified.");
+        }
+
+        if (plannedAreaUnitId.HasValue)
+        {
+            var unit = await store.FindUnitAsync(plannedAreaUnitId.Value, organizationId, cancellationToken)
+                ?? throw new ResourceNotFoundException("The selected area unit was not found.");
+
+            if (!unit.IsActive)
+            {
+                throw Validation("plannedAreaUnitId", "The selected area unit is inactive.");
+            }
+        }
+    }
+
+    private async Task ValidateWaterAndUnitsAsync(
+        Guid organizationId,
+        decimal? waterQuantity,
+        Guid? waterUnitId,
+        CancellationToken cancellationToken)
+    {
+        if (waterQuantity.HasValue && waterQuantity.Value <= 0)
+        {
+            throw Validation("waterQuantity", "Water quantity must be greater than zero.");
+        }
+
+        if (waterQuantity.HasValue && !waterUnitId.HasValue)
+        {
+            throw Validation("waterUnitId", "A water unit is required when water quantity is specified.");
+        }
+
+        if (!waterQuantity.HasValue && waterUnitId.HasValue)
+        {
+            throw Validation("waterQuantity", "A water quantity is required when water unit is specified.");
+        }
+
+        if (waterUnitId.HasValue)
+        {
+            var unit = await store.FindUnitAsync(waterUnitId.Value, organizationId, cancellationToken)
+                ?? throw new ResourceNotFoundException("The selected water unit was not found.");
+
+            if (!unit.IsActive)
+            {
+                throw Validation("waterUnitId", "The selected water unit is inactive.");
+            }
+        }
+    }
+
+    private async Task ValidateTargetAsync(
+        Guid organizationId,
+        Guid? targetId,
+        CancellationToken cancellationToken)
+    {
+        if (targetId.HasValue && targetId.Value != Guid.Empty)
+        {
+            var target = await store.FindTargetAsync(targetId.Value, organizationId, cancellationToken)
+                ?? throw new ResourceNotFoundException("The selected target was not found.");
+
+            if (!target.IsActive)
+            {
+                throw Validation("targetId", "The selected target is inactive.");
+            }
+        }
+    }
+
+    private async Task ValidateApplicationMethodAsync(
+        Guid organizationId,
+        Guid? applicationMethodId,
+        CancellationToken cancellationToken)
+    {
+        if (applicationMethodId.HasValue && applicationMethodId.Value != Guid.Empty)
+        {
+            var method = await store.FindApplicationMethodAsync(applicationMethodId.Value, organizationId, cancellationToken)
+                ?? throw new ResourceNotFoundException("The selected application method was not found.");
+
+            if (!method.IsActive)
+            {
+                throw Validation("applicationMethodId", "The selected application method is inactive.");
+            }
+        }
+    }
+
+    private async Task ValidateProductsAsync(
+        Guid organizationId,
+        IReadOnlyList<SprayProductItemRequest>? products,
+        CancellationToken cancellationToken)
+    {
+        if (products is null || products.Count == 0)
+        {
+            return;
+        }
+
+        var duplicates = products
+            .GroupBy(p => p.InventoryItemId)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key)
+            .ToList();
+
+        if (duplicates.Count > 0)
+        {
+            throw Validation("products", "Duplicate inventory items are not allowed in spray products.");
+        }
+
+        foreach (var item in products)
+        {
+            if (item.InventoryItemId == Guid.Empty)
+            {
+                throw Validation("inventoryItemId", "An inventory item is required.");
+            }
+
+            if (item.PlannedQuantity.HasValue && item.PlannedQuantity.Value <= 0)
+            {
+                throw Validation("plannedQuantity", "Planned quantity must be greater than zero.");
+            }
+
+            var inventoryItem = await store.FindInventoryItemAsync(item.InventoryItemId, organizationId, cancellationToken)
+                ?? throw new ResourceNotFoundException("The selected inventory item was not found.");
+
+            if (!inventoryItem.IsActive)
+            {
+                throw Validation("products", $"The inventory item '{inventoryItem.Name}' is inactive.");
+            }
+
+            var hasActiveProfile = await store.HasActivePlantProtectionProfileAsync(item.InventoryItemId, organizationId, cancellationToken);
+            if (!hasActiveProfile)
+            {
+                throw Validation("products", $"The inventory item '{inventoryItem.Name}' must have an active plant protection product profile.");
+            }
+        }
+    }
+
+    private void AddAudit(
+        SprayActor actor,
+        Spray spray,
+        string action,
+        object details,
+        string? ipAddress) =>
+        store.AddAuditLog(new AuditLog(
+            action,
+            spray.OrganizationId,
+            actor.UserId,
+            entityType: "Spray",
+            entityId: spray.Id,
+            details: details is null ? null : JsonSerializer.SerializeToDocument(details),
+            ipAddress: ipAddress));
+
+    private static ValidationException Validation(string property, string message) =>
+        new("One or more validation errors occurred.", new Dictionary<string, string[]>
+        {
+            [property] = [message]
+        });
 
     private static SprayListItemResponse ToListItemResponse(Spray spray, DateTimeOffset now)
     {

@@ -155,6 +155,38 @@ public class SprayQueryServiceTests
 
         public void AddAuditLog(AuditLog auditLog) => AuditLogs.Add(auditLog);
 
+        public Task<Farm?> FindFarmAsync(Guid farmId, Guid organizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<Farm?>(null);
+
+        public Task<FarmArea?> FindFarmAreaAsync(Guid farmAreaId, Guid organizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<FarmArea?>(null);
+
+        public Task<CropPlantation?> FindPlantationAsync(Guid plantationId, Guid organizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<CropPlantation?>(null);
+
+        public Task<CropCycle?> FindCropCycleAsync(Guid cropCycleId, Guid organizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<CropCycle?>(null);
+
+        public Task<CropCycleStage?> FindCropCycleStageAsync(Guid cropCycleStageId, Guid organizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<CropCycleStage?>(null);
+
+        public Task<Target?> FindTargetAsync(Guid targetId, Guid organizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<Target?>(null);
+
+        public Task<ApplicationMethod?> FindApplicationMethodAsync(Guid applicationMethodId, Guid organizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<ApplicationMethod?>(null);
+
+        public Task<Unit?> FindUnitAsync(Guid unitId, Guid organizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<Unit?>(null);
+
+        public Task<InventoryItem?> FindInventoryItemAsync(Guid inventoryItemId, Guid organizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<InventoryItem?>(null);
+
+        public Task<bool> HasActivePlantProtectionProfileAsync(Guid inventoryItemId, Guid organizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public void RemoveSprayProduct(SprayProduct product) { }
+
         public Task SaveChangesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 }

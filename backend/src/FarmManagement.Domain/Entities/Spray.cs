@@ -128,7 +128,7 @@ public sealed class Spray
         Guid? plantationId,
         Guid? cropCycleId,
         Guid? cropCycleStageId,
-        DateOnly plannedDate,
+        DateOnly? plannedDate,
         decimal? plannedArea,
         Guid? plannedAreaUnitId,
         decimal? waterQuantity,

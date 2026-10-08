@@ -14,4 +14,17 @@ public interface ISprayService
         SprayActor actor,
         Guid id,
         CancellationToken cancellationToken = default);
+
+    Task<SprayDetailsResponse> CreateDraftAsync(
+        SprayActor actor,
+        CreateSprayDraftRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default);
+
+    Task<SprayDetailsResponse> UpdateDraftAsync(
+        SprayActor actor,
+        Guid id,
+        UpdateSprayDraftRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default);
 }

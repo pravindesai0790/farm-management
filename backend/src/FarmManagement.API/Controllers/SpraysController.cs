@@ -28,4 +28,24 @@ public sealed class SpraysController(ISprayService sprayService) : ControllerBas
         var result = await sprayService.GetAsync(actor, id, cancellationToken);
         return Ok(result);
     }
+
+    [HttpPost]
+    [Authorize(Policy = "Permission:Spray.Create")]
+    public async Task<IActionResult> Create([FromBody] CreateSprayDraftRequest request, CancellationToken cancellationToken = default)
+    {
+        var actor = UserContextHelper.GetUserContext<SprayActor>(User);
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var result = await sprayService.CreateDraftAsync(actor, request, ipAddress, cancellationToken);
+        return CreatedAtAction(nameof(Get), new { id = result.Id }, result);
+    }
+
+    [HttpPut("{id:guid}")]
+    [Authorize(Policy = "Permission:Spray.Update")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateSprayDraftRequest request, CancellationToken cancellationToken = default)
+    {
+        var actor = UserContextHelper.GetUserContext<SprayActor>(User);
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var result = await sprayService.UpdateDraftAsync(actor, id, request, ipAddress, cancellationToken);
+        return Ok(result);
+    }
 }

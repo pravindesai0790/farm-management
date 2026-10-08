@@ -92,6 +92,40 @@ public sealed class SprayStore(ApplicationDbContext dbContext) : ISprayStore
 
     public void AddAuditLog(AuditLog auditLog) => dbContext.AuditLogs.Add(auditLog);
 
+    public Task<Farm?> FindFarmAsync(Guid farmId, Guid organizationId, CancellationToken cancellationToken = default) =>
+        dbContext.Farms.SingleOrDefaultAsync(f => f.Id == farmId && f.OrganizationId == organizationId, cancellationToken);
+
+    public Task<FarmArea?> FindFarmAreaAsync(Guid farmAreaId, Guid organizationId, CancellationToken cancellationToken = default) =>
+        dbContext.FarmAreas.SingleOrDefaultAsync(fa => fa.Id == farmAreaId && fa.OrganizationId == organizationId, cancellationToken);
+
+    public Task<CropPlantation?> FindPlantationAsync(Guid plantationId, Guid organizationId, CancellationToken cancellationToken = default) =>
+        dbContext.CropPlantations.SingleOrDefaultAsync(p => p.Id == plantationId && p.OrganizationId == organizationId, cancellationToken);
+
+    public Task<CropCycle?> FindCropCycleAsync(Guid cropCycleId, Guid organizationId, CancellationToken cancellationToken = default) =>
+        dbContext.CropCycles.SingleOrDefaultAsync(c => c.Id == cropCycleId && c.OrganizationId == organizationId, cancellationToken);
+
+    public Task<CropCycleStage?> FindCropCycleStageAsync(Guid cropCycleStageId, Guid organizationId, CancellationToken cancellationToken = default) =>
+        dbContext.CropCycleStages
+            .Include(s => s.CropCycle)
+            .SingleOrDefaultAsync(s => s.Id == cropCycleStageId && s.CropCycle != null && s.CropCycle.OrganizationId == organizationId, cancellationToken);
+
+    public Task<Target?> FindTargetAsync(Guid targetId, Guid organizationId, CancellationToken cancellationToken = default) =>
+        dbContext.Targets.SingleOrDefaultAsync(t => t.Id == targetId && ((t.IsSystem && t.OrganizationId == null) || t.OrganizationId == organizationId), cancellationToken);
+
+    public Task<ApplicationMethod?> FindApplicationMethodAsync(Guid applicationMethodId, Guid organizationId, CancellationToken cancellationToken = default) =>
+        dbContext.ApplicationMethods.SingleOrDefaultAsync(am => am.Id == applicationMethodId && ((am.IsSystem && am.OrganizationId == null) || am.OrganizationId == organizationId), cancellationToken);
+
+    public Task<Unit?> FindUnitAsync(Guid unitId, Guid organizationId, CancellationToken cancellationToken = default) =>
+        dbContext.Units.SingleOrDefaultAsync(u => u.Id == unitId && ((u.IsSystem && u.OrganizationId == null) || u.OrganizationId == organizationId), cancellationToken);
+
+    public Task<InventoryItem?> FindInventoryItemAsync(Guid inventoryItemId, Guid organizationId, CancellationToken cancellationToken = default) =>
+        dbContext.InventoryItems.SingleOrDefaultAsync(i => i.Id == inventoryItemId && i.OrganizationId == organizationId, cancellationToken);
+
+    public Task<bool> HasActivePlantProtectionProfileAsync(Guid inventoryItemId, Guid organizationId, CancellationToken cancellationToken = default) =>
+        dbContext.PlantProtectionProducts.AnyAsync(ppp => ppp.InventoryItemId == inventoryItemId && ppp.OrganizationId == organizationId && ppp.IsActive, cancellationToken);
+
+    public void RemoveSprayProduct(SprayProduct product) => dbContext.SprayProducts.Remove(product);
+
     public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
         dbContext.SaveChangesAsync(cancellationToken);
 
