@@ -147,6 +147,7 @@ builder.Services.AddScoped<IPurchaseInvoiceService, PurchaseInvoiceService>();
 builder.Services.AddScoped<ISupplierPaymentService, SupplierPaymentService>();
 builder.Services.AddScoped<IExpenseReportService, ExpenseReportService>();
 builder.Services.AddScoped<ISupplierBalanceService, SupplierBalanceService>();
+builder.Services.AddScoped<FarmManagement.Application.Interfaces.PlantProtection.IPlantProtectionProductService, PlantProtectionProductService>();
 
 var app = builder.Build();
 
