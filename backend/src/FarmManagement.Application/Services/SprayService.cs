@@ -383,6 +383,146 @@ public sealed class SprayService(ISprayStore store) : ISprayService
         return await GetAsync(actor, spray.Id, cancellationToken);
     }
 
+    public async Task<SprayDetailsResponse> StartAsync(
+        SprayActor actor,
+        Guid id,
+        StartSprayRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (id == Guid.Empty)
+        {
+            throw new ResourceNotFoundException("The spray was not found.");
+        }
+
+        var spray = await store.FindAsync(id, actor.OrganizationId, cancellationToken)
+            ?? throw new ResourceNotFoundException("The spray was not found.");
+
+        if (spray.Status != SprayStatus.Scheduled)
+        {
+            throw new ConflictException("Only scheduled sprays can be started.");
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        if (request.ActualApplicationDateTime > now)
+        {
+            throw Validation("actualApplicationDateTime", "Actual application date/time cannot be in the future.");
+        }
+
+        if (request.Products is null || request.Products.Count == 0)
+        {
+            throw Validation("products", "At least one product is required to start a spray.");
+        }
+
+        var duplicates = request.Products
+            .GroupBy(p => p.InventoryItemId)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key)
+            .ToList();
+
+        if (duplicates.Count > 0)
+        {
+            throw Validation("products", "Duplicate inventory items are not allowed in spray products.");
+        }
+
+        // Validate each product item and verify stock availability
+        foreach (var item in request.Products)
+        {
+            if (item.InventoryItemId == Guid.Empty)
+            {
+                throw Validation("inventoryItemId", "An inventory item is required.");
+            }
+
+            if (item.StorageLocationId == Guid.Empty)
+            {
+                throw Validation("storageLocationId", "A storage location is required for each spray product.");
+            }
+
+            if (item.ActualQuantity <= 0)
+            {
+                throw Validation("actualQuantity", "Actual quantity must be greater than zero.");
+            }
+
+            var inventoryItem = await store.FindInventoryItemAsync(item.InventoryItemId, actor.OrganizationId, cancellationToken)
+                ?? throw new ResourceNotFoundException("The selected inventory item was not found.");
+
+            if (!inventoryItem.IsActive)
+            {
+                throw Validation("products", $"The inventory item '{inventoryItem.Name}' is inactive.");
+            }
+
+            var hasActiveProfile = await store.HasActivePlantProtectionProfileAsync(item.InventoryItemId, actor.OrganizationId, cancellationToken);
+            if (!hasActiveProfile)
+            {
+                throw Validation("products", $"The inventory item '{inventoryItem.Name}' must have an active plant protection product profile.");
+            }
+
+            var storageLocation = await store.FindStorageLocationAsync(item.StorageLocationId, actor.OrganizationId, cancellationToken)
+                ?? throw new ResourceNotFoundException("The selected storage location was not found.");
+
+            if (!storageLocation.IsActive)
+            {
+                throw Validation("storageLocationId", $"The storage location '{storageLocation.Name}' is inactive.");
+            }
+
+            if (storageLocation.FarmId != spray.FarmId)
+            {
+                throw Validation("storageLocationId", $"The storage location '{storageLocation.Name}' does not belong to the spray farm.");
+            }
+
+            var balance = await store.FindStockBalanceAsync(item.StorageLocationId, item.InventoryItemId, actor.OrganizationId, cancellationToken);
+            var available = balance?.QuantityOnHand ?? 0m;
+            if (available < item.ActualQuantity)
+            {
+                throw Validation("products", $"Insufficient stock for '{inventoryItem.Name}'. Required: {item.ActualQuantity}, Available: {available} at '{storageLocation.Name}'.");
+            }
+        }
+
+        // Apply product execution values
+        foreach (var item in request.Products)
+        {
+            var existing = spray.Products.FirstOrDefault(p => p.InventoryItemId == item.InventoryItemId);
+            if (existing is not null)
+            {
+                existing.SetExecution(item.StorageLocationId, item.ActualQuantity, item.Dosage, now, actor.UserId);
+            }
+            else
+            {
+                var newProduct = new SprayProduct(
+                    sprayId: spray.Id,
+                    inventoryItemId: item.InventoryItemId,
+                    createdBy: actor.UserId,
+                    storageLocationId: item.StorageLocationId,
+                    actualQuantity: item.ActualQuantity,
+                    dosage: item.Dosage);
+                spray.AddProduct(newProduct);
+            }
+        }
+
+        spray.Start(request.ActualApplicationDateTime, now, actor.UserId);
+
+        AddAudit(
+            actor,
+            spray,
+            "Spray.Started",
+            new
+            {
+                spray.Id,
+                spray.FarmId,
+                spray.ActualApplicationDateTime,
+                Status = spray.Status.ToString().ToUpperInvariant(),
+                ProductCount = spray.Products.Count
+            },
+            ipAddress);
+
+        await store.SaveChangesAsync(cancellationToken);
+
+        return await GetAsync(actor, spray.Id, cancellationToken);
+    }
+
     private async Task ValidateHierarchyAsync(
         Guid organizationId,
         Guid farmId,

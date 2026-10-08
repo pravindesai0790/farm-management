@@ -124,6 +124,12 @@ public sealed class SprayStore(ApplicationDbContext dbContext) : ISprayStore
     public Task<bool> HasActivePlantProtectionProfileAsync(Guid inventoryItemId, Guid organizationId, CancellationToken cancellationToken = default) =>
         dbContext.PlantProtectionProducts.AnyAsync(ppp => ppp.InventoryItemId == inventoryItemId && ppp.OrganizationId == organizationId && ppp.IsActive, cancellationToken);
 
+    public Task<StorageLocation?> FindStorageLocationAsync(Guid storageLocationId, Guid organizationId, CancellationToken cancellationToken = default) =>
+        dbContext.StorageLocations.SingleOrDefaultAsync(sl => sl.Id == storageLocationId && sl.OrganizationId == organizationId, cancellationToken);
+
+    public Task<StockBalance?> FindStockBalanceAsync(Guid storageLocationId, Guid inventoryItemId, Guid organizationId, CancellationToken cancellationToken = default) =>
+        dbContext.StockBalances.SingleOrDefaultAsync(sb => sb.StorageLocationId == storageLocationId && sb.InventoryItemId == inventoryItemId && sb.OrganizationId == organizationId, cancellationToken);
+
     public void RemoveSprayProduct(SprayProduct product) => dbContext.SprayProducts.Remove(product);
 
     public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>

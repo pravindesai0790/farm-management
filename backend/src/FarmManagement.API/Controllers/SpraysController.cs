@@ -68,4 +68,14 @@ public sealed class SpraysController(ISprayService sprayService) : ControllerBas
         var result = await sprayService.RescheduleAsync(actor, id, request, ipAddress, cancellationToken);
         return Ok(result);
     }
+
+    [HttpPost("{id:guid}/start")]
+    [Authorize(Policy = "Permission:Spray.Start")]
+    public async Task<IActionResult> Start(Guid id, [FromBody] StartSprayRequest request, CancellationToken cancellationToken = default)
+    {
+        var actor = UserContextHelper.GetUserContext<SprayActor>(User);
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var result = await sprayService.StartAsync(actor, id, request, ipAddress, cancellationToken);
+        return Ok(result);
+    }
 }

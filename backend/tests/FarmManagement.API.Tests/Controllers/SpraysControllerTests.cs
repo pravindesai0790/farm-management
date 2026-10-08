@@ -149,6 +149,32 @@ public class SpraysControllerTests
         Assert.Equal(sprayId, result.Id);
     }
 
+    [Fact]
+    public async Task Start_ReturnsOkWithDetails()
+    {
+        // Arrange
+        var fakeService = new FakeSprayService();
+        var controller = CreateController(fakeService);
+        var sprayId = Guid.NewGuid();
+        var request = new StartSprayRequest(
+            ActualApplicationDateTime: DateTimeOffset.UtcNow,
+            Products: [
+                new StartSprayProductItemRequest(
+                    InventoryItemId: Guid.NewGuid(),
+                    StorageLocationId: Guid.NewGuid(),
+                    ActualQuantity: 5.0m,
+                    Dosage: "2 L/ha")
+            ]);
+
+        // Act
+        var actionResult = await controller.Start(sprayId, request);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(actionResult);
+        var result = Assert.IsType<SprayDetailsResponse>(okResult.Value);
+        Assert.Equal(sprayId, result.Id);
+    }
+
     private sealed class FakeSprayService : ISprayService
     {
         public Task<PagedResponse<SprayListItemResponse>> ListAsync(SprayActor actor, SprayListQuery query, CancellationToken cancellationToken = default)
@@ -207,6 +233,12 @@ public class SpraysControllerTests
         }
 
         public Task<SprayDetailsResponse> RescheduleAsync(SprayActor actor, Guid id, RescheduleSprayRequest request, string? ipAddress, CancellationToken cancellationToken = default)
+        {
+            var details = CreateTestDetails(id, actor.OrganizationId, Guid.NewGuid(), actor.UserId);
+            return Task.FromResult(details);
+        }
+
+        public Task<SprayDetailsResponse> StartAsync(SprayActor actor, Guid id, StartSprayRequest request, string? ipAddress, CancellationToken cancellationToken = default)
         {
             var details = CreateTestDetails(id, actor.OrganizationId, Guid.NewGuid(), actor.UserId);
             return Task.FromResult(details);

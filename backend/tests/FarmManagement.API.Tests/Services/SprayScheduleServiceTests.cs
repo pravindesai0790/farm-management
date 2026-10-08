@@ -278,6 +278,12 @@ public class SprayScheduleServiceTests
         public Task<bool> HasActivePlantProtectionProfileAsync(Guid inventoryItemId, Guid organizationId, CancellationToken cancellationToken = default) =>
             Task.FromResult(true);
 
+        public Task<StorageLocation?> FindStorageLocationAsync(Guid storageLocationId, Guid organizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<StorageLocation?>(null);
+
+        public Task<StockBalance?> FindStockBalanceAsync(Guid storageLocationId, Guid inventoryItemId, Guid organizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<StockBalance?>(null);
+
         public void RemoveSprayProduct(SprayProduct product) { }
 
         public Task SaveChangesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;

@@ -45,6 +45,10 @@ public interface ISprayStore
 
     Task<bool> HasActivePlantProtectionProfileAsync(Guid inventoryItemId, Guid organizationId, CancellationToken cancellationToken = default);
 
+    Task<StorageLocation?> FindStorageLocationAsync(Guid storageLocationId, Guid organizationId, CancellationToken cancellationToken = default);
+
+    Task<StockBalance?> FindStockBalanceAsync(Guid storageLocationId, Guid inventoryItemId, Guid organizationId, CancellationToken cancellationToken = default);
+
     void RemoveSprayProduct(SprayProduct product);
 
     Task SaveChangesAsync(CancellationToken cancellationToken = default);

@@ -41,4 +41,11 @@ public interface ISprayService
         RescheduleSprayRequest request,
         string? ipAddress,
         CancellationToken cancellationToken = default);
+
+    Task<SprayDetailsResponse> StartAsync(
+        SprayActor actor,
+        Guid id,
+        StartSprayRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default);
 }

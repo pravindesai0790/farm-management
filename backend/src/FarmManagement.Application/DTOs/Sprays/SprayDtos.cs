@@ -144,3 +144,13 @@ public sealed record ScheduleSprayRequest(
 
 public sealed record RescheduleSprayRequest(
     DateTimeOffset ScheduledDateTime);
+
+public sealed record StartSprayRequest(
+    DateTimeOffset ActualApplicationDateTime,
+    IReadOnlyList<StartSprayProductItemRequest> Products);
+
+public sealed record StartSprayProductItemRequest(
+    Guid InventoryItemId,
+    Guid StorageLocationId,
+    decimal ActualQuantity,
+    string? Dosage = null);
