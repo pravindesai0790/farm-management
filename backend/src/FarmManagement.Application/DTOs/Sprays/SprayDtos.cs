@@ -137,3 +137,10 @@ public sealed record SprayProductItemRequest(
     Guid InventoryItemId,
     decimal? PlannedQuantity = null,
     string? Dosage = null);
+
+public sealed record ScheduleSprayRequest(
+    DateTimeOffset ScheduledDateTime,
+    DateOnly? PlannedDate = null);
+
+public sealed record RescheduleSprayRequest(
+    DateTimeOffset ScheduledDateTime);

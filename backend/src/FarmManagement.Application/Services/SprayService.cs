@@ -277,6 +277,112 @@ public sealed class SprayService(ISprayStore store) : ISprayService
         return await GetAsync(actor, spray.Id, cancellationToken);
     }
 
+    public async Task<SprayDetailsResponse> ScheduleAsync(
+        SprayActor actor,
+        Guid id,
+        ScheduleSprayRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (id == Guid.Empty)
+        {
+            throw new ResourceNotFoundException("The spray was not found.");
+        }
+
+        var spray = await store.FindAsync(id, actor.OrganizationId, cancellationToken)
+            ?? throw new ResourceNotFoundException("The spray was not found.");
+
+        if (spray.Status != SprayStatus.Draft)
+        {
+            throw new ConflictException("Only draft sprays can be scheduled.");
+        }
+
+        var effectivePlannedDate = request.PlannedDate ?? spray.PlannedDate;
+        if (!effectivePlannedDate.HasValue)
+        {
+            throw Validation("plannedDate", "A planned date is required to schedule a spray.");
+        }
+
+        await ValidateHierarchyAsync(
+            actor.OrganizationId,
+            spray.FarmId,
+            spray.FarmAreaId,
+            spray.PlantationId,
+            spray.CropCycleId,
+            spray.CropCycleStageId,
+            cancellationToken);
+
+        var now = DateTimeOffset.UtcNow;
+        spray.Schedule(request.ScheduledDateTime, effectivePlannedDate.Value, now, actor.UserId);
+
+        AddAudit(
+            actor,
+            spray,
+            "Spray.Scheduled",
+            new
+            {
+                spray.Id,
+                spray.FarmId,
+                spray.PlannedDate,
+                spray.ScheduledDateTime,
+                Status = spray.Status.ToString().ToUpperInvariant()
+            },
+            ipAddress);
+
+        await store.SaveChangesAsync(cancellationToken);
+
+        return await GetAsync(actor, spray.Id, cancellationToken);
+    }
+
+    public async Task<SprayDetailsResponse> RescheduleAsync(
+        SprayActor actor,
+        Guid id,
+        RescheduleSprayRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (id == Guid.Empty)
+        {
+            throw new ResourceNotFoundException("The spray was not found.");
+        }
+
+        var spray = await store.FindAsync(id, actor.OrganizationId, cancellationToken)
+            ?? throw new ResourceNotFoundException("The spray was not found.");
+
+        if (spray.Status != SprayStatus.Scheduled)
+        {
+            throw new ConflictException("Only scheduled sprays can be rescheduled.");
+        }
+
+        var previousScheduledDateTime = spray.ScheduledDateTime;
+        var now = DateTimeOffset.UtcNow;
+
+        spray.Reschedule(request.ScheduledDateTime, now, actor.UserId);
+
+        AddAudit(
+            actor,
+            spray,
+            "Spray.Rescheduled",
+            new
+            {
+                spray.Id,
+                spray.FarmId,
+                PreviousScheduledDateTime = previousScheduledDateTime,
+                NewScheduledDateTime = spray.ScheduledDateTime
+            },
+            ipAddress);
+
+        await store.SaveChangesAsync(cancellationToken);
+
+        return await GetAsync(actor, spray.Id, cancellationToken);
+    }
+
     private async Task ValidateHierarchyAsync(
         Guid organizationId,
         Guid farmId,
