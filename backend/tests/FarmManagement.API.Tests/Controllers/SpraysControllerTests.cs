@@ -204,6 +204,35 @@ public class SpraysControllerTests
         Assert.Equal(sprayId, result.Id);
     }
 
+    [Fact]
+    public async Task Complete_ReturnsOkWithDetails()
+    {
+        // Arrange
+        var fakeService = new FakeSprayService();
+        var controller = CreateController(fakeService);
+        var sprayId = Guid.NewGuid();
+        var request = new CompleteSprayRequest(
+            ActualApplicationDateTime: DateTimeOffset.UtcNow,
+            ActualTreatedArea: 3.5m,
+            ActualTreatedAreaUnitId: Guid.NewGuid(),
+            WaterQuantity: 200m,
+            WaterUnitId: Guid.NewGuid(),
+            Products: [
+                new CompleteSprayProductItemRequest(
+                    InventoryItemId: Guid.NewGuid(),
+                    ActualQuantity: 6.0m,
+                    Dosage: "2.5 L/ha")
+            ]);
+
+        // Act
+        var actionResult = await controller.Complete(sprayId, request);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(actionResult);
+        var result = Assert.IsType<SprayDetailsResponse>(okResult.Value);
+        Assert.Equal(sprayId, result.Id);
+    }
+
     private sealed class FakeSprayService : ISprayService
     {
         public Task<PagedResponse<SprayListItemResponse>> ListAsync(SprayActor actor, SprayListQuery query, CancellationToken cancellationToken = default)
@@ -274,6 +303,12 @@ public class SpraysControllerTests
         }
 
         public Task<SprayDetailsResponse> SaveExecutionAsync(SprayActor actor, Guid id, UpdateSprayExecutionRequest request, string? ipAddress, CancellationToken cancellationToken = default)
+        {
+            var details = CreateTestDetails(id, actor.OrganizationId, Guid.NewGuid(), actor.UserId);
+            return Task.FromResult(details);
+        }
+
+        public Task<SprayDetailsResponse> CompleteAsync(SprayActor actor, Guid id, CompleteSprayRequest? request, string? ipAddress, CancellationToken cancellationToken = default)
         {
             var details = CreateTestDetails(id, actor.OrganizationId, Guid.NewGuid(), actor.UserId);
             return Task.FromResult(details);

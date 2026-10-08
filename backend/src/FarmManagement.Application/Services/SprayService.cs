@@ -628,6 +628,240 @@ public sealed class SprayService(ISprayStore store) : ISprayService
         return await GetAsync(actor, spray.Id, cancellationToken);
     }
 
+    public async Task<SprayDetailsResponse> CompleteAsync(
+        SprayActor actor,
+        Guid id,
+        CompleteSprayRequest? request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+
+        if (id == Guid.Empty)
+        {
+            throw new ResourceNotFoundException("The spray was not found.");
+        }
+
+        var spray = await store.FindAsync(id, actor.OrganizationId, cancellationToken)
+            ?? throw new ResourceNotFoundException("The spray was not found.");
+
+        if (spray.Status != SprayStatus.InProgress)
+        {
+            throw new ConflictException("Only in-progress sprays can be completed.");
+        }
+
+        var now = DateTimeOffset.UtcNow;
+
+        if (request is not null)
+        {
+            if (request.ActualApplicationDateTime.HasValue && request.ActualApplicationDateTime.Value > now)
+            {
+                throw Validation("actualApplicationDateTime", "Actual application date/time cannot be in the future.");
+            }
+
+            await ValidateTreatedAreaAndUnitsAsync(actor.OrganizationId, request.ActualTreatedArea, request.ActualTreatedAreaUnitId, cancellationToken);
+            await ValidateWaterAndUnitsAsync(actor.OrganizationId, request.WaterQuantity, request.WaterUnitId, cancellationToken);
+            await ValidateTargetAsync(actor.OrganizationId, request.TargetId, cancellationToken);
+            await ValidateApplicationMethodAsync(actor.OrganizationId, request.ApplicationMethodId, cancellationToken);
+
+            if (request.Products is not null)
+            {
+                var duplicates = request.Products
+                    .GroupBy(p => p.InventoryItemId)
+                    .Where(g => g.Count() > 1)
+                    .Select(g => g.Key)
+                    .ToList();
+
+                if (duplicates.Count > 0)
+                {
+                    throw Validation("products", "Duplicate inventory items are not allowed in spray products.");
+                }
+
+                foreach (var item in request.Products)
+                {
+                    if (item.InventoryItemId == Guid.Empty)
+                    {
+                        throw Validation("inventoryItemId", "An inventory item is required.");
+                    }
+
+                    if (item.ActualQuantity <= 0)
+                    {
+                        throw Validation("actualQuantity", "Actual quantity must be greater than zero.");
+                    }
+
+                    var existing = spray.Products.FirstOrDefault(p => p.InventoryItemId == item.InventoryItemId);
+                    if (existing is null)
+                    {
+                        throw Validation("products", "The product is not part of this spray and cannot be added after start.");
+                    }
+
+                    existing.UpdateActualQuantityAndDosage(item.ActualQuantity, item.Dosage, now, actor.UserId);
+                }
+            }
+
+            var effectiveActualDateTime = request.ActualApplicationDateTime ?? spray.ActualApplicationDateTime ?? now;
+            var effectiveTreatedArea = request.ActualTreatedArea ?? spray.ActualTreatedArea;
+            var effectiveTreatedAreaUnitId = request.ActualTreatedAreaUnitId ?? spray.ActualTreatedAreaUnitId;
+            var effectiveWaterQuantity = request.WaterQuantity ?? spray.WaterQuantity;
+            var effectiveWaterUnitId = request.WaterUnitId ?? spray.WaterUnitId;
+            var effectiveTargetId = request.TargetId ?? spray.TargetId;
+            var effectiveApplicationMethodId = request.ApplicationMethodId ?? spray.ApplicationMethodId;
+            var effectivePurposeReason = request.PurposeReason ?? spray.PurposeReason;
+
+            spray.SaveExecution(
+                effectiveActualDateTime,
+                effectiveTreatedArea,
+                effectiveTreatedAreaUnitId,
+                effectiveWaterQuantity,
+                effectiveWaterUnitId,
+                effectiveTargetId,
+                effectiveApplicationMethodId,
+                effectivePurposeReason,
+                now,
+                actor.UserId);
+        }
+
+        if (!spray.ActualApplicationDateTime.HasValue)
+        {
+            throw Validation("actualApplicationDateTime", "Actual application date/time is required to complete a spray.");
+        }
+
+        if (spray.ActualApplicationDateTime.Value > now)
+        {
+            throw Validation("actualApplicationDateTime", "Actual application date/time cannot be in the future.");
+        }
+
+        if (spray.Products.Count == 0)
+        {
+            throw Validation("products", "At least one product is required to complete a spray.");
+        }
+
+        var validatedProducts = new List<(SprayProduct Product, InventoryItem Item, StorageLocation Location)>();
+        foreach (var product in spray.Products)
+        {
+            if (!product.StorageLocationId.HasValue || product.StorageLocationId.Value == Guid.Empty)
+            {
+                throw Validation("storageLocationId", "A storage location is required for all products to complete a spray.");
+            }
+
+            if (!product.ActualQuantity.HasValue || product.ActualQuantity.Value <= 0)
+            {
+                throw Validation("actualQuantity", "Actual quantity must be greater than zero for all products to complete a spray.");
+            }
+
+            var inventoryItem = await store.FindInventoryItemAsync(product.InventoryItemId, actor.OrganizationId, cancellationToken)
+                ?? throw new ResourceNotFoundException("The selected inventory item was not found.");
+
+            if (!inventoryItem.IsActive)
+            {
+                throw Validation("products", $"The inventory item '{inventoryItem.Name}' is inactive.");
+            }
+
+            var hasActiveProfile = await store.HasActivePlantProtectionProfileAsync(product.InventoryItemId, actor.OrganizationId, cancellationToken);
+            if (!hasActiveProfile)
+            {
+                throw Validation("products", $"The inventory item '{inventoryItem.Name}' must have an active plant protection product profile.");
+            }
+
+            var storageLocation = await store.FindStorageLocationAsync(product.StorageLocationId.Value, actor.OrganizationId, cancellationToken)
+                ?? throw new ResourceNotFoundException("The selected storage location was not found.");
+
+            if (!storageLocation.IsActive)
+            {
+                throw Validation("storageLocationId", $"The storage location '{storageLocation.Name}' is inactive.");
+            }
+
+            if (storageLocation.FarmId != spray.FarmId)
+            {
+                throw Validation("storageLocationId", $"The storage location '{storageLocation.Name}' does not belong to the spray farm.");
+            }
+
+            validatedProducts.Add((product, inventoryItem, storageLocation));
+        }
+
+        await store.ExecuteInTransactionAsync(async ct =>
+        {
+            var orderedProducts = validatedProducts
+                .OrderBy(p => p.Product.StorageLocationId!.Value)
+                .ThenBy(p => p.Product.InventoryItemId)
+                .ToList();
+
+            var lockedBalances = new List<(StockBalance Balance, decimal Quantity, InventoryItem Item, StorageLocation Location, SprayProduct Product)>();
+
+            foreach (var (product, item, location) in orderedProducts)
+            {
+                await store.AcquireAdvisoryLockAsync(product.StorageLocationId!.Value, product.InventoryItemId, ct);
+
+                var balance = await store.LockBalanceAsync(product.StorageLocationId.Value, product.InventoryItemId, actor.OrganizationId, ct);
+                var requiredQuantity = product.ActualQuantity!.Value;
+                var available = balance?.QuantityOnHand ?? 0m;
+
+                if (balance is null || available < requiredQuantity)
+                {
+                    throw Validation("products", $"Insufficient stock for '{item.Name}'. Required: {requiredQuantity}, Available: {available} at '{location.Name}'.");
+                }
+
+                lockedBalances.Add((balance, requiredQuantity, item, location, product));
+            }
+
+            var movementDate = DateOnly.FromDateTime(spray.ActualApplicationDateTime!.Value.UtcDateTime);
+            var refNumber = FormatReferenceNumber(spray.Id);
+            foreach (var (balance, quantity, item, _, product) in lockedBalances)
+            {
+                balance.DeductStock(quantity, now, actor.UserId);
+
+                var movement = new StockMovement(
+                    organizationId: actor.OrganizationId,
+                    movementType: StockMovementType.Issue,
+                    inventoryItemId: product.InventoryItemId,
+                    farmId: spray.FarmId,
+                    storageLocationId: product.StorageLocationId!.Value,
+                    quantity: quantity,
+                    stockUnitId: item.StockUnitId,
+                    movementDate: movementDate,
+                    createdBy: actor.UserId,
+                    referenceNumber: refNumber,
+                    notes: $"Applied during spray application {refNumber}",
+                    cropCycleId: spray.CropCycleId,
+                    cropCycleStageId: spray.CropCycleStageId,
+                    plantationId: spray.PlantationId,
+                    farmAreaId: spray.FarmAreaId,
+                    laborActivityId: null,
+                    sprayId: spray.Id);
+
+                store.AddMovement(movement);
+            }
+
+            spray.Complete(spray.ActualApplicationDateTime.Value, now, actor.UserId);
+
+            AddAudit(
+                actor,
+                spray,
+                "Spray.Completed",
+                new
+                {
+                    spray.Id,
+                    spray.FarmId,
+                    spray.ActualApplicationDateTime,
+                    spray.ActualTreatedArea,
+                    spray.WaterQuantity,
+                    ProductCount = spray.Products.Count,
+                    Products = lockedBalances.Select(b => new
+                    {
+                        b.Product.InventoryItemId,
+                        b.Product.StorageLocationId,
+                        b.Product.ActualQuantity
+                    })
+                },
+                ipAddress);
+
+            await store.SaveChangesAsync(ct);
+            return true;
+        }, cancellationToken);
+
+        return await GetAsync(actor, spray.Id, cancellationToken);
+    }
+
     private async Task ValidateHierarchyAsync(
         Guid organizationId,
         Guid farmId,

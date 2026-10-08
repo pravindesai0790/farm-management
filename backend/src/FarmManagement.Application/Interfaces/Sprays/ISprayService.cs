@@ -55,4 +55,11 @@ public interface ISprayService
         UpdateSprayExecutionRequest request,
         string? ipAddress,
         CancellationToken cancellationToken = default);
+
+    Task<SprayDetailsResponse> CompleteAsync(
+        SprayActor actor,
+        Guid id,
+        CompleteSprayRequest? request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default);
 }

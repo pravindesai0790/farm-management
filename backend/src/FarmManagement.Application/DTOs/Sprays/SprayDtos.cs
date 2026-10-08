@@ -171,3 +171,20 @@ public sealed record UpdateSprayExecutionProductItemRequest(
     decimal ActualQuantity,
     string? Dosage = null);
 
+public sealed record CompleteSprayRequest(
+    DateTimeOffset? ActualApplicationDateTime = null,
+    decimal? ActualTreatedArea = null,
+    Guid? ActualTreatedAreaUnitId = null,
+    decimal? WaterQuantity = null,
+    Guid? WaterUnitId = null,
+    Guid? TargetId = null,
+    Guid? ApplicationMethodId = null,
+    string? PurposeReason = null,
+    IReadOnlyList<CompleteSprayProductItemRequest>? Products = null);
+
+public sealed record CompleteSprayProductItemRequest(
+    Guid InventoryItemId,
+    decimal ActualQuantity,
+    string? Dosage = null);
+
+

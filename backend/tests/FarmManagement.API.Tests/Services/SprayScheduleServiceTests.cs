@@ -286,6 +286,17 @@ public class SprayScheduleServiceTests
 
         public void RemoveSprayProduct(SprayProduct product) { }
 
+        public void AddMovement(StockMovement movement) { }
+
+        public Task<StockBalance?> LockBalanceAsync(Guid storageLocationId, Guid inventoryItemId, Guid organizationId, CancellationToken cancellationToken = default) =>
+            FindStockBalanceAsync(storageLocationId, inventoryItemId, organizationId, cancellationToken);
+
+        public Task AcquireAdvisoryLockAsync(Guid storageLocationId, Guid inventoryItemId, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task<T> ExecuteInTransactionAsync<T>(Func<CancellationToken, Task<T>> operation, CancellationToken cancellationToken = default) =>
+            operation(cancellationToken);
+
         public Task SaveChangesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 }
