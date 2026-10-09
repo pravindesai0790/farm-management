@@ -15,6 +15,7 @@ import { MatDatepickerModule } from "@angular/material/datepicker";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
+import { MatTimepickerModule } from "@angular/material/timepicker";
 
 @Component({
   selector: "app-date-time-picker",
@@ -25,6 +26,7 @@ import { MatInputModule } from "@angular/material/input";
     MatFormFieldModule,
     MatInputModule,
     MatDatepickerModule,
+    MatTimepickerModule,
     MatIconModule,
   ],
   templateUrl: "./date-time-picker.component.html",
@@ -45,9 +47,10 @@ export class DateTimePickerComponent implements ControlValueAccessor {
   @Input() required = false;
   @Input() maxDate: Date | null = null;
   @Input() minDate: Date | null = null;
+  @Input() interval: string | number = "30m";
 
   readonly selectedDate = signal<Date | null>(null);
-  readonly selectedTime = signal<string>("");
+  readonly selectedTimeDate = signal<Date | null>(null);
   readonly isDisabled = signal<boolean>(false);
 
   private onChange: (value: string | null) => void = () => {};
@@ -56,21 +59,19 @@ export class DateTimePickerComponent implements ControlValueAccessor {
   writeValue(value: string | Date | null): void {
     if (!value) {
       this.selectedDate.set(null);
-      this.selectedTime.set("");
+      this.selectedTimeDate.set(null);
       return;
     }
 
     const d = typeof value === "string" ? new Date(value) : value;
     if (isNaN(d.getTime())) {
       this.selectedDate.set(null);
-      this.selectedTime.set("");
+      this.selectedTimeDate.set(null);
       return;
     }
 
     this.selectedDate.set(d);
-    const hh = String(d.getHours()).padStart(2, "0");
-    const mm = String(d.getMinutes()).padStart(2, "0");
-    this.selectedTime.set(`${hh}:${mm}`);
+    this.selectedTimeDate.set(d);
   }
 
   registerOnChange(fn: (value: string | null) => void): void {
@@ -87,19 +88,16 @@ export class DateTimePickerComponent implements ControlValueAccessor {
 
   onDateChange(newDate: Date | null): void {
     this.selectedDate.set(newDate);
-    // If date is selected but no time yet, default time to current time or 08:00
-    if (newDate && !this.selectedTime()) {
+    // If date is selected but no time yet, default time to current time
+    if (newDate && !this.selectedTimeDate()) {
       const now = new Date();
-      const hh = String(now.getHours()).padStart(2, "0");
-      const mm = String(now.getMinutes()).padStart(2, "0");
-      this.selectedTime.set(`${hh}:${mm}`);
+      this.selectedTimeDate.set(now);
     }
     this.emitCombinedValue();
   }
 
-  onTimeChange(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    this.selectedTime.set(input?.value || "");
+  onTimeChange(newTime: Date | null): void {
+    this.selectedTimeDate.set(newTime);
     this.emitCombinedValue();
   }
 
@@ -112,12 +110,9 @@ export class DateTimePickerComponent implements ControlValueAccessor {
     }
 
     const combined = new Date(dateVal);
-    const timeVal = this.selectedTime();
+    const timeVal = this.selectedTimeDate();
     if (timeVal) {
-      const parts = timeVal.split(":");
-      const hours = parseInt(parts[0], 10) || 0;
-      const minutes = parseInt(parts[1], 10) || 0;
-      combined.setHours(hours, minutes, 0, 0);
+      combined.setHours(timeVal.getHours(), timeVal.getMinutes(), 0, 0);
     } else {
       combined.setHours(0, 0, 0, 0);
     }
@@ -125,3 +120,4 @@ export class DateTimePickerComponent implements ControlValueAccessor {
     this.onChange(combined.toISOString());
   }
 }
+

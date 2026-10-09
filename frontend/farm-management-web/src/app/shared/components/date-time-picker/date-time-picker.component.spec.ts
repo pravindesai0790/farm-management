@@ -30,13 +30,14 @@ describe("DateTimePickerComponent", () => {
     expect(component.selectedDate()?.getFullYear()).toBe(2026);
     expect(component.selectedDate()?.getMonth()).toBe(9);
     expect(component.selectedDate()?.getDate()).toBe(15);
-    expect(component.selectedTime()).toBe("14:30");
+    expect(component.selectedTimeDate()?.getHours()).toBe(14);
+    expect(component.selectedTimeDate()?.getMinutes()).toBe(30);
   });
 
   it("should reset on writeValue with null", () => {
     component.writeValue(null);
     expect(component.selectedDate()).toBeNull();
-    expect(component.selectedTime()).toBe("");
+    expect(component.selectedTimeDate()).toBeNull();
   });
 
   it("should emit combined ISO string when date changes", () => {
@@ -45,7 +46,9 @@ describe("DateTimePickerComponent", () => {
       emittedVal = val;
     });
 
-    component.selectedTime.set("10:15");
+    const timeDate = new Date();
+    timeDate.setHours(10, 15, 0, 0);
+    component.selectedTimeDate.set(timeDate);
     const newDate = new Date(2026, 9, 20);
     component.onDateChange(newDate);
 
@@ -65,7 +68,9 @@ describe("DateTimePickerComponent", () => {
     });
 
     component.selectedDate.set(new Date(2026, 9, 20));
-    component.onTimeChange({ target: { value: "16:45" } } as any);
+    const newTime = new Date();
+    newTime.setHours(16, 45, 0, 0);
+    component.onTimeChange(newTime);
 
     expect(emittedVal).toBeTruthy();
     const parsed = new Date(emittedVal!);

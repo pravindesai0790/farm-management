@@ -4,7 +4,7 @@
     <mat-label>{{ dateLabel || (label + ' (Date)') }}</mat-label>
     <input
       matInput
-      [matDatepicker]="picker"
+      [matDatepicker]="datePicker"
       [value]="selectedDate()"
       (dateChange)="onDateChange($event.value)"
       [max]="maxDate"
@@ -13,21 +13,24 @@
       [required]="required"
       placeholder="MM/DD/YYYY"
     />
-    <mat-datepicker-toggle matIconSuffix [for]="picker" [disabled]="isDisabled()"></mat-datepicker-toggle>
-    <mat-datepicker #picker></mat-datepicker>
+    <mat-datepicker-toggle matIconSuffix [for]="datePicker" [disabled]="isDisabled()"></mat-datepicker-toggle>
+    <mat-datepicker #datePicker></mat-datepicker>
   </mat-form-field>
 
-  <!-- Time Field -->
+  <!-- Time Field with Material Timepicker -->
   <mat-form-field appearance="outline" subscriptSizing="dynamic" class="picker-time-field">
     <mat-label>{{ timeLabel }}</mat-label>
     <input
       matInput
-      type="time"
-      [value]="selectedTime()"
-      (change)="onTimeChange($event)"
+      [matTimepicker]="timePicker"
+      [value]="selectedTimeDate()"
+      (valueChange)="onTimeChange($event)"
       [disabled]="isDisabled()"
       [required]="required"
+      placeholder="hh:mm"
     />
-    <mat-icon matIconSuffix class="time-suffix-icon">schedule</mat-icon>
+    <mat-timepicker-toggle matIconSuffix [for]="timePicker" [disabled]="isDisabled()"></mat-timepicker-toggle>
+    <mat-timepicker #timePicker [interval]="interval"></mat-timepicker>
   </mat-form-field>
 </div>
+

@@ -121,6 +121,43 @@ public class SprayQueryServiceTests
         Assert.Equal("2ml/L", result.Products[0].Dosage);
     }
 
+    [Fact]
+    public async Task ListAsync_WhenSearchingByReferenceNumber_ReturnsMatchingSprays()
+    {
+        // Arrange
+        var orgId = Guid.NewGuid();
+        var farmId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var actor = new SprayActor(userId, orgId);
+
+        var spray1 = new Spray(
+            orgId,
+            farmId,
+            userId,
+            status: SprayStatus.Draft,
+            purposeReason: "Pest control");
+
+        var spray2 = new Spray(
+            orgId,
+            farmId,
+            userId,
+            status: SprayStatus.Scheduled,
+            purposeReason: "Foliar feed");
+
+        _store.Sprays.AddRange([spray1, spray2]);
+
+        var ref1 = $"SP-{spray1.Id.ToString()[..8].ToUpperInvariant()}";
+        var query = new SprayListQuery(Search: ref1);
+
+        // Act
+        var result = await _sut.ListAsync(actor, query);
+
+        // Assert
+        Assert.Single(result.Items);
+        Assert.Equal(ref1, result.Items[0].ReferenceNumber);
+        Assert.Equal(spray1.Id, result.Items[0].Id);
+    }
+
     private sealed class FakeSprayStore : ISprayStore
     {
         public List<Spray> Sprays { get; } = [];
@@ -137,6 +174,23 @@ public class SprayQueryServiceTests
             var filtered = Sprays.Where(s => s.OrganizationId == organizationId);
             if (query.FarmId.HasValue)
                 filtered = filtered.Where(s => s.FarmId == query.FarmId.Value);
+            if (!string.IsNullOrWhiteSpace(query.Search))
+            {
+                var rawSearch = query.Search.Trim();
+                var isReferencePrefixOnly = string.Equals(rawSearch, "sp", StringComparison.OrdinalIgnoreCase) ||
+                                            string.Equals(rawSearch, "sp-", StringComparison.OrdinalIgnoreCase);
+
+                var idSearchTerm = rawSearch.StartsWith("SP-", StringComparison.OrdinalIgnoreCase)
+                    ? rawSearch[3..].Trim()
+                    : (rawSearch.StartsWith("SP", StringComparison.OrdinalIgnoreCase) && rawSearch.Length > 2)
+                        ? rawSearch[2..].Trim()
+                        : rawSearch;
+
+                filtered = filtered.Where(s =>
+                    isReferencePrefixOnly ||
+                    (!string.IsNullOrWhiteSpace(idSearchTerm) && s.Id.ToString().Contains(idSearchTerm, StringComparison.OrdinalIgnoreCase)) ||
+                    (s.PurposeReason != null && s.PurposeReason.Contains(rawSearch, StringComparison.OrdinalIgnoreCase)));
+            }
 
             return Task.FromResult(filtered.Count());
         }
@@ -146,6 +200,23 @@ public class SprayQueryServiceTests
             var filtered = Sprays.Where(s => s.OrganizationId == organizationId);
             if (query.FarmId.HasValue)
                 filtered = filtered.Where(s => s.FarmId == query.FarmId.Value);
+            if (!string.IsNullOrWhiteSpace(query.Search))
+            {
+                var rawSearch = query.Search.Trim();
+                var isReferencePrefixOnly = string.Equals(rawSearch, "sp", StringComparison.OrdinalIgnoreCase) ||
+                                            string.Equals(rawSearch, "sp-", StringComparison.OrdinalIgnoreCase);
+
+                var idSearchTerm = rawSearch.StartsWith("SP-", StringComparison.OrdinalIgnoreCase)
+                    ? rawSearch[3..].Trim()
+                    : (rawSearch.StartsWith("SP", StringComparison.OrdinalIgnoreCase) && rawSearch.Length > 2)
+                        ? rawSearch[2..].Trim()
+                        : rawSearch;
+
+                filtered = filtered.Where(s =>
+                    isReferencePrefixOnly ||
+                    (!string.IsNullOrWhiteSpace(idSearchTerm) && s.Id.ToString().Contains(idSearchTerm, StringComparison.OrdinalIgnoreCase)) ||
+                    (s.PurposeReason != null && s.PurposeReason.Contains(rawSearch, StringComparison.OrdinalIgnoreCase)));
+            }
 
             var items = filtered.Skip(skip).Take(take).ToList();
             return Task.FromResult<IReadOnlyList<Spray>>(items);

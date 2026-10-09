@@ -329,11 +329,29 @@ public sealed class SprayStore(ApplicationDbContext dbContext) : ISprayStore
         // Search filtering
         if (!string.IsNullOrWhiteSpace(query.Search))
         {
-            var pattern = $"%{query.Search.Trim().ToLowerInvariant()}%";
+            var rawSearch = query.Search.Trim();
+            var pattern = $"%{rawSearch.ToLowerInvariant()}%";
+
+            var isReferencePrefixOnly = string.Equals(rawSearch, "sp", StringComparison.OrdinalIgnoreCase) ||
+                                        string.Equals(rawSearch, "sp-", StringComparison.OrdinalIgnoreCase);
+
+            var idSearchTerm = rawSearch.StartsWith("SP-", StringComparison.OrdinalIgnoreCase)
+                ? rawSearch[3..].Trim()
+                : (rawSearch.StartsWith("SP", StringComparison.OrdinalIgnoreCase) && rawSearch.Length > 2)
+                    ? rawSearch[2..].Trim()
+                    : rawSearch;
+
+            var idPattern = !string.IsNullOrWhiteSpace(idSearchTerm) ? $"%{idSearchTerm.ToLowerInvariant()}%" : null;
+
             q = q.Where(s =>
+                isReferencePrefixOnly ||
+                (idPattern != null && EF.Functions.ILike(s.Id.ToString(), idPattern)) ||
                 (s.PurposeReason != null && EF.Functions.ILike(s.PurposeReason, pattern)) ||
                 (s.Farm != null && EF.Functions.ILike(s.Farm.Name, pattern)) ||
                 (s.FarmArea != null && EF.Functions.ILike(s.FarmArea.Name, pattern)) ||
+                (s.Plantation != null && EF.Functions.ILike(s.Plantation.PlantationName, pattern)) ||
+                (s.CropCycle != null && EF.Functions.ILike(s.CropCycle.CycleName, pattern)) ||
+                (s.CropCycleStage != null && EF.Functions.ILike(s.CropCycleStage.StageName, pattern)) ||
                 (s.Target != null && EF.Functions.ILike(s.Target.Name, pattern)) ||
                 s.Products.Any(p => p.InventoryItem != null && EF.Functions.ILike(p.InventoryItem.Name, pattern)));
         }
