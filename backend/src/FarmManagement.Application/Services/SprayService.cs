@@ -862,6 +862,55 @@ public sealed class SprayService(ISprayStore store) : ISprayService
         return await GetAsync(actor, spray.Id, cancellationToken);
     }
 
+    public async Task<SprayDetailsResponse> CancelAsync(
+        SprayActor actor,
+        Guid id,
+        CancelSprayRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (id == Guid.Empty)
+        {
+            throw new ResourceNotFoundException("The spray was not found.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.CancellationReason))
+        {
+            throw Validation("cancellationReason", "A cancellation reason is required.");
+        }
+
+        var spray = await store.FindAsync(id, actor.OrganizationId, cancellationToken)
+            ?? throw new ResourceNotFoundException("The spray was not found.");
+
+        if (spray.Status != SprayStatus.Draft && spray.Status != SprayStatus.Scheduled)
+        {
+            throw new ConflictException("Only draft or scheduled sprays can be cancelled.");
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        spray.Cancel(request.CancellationReason, now, actor.UserId);
+
+        AddAudit(
+            actor,
+            spray,
+            "Spray.Cancelled",
+            new
+            {
+                spray.Id,
+                spray.FarmId,
+                spray.CancellationReason,
+                Status = spray.Status.ToString().ToUpperInvariant()
+            },
+            ipAddress);
+
+        await store.SaveChangesAsync(cancellationToken);
+
+        return await GetAsync(actor, spray.Id, cancellationToken);
+    }
+
     private async Task ValidateHierarchyAsync(
         Guid organizationId,
         Guid farmId,

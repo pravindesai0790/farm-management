@@ -187,4 +187,5 @@ public sealed record CompleteSprayProductItemRequest(
     decimal ActualQuantity,
     string? Dosage = null);
 
-
+public sealed record CancelSprayRequest(
+    string CancellationReason);

@@ -233,6 +233,24 @@ public class SpraysControllerTests
         Assert.Equal(sprayId, result.Id);
     }
 
+    [Fact]
+    public async Task Cancel_ReturnsOkWithDetails()
+    {
+        // Arrange
+        var fakeService = new FakeSprayService();
+        var controller = CreateController(fakeService);
+        var sprayId = Guid.NewGuid();
+        var request = new CancelSprayRequest(CancellationReason: "Adverse weather conditions");
+
+        // Act
+        var actionResult = await controller.Cancel(sprayId, request);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(actionResult);
+        var result = Assert.IsType<SprayDetailsResponse>(okResult.Value);
+        Assert.Equal(sprayId, result.Id);
+    }
+
     private sealed class FakeSprayService : ISprayService
     {
         public Task<PagedResponse<SprayListItemResponse>> ListAsync(SprayActor actor, SprayListQuery query, CancellationToken cancellationToken = default)
@@ -309,6 +327,12 @@ public class SpraysControllerTests
         }
 
         public Task<SprayDetailsResponse> CompleteAsync(SprayActor actor, Guid id, CompleteSprayRequest? request, string? ipAddress, CancellationToken cancellationToken = default)
+        {
+            var details = CreateTestDetails(id, actor.OrganizationId, Guid.NewGuid(), actor.UserId);
+            return Task.FromResult(details);
+        }
+
+        public Task<SprayDetailsResponse> CancelAsync(SprayActor actor, Guid id, CancelSprayRequest request, string? ipAddress, CancellationToken cancellationToken = default)
         {
             var details = CreateTestDetails(id, actor.OrganizationId, Guid.NewGuid(), actor.UserId);
             return Task.FromResult(details);

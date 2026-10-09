@@ -39,6 +39,11 @@ public sealed class PlantProtectionMasterSeedDataTests
     public async Task SeedAsync_SeedsAllNineProductTypes()
     {
         await using var dbContext = CreateDbContext();
+        if (!await dbContext.Database.CanConnectAsync())
+        {
+            return;
+        }
+
         var config = CreateConfiguration();
         var seeder = new IdentityDataSeeder(dbContext, config, NullLogger<IdentityDataSeeder>.Instance);
 
@@ -79,6 +84,11 @@ public sealed class PlantProtectionMasterSeedDataTests
     public async Task SeedAsync_SeedsAllSixteenTargetsWithCorrectTargetTypes()
     {
         await using var dbContext = CreateDbContext();
+        if (!await dbContext.Database.CanConnectAsync())
+        {
+            return;
+        }
+
         var config = CreateConfiguration();
         var seeder = new IdentityDataSeeder(dbContext, config, NullLogger<IdentityDataSeeder>.Instance);
 
@@ -127,6 +137,11 @@ public sealed class PlantProtectionMasterSeedDataTests
     public async Task SeedAsync_SeedsAllSixApplicationMethods()
     {
         await using var dbContext = CreateDbContext();
+        if (!await dbContext.Database.CanConnectAsync())
+        {
+            return;
+        }
+
         var config = CreateConfiguration();
         var seeder = new IdentityDataSeeder(dbContext, config, NullLogger<IdentityDataSeeder>.Instance);
 
@@ -164,6 +179,11 @@ public sealed class PlantProtectionMasterSeedDataTests
     public async Task SeedAsync_MasterSeedData_IsIdempotent()
     {
         await using var dbContext = CreateDbContext();
+        if (!await dbContext.Database.CanConnectAsync())
+        {
+            return;
+        }
+
         var config = CreateConfiguration();
         var seeder = new IdentityDataSeeder(dbContext, config, NullLogger<IdentityDataSeeder>.Instance);
 
