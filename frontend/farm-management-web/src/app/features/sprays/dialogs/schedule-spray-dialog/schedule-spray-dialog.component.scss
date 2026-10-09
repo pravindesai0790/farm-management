@@ -1,0 +1,61 @@
+.dialog-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px 8px;
+}
+
+.dialog-icon-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background-color: #e0f2fe;
+  color: #0284c7;
+
+  mat-icon {
+    font-size: 22px;
+    width: 22px;
+    height: 22px;
+  }
+}
+
+.dialog-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.2;
+}
+
+.dialog-subtitle {
+  margin: 2px 0 0;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.dialog-content {
+  padding: 12px 20px !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.schedule-form {
+  margin-top: 6px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.dialog-actions {
+  padding: 12px 20px 16px !important;
+  gap: 8px;
+}
+
+.btn-spinner {
+  display: inline-block;
+  margin-right: 6px;
+}

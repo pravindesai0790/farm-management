@@ -319,6 +319,33 @@ export class BreadcrumbService {
         }
         break;
 
+      case "sprays":
+        items.push({ label: "Sprays & Protection", route: "/sprays" });
+        if (segments[1] === "new") {
+          items.push({ label: "Plan Spray" });
+        } else if (segments[1] === "record-completed") {
+          items.push({ label: "Record Completed" });
+        } else if (segments[1]) {
+          const sprayId = segments[1];
+          const sprayName = this.labelCache.get(sprayId) ?? "Spray details";
+          if (segments[2] === "edit") {
+            items.push({ label: sprayName, route: ["/sprays", sprayId] });
+            items.push({ label: "Edit" });
+          } else if (segments[2] === "start") {
+            items.push({ label: sprayName, route: ["/sprays", sprayId] });
+            items.push({ label: "Start" });
+          } else if (segments[2] === "complete") {
+            items.push({ label: sprayName, route: ["/sprays", sprayId] });
+            items.push({ label: "Complete" });
+          } else if (segments[2] === "execution") {
+            items.push({ label: sprayName, route: ["/sprays", sprayId] });
+            items.push({ label: "Execution" });
+          } else {
+            items.push({ label: sprayName });
+          }
+        }
+        break;
+
       default: {
         const readable = section.charAt(0).toUpperCase() + section.slice(1).replace(/-/g, " ");
         items.push({ label: readable });

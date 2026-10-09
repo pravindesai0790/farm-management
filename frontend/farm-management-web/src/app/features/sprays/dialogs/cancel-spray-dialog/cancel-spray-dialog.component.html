@@ -1,0 +1,50 @@
+<div class="dialog-header">
+  <div class="dialog-icon-badge">
+    <mat-icon>warning</mat-icon>
+  </div>
+  <div>
+    <h2 mat-dialog-title class="dialog-title">Cancel Spray Application</h2>
+    <p class="dialog-subtitle">Reference: <strong>{{ data.referenceNumber }}</strong> · {{ data.farmName }}</p>
+  </div>
+</div>
+
+<mat-dialog-content class="dialog-content">
+  <div class="warning-callout">
+    <mat-icon>info</mat-icon>
+    <span>Cancelling this spray application is permanent. A valid reason is mandatory for agronomic audit compliance.</span>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="cancel-form">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+      <mat-label>Cancellation Reason *</mat-label>
+      <textarea
+        matInput
+        rows="3"
+        formControlName="reason"
+        placeholder="e.g. Adverse weather conditions (high wind), equipment breakdown, target pest subsided"
+        required
+      ></textarea>
+      @if (form.get('reason')?.hasError('required') && form.get('reason')?.touched) {
+        <mat-error>Cancellation reason is required</mat-error>
+      }
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="dialog-actions">
+  <button mat-button type="button" (click)="onCancel()" [disabled]="isSubmitting()">
+    Keep Spray
+  </button>
+  <button
+    mat-flat-button
+    color="warn"
+    type="button"
+    (click)="onSubmit()"
+    [disabled]="form.invalid || isSubmitting()"
+  >
+    @if (isSubmitting()) {
+      <mat-spinner diameter="16" class="btn-spinner" />
+    }
+    Cancel Spray Application
+  </button>
+</mat-dialog-actions>

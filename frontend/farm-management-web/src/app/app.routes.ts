@@ -619,6 +619,11 @@ export const routes: Routes = [
         pathMatch: "full",
       },
       {
+        path: "sprays",
+        loadChildren: () =>
+          import("./features/sprays/spray.routes").then((m) => m.SPRAY_ROUTES),
+      },
+      {
         path: "labor",
         children: [
           {

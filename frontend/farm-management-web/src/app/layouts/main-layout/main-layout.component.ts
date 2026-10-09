@@ -163,6 +163,13 @@ export class MainLayoutComponent {
             },
           ],
         },
+        {
+          id: "sprays",
+          label: "Sprays & Protection",
+          icon: "pest_control",
+          route: "/sprays",
+          permissions: ["Spray.View"],
+        },
       ],
     },
     {
