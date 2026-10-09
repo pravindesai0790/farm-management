@@ -259,3 +259,28 @@ export interface CompleteSprayRequest {
   readonly purposeReason?: string | null;
   readonly products?: readonly CompleteSprayProductItemRequest[] | null;
 }
+
+export interface RecordCompletedSprayProductItemRequest {
+  readonly inventoryItemId: string;
+  readonly storageLocationId: string;
+  readonly actualQuantity: number;
+  readonly dosage?: string | null;
+}
+
+export interface RecordCompletedSprayRequest {
+  readonly farmId: string;
+  readonly actualApplicationDateTime: string;
+  readonly products: readonly RecordCompletedSprayProductItemRequest[];
+  readonly farmAreaId?: string | null;
+  readonly plantationId?: string | null;
+  readonly cropCycleId?: string | null;
+  readonly cropCycleStageId?: string | null;
+  readonly actualTreatedArea?: number | null;
+  readonly actualTreatedAreaUnitId?: string | null;
+  readonly waterQuantity?: number | null;
+  readonly waterUnitId?: string | null;
+  readonly targetId?: string | null;
+  readonly applicationMethodId?: string | null;
+  readonly purposeReason?: string | null;
+}
+

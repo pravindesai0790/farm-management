@@ -358,5 +358,49 @@ describe("SprayService", () => {
     expect(req.request.body).toEqual(completePayload);
     req.flush(mockResponse);
   });
+
+  it("records direct completed spray via POST /api/sprays/record-completed", () => {
+    const recordPayload = {
+      farmId: "farm-1",
+      actualApplicationDateTime: "2026-10-16T10:00:00Z",
+      farmAreaId: "area-1",
+      plantationId: "plant-1",
+      cropCycleId: "cycle-1",
+      cropCycleStageId: "stage-1",
+      actualTreatedArea: 3.5,
+      actualTreatedAreaUnitId: "unit-ha",
+      waterQuantity: 350,
+      waterUnitId: "unit-l",
+      targetId: "target-1",
+      applicationMethodId: "method-1",
+      purposeReason: "Direct recorded completed spray",
+      products: [
+        {
+          inventoryItemId: "item-1",
+          storageLocationId: "loc-1",
+          actualQuantity: 4.5,
+          dosage: "1.5 L/ha",
+        },
+      ],
+    };
+
+    const mockResponse: any = {
+      id: "sp-completed-1",
+      status: "Completed",
+      farmId: "farm-1",
+      farmName: "North Vineyard",
+    };
+
+    service.recordCompleted(recordPayload).subscribe((res) => {
+      expect(res.id).toBe("sp-completed-1");
+      expect(res.status).toBe("Completed");
+    });
+
+    const req = httpTesting.expectOne(`${environment.apiUrl}/sprays/record-completed`);
+    expect(req.request.method).toBe("POST");
+    expect(req.request.body).toEqual(recordPayload);
+    req.flush(mockResponse);
+  });
 });
+
 

@@ -53,6 +53,16 @@ export const SPRAY_ROUTES: Routes = [
       ),
   },
   {
+    path: "record-completed",
+    title: "Record Completed Spray",
+    canActivate: [permissionGuard],
+    data: { permission: "Spray.Complete" },
+    loadComponent: () =>
+      import("./spray-record-completed/spray-record-completed-page.component").then(
+        (m) => m.SprayRecordCompletedPageComponent,
+      ),
+  },
+  {
     path: ":id",
     title: "Spray Application Details",
     canActivate: [permissionGuard],

@@ -10,6 +10,7 @@ import {
   CompleteSprayRequest,
   CreateSprayDraftRequest,
   ProductTypeResponse,
+  RecordCompletedSprayRequest,
   RescheduleSprayRequest,
   ScheduleSprayRequest,
   SprayDetailsResponse,
@@ -117,4 +118,9 @@ export class SprayService {
       .set("inventoryItemId", inventoryItemId);
     return this.http.get<readonly SprayStorageLocationLookupResponse[]>(`${this.api}/lookup/storage-locations`, { params });
   }
+
+  recordCompleted(request: RecordCompletedSprayRequest): Observable<SprayDetailsResponse> {
+    return this.http.post<SprayDetailsResponse>(`${this.api}/record-completed`, request);
+  }
 }
+
