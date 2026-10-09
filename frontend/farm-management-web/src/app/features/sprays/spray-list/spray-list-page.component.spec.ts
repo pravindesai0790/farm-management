@@ -85,11 +85,12 @@ describe("SprayListPageComponent", () => {
       "listPlantations",
       "listCycles",
     ]);
-    mockPermissionService = jasmine.createSpyObj("PermissionService", ["has"]);
+    mockPermissionService = jasmine.createSpyObj("PermissionService", ["has", "hasAny"]);
     mockDialog = jasmine.createSpyObj("MatDialog", ["open"]);
     mockSnackBar = jasmine.createSpyObj("MatSnackBar", ["open"]);
 
     mockPermissionService.has.and.returnValue(true);
+    mockPermissionService.hasAny.and.returnValue(true);
     mockFarmService.listFarms.and.returnValue(
       of({ items: [{ id: "farm-1", name: "Green Valley Farm" } as any], totalCount: 1, page: 1, pageSize: 100, totalPages: 1 }),
     );

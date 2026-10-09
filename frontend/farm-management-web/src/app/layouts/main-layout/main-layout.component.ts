@@ -333,6 +333,17 @@ export class MainLayoutComponent {
           route: "/sprays/products",
           permissions: ["PlantProtectionProduct.View"],
         },
+        {
+          id: "spray-masters",
+          label: "Spray masters",
+          icon: "tune",
+          route: "/sprays/master-data",
+          permissions: [
+            "ProductType.View",
+            "Target.View",
+            "ApplicationMethod.View",
+          ],
+        },
       ],
     },
     {

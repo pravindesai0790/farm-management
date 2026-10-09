@@ -73,6 +73,22 @@ export const SPRAY_ROUTES: Routes = [
       ).then((m) => m.PlantProtectionProductListPageComponent),
   },
   {
+    path: "master-data",
+    title: "Spray & Protection Masters",
+    canActivate: [permissionGuard],
+    data: {
+      permissions: [
+        "ProductType.View",
+        "Target.View",
+        "ApplicationMethod.View",
+      ],
+    },
+    loadComponent: () =>
+      import(
+        "./spray-master-data/spray-master-data-page.component"
+      ).then((m) => m.SprayMasterDataPageComponent),
+  },
+  {
     path: ":id",
     title: "Spray Application Details",
     canActivate: [permissionGuard],

@@ -116,18 +116,46 @@ public class MasterDataLookupServiceTests
         public Task<IReadOnlyList<Currency>> ListCurrenciesAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<Currency>>(Currencies);
 
-        public Task<IReadOnlyList<ProductType>> ListProductTypesAsync(Guid organizationId, CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<ProductType>>(ProductTypes);
+        public Task<IReadOnlyList<ProductType>> ListProductTypesAsync(Guid organizationId, bool includeInactive = false, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<ProductType>>(includeInactive ? ProductTypes : ProductTypes.Where(x => x.IsActive).ToList());
 
-        public Task<IReadOnlyList<Target>> ListTargetsAsync(Guid organizationId, TargetType? targetType = null, CancellationToken cancellationToken = default)
+        public Task<ProductType?> FindProductTypeByIdAsync(Guid id, Guid organizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(ProductTypes.FirstOrDefault(x => x.Id == id));
+
+        public Task<bool> ProductTypeCodeExistsAsync(string code, Guid organizationId, Guid? excludeId = null, CancellationToken cancellationToken = default) =>
+            Task.FromResult(ProductTypes.Any(x => x.Code == code.Trim().ToUpperInvariant() && (!excludeId.HasValue || x.Id != excludeId.Value)));
+
+        public void AddProductType(ProductType productType) => ProductTypes.Add(productType);
+
+        public Task<IReadOnlyList<Target>> ListTargetsAsync(Guid organizationId, TargetType? targetType = null, bool includeInactive = false, CancellationToken cancellationToken = default)
         {
-            var list = targetType.HasValue
-                ? Targets.Where(t => t.TargetType == targetType.Value).ToList()
-                : Targets;
-            return Task.FromResult<IReadOnlyList<Target>>(list);
+            var query = includeInactive ? Targets.AsEnumerable() : Targets.Where(x => x.IsActive);
+            if (targetType.HasValue)
+            {
+                query = query.Where(t => t.TargetType == targetType.Value);
+            }
+            return Task.FromResult<IReadOnlyList<Target>>(query.ToList());
         }
 
-        public Task<IReadOnlyList<ApplicationMethod>> ListApplicationMethodsAsync(Guid organizationId, CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<ApplicationMethod>>(ApplicationMethods);
+        public Task<Target?> FindTargetByIdAsync(Guid id, Guid organizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(Targets.FirstOrDefault(x => x.Id == id));
+
+        public Task<bool> TargetCodeExistsAsync(string code, Guid organizationId, Guid? excludeId = null, CancellationToken cancellationToken = default) =>
+            Task.FromResult(Targets.Any(x => x.Code == code.Trim().ToUpperInvariant() && (!excludeId.HasValue || x.Id != excludeId.Value)));
+
+        public void AddTarget(Target target) => Targets.Add(target);
+
+        public Task<IReadOnlyList<ApplicationMethod>> ListApplicationMethodsAsync(Guid organizationId, bool includeInactive = false, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<ApplicationMethod>>(includeInactive ? ApplicationMethods : ApplicationMethods.Where(x => x.IsActive).ToList());
+
+        public Task<ApplicationMethod?> FindApplicationMethodByIdAsync(Guid id, Guid organizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(ApplicationMethods.FirstOrDefault(x => x.Id == id));
+
+        public Task<bool> ApplicationMethodCodeExistsAsync(string code, Guid organizationId, Guid? excludeId = null, CancellationToken cancellationToken = default) =>
+            Task.FromResult(ApplicationMethods.Any(x => x.Code == code.Trim().ToUpperInvariant() && (!excludeId.HasValue || x.Id != excludeId.Value)));
+
+        public void AddApplicationMethod(ApplicationMethod applicationMethod) => ApplicationMethods.Add(applicationMethod);
+
+        public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) => Task.FromResult(1);
     }
 }

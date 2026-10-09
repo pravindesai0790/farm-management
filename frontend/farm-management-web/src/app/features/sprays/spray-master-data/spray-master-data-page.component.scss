@@ -1,0 +1,260 @@
+.page-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.5rem;
+}
+
+.page-header {
+  .header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .title-with-icon {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+
+    .header-icon {
+      font-size: 2.25rem;
+      width: 2.25rem;
+      height: 2.25rem;
+      color: var(--primary-color, #1e3a29);
+    }
+
+    .page-title {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-color, #1a202c);
+    }
+
+    .page-subtitle {
+      margin: 0.25rem 0 0;
+      font-size: 0.875rem;
+      color: var(--text-secondary, #64748b);
+    }
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    .back-link {
+      color: var(--text-secondary, #64748b);
+    }
+
+    .create-btn {
+      mat-icon {
+        margin-right: 0.25rem;
+      }
+    }
+  }
+}
+
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+
+  .kpi-card {
+    border: 1px solid var(--border-color, #e2e8f0);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+    mat-card-content {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      padding: 0.875rem 1rem;
+    }
+
+    .kpi-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary, #64748b);
+    }
+
+    .kpi-value {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-color, #1a202c);
+
+      .val-icon {
+        font-size: 1.1rem;
+        width: 1.1rem;
+        height: 1.1rem;
+      }
+
+      &.system-val {
+        color: #475569;
+      }
+
+      &.custom-val {
+        color: #0284c7;
+      }
+
+      &.active-val {
+        color: #16a34a;
+      }
+
+      &.inactive-val {
+        color: #94a3b8;
+      }
+    }
+  }
+}
+
+.content-card {
+  border: 1px solid var(--border-color, #e2e8f0);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  padding: 0;
+  overflow: hidden;
+
+  .tab-pane {
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
+
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+
+  .search-field {
+    flex: 1;
+    min-width: 260px;
+  }
+
+  .filter-field {
+    width: 180px;
+  }
+}
+
+.table-container {
+  overflow-x: auto;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 6px;
+}
+
+.master-table {
+  width: 100%;
+
+  th.mat-header-cell {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary, #64748b);
+    background-color: #f8fafc;
+  }
+
+  td.mat-cell {
+    font-size: 0.875rem;
+    color: var(--text-color, #1a202c);
+  }
+
+  .primary-text {
+    font-weight: 500;
+  }
+
+  .desc-cell {
+    max-width: 300px;
+    color: var(--text-secondary, #64748b);
+  }
+
+  .actions-col {
+    width: 90px;
+    text-align: right;
+  }
+}
+
+.code-badge {
+  display: inline-block;
+  padding: 0.15rem 0.45rem;
+  background-color: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.target-type-chip {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: #ede9fe;
+  color: #6b21a8;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+
+  .badge-icon {
+    font-size: 0.85rem;
+    width: 0.85rem;
+    height: 0.85rem;
+  }
+
+  &.badge-system {
+    background-color: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+  }
+
+  &.badge-custom {
+    background-color: #e0f2fe;
+    color: #0369a1;
+  }
+
+  &.badge-active {
+    background-color: #dcfce7;
+    color: #15803d;
+  }
+
+  &.badge-inactive {
+    background-color: #f1f5f9;
+    color: #64748b;
+  }
+}
+
+.loading-state,
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 3rem 1rem;
+  color: var(--text-secondary, #64748b);
+
+  .empty-icon {
+    font-size: 2.5rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    color: #94a3b8;
+  }
+}

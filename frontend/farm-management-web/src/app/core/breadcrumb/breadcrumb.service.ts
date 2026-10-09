@@ -327,6 +327,8 @@ export class BreadcrumbService {
           items.push({ label: "Record Completed" });
         } else if (segments[1] === "products") {
           items.push({ label: "Protection Products" });
+        } else if (segments[1] === "master-data") {
+          items.push({ label: "Spray Masters" });
         } else if (segments[1]) {
           const sprayId = segments[1];
           const sprayName = this.labelCache.get(sprayId) ?? "Spray details";

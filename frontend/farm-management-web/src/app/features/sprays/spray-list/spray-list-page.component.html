@@ -20,6 +20,11 @@
         <mat-icon>science</mat-icon> Protection Products
       </a>
     }
+    @if (permissionService.hasAny(["ProductType.View", "Target.View", "ApplicationMethod.View"])) {
+      <a mat-stroked-button routerLink="/sprays/master-data">
+        <mat-icon>tune</mat-icon> Spray Masters
+      </a>
+    }
   </div>
 </div>
 

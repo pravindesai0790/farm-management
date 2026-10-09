@@ -61,3 +61,39 @@ public sealed record ApplicationMethodResponse(
     bool IsSystem,
     bool IsActive);
 
+public sealed record CreateProductTypeRequest(
+    string Code,
+    string Name,
+    string? Description = null,
+    int DisplayOrder = 0);
+
+public sealed record UpdateProductTypeRequest(
+    string Name,
+    string? Description = null,
+    int DisplayOrder = 0);
+
+public sealed record CreateTargetRequest(
+    string Code,
+    string Name,
+    string TargetType,
+    string? Description = null,
+    int DisplayOrder = 0);
+
+public sealed record UpdateTargetRequest(
+    string Name,
+    string TargetType,
+    string? Description = null,
+    int DisplayOrder = 0);
+
+public sealed record CreateApplicationMethodRequest(
+    string Code,
+    string Name,
+    string? Description = null,
+    int DisplayOrder = 0);
+
+public sealed record UpdateApplicationMethodRequest(
+    string Name,
+    string? Description = null,
+    int DisplayOrder = 0);
+
+

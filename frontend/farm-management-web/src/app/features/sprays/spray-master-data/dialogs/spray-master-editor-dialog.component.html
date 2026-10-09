@@ -1,0 +1,116 @@
+<div class="dialog-container">
+  <div class="dialog-header">
+    <div class="header-content">
+      <mat-icon class="header-icon">{{ data.kind === 'target' ? 'pest_control' : data.kind === 'product-type' ? 'category' : 'tune' }}</mat-icon>
+      <div>
+        <h2 mat-dialog-title class="dialog-title">{{ title }}</h2>
+        <p class="dialog-subtitle">
+          {{ isEditMode() ? 'Update master details' : 'Define custom ' + kindLabel.toLowerCase() + ' for your organization' }}
+        </p>
+      </div>
+    </div>
+    <button mat-icon-button (click)="onCancel()" aria-label="Close dialog" type="button">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  @if (isSystemItem()) {
+    <div class="system-lock-banner">
+      <mat-icon class="lock-icon">lock</mat-icon>
+      <div class="banner-text">
+        <strong>System Default Value</strong>
+        <p>This master item is provided by the platform and cannot be modified or deleted.</p>
+      </div>
+    </div>
+  }
+
+  <mat-dialog-content class="dialog-body">
+    <form [formGroup]="form" id="sprayMasterForm" (ngSubmit)="onSubmit()">
+      <div class="form-grid">
+        <!-- Code -->
+        <mat-form-field appearance="outline" class="form-field">
+          <mat-label>Code</mat-label>
+          <input
+            matInput
+            formControlName="code"
+            placeholder="e.g. CUSTOM_BIO"
+            style="text-transform: uppercase"
+          />
+          <mat-hint>Unique identifier (alphanumeric, underscores or dashes)</mat-hint>
+          @if (form.controls.code.hasError('required') && form.controls.code.touched) {
+            <mat-error>Code is required.</mat-error>
+          }
+          @if (form.controls.code.hasError('pattern') && form.controls.code.touched) {
+            <mat-error>Letters, numbers, underscores, and dashes only.</mat-error>
+          }
+        </mat-form-field>
+
+        <!-- Name -->
+        <mat-form-field appearance="outline" class="form-field">
+          <mat-label>Name</mat-label>
+          <input matInput formControlName="name" placeholder="e.g. Custom Bio Fungicide" />
+          @if (form.controls.name.hasError('required') && form.controls.name.touched) {
+            <mat-error>Name is required.</mat-error>
+          }
+        </mat-form-field>
+
+        <!-- Target Type (if Target) -->
+        @if (data.kind === 'target') {
+          <mat-form-field appearance="outline" class="form-field full-width">
+            <mat-label>Target Category / Type</mat-label>
+            <mat-select formControlName="targetType">
+              @for (type of targetTypes; track type) {
+                <mat-option [value]="type">{{ type }}</mat-option>
+              }
+            </mat-select>
+            @if (form.controls.targetType.hasError('required') && form.controls.targetType.touched) {
+              <mat-error>Target category is required.</mat-error>
+            }
+          </mat-form-field>
+        }
+
+        <!-- Display Order -->
+        <mat-form-field appearance="outline" class="form-field">
+          <mat-label>Display Order</mat-label>
+          <input matInput type="number" formControlName="displayOrder" min="0" />
+          <mat-hint>Order in selection dropdowns (lower appears first)</mat-hint>
+          @if (form.controls.displayOrder.hasError('min') && form.controls.displayOrder.touched) {
+            <mat-error>Display order cannot be negative.</mat-error>
+          }
+        </mat-form-field>
+
+        <!-- Description -->
+        <mat-form-field appearance="outline" class="form-field full-width">
+          <mat-label>Description (Optional)</mat-label>
+          <textarea
+            matInput
+            formControlName="description"
+            rows="3"
+            placeholder="Additional notes or specifications..."
+          ></textarea>
+        </mat-form-field>
+      </div>
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end" class="dialog-actions">
+    <button mat-button type="button" (click)="onCancel()" [disabled]="isSubmitting()">
+      Cancel
+    </button>
+    @if (!isSystemItem()) {
+      <button
+        mat-flat-button
+        color="primary"
+        type="submit"
+        form="sprayMasterForm"
+        [disabled]="isSubmitting() || form.invalid"
+      >
+        @if (isSubmitting()) {
+          Saving...
+        } @else {
+          {{ isEditMode() ? 'Save Changes' : 'Create ' + kindLabel }}
+        }
+      </button>
+    }
+  </mat-dialog-actions>
+</div>
