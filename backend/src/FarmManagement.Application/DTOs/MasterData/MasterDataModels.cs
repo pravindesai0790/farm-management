@@ -32,3 +32,32 @@ public sealed record CurrencyResponse(
     bool IsSystem,
     bool IsActive,
     int DisplayOrder);
+
+public sealed record ProductTypeResponse(
+    Guid Id,
+    string Code,
+    string Name,
+    string? Description,
+    int DisplayOrder,
+    bool IsSystem,
+    bool IsActive);
+
+public sealed record TargetResponse(
+    Guid Id,
+    string Code,
+    string Name,
+    string TargetType,
+    string? Description,
+    int DisplayOrder,
+    bool IsSystem,
+    bool IsActive);
+
+public sealed record ApplicationMethodResponse(
+    Guid Id,
+    string Code,
+    string Name,
+    string? Description,
+    int DisplayOrder,
+    bool IsSystem,
+    bool IsActive);
+

@@ -11,4 +11,8 @@ public interface IMasterDataService
     Task<IReadOnlyList<PlantationEndReasonResponse>> ListPlantationEndReasonsAsync(MasterDataActor actor, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<PlantationEndReasonResponse>> ListCycleCancellationReasonsAsync(MasterDataActor actor, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<CurrencyResponse>> ListCurrenciesAsync(MasterDataActor actor, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<ProductTypeResponse>> ListProductTypesAsync(MasterDataActor actor, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<TargetResponse>> ListTargetsAsync(MasterDataActor actor, string? type = null, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<ApplicationMethodResponse>> ListApplicationMethodsAsync(MasterDataActor actor, CancellationToken cancellationToken = default);
 }
+

@@ -34,5 +34,21 @@ public sealed class MasterDataController(IMasterDataService masterDataService) :
     public async Task<IActionResult> ListCurrencies(CancellationToken cancellationToken) =>
         Ok(await masterDataService.ListCurrenciesAsync(GetUserContext(), cancellationToken));
 
+    [HttpGet("product-types")]
+    [Authorize(Policy = "Permission:ProductType.View")]
+    public async Task<IActionResult> ListProductTypes(CancellationToken cancellationToken) =>
+        Ok(await masterDataService.ListProductTypesAsync(GetUserContext(), cancellationToken));
+
+    [HttpGet("targets")]
+    [Authorize(Policy = "Permission:Target.View")]
+    public async Task<IActionResult> ListTargets([FromQuery] string? type, CancellationToken cancellationToken) =>
+        Ok(await masterDataService.ListTargetsAsync(GetUserContext(), type, cancellationToken));
+
+    [HttpGet("application-methods")]
+    [Authorize(Policy = "Permission:ApplicationMethod.View")]
+    public async Task<IActionResult> ListApplicationMethods(CancellationToken cancellationToken) =>
+        Ok(await masterDataService.ListApplicationMethodsAsync(GetUserContext(), cancellationToken));
+
     private MasterDataActor GetUserContext() => UserContextHelper.GetUserContext<MasterDataActor>(User);
+
 }

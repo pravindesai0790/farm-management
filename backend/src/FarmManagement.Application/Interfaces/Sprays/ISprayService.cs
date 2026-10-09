@@ -75,4 +75,15 @@ public interface ISprayService
         RecordCompletedSprayRequest request,
         string? ipAddress,
         CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<SprayProductLookupResponse>> ListProductsLookupAsync(
+        SprayActor actor,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<SprayStorageLocationLookupResponse>> ListStorageLocationsLookupAsync(
+        SprayActor actor,
+        Guid farmId,
+        Guid inventoryItemId,
+        CancellationToken cancellationToken = default);
 }
+

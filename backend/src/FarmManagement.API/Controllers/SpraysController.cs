@@ -20,7 +20,29 @@ public sealed class SpraysController(ISprayService sprayService) : ControllerBas
         return Ok(result);
     }
 
+    [HttpGet("lookup/products")]
+    [Authorize(Policy = "Permission:Spray.View")]
+    public async Task<IActionResult> ListProductsLookup(CancellationToken cancellationToken = default)
+    {
+        var actor = UserContextHelper.GetUserContext<SprayActor>(User);
+        var result = await sprayService.ListProductsLookupAsync(actor, cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpGet("lookup/storage-locations")]
+    [Authorize(Policy = "Permission:Spray.View")]
+    public async Task<IActionResult> ListStorageLocationsLookup(
+        [FromQuery] Guid farmId,
+        [FromQuery] Guid inventoryItemId,
+        CancellationToken cancellationToken = default)
+    {
+        var actor = UserContextHelper.GetUserContext<SprayActor>(User);
+        var result = await sprayService.ListStorageLocationsLookupAsync(actor, farmId, inventoryItemId, cancellationToken);
+        return Ok(result);
+    }
+
     [HttpGet("{id:guid}")]
+
     [Authorize(Policy = "Permission:Spray.View")]
     public async Task<IActionResult> Get(Guid id, CancellationToken cancellationToken = default)
     {

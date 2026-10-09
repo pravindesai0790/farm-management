@@ -41,6 +41,41 @@ public sealed class MasterDataService(IMasterDataStore store) : IMasterDataServi
             .ToArray();
     }
 
+    public async Task<IReadOnlyList<ProductTypeResponse>> ListProductTypesAsync(MasterDataActor actor, CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        return (await store.ListProductTypesAsync(actor.OrganizationId, cancellationToken))
+            .Select(pt => new ProductTypeResponse(pt.Id, pt.Code, pt.Name, pt.Description, pt.DisplayOrder, pt.IsSystem, pt.IsActive))
+            .ToArray();
+    }
+
+    public async Task<IReadOnlyList<TargetResponse>> ListTargetsAsync(MasterDataActor actor, string? type = null, CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+
+        Domain.Enums.TargetType? parsedTargetType = null;
+        if (!string.IsNullOrWhiteSpace(type))
+        {
+            if (Enum.TryParse<Domain.Enums.TargetType>(type.Trim(), true, out var targetType))
+            {
+                parsedTargetType = targetType;
+            }
+        }
+
+        return (await store.ListTargetsAsync(actor.OrganizationId, parsedTargetType, cancellationToken))
+            .Select(t => new TargetResponse(t.Id, t.Code, t.Name, t.TargetType.ToString(), t.Description, t.DisplayOrder, t.IsSystem, t.IsActive))
+            .ToArray();
+    }
+
+    public async Task<IReadOnlyList<ApplicationMethodResponse>> ListApplicationMethodsAsync(MasterDataActor actor, CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        return (await store.ListApplicationMethodsAsync(actor.OrganizationId, cancellationToken))
+            .Select(am => new ApplicationMethodResponse(am.Id, am.Code, am.Name, am.Description, am.DisplayOrder, am.IsSystem, am.IsActive))
+            .ToArray();
+    }
+
+
     private static void ValidateActor(MasterDataActor actor)
     {
         if (actor.UserId == Guid.Empty || actor.OrganizationId == Guid.Empty)

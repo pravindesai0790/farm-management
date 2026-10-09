@@ -32,4 +32,35 @@ public sealed class MasterDataStore(ApplicationDbContext dbContext) : IMasterDat
             .OrderBy(currency => currency.DisplayOrder)
             .ThenBy(currency => currency.Code)
             .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<ProductType>> ListProductTypesAsync(Guid organizationId, CancellationToken cancellationToken = default) =>
+        await dbContext.ProductTypes.AsNoTracking()
+            .Where(pt => pt.IsActive && (pt.IsSystem || pt.OrganizationId == organizationId))
+            .OrderBy(pt => pt.DisplayOrder)
+            .ThenBy(pt => pt.Name)
+            .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<Target>> ListTargetsAsync(Guid organizationId, Domain.Enums.TargetType? targetType = null, CancellationToken cancellationToken = default)
+    {
+        var query = dbContext.Targets.AsNoTracking()
+            .Where(t => t.IsActive && (t.IsSystem || t.OrganizationId == organizationId));
+
+        if (targetType.HasValue)
+        {
+            query = query.Where(t => t.TargetType == targetType.Value);
+        }
+
+        return await query
+            .OrderBy(t => t.DisplayOrder)
+            .ThenBy(t => t.Name)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<ApplicationMethod>> ListApplicationMethodsAsync(Guid organizationId, CancellationToken cancellationToken = default) =>
+        await dbContext.ApplicationMethods.AsNoTracking()
+            .Where(am => am.IsActive && (am.IsSystem || am.OrganizationId == organizationId))
+            .OrderBy(am => am.DisplayOrder)
+            .ThenBy(am => am.Name)
+            .ToListAsync(cancellationToken);
 }
+

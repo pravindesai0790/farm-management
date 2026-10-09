@@ -1,8 +1,11 @@
 using FarmManagement.API.Helpers;
 using FarmManagement.Application.DTOs.PlantProtection;
+using FarmManagement.Application.DTOs.Sprays;
 using FarmManagement.Application.Interfaces.PlantProtection;
+using FarmManagement.Application.Interfaces.Sprays;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+
 
 namespace FarmManagement.API.Controllers;
 
@@ -33,7 +36,17 @@ public sealed class PlantProtectionProductsController(IPlantProtectionProductSer
         return Ok(result);
     }
 
+    [HttpGet("lookup")]
+    [Authorize(Policy = "Permission:PlantProtectionProduct.View")]
+    public async Task<IActionResult> Lookup([FromServices] ISprayService sprayService, CancellationToken cancellationToken)
+    {
+        var actor = UserContextHelper.GetUserContext<SprayActor>(User);
+        var result = await sprayService.ListProductsLookupAsync(actor, cancellationToken);
+        return Ok(result);
+    }
+
     [HttpGet("{id:guid}")]
+
     [Authorize(Policy = "Permission:PlantProtectionProduct.View")]
     public async Task<IActionResult> Get(Guid id, CancellationToken cancellationToken)
     {

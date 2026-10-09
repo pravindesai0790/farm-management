@@ -35,6 +35,15 @@ public sealed class CropCyclesController(ICropCycleService cycleService) : Contr
     public async Task<ActionResult<CropCycleLifecycleResponse>> GetLifecycle(Guid id, CancellationToken cancellationToken = default) =>
         Ok(await cycleService.GetLifecycleAsync(GetUserContext(), id, cancellationToken));
 
+    [HttpGet("{id:guid}/stages")]
+    [Authorize(Policy = "Permission:CropCycle.View")]
+    public async Task<ActionResult<IReadOnlyList<CropCycleStageResponse>>> ListStages(Guid id, CancellationToken cancellationToken = default)
+    {
+        var lifecycle = await cycleService.GetLifecycleAsync(GetUserContext(), id, cancellationToken);
+        return Ok(lifecycle.Stages);
+    }
+
+
     [HttpPost]
     [Authorize(Policy = "Permission:CropCycle.Create")]
     public async Task<ActionResult<CropCycleResponse>> Create(

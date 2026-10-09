@@ -211,3 +211,27 @@ public sealed record RecordCompletedSprayProductItemRequest(
     Guid StorageLocationId,
     decimal ActualQuantity,
     string? Dosage = null);
+
+public sealed record SprayProductLookupResponse(
+    Guid InventoryItemId,
+    string Name,
+    string? Sku,
+    Guid StockUnitId,
+    string StockUnitName,
+    string? StockUnitCode,
+    string? StockUnitSymbol,
+    Guid ProductTypeId,
+    string ProductTypeCode,
+    string ProductTypeName,
+    string? ActiveIngredient,
+    string? Manufacturer,
+    Guid PlantProtectionProductId);
+
+public sealed record SprayStorageLocationLookupResponse(
+    Guid StorageLocationId,
+    string StorageLocationName,
+    decimal CurrentStock,
+    bool HasStock,
+    Guid? StockUnitId,
+    string? StockUnitName);
+

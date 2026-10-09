@@ -1520,7 +1520,50 @@ public sealed class SprayService(ISprayStore store) : ISprayService
     private static string FormatReferenceNumber(Guid id) =>
         $"SP-{id.ToString()[..8].ToUpperInvariant()}";
 
+    public async Task<IReadOnlyList<SprayProductLookupResponse>> ListProductsLookupAsync(
+
+        SprayActor actor,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        return await store.ListProductsLookupAsync(actor.OrganizationId, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<SprayStorageLocationLookupResponse>> ListStorageLocationsLookupAsync(
+        SprayActor actor,
+        Guid farmId,
+        Guid inventoryItemId,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+
+        if (farmId == Guid.Empty)
+        {
+            throw Validation(nameof(farmId), "Farm ID is required.");
+        }
+
+        if (inventoryItemId == Guid.Empty)
+        {
+            throw Validation(nameof(inventoryItemId), "Inventory Item ID is required.");
+        }
+
+        var farm = await store.FindFarmAsync(farmId, actor.OrganizationId, cancellationToken);
+        if (farm is null)
+        {
+            throw new ResourceNotFoundException("The farm was not found.");
+        }
+
+        var item = await store.FindInventoryItemAsync(inventoryItemId, actor.OrganizationId, cancellationToken);
+        if (item is null)
+        {
+            throw new ResourceNotFoundException("The inventory item was not found.");
+        }
+
+        return await store.ListStorageLocationsLookupAsync(actor.OrganizationId, farmId, inventoryItemId, cancellationToken);
+    }
+
     private static void ValidateActor(SprayActor actor)
+
     {
         if (actor.UserId == Guid.Empty || actor.OrganizationId == Guid.Empty)
         {

@@ -178,7 +178,82 @@ public sealed class SprayStore(ApplicationDbContext dbContext) : ISprayStore
     public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
         dbContext.SaveChangesAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<SprayProductLookupResponse>> ListProductsLookupAsync(
+        Guid organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var products = await dbContext.PlantProtectionProducts.AsNoTracking()
+            .Include(p => p.InventoryItem)
+                .ThenInclude(i => i!.StockUnit)
+            .Include(p => p.ProductType)
+            .Where(p => p.OrganizationId == organizationId
+                     && p.IsActive
+                     && p.InventoryItem != null
+                     && p.InventoryItem.OrganizationId == organizationId
+                     && p.InventoryItem.IsActive)
+            .ToListAsync(cancellationToken);
+
+        return products
+            .OrderBy(p => p.InventoryItem!.Name)
+            .Select(p => new SprayProductLookupResponse(
+                p.InventoryItemId,
+                p.InventoryItem!.Name,
+                p.InventoryItem.Sku,
+                p.InventoryItem.StockUnitId,
+                p.InventoryItem.StockUnit?.Name ?? string.Empty,
+                p.InventoryItem.StockUnit?.Code,
+                p.InventoryItem.StockUnit?.Symbol,
+                p.ProductTypeId,
+                p.ProductType?.Code ?? string.Empty,
+                p.ProductType?.Name ?? string.Empty,
+                p.ActiveIngredient,
+                p.Manufacturer,
+                p.Id))
+            .ToArray();
+    }
+
+    public async Task<IReadOnlyList<SprayStorageLocationLookupResponse>> ListStorageLocationsLookupAsync(
+        Guid organizationId,
+        Guid farmId,
+        Guid inventoryItemId,
+        CancellationToken cancellationToken = default)
+    {
+        var locations = await (from sl in dbContext.StorageLocations.AsNoTracking()
+                               join sb in dbContext.StockBalances.AsNoTracking()
+                                   .Where(b => b.OrganizationId == organizationId && b.InventoryItemId == inventoryItemId)
+                                   on sl.Id equals sb.StorageLocationId into balances
+                               from sb in balances.DefaultIfEmpty()
+                               where sl.OrganizationId == organizationId
+                                  && sl.FarmId == farmId
+                                  && sl.IsActive
+                               select new
+                               {
+                                   sl.Id,
+                                   sl.Name,
+                                   CurrentStock = sb != null ? sb.QuantityOnHand : 0m
+                               }).ToListAsync(cancellationToken);
+
+
+        var item = await dbContext.InventoryItems.AsNoTracking()
+            .Include(i => i.StockUnit)
+            .FirstOrDefaultAsync(i => i.Id == inventoryItemId && i.OrganizationId == organizationId, cancellationToken);
+
+        return locations
+            .Select(l => new SprayStorageLocationLookupResponse(
+                l.Id,
+                l.Name,
+                l.CurrentStock,
+                l.CurrentStock > 0m,
+                item?.StockUnitId,
+                item?.StockUnit?.Name))
+            .OrderByDescending(l => l.HasStock)
+            .ThenByDescending(l => l.CurrentStock)
+            .ThenBy(l => l.StorageLocationName)
+            .ToArray();
+    }
+
     private IQueryable<Spray> BuildQuery(Guid organizationId, SprayListQuery query, DateTimeOffset now)
+
     {
         var q = dbContext.Sprays.Where(s => s.OrganizationId == organizationId);
 

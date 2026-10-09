@@ -278,7 +278,40 @@ public class SpraysControllerTests
         Assert.Equal(farmId, result.FarmId);
     }
 
+    [Fact]
+    public async Task ListProductsLookup_ReturnsOkWithProducts()
+    {
+        // Arrange
+        var fakeService = new FakeSprayService();
+        var controller = CreateController(fakeService);
+
+        // Act
+        var actionResult = await controller.ListProductsLookup();
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(actionResult);
+        var result = Assert.IsAssignableFrom<IReadOnlyList<SprayProductLookupResponse>>(okResult.Value);
+        Assert.Single(result);
+    }
+
+    [Fact]
+    public async Task ListStorageLocationsLookup_ReturnsOkWithLocations()
+    {
+        // Arrange
+        var fakeService = new FakeSprayService();
+        var controller = CreateController(fakeService);
+
+        // Act
+        var actionResult = await controller.ListStorageLocationsLookup(Guid.NewGuid(), Guid.NewGuid());
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(actionResult);
+        var result = Assert.IsAssignableFrom<IReadOnlyList<SprayStorageLocationLookupResponse>>(okResult.Value);
+        Assert.Single(result);
+    }
+
     private sealed class FakeSprayService : ISprayService
+
     {
         public Task<PagedResponse<SprayListItemResponse>> ListAsync(SprayActor actor, SprayListQuery query, CancellationToken cancellationToken = default)
         {
@@ -370,6 +403,25 @@ public class SpraysControllerTests
             var details = CreateTestDetails(Guid.NewGuid(), actor.OrganizationId, request.FarmId, actor.UserId);
             return Task.FromResult(details);
         }
+
+        public Task<IReadOnlyList<SprayProductLookupResponse>> ListProductsLookupAsync(SprayActor actor, CancellationToken cancellationToken = default)
+        {
+            IReadOnlyList<SprayProductLookupResponse> list = new List<SprayProductLookupResponse>
+            {
+                new(Guid.NewGuid(), "Test Product", "SKU-1", Guid.NewGuid(), "Liters", "L", "L", Guid.NewGuid(), "HERB", "Herbicide", "Glyphosate", "Bayer", Guid.NewGuid())
+            };
+            return Task.FromResult(list);
+        }
+
+        public Task<IReadOnlyList<SprayStorageLocationLookupResponse>> ListStorageLocationsLookupAsync(SprayActor actor, Guid farmId, Guid inventoryItemId, CancellationToken cancellationToken = default)
+        {
+            IReadOnlyList<SprayStorageLocationLookupResponse> list = new List<SprayStorageLocationLookupResponse>
+            {
+                new(Guid.NewGuid(), "Main Shed", 100m, true, Guid.NewGuid(), "Liters")
+            };
+            return Task.FromResult(list);
+        }
+
 
         private static SprayDetailsResponse CreateTestDetails(Guid id, Guid organizationId, Guid farmId, Guid userId) =>
             new(

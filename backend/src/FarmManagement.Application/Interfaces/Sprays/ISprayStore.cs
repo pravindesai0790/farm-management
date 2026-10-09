@@ -60,4 +60,12 @@ public interface ISprayStore
     Task<T> ExecuteInTransactionAsync<T>(Func<CancellationToken, Task<T>> operation, CancellationToken cancellationToken = default);
 
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<SprayProductLookupResponse>> ListProductsLookupAsync(Guid organizationId, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<SprayProductLookupResponse>>([]);
+
+    Task<IReadOnlyList<SprayStorageLocationLookupResponse>> ListStorageLocationsLookupAsync(Guid organizationId, Guid farmId, Guid inventoryItemId, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<SprayStorageLocationLookupResponse>>([]);
 }
+
+
