@@ -1,0 +1,149 @@
+<div class="dialog-header">
+  <div class="header-title-wrap">
+    <mat-icon class="header-icon">science</mat-icon>
+    <h2 mat-dialog-title>
+      {{ isEditMode() ? 'Edit Plant Protection Product' : 'New Plant Protection Product' }}
+    </h2>
+  </div>
+  <button mat-icon-button type="button" (click)="onCancel()" aria-label="Close dialog">
+    <mat-icon>close</mat-icon>
+  </button>
+</div>
+
+<mat-dialog-content class="dialog-content">
+  @if (errorMessage()) {
+    <div class="error-banner">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  @if (isEditMode() && hasCompletedSprayUsage()) {
+    <div class="locked-callout">
+      <mat-icon class="lock-icon">lock</mat-icon>
+      <div class="lock-text">
+        <strong>Product Type Locked:</strong> This protection product has been used in one or more completed spray applications. The Product Type classification is permanently locked to protect historical agronomic records. Active ingredient, manufacturer, and notes remain editable.
+      </div>
+    </div>
+  }
+
+  @if (isLoading()) {
+    <div class="dialog-loading">
+      <mat-spinner diameter="32"></mat-spinner>
+      <p>Loading master data...</p>
+    </div>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="dialog-form">
+      <!-- Item Details Display / Selector -->
+      @if (isEditMode()) {
+        <div class="immutable-item-card">
+          <div class="item-card-header">
+            <span class="label">Catalog Inventory Item</span>
+            <span class="unit-badge">{{ data?.product?.stockUnitName }} ({{ data?.product?.stockUnitSymbol }})</span>
+          </div>
+          <div class="item-name">{{ data?.product?.inventoryItemName }}</div>
+          @if (data?.product?.inventoryItemSku) {
+            <div class="item-sku">SKU: <code>{{ data?.product?.inventoryItemSku }}</code></div>
+          }
+        </div>
+      } @else {
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="w-100">
+          <mat-label>Inventory Item *</mat-label>
+          <mat-select formControlName="inventoryItemId" placeholder="Select Inventory Item">
+            @for (item of availableInventoryItems(); track item.id) {
+              <mat-option [value]="item.id">
+                {{ item.name }}
+                @if (item.sku) {
+                  <span class="sku-hint">({{ item.sku }})</span>
+                }
+              </mat-option>
+            }
+          </mat-select>
+          @if (form.controls.inventoryItemId.hasError('required') && form.controls.inventoryItemId.touched) {
+            <mat-error>Inventory item is required</mat-error>
+          }
+        </mat-form-field>
+      }
+
+      <!-- Product Type -->
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="w-100">
+        <mat-label>Product Type *</mat-label>
+        <mat-select formControlName="productTypeId" placeholder="Select Product Type">
+          @for (pt of productTypes(); track pt.id) {
+            <mat-option [value]="pt.id">
+              {{ pt.name }}
+            </mat-option>
+          }
+        </mat-select>
+        @if (form.controls.productTypeId.hasError('required') && form.controls.productTypeId.touched) {
+          <mat-error>Product type is required</mat-error>
+        }
+      </mat-form-field>
+
+      <!-- Active Ingredient -->
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="w-100">
+        <mat-label>Active Ingredient (Optional)</mat-label>
+        <input
+          matInput
+          formControlName="activeIngredient"
+          placeholder="e.g. Copper Oxychloride 50%, Azoxystrobin 23% SC..."
+        />
+        @if (form.controls.activeIngredient.hasError('maxlength')) {
+          <mat-error>Maximum 200 characters</mat-error>
+        }
+      </mat-form-field>
+
+      <!-- Manufacturer -->
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="w-100">
+        <mat-label>Manufacturer / Formulator (Optional)</mat-label>
+        <input
+          matInput
+          formControlName="manufacturer"
+          placeholder="e.g. Syngenta, Bayer, BASF, AgroChem..."
+        />
+        @if (form.controls.manufacturer.hasError('maxlength')) {
+          <mat-error>Maximum 200 characters</mat-error>
+        }
+      </mat-form-field>
+
+      <!-- Description / Agronomic Notes -->
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="w-100">
+        <mat-label>Description & Agronomic Usage Notes (Optional)</mat-label>
+        <textarea
+          matInput
+          rows="3"
+          formControlName="description"
+          placeholder="e.g. Broad-spectrum preventative fungicide for powdery mildew and downy mildew control..."
+        ></textarea>
+        @if (form.controls.description.hasError('maxlength')) {
+          <mat-error>Maximum 1000 characters</mat-error>
+        }
+      </mat-form-field>
+    </form>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="dialog-actions">
+  <button
+    mat-button
+    type="button"
+    (click)="onCancel()"
+    [disabled]="isSubmitting()"
+  >
+    Cancel
+  </button>
+  <button
+    mat-flat-button
+    color="primary"
+    type="button"
+    (click)="onSubmit()"
+    [disabled]="isSubmitting() || isLoading()"
+  >
+    @if (isSubmitting()) {
+      <mat-spinner diameter="18" class="inline-spinner"></mat-spinner>
+    } @else {
+      <mat-icon>save</mat-icon>
+    }
+    {{ isEditMode() ? 'Update Profile' : 'Save Profile' }}
+  </button>
+</mat-dialog-actions>

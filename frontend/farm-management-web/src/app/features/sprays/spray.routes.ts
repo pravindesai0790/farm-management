@@ -63,6 +63,16 @@ export const SPRAY_ROUTES: Routes = [
       ),
   },
   {
+    path: "products",
+    title: "Plant Protection Products",
+    canActivate: [permissionGuard],
+    data: { permission: "PlantProtectionProduct.View" },
+    loadComponent: () =>
+      import(
+        "./plant-protection-products/plant-protection-product-list-page.component"
+      ).then((m) => m.PlantProtectionProductListPageComponent),
+  },
+  {
     path: ":id",
     title: "Spray Application Details",
     canActivate: [permissionGuard],

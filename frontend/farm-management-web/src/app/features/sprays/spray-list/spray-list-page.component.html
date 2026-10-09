@@ -15,6 +15,11 @@
         <mat-icon>check_circle</mat-icon> Record Completed
       </a>
     }
+    @if (permissionService.has("PlantProtectionProduct.View")) {
+      <a mat-stroked-button routerLink="/sprays/products">
+        <mat-icon>science</mat-icon> Protection Products
+      </a>
+    }
   </div>
 </div>
 

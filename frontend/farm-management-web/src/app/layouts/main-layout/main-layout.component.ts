@@ -326,6 +326,13 @@ export class MainLayoutComponent {
           route: "/crop-lifecycle-templates",
           permissions: ["CropLifecycleTemplate.View"],
         },
+        {
+          id: "plant-protection-products",
+          label: "Protection products",
+          icon: "science",
+          route: "/sprays/products",
+          permissions: ["PlantProtectionProduct.View"],
+        },
       ],
     },
     {
