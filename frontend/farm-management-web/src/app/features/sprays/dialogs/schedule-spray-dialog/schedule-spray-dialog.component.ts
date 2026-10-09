@@ -24,6 +24,8 @@ import { finalize } from "rxjs";
 import { SprayService } from "../../../../core/sprays/spray.service";
 import { getApiErrorMessage } from "../../../../core/models/api-error.model";
 
+import { DateTimePickerComponent } from "../../../../shared/components/date-time-picker/date-time-picker.component";
+
 export interface ScheduleSprayDialogData {
   readonly sprayId: string;
   readonly referenceNumber: string;
@@ -43,6 +45,7 @@ export interface ScheduleSprayDialogData {
     MatInputModule,
     MatIconModule,
     MatProgressSpinnerModule,
+    DateTimePickerComponent,
   ],
   templateUrl: "./schedule-spray-dialog.component.html",
   styleUrl: "./schedule-spray-dialog.component.scss",

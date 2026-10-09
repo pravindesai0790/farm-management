@@ -10,18 +10,14 @@
 
 <mat-dialog-content class="dialog-content">
   <form [formGroup]="form" (ngSubmit)="onSubmit()" class="schedule-form">
-    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
-      <mat-label>Scheduled Application Date & Time *</mat-label>
-      <input
-        matInput
-        type="datetime-local"
-        formControlName="scheduledDateTime"
-        required
-      />
-      @if (form.get('scheduledDateTime')?.hasError('required') && form.get('scheduledDateTime')?.touched) {
-        <mat-error>Scheduled date and time is required</mat-error>
-      }
-    </mat-form-field>
+    <app-date-time-picker
+      formControlName="scheduledDateTime"
+      [label]="data.isReschedule ? 'Rescheduled Date & Time' : 'Scheduled Date & Time'"
+      [required]="true"
+    />
+    @if (form.get('scheduledDateTime')?.hasError('required') && form.get('scheduledDateTime')?.touched) {
+      <mat-error class="d-block mt-1">Scheduled date and time is required</mat-error>
+    }
   </form>
 </mat-dialog-content>
 

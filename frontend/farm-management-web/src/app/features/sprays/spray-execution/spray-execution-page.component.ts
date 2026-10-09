@@ -40,6 +40,7 @@ import {
   CompleteSprayRequest,
   SprayDetailsResponse,
   SprayProductDto,
+  SprayProductLookupResponse,
   SprayStorageLocationLookupResponse,
   StartSprayProductItemRequest,
   StartSprayRequest,
@@ -49,6 +50,7 @@ import {
 } from "../../../core/sprays/spray.models";
 import { SprayService } from "../../../core/sprays/spray.service";
 import { ConfirmDialogComponent } from "../../../shared/components/confirm-dialog/confirm-dialog.component";
+import { DateTimePickerComponent } from "../../../shared/components/date-time-picker/date-time-picker.component";
 import { getApiErrorMessage } from "../../../core/models/api-error.model";
 
 function formatToDateTimeLocal(date: Date = new Date()): string {
@@ -88,6 +90,7 @@ interface ProductExecutionRowForm {
     MatIconModule,
     MatTooltipModule,
     MatProgressSpinnerModule,
+    DateTimePickerComponent,
   ],
   templateUrl: "./spray-execution-page.component.html",
   styleUrl: "./spray-execution-page.component.scss",
@@ -123,6 +126,7 @@ export class SprayExecutionPageComponent implements OnInit {
   readonly applicationMethods = signal<readonly ApplicationMethodResponse[]>([]);
   readonly areaUnits = signal<readonly Unit[]>([]);
   readonly volumeUnits = signal<readonly Unit[]>([]);
+  readonly availableProducts = signal<readonly SprayProductLookupResponse[]>([]);
   readonly storageLocationsByItem = signal<Map<string, readonly SprayStorageLocationLookupResponse[]>>(new Map());
 
   // Reactive Form
@@ -161,6 +165,7 @@ export class SprayExecutionPageComponent implements OnInit {
       appMethods: this.sprayService.getApplicationMethods(),
       areaUnits: this.farmService.listUnits("Area"),
       volumeUnits: this.farmService.listUnits("Volume"),
+      availableProducts: this.sprayService.getProductLookup(),
       spray: this.sprayService.getSpray(this.id),
     })
       .pipe(
@@ -173,6 +178,7 @@ export class SprayExecutionPageComponent implements OnInit {
           this.applicationMethods.set(res.appMethods);
           this.areaUnits.set(res.areaUnits);
           this.volumeUnits.set(res.volumeUnits);
+          this.availableProducts.set(res.availableProducts);
           this.spray.set(res.spray);
 
           if (res.spray.referenceNumber) {
@@ -292,6 +298,79 @@ export class SprayExecutionPageComponent implements OnInit {
     const locations = this.getStorageLocations(itemId);
     const loc = locations.find((l) => l.storageLocationId === locationId);
     return loc ? loc.currentStock : null;
+  }
+
+  addProduct(): void {
+    const isStart = this.isStartMode();
+    const rowGroup = this.fb.group<ProductExecutionRowForm>({
+      inventoryItemId: new FormControl("", {
+        nonNullable: true,
+        validators: [Validators.required],
+      }),
+      inventoryItemName: new FormControl("", { nonNullable: true }),
+      inventoryItemSku: new FormControl("", { nonNullable: true }),
+      stockUnitSymbol: new FormControl("", { nonNullable: true }),
+      storageLocationId: new FormControl("", {
+        nonNullable: true,
+        validators: isStart ? [Validators.required] : [],
+      }),
+      storageLocationName: new FormControl("", { nonNullable: true }),
+      plannedQuantity: new FormControl(null),
+      actualQuantity: new FormControl(null, {
+        validators: [Validators.required, Validators.min(0.0001)],
+      }),
+      dosage: new FormControl("", { nonNullable: true }),
+    });
+
+    this.productsArray.push(rowGroup);
+  }
+
+  removeProduct(index: number): void {
+    this.productsArray.removeAt(index);
+  }
+
+  onProductSelected(index: number, itemId: string): void {
+    const row = this.productsArray.at(index);
+    const prod = this.availableProducts().find((p) => p.inventoryItemId === itemId);
+    if (prod) {
+      row.patchValue({
+        inventoryItemId: prod.inventoryItemId,
+        inventoryItemName: prod.name,
+        inventoryItemSku: prod.sku || "",
+        stockUnitSymbol: prod.stockUnitSymbol || prod.stockUnitName || "",
+        storageLocationId: "",
+      });
+
+      const farmId = this.spray()?.farmId;
+      if (farmId && this.isStartMode()) {
+        this.sprayService
+          .getStorageLocationLookup(farmId, itemId)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
+            next: (locs) => {
+              this.storageLocationsByItem.update((curr) => {
+                const nextMap = new Map(curr);
+                nextMap.set(itemId, locs);
+                return nextMap;
+              });
+              if (locs.length === 1) {
+                row.patchValue({ storageLocationId: locs[0].storageLocationId });
+              } else {
+                const available = locs.find((l) => l.hasStock && l.currentStock > 0);
+                if (available) {
+                  row.patchValue({ storageLocationId: available.storageLocationId });
+                }
+              }
+            },
+          });
+      }
+    }
+  }
+
+  isProductOptionDisabled(itemId: string, currentRowIndex: number): boolean {
+    return this.productsArray.controls.some(
+      (ctrl, i) => i !== currentRowIndex && ctrl.get("inventoryItemId")?.value === itemId,
+    );
   }
 
   onStart(): void {

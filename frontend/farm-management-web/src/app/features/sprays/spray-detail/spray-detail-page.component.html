@@ -68,11 +68,6 @@
               <mat-icon>update</mat-icon> Reschedule
             </button>
           }
-          @if (permissionService.has('Spray.Update')) {
-            <button mat-stroked-button type="button" (click)="onEdit()">
-              <mat-icon>edit</mat-icon> Edit Plan
-            </button>
-          }
           @if (permissionService.has('Spray.Cancel')) {
             <button mat-stroked-button color="warn" type="button" (click)="onCancelSpray()">
               <mat-icon>cancel</mat-icon> Cancel Spray
@@ -396,16 +391,16 @@
       <div class="audit-item">
         <span>Created:</span>
         <strong>{{ s.createdAt | date:'medium' }}</strong>
-        @if (s.createdBy) {
-          <span>by {{ s.createdBy }}</span>
+        @if (s.createdByName || s.createdBy) {
+          <span>by {{ s.createdByName || s.createdBy }}</span>
         }
       </div>
       @if (s.updatedAt) {
         <div class="audit-item">
           <span>Last Updated:</span>
           <strong>{{ s.updatedAt | date:'medium' }}</strong>
-          @if (s.updatedBy) {
-            <span>by {{ s.updatedBy }}</span>
+          @if (s.updatedByName || s.updatedBy) {
+            <span>by {{ s.updatedByName || s.updatedBy }}</span>
           }
         </div>
       }

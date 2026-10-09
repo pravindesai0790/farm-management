@@ -119,20 +119,26 @@
         <mat-label>From Date</mat-label>
         <input
           matInput
-          type="date"
+          [matDatepicker]="fromPicker"
           [ngModel]="fromDate()"
-          (ngModelChange)="onFromDateChange($event)"
+          (dateChange)="onFromDateChange($event.value)"
+          placeholder="MM/DD/YYYY"
         />
+        <mat-datepicker-toggle matIconSuffix [for]="fromPicker"></mat-datepicker-toggle>
+        <mat-datepicker #fromPicker></mat-datepicker>
       </mat-form-field>
 
       <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-item filter-date">
         <mat-label>To Date</mat-label>
         <input
           matInput
-          type="date"
+          [matDatepicker]="toPicker"
           [ngModel]="toDate()"
-          (ngModelChange)="onToDateChange($event)"
+          (dateChange)="onToDateChange($event.value)"
+          placeholder="MM/DD/YYYY"
         />
+        <mat-datepicker-toggle matIconSuffix [for]="toPicker"></mat-datepicker-toggle>
+        <mat-datepicker #toPicker></mat-datepicker>
       </mat-form-field>
 
       <button
@@ -350,11 +356,6 @@
 
                   <!-- SCHEDULED Actions -->
                   @if (s.status === 'Scheduled') {
-                    @if (permissionService.has("Spray.Update")) {
-                      <a mat-menu-item [routerLink]="['/sprays', s.id, 'edit']">
-                        <mat-icon>edit</mat-icon> Edit Plan
-                      </a>
-                    }
                     @if (permissionService.has("Spray.Schedule")) {
                       <button mat-menu-item (click)="openScheduleDialog(s, true)">
                         <mat-icon>edit_calendar</mat-icon> Reschedule

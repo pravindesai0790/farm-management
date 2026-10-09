@@ -54,6 +54,7 @@ import {
 } from "../../../core/sprays/spray.models";
 import { SprayService } from "../../../core/sprays/spray.service";
 import { ConfirmDialogComponent } from "../../../shared/components/confirm-dialog/confirm-dialog.component";
+import { DateTimePickerComponent } from "../../../shared/components/date-time-picker/date-time-picker.component";
 
 function formatToDateTimeLocal(date: Date = new Date()): string {
   const pad = (n: number) => n.toString().padStart(2, "0");
@@ -99,6 +100,7 @@ export interface ProductCompletedRowForm {
     MatProgressSpinnerModule,
     MatSelectModule,
     MatTooltipModule,
+    DateTimePickerComponent,
   ],
   templateUrl: "./spray-record-completed-page.component.html",
   styleUrl: "./spray-record-completed-page.component.scss",
@@ -133,6 +135,7 @@ export class SprayRecordCompletedPageComponent implements OnInit {
   readonly storageLocationsByItem = signal<Map<string, readonly SprayStorageLocationLookupResponse[]>>(new Map());
 
   readonly maxDateTime = signal(formatToDateTimeLocal());
+  readonly today = new Date();
 
   readonly form = this.fb.group({
     farmId: ["", [Validators.required]],
@@ -245,6 +248,13 @@ export class SprayRecordCompletedPageComponent implements OnInit {
     }
 
     if (selectedFarmId) {
+      const selectedFarm = this.farms().find((f) => f.id === selectedFarmId);
+      if (selectedFarm && selectedFarm.totalArea) {
+        this.form.patchValue({
+          actualTreatedArea: selectedFarm.totalArea,
+          actualTreatedAreaUnitId: selectedFarm.areaUnitId || "",
+        });
+      }
       this.loadAreasAndPlantations(selectedFarmId);
     }
   }
@@ -260,6 +270,24 @@ export class SprayRecordCompletedPageComponent implements OnInit {
     });
     this.cropCycles.set([]);
     this.stages.set([]);
+
+    if (selectedAreaId) {
+      const selectedArea = this.areas().find((a) => a.id === selectedAreaId);
+      if (selectedArea && selectedArea.totalArea) {
+        this.form.patchValue({
+          actualTreatedArea: selectedArea.totalArea,
+          actualTreatedAreaUnitId: selectedArea.areaUnitId || "",
+        });
+      }
+    } else {
+      const selectedFarm = this.farms().find((f) => f.id === farmId);
+      if (selectedFarm && selectedFarm.totalArea) {
+        this.form.patchValue({
+          actualTreatedArea: selectedFarm.totalArea,
+          actualTreatedAreaUnitId: selectedFarm.areaUnitId || "",
+        });
+      }
+    }
 
     this.farmService
       .listPlantations(1, 100, farmId, selectedAreaId || undefined)

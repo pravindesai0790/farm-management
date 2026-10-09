@@ -64,7 +64,21 @@ public sealed class SprayService(ISprayStore store) : ISprayService
         }
 
         var now = DateTimeOffset.UtcNow;
-        return ToDetailsResponse(spray, now);
+        var userIds = new List<Guid> { spray.CreatedBy };
+        if (spray.UpdatedBy.HasValue)
+        {
+            userIds.Add(spray.UpdatedBy.Value);
+        }
+
+        var userNames = await store.GetUserNamesAsync(userIds, cancellationToken);
+        userNames.TryGetValue(spray.CreatedBy, out var createdByName);
+        string? updatedByName = null;
+        if (spray.UpdatedBy.HasValue)
+        {
+            userNames.TryGetValue(spray.UpdatedBy.Value, out updatedByName);
+        }
+
+        return ToDetailsResponse(spray, now, createdByName, updatedByName);
     }
 
     public async Task<SprayDetailsResponse> CreateDraftAsync(
@@ -1449,7 +1463,11 @@ public sealed class SprayService(ISprayStore store) : ISprayService
             CreatedAt: spray.CreatedAt);
     }
 
-    private static SprayDetailsResponse ToDetailsResponse(Spray spray, DateTimeOffset now)
+    private static SprayDetailsResponse ToDetailsResponse(
+        Spray spray,
+        DateTimeOffset now,
+        string? createdByName = null,
+        string? updatedByName = null)
     {
         var isOverdue = ComputeIsOverdue(spray, now);
 
@@ -1509,7 +1527,9 @@ public sealed class SprayService(ISprayStore store) : ISprayService
             CreatedAt: spray.CreatedAt,
             CreatedBy: spray.CreatedBy,
             UpdatedAt: spray.UpdatedAt,
-            UpdatedBy: spray.UpdatedBy);
+            UpdatedBy: spray.UpdatedBy,
+            CreatedByName: createdByName,
+            UpdatedByName: updatedByName);
     }
 
     private static bool ComputeIsOverdue(Spray spray, DateTimeOffset now) =>

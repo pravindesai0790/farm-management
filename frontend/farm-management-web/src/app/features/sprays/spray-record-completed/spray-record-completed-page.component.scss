@@ -216,6 +216,11 @@
   }
 }
 
+.datetime-col {
+  display: flex;
+  flex-direction: column;
+}
+
 .table-wrap {
   overflow-x: auto;
   border: 1px solid var(--app-border, #e0e0e0);
@@ -228,21 +233,21 @@
 
   th {
     background-color: #f8fafc;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--app-muted, #5f6368);
-    padding: 10px 12px;
+    padding: 8px 10px;
     border-bottom: 1px solid var(--app-border, #e0e0e0);
     text-align: left;
     white-space: nowrap;
   }
 
   td {
-    padding: 10px 12px;
+    padding: 8px 10px;
     border-bottom: 1px solid #f1f5f9;
-    vertical-align: middle;
+    vertical-align: top;
   }
 
   .product-row:last-child td {
@@ -250,54 +255,84 @@
   }
 
   .col-product {
-    width: 25%;
-    min-width: 200px;
+    width: 27%;
+    min-width: 180px;
   }
 
   .col-active {
-    width: 22%;
-    min-width: 170px;
+    width: 18%;
+    min-width: 130px;
   }
 
   .col-storage {
-    width: 24%;
-    min-width: 200px;
+    width: 25%;
+    min-width: 170px;
   }
 
   .col-quantity {
     width: 15%;
-    min-width: 140px;
+    min-width: 110px;
   }
 
   .col-dosage {
-    width: 14%;
-    min-width: 130px;
+    width: 12%;
+    min-width: 90px;
   }
 
   .col-actions {
-    width: 60px;
-    text-align: right;
+    width: 44px;
+    text-align: center;
+    padding-top: 10px;
+
+    button {
+      width: 32px;
+      height: 32px;
+      line-height: 32px;
+
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+      }
+    }
+  }
+
+  // Compact dropdown and input styling
+  .table-form-field {
+    font-size: 0.8125rem;
+
+    .mat-mdc-text-field-wrapper {
+      padding-left: 8px;
+      padding-right: 8px;
+    }
+
+    input.mat-mdc-input-element,
+    .mat-mdc-select-value {
+      font-size: 0.8125rem;
+    }
   }
 }
 
 .product-meta {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
+  padding-top: 6px;
 
   .active-ingredient {
-    font-size: 0.8125rem;
+    font-size: 0.75rem;
     font-weight: 500;
     color: var(--app-text, #202124);
+    line-height: 1.25;
   }
 
   .product-type-chip {
     display: inline-block;
     align-self: flex-start;
-    padding: 2px 8px;
-    font-size: 0.6875rem;
+    padding: 1px 6px;
+    font-size: 0.65rem;
     font-weight: 600;
-    border-radius: 12px;
+    border-radius: 10px;
     background-color: #f3f4f6;
     color: #4b5563;
     border: 1px solid #e5e7eb;
@@ -305,13 +340,13 @@
 }
 
 .stock-badge {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--app-muted, #5f6368);
   margin-left: 4px;
 }
 
 .sku-hint {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--app-muted, #5f6368);
   margin-left: 4px;
 }
@@ -319,24 +354,25 @@
 .qty-field-wrap {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 
   .qty-field {
     flex: 1;
   }
 
   .unit-symbol {
-    font-size: 0.8125rem;
+    font-size: 0.75rem;
     font-weight: 600;
     color: var(--app-muted, #5f6368);
     white-space: nowrap;
+    padding-top: 6px;
   }
 }
 
 .field-hint {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--app-muted, #5f6368);
-  margin-top: 4px;
+  margin-top: 2px;
 
   &.text-warn {
     color: #b45309;
@@ -345,6 +381,8 @@
 
 .text-muted {
   color: var(--app-muted, #5f6368);
+  display: inline-block;
+  padding-top: 6px;
 }
 
 .w-100 {

@@ -134,8 +134,10 @@ export interface SprayDetailsResponse {
   readonly products: readonly SprayProductDto[];
   readonly createdAt: string;
   readonly createdBy: string;
+  readonly createdByName?: string | null;
   readonly updatedAt: string | null;
   readonly updatedBy: string | null;
+  readonly updatedByName?: string | null;
 }
 
 export interface SprayProductItemRequest {

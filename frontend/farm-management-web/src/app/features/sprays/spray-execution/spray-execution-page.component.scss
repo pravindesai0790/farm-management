@@ -402,3 +402,30 @@
   }
 }
 
+.product-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+
+  .product-header-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+}
+
+.btn-sm {
+  font-size: 0.8125rem;
+}
+
+.sku-hint {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #64748b);
+  margin-left: 0.25rem;
+}
+
+.text-muted {
+  color: var(--color-text-secondary, #94a3b8);
+}
+

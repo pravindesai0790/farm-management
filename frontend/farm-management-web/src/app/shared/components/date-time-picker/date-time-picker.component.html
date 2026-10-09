@@ -1,0 +1,33 @@
+<div class="date-time-picker-row">
+  <!-- Date Field with Material Datepicker -->
+  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="picker-date-field">
+    <mat-label>{{ dateLabel || (label + ' (Date)') }}</mat-label>
+    <input
+      matInput
+      [matDatepicker]="picker"
+      [value]="selectedDate()"
+      (dateChange)="onDateChange($event.value)"
+      [max]="maxDate"
+      [min]="minDate"
+      [disabled]="isDisabled()"
+      [required]="required"
+      placeholder="MM/DD/YYYY"
+    />
+    <mat-datepicker-toggle matIconSuffix [for]="picker" [disabled]="isDisabled()"></mat-datepicker-toggle>
+    <mat-datepicker #picker></mat-datepicker>
+  </mat-form-field>
+
+  <!-- Time Field -->
+  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="picker-time-field">
+    <mat-label>{{ timeLabel }}</mat-label>
+    <input
+      matInput
+      type="time"
+      [value]="selectedTime()"
+      (change)="onTimeChange($event)"
+      [disabled]="isDisabled()"
+      [required]="required"
+    />
+    <mat-icon matIconSuffix class="time-suffix-icon">schedule</mat-icon>
+  </mat-form-field>
+</div>

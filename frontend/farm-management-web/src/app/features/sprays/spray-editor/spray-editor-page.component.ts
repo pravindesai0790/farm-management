@@ -19,6 +19,7 @@ import {
 } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
+import { MatDatepickerModule } from "@angular/material/datepicker";
 import { MatDialog } from "@angular/material/dialog";
 import { MatDividerModule } from "@angular/material/divider";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -69,6 +70,7 @@ export interface ProductRowForm {
     CommonModule,
     MatButtonModule,
     MatCardModule,
+    MatDatepickerModule,
     MatDividerModule,
     MatFormFieldModule,
     MatIconModule,
@@ -264,6 +266,13 @@ export class SprayEditorPageComponent implements OnInit {
     this.stages.set([]);
 
     if (selectedFarmId) {
+      const selectedFarm = this.farms().find((f) => f.id === selectedFarmId);
+      if (selectedFarm && selectedFarm.totalArea) {
+        this.form.patchValue({
+          plannedArea: selectedFarm.totalArea,
+          plannedAreaUnitId: selectedFarm.areaUnitId || "",
+        });
+      }
       this.loadAreasAndPlantations(selectedFarmId);
     }
   }
@@ -279,6 +288,24 @@ export class SprayEditorPageComponent implements OnInit {
     });
     this.cropCycles.set([]);
     this.stages.set([]);
+
+    if (selectedAreaId) {
+      const selectedArea = this.areas().find((a) => a.id === selectedAreaId);
+      if (selectedArea) {
+        this.form.patchValue({
+          plannedArea: selectedArea.totalArea,
+          plannedAreaUnitId: selectedArea.areaUnitId || "",
+        });
+      }
+    } else {
+      const selectedFarm = this.farms().find((f) => f.id === farmId);
+      if (selectedFarm && selectedFarm.totalArea) {
+        this.form.patchValue({
+          plannedArea: selectedFarm.totalArea,
+          plannedAreaUnitId: selectedFarm.areaUnitId || "",
+        });
+      }
+    }
 
     this.farmService
       .listPlantations(1, 100, farmId, selectedAreaId || undefined)
@@ -509,6 +536,19 @@ export class SprayEditorPageComponent implements OnInit {
 
   private buildDraftPayload(): CreateSprayDraftRequest | UpdateSprayDraftRequest {
     const raw = this.form.value;
+    let plannedDateStr: string | null = null;
+    const pdVal = raw.plannedDate as unknown;
+    if (pdVal) {
+      if (typeof pdVal === "string") {
+        plannedDateStr = pdVal.trim() || null;
+      } else if (pdVal instanceof Date) {
+        const y = pdVal.getFullYear();
+        const m = String(pdVal.getMonth() + 1).padStart(2, "0");
+        const d = String(pdVal.getDate()).padStart(2, "0");
+        plannedDateStr = `${y}-${m}-${d}`;
+      }
+    }
+
     const products: SprayProductItemRequest[] = this.productsArray.controls
       .map((c) => ({
         inventoryItemId: c.value.inventoryItemId!,
@@ -525,7 +565,7 @@ export class SprayEditorPageComponent implements OnInit {
       plantationId: raw.plantationId || null,
       cropCycleId: raw.cropCycleId || null,
       cropCycleStageId: raw.cropCycleStageId || null,
-      plannedDate: raw.plannedDate || null,
+      plannedDate: plannedDateStr,
       plannedArea: raw.plannedArea !== null && raw.plannedArea !== undefined ? Number(raw.plannedArea) : null,
       plannedAreaUnitId: raw.plannedAreaUnitId || null,
       waterQuantity: raw.waterQuantity !== null && raw.waterQuantity !== undefined ? Number(raw.waterQuantity) : null,

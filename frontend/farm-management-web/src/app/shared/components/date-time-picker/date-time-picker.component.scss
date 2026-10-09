@@ -1,0 +1,36 @@
+.date-time-picker-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  width: 100%;
+
+  .picker-date-field {
+    flex: 1 1 60%;
+    min-width: 160px;
+  }
+
+  .picker-time-field {
+    flex: 0 1 130px;
+    min-width: 110px;
+
+    .time-suffix-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: var(--app-muted, #5f6368);
+    }
+  }
+}
+
+@media (max-width: 600px) {
+  .date-time-picker-row {
+    flex-direction: column;
+    gap: 8px;
+
+    .picker-date-field,
+    .picker-time-field {
+      width: 100%;
+      flex: 1 1 auto;
+    }
+  }
+}

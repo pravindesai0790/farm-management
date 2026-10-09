@@ -66,6 +66,9 @@ public interface ISprayStore
 
     Task<IReadOnlyList<SprayStorageLocationLookupResponse>> ListStorageLocationsLookupAsync(Guid organizationId, Guid farmId, Guid inventoryItemId, CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<SprayStorageLocationLookupResponse>>([]);
+
+    Task<IReadOnlyDictionary<Guid, string>> GetUserNamesAsync(IEnumerable<Guid> userIds, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyDictionary<Guid, string>>(new Dictionary<Guid, string>());
 }
 
 

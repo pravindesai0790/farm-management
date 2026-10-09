@@ -340,4 +340,23 @@ public sealed class SprayStore(ApplicationDbContext dbContext) : ISprayStore
 
         return q;
     }
+
+    public async Task<IReadOnlyDictionary<Guid, string>> GetUserNamesAsync(
+        IEnumerable<Guid> userIds,
+        CancellationToken cancellationToken = default)
+    {
+        var distinctIds = userIds.Where(id => id != Guid.Empty).Distinct().ToList();
+        if (distinctIds.Count == 0)
+        {
+            return new Dictionary<Guid, string>();
+        }
+
+        var users = await dbContext.Users
+            .AsNoTracking()
+            .Where(u => distinctIds.Contains(u.Id))
+            .Select(u => new { u.Id, FullName = (u.FirstName + " " + u.LastName).Trim() })
+            .ToListAsync(cancellationToken);
+
+        return users.ToDictionary(u => u.Id, u => string.IsNullOrWhiteSpace(u.FullName) ? "Unknown" : u.FullName);
+    }
 }

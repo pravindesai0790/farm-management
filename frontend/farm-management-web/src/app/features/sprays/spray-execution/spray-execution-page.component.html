@@ -139,18 +139,16 @@
         <mat-card-content>
           <div class="form-grid">
             <!-- Actual Application DateTime -->
-            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="col-6">
-              <mat-label>Actual Application Date & Time *</mat-label>
-              <input
-                matInput
-                type="datetime-local"
+            <div class="col-6">
+              <app-date-time-picker
                 formControlName="actualApplicationDateTime"
-                required
+                label="Actual Application Date & Time *"
+                [required]="true"
               />
-              <mat-error *ngIf="form.get('actualApplicationDateTime')?.hasError('required')">
-                Application date and time is required
-              </mat-error>
-            </mat-form-field>
+              @if (form.get('actualApplicationDateTime')?.hasError('required') && form.get('actualApplicationDateTime')?.touched) {
+                <mat-error class="d-block mt-1">Application date and time is required</mat-error>
+              }
+            </div>
 
             <!-- Target Organism -->
             <mat-form-field appearance="outline" subscriptSizing="dynamic" class="col-6">
@@ -243,28 +241,44 @@
 
       <!-- 3. Products & Tank Mix Execution Card -->
       <mat-card class="content-card">
-        <mat-card-header>
-          <mat-card-title>
-            <mat-icon class="section-icon">science</mat-icon> Products & Tank Mix Execution
-          </mat-card-title>
-          <span class="context-caption">
-            @if (isStartMode()) {
-              Select storage location and enter actual quantities to withdraw
-            } @else {
-              Update actual quantities used before finalizing
-            }
-          </span>
+        <mat-card-header class="product-card-header">
+          <div class="product-header-text">
+            <mat-card-title>
+              <mat-icon class="section-icon">science</mat-icon> Products & Tank Mix Execution
+            </mat-card-title>
+            <span class="context-caption">
+              @if (isStartMode()) {
+                Select storage location and enter actual quantities to withdraw
+              } @else {
+                Update actual quantities used before finalizing
+              }
+            </span>
+          </div>
+          @if (isStartMode()) {
+            <button
+              mat-stroked-button
+              color="primary"
+              type="button"
+              class="btn-sm"
+              (click)="addProduct()"
+            >
+              <mat-icon>add</mat-icon> Add Product
+            </button>
+          }
         </mat-card-header>
         <mat-card-content>
           <div class="products-table-wrap">
             <table class="dense-table execution-table">
               <thead>
                 <tr>
-                  <th style="width: 32%;">Product</th>
-                  <th style="width: 14%;">Planned Qty</th>
-                  <th style="width: 26%;">Storage Location *</th>
-                  <th style="width: 16%;">Actual Qty *</th>
-                  <th style="width: 12%;">Dosage</th>
+                  <th style="width: 28%;">Product</th>
+                  <th style="width: 12%;">Planned Qty</th>
+                  <th style="width: 24%;">Storage Location *</th>
+                  <th style="width: 14%;">Actual Qty *</th>
+                  <th style="width: 14%;">Dosage</th>
+                  @if (isStartMode()) {
+                    <th style="width: 8%; text-align: center;">Action</th>
+                  }
                 </tr>
               </thead>
               <tbody formArrayName="products">
@@ -272,12 +286,32 @@
                   <tr [formGroupName]="$index">
                     <!-- Product Info -->
                     <td>
-                      <div class="product-cell">
-                        <span class="product-name">{{ row.get('inventoryItemName')?.value }}</span>
-                        @if (row.get('inventoryItemSku')?.value) {
-                          <span class="product-sku">SKU: {{ row.get('inventoryItemSku')?.value }}</span>
-                        }
-                      </div>
+                      @if (row.get('plannedQuantity')?.value !== null) {
+                        <div class="product-cell">
+                          <span class="product-name">{{ row.get('inventoryItemName')?.value }}</span>
+                          @if (row.get('inventoryItemSku')?.value) {
+                            <span class="product-sku">SKU: {{ row.get('inventoryItemSku')?.value }}</span>
+                          }
+                        </div>
+                      } @else {
+                        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="table-field full-width">
+                          <mat-select
+                            formControlName="inventoryItemId"
+                            (valueChange)="onProductSelected($index, $event)"
+                            placeholder="Select product"
+                            required
+                          >
+                            @for (p of availableProducts(); track p.inventoryItemId) {
+                              <mat-option [value]="p.inventoryItemId" [disabled]="isProductOptionDisabled(p.inventoryItemId, $index)">
+                                {{ p.name }} <span class="sku-hint" *ngIf="p.sku">({{ p.sku }})</span>
+                              </mat-option>
+                            }
+                          </mat-select>
+                          <mat-error *ngIf="row.get('inventoryItemId')?.hasError('required')">
+                            Product required
+                          </mat-error>
+                        </mat-form-field>
+                      }
                     </td>
 
                     <!-- Planned Qty -->
@@ -359,6 +393,25 @@
                         />
                       </mat-form-field>
                     </td>
+
+                    <!-- Action (Start Mode) -->
+                    @if (isStartMode()) {
+                      <td style="text-align: center;">
+                        @if (row.get('plannedQuantity')?.value === null) {
+                          <button
+                            mat-icon-button
+                            color="warn"
+                            type="button"
+                            (click)="removeProduct($index)"
+                            title="Remove product"
+                          >
+                            <mat-icon>delete_outline</mat-icon>
+                          </button>
+                        } @else {
+                          <span class="text-muted">—</span>
+                        }
+                      </td>
+                    }
                   </tr>
                 }
               </tbody>

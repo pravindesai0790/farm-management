@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { provideNativeDateAdapter } from "@angular/material/core";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from "@angular/router";
 import { MatDialog } from "@angular/material/dialog";
@@ -126,6 +127,7 @@ describe("SprayExecutionPageComponent", () => {
     mockSprayService = jasmine.createSpyObj("SprayService", [
       "getTargets",
       "getApplicationMethods",
+      "getProductLookup",
       "getSpray",
       "getStorageLocationLookup",
       "startSpray",
@@ -143,6 +145,7 @@ describe("SprayExecutionPageComponent", () => {
     mockPermissionService.has.and.returnValue(true);
     mockSprayService.getTargets.and.returnValue(of(sampleTargets));
     mockSprayService.getApplicationMethods.and.returnValue(of(sampleAppMethods));
+    mockSprayService.getProductLookup.and.returnValue(of([]));
     mockSprayService.getSpray.and.returnValue(of(sampleSpray));
     mockSprayService.getStorageLocationLookup.and.returnValue(of(sampleStorageLocations));
     mockFarmService.listUnits.and.returnValue(of([]));
@@ -151,6 +154,7 @@ describe("SprayExecutionPageComponent", () => {
       imports: [SprayExecutionPageComponent, NoopAnimationsModule],
       providers: [
         provideRouter([]),
+        provideNativeDateAdapter(),
         { provide: SprayService, useValue: mockSprayService },
         { provide: FarmManagementService, useValue: mockFarmService },
         { provide: PermissionService, useValue: mockPermissionService },

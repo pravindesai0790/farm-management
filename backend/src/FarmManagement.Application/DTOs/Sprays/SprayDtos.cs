@@ -99,7 +99,9 @@ public sealed record SprayDetailsResponse(
     DateTimeOffset CreatedAt,
     Guid CreatedBy,
     DateTimeOffset? UpdatedAt,
-    Guid? UpdatedBy);
+    Guid? UpdatedBy,
+    string? CreatedByName = null,
+    string? UpdatedByName = null);
 
 public sealed record CreateSprayDraftRequest(
     Guid FarmId,

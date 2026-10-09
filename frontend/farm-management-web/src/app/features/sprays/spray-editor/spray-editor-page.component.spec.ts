@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { provideNativeDateAdapter } from "@angular/material/core";
 import { MatDialog } from "@angular/material/dialog";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
@@ -180,6 +181,7 @@ describe("SprayEditorPageComponent", () => {
     await TestBed.configureTestingModule({
       imports: [SprayEditorPageComponent, NoopAnimationsModule],
       providers: [
+        provideNativeDateAdapter(),
         { provide: SprayService, useValue: mockSprayService },
         { provide: FarmManagementService, useValue: mockFarmService },
         { provide: PermissionService, useValue: mockPermissionService },

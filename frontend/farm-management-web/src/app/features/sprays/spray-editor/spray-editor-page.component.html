@@ -161,7 +161,14 @@
           <!-- Planned Date -->
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>Planned Date</mat-label>
-            <input matInput type="date" formControlName="plannedDate" />
+            <input
+              matInput
+              [matDatepicker]="plannedDatePicker"
+              formControlName="plannedDate"
+              placeholder="MM/DD/YYYY"
+            />
+            <mat-datepicker-toggle matIconSuffix [for]="plannedDatePicker"></mat-datepicker-toggle>
+            <mat-datepicker #plannedDatePicker></mat-datepicker>
           </mat-form-field>
 
           <!-- Target -->

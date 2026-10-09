@@ -156,21 +156,20 @@
       <mat-card-content>
         <div class="fields-grid grid-3">
           <!-- Actual Application DateTime -->
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Actual Application Date & Time *</mat-label>
-            <input
-              matInput
-              type="datetime-local"
+          <div class="datetime-col">
+            <app-date-time-picker
               formControlName="actualApplicationDateTime"
-              [max]="maxDateTime()"
+              label="Actual Application Date & Time *"
+              [required]="true"
+              [maxDate]="today"
             />
             @if (form.get('actualApplicationDateTime')?.hasError('required') && form.get('actualApplicationDateTime')?.touched) {
-              <mat-error>Actual application date/time is required</mat-error>
+              <mat-error class="d-block mt-1">Actual application date/time is required</mat-error>
             }
-            @if (form.get('actualApplicationDateTime')?.hasError('futureDate')) {
-              <mat-error>Application date/time cannot be in the future</mat-error>
+            @if (form.get('actualApplicationDateTime')?.hasError('futureDate') && form.get('actualApplicationDateTime')?.touched) {
+              <mat-error class="d-block mt-1">Application date/time cannot be in the future</mat-error>
             }
-          </mat-form-field>
+          </div>
 
           <!-- Target Pest/Disease -->
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
@@ -316,11 +315,11 @@
                   <tr [formGroupName]="i" class="product-row">
                     <!-- Product Selector -->
                     <td class="col-product">
-                      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="w-100">
+                      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="w-100 table-form-field">
                         <mat-select
                           formControlName="inventoryItemId"
                           (valueChange)="onProductChange(i, $event)"
-                          placeholder="Select Plant Protection Product"
+                          placeholder="Select Product"
                         >
                           @for (p of availableProducts(); track p.inventoryItemId) {
                             <mat-option
@@ -354,10 +353,10 @@
 
                     <!-- Storage Location -->
                     <td class="col-storage">
-                      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="w-100">
+                      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="w-100 table-form-field">
                         <mat-select
                           formControlName="storageLocationId"
-                          placeholder="Select Storage Location"
+                          placeholder="Select Location"
                         >
                           @for (loc of getStorageLocations(ctrl.value.inventoryItemId); track loc.storageLocationId) {
                             <mat-option [value]="loc.storageLocationId">
@@ -382,7 +381,7 @@
                     <!-- Actual Quantity -->
                     <td class="col-quantity">
                       <div class="qty-field-wrap">
-                        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="qty-field">
+                        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="qty-field table-form-field">
                           <input
                             matInput
                             type="number"
@@ -406,7 +405,7 @@
 
                     <!-- Dosage -->
                     <td class="col-dosage">
-                      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="w-100">
+                      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="w-100 table-form-field">
                         <input
                           matInput
                           formControlName="dosage"

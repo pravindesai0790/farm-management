@@ -12,6 +12,7 @@ import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
+import { MatDatepickerModule } from "@angular/material/datepicker";
 import { MatDialog } from "@angular/material/dialog";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
@@ -54,6 +55,7 @@ import { ScheduleSprayDialogComponent } from "../dialogs/schedule-spray-dialog/s
     FormsModule,
     MatButtonModule,
     MatCardModule,
+    MatDatepickerModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
@@ -301,14 +303,25 @@ export class SprayListPageComponent implements OnInit {
     this.resetPageAndReload();
   }
 
-  onFromDateChange(date: string): void {
-    this.fromDate.set(date);
+  onFromDateChange(date: Date | string | null): void {
+    this.fromDate.set(this.formatDateParam(date));
     this.resetPageAndReload();
   }
 
-  onToDateChange(date: string): void {
-    this.toDate.set(date);
+  onToDateChange(date: Date | string | null): void {
+    this.toDate.set(this.formatDateParam(date));
     this.resetPageAndReload();
+  }
+
+  private formatDateParam(val: Date | string | null): string {
+    if (!val) return "";
+    if (typeof val === "string") {
+      return val.trim();
+    }
+    const y = val.getFullYear();
+    const m = String(val.getMonth() + 1).padStart(2, "0");
+    const d = String(val.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
   }
 
   toggleIncludeOverdue(): void {
