@@ -108,4 +108,14 @@ public sealed class SpraysController(ISprayService sprayService) : ControllerBas
         var result = await sprayService.CancelAsync(actor, id, request, ipAddress, cancellationToken);
         return Ok(result);
     }
+
+    [HttpPost("record-completed")]
+    [Authorize(Policy = "Permission:Spray.Complete")]
+    public async Task<IActionResult> RecordCompleted([FromBody] RecordCompletedSprayRequest request, CancellationToken cancellationToken = default)
+    {
+        var actor = UserContextHelper.GetUserContext<SprayActor>(User);
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var result = await sprayService.RecordCompletedAsync(actor, request, ipAddress, cancellationToken);
+        return CreatedAtAction(nameof(Get), new { id = result.Id }, result);
+    }
 }

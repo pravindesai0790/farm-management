@@ -189,3 +189,25 @@ public sealed record CompleteSprayProductItemRequest(
 
 public sealed record CancelSprayRequest(
     string CancellationReason);
+
+public sealed record RecordCompletedSprayRequest(
+    Guid FarmId,
+    DateTimeOffset ActualApplicationDateTime,
+    IReadOnlyList<RecordCompletedSprayProductItemRequest> Products,
+    Guid? FarmAreaId = null,
+    Guid? PlantationId = null,
+    Guid? CropCycleId = null,
+    Guid? CropCycleStageId = null,
+    decimal? ActualTreatedArea = null,
+    Guid? ActualTreatedAreaUnitId = null,
+    decimal? WaterQuantity = null,
+    Guid? WaterUnitId = null,
+    Guid? TargetId = null,
+    Guid? ApplicationMethodId = null,
+    string? PurposeReason = null);
+
+public sealed record RecordCompletedSprayProductItemRequest(
+    Guid InventoryItemId,
+    Guid StorageLocationId,
+    decimal ActualQuantity,
+    string? Dosage = null);

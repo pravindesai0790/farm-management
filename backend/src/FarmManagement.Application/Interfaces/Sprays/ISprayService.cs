@@ -69,4 +69,10 @@ public interface ISprayService
         CancelSprayRequest request,
         string? ipAddress,
         CancellationToken cancellationToken = default);
+
+    Task<SprayDetailsResponse> RecordCompletedAsync(
+        SprayActor actor,
+        RecordCompletedSprayRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default);
 }

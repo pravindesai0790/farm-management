@@ -251,6 +251,33 @@ public class SpraysControllerTests
         Assert.Equal(sprayId, result.Id);
     }
 
+    [Fact]
+    public async Task RecordCompleted_ReturnsCreatedAtActionWithDetails()
+    {
+        // Arrange
+        var fakeService = new FakeSprayService();
+        var controller = CreateController(fakeService);
+        var farmId = Guid.NewGuid();
+        var request = new RecordCompletedSprayRequest(
+            FarmId: farmId,
+            ActualApplicationDateTime: DateTimeOffset.UtcNow,
+            Products: [
+                new RecordCompletedSprayProductItemRequest(
+                    InventoryItemId: Guid.NewGuid(),
+                    StorageLocationId: Guid.NewGuid(),
+                    ActualQuantity: 5.5m,
+                    Dosage: "1.2 L/ha")
+            ]);
+
+        // Act
+        var actionResult = await controller.RecordCompleted(request);
+
+        // Assert
+        var createdResult = Assert.IsType<CreatedAtActionResult>(actionResult);
+        var result = Assert.IsType<SprayDetailsResponse>(createdResult.Value);
+        Assert.Equal(farmId, result.FarmId);
+    }
+
     private sealed class FakeSprayService : ISprayService
     {
         public Task<PagedResponse<SprayListItemResponse>> ListAsync(SprayActor actor, SprayListQuery query, CancellationToken cancellationToken = default)
@@ -335,6 +362,12 @@ public class SpraysControllerTests
         public Task<SprayDetailsResponse> CancelAsync(SprayActor actor, Guid id, CancelSprayRequest request, string? ipAddress, CancellationToken cancellationToken = default)
         {
             var details = CreateTestDetails(id, actor.OrganizationId, Guid.NewGuid(), actor.UserId);
+            return Task.FromResult(details);
+        }
+
+        public Task<SprayDetailsResponse> RecordCompletedAsync(SprayActor actor, RecordCompletedSprayRequest request, string? ipAddress, CancellationToken cancellationToken = default)
+        {
+            var details = CreateTestDetails(Guid.NewGuid(), actor.OrganizationId, request.FarmId, actor.UserId);
             return Task.FromResult(details);
         }
 
