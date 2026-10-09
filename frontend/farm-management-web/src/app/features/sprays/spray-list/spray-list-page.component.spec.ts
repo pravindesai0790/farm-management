@@ -55,7 +55,7 @@ describe("SprayListPageComponent", () => {
   const sampleSprayListResponse: PagedResponse<SprayListItem> = {
     items: [sampleSprayItem],
     totalCount: 1,
-    pageNumber: 1,
+    page: 1,
     pageSize: 20,
     totalPages: 1,
   };
@@ -139,7 +139,7 @@ describe("SprayListPageComponent", () => {
   it("should render spray reference and status pill in template", () => {
     fixture.detectChanges();
     const nativeElement: HTMLElement = fixture.nativeElement;
-    const refCell = nativeElement.querySelector(".cdk-column-reference");
+    const refCell = nativeElement.querySelector("td.cdk-column-reference");
     expect(refCell?.textContent?.trim()).toContain("SP-2026-0001");
 
     const statusPill = nativeElement.querySelector(".status-pill");
@@ -189,7 +189,7 @@ describe("SprayListPageComponent", () => {
 
   it("should map status labels and CSS classes correctly", () => {
     expect(component.getStatusClass("Draft")).toBe("status-pill--planned");
-    expect(component.getStatusClass("Scheduled")).toBe("status-pill--planned");
+    expect(component.getStatusClass("Scheduled")).toBe("status-pill--planned status-pill--scheduled");
     expect(component.getStatusClass("InProgress")).toBe("status-pill--in-progress");
     expect(component.getStatusClass("Completed")).toBe("status-pill--completed");
     expect(component.getStatusClass("Cancelled")).toBe("status-pill--cancelled");

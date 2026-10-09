@@ -85,7 +85,7 @@ describe("SprayService", () => {
     const mockResponse: PagedResponse<SprayListItem> = {
       items: [sampleSprayListItem],
       totalCount: 1,
-      pageNumber: 1,
+      page: 1,
       pageSize: 20,
       totalPages: 1,
     };
@@ -175,8 +175,8 @@ describe("SprayService", () => {
 
     const req = httpTesting.expectOne((request) => {
       return (
-        request.url === `${environment.apiUrl}/sprays/targets` &&
-        request.params.get("targetType") === "Pest"
+        request.url === `${environment.apiUrl}/master-data/targets` &&
+        request.params.get("type") === "Pest"
       );
     });
     expect(req.request.method).toBe("GET");
@@ -200,7 +200,7 @@ describe("SprayService", () => {
       expect(res).toEqual(mockProductTypes);
     });
 
-    const req = httpTesting.expectOne(`${environment.apiUrl}/sprays/product-types`);
+    const req = httpTesting.expectOne(`${environment.apiUrl}/master-data/product-types`);
     expect(req.request.method).toBe("GET");
     req.flush(mockProductTypes);
   });
@@ -275,6 +275,88 @@ describe("SprayService", () => {
     expect(req.request.method).toBe("PUT");
     expect(req.request.body).toEqual(updatePayload);
     req.flush(mockUpdated);
+  });
+
+  it("starts spray via POST /api/sprays/:id/start", () => {
+    const startPayload = {
+      actualApplicationDateTime: "2026-10-16T08:00:00Z",
+      products: [
+        {
+          inventoryItemId: "item-1",
+          storageLocationId: "loc-1",
+          actualQuantity: 2.0,
+          dosage: "1 L/ha",
+        },
+      ],
+    };
+
+    const mockResponse: any = {
+      id: "sp-1",
+      status: "InProgress",
+    };
+
+    service.startSpray("sp-1", startPayload).subscribe((res) => {
+      expect(res.id).toBe("sp-1");
+      expect(res.status).toBe("InProgress");
+    });
+
+    const req = httpTesting.expectOne(`${environment.apiUrl}/sprays/sp-1/start`);
+    expect(req.request.method).toBe("POST");
+    expect(req.request.body).toEqual(startPayload);
+    req.flush(mockResponse);
+  });
+
+  it("saves spray execution progress via PUT /api/sprays/:id/execution", () => {
+    const executionPayload = {
+      actualApplicationDateTime: "2026-10-16T08:30:00Z",
+      actualTreatedArea: 4.5,
+      actualTreatedAreaUnitId: "u-ha",
+      waterQuantity: 450,
+      waterUnitId: "u-l",
+      purposeReason: "Ongoing powdery mildew coverage",
+      products: [
+        { inventoryItemId: "item-1", actualQuantity: 2.2, dosage: "1.1 L/ha" },
+      ],
+    };
+
+    const mockResponse: any = {
+      id: "sp-1",
+      status: "InProgress",
+    };
+
+    service.saveExecution("sp-1", executionPayload).subscribe((res) => {
+      expect(res.id).toBe("sp-1");
+    });
+
+    const req = httpTesting.expectOne(`${environment.apiUrl}/sprays/sp-1/execution`);
+    expect(req.request.method).toBe("PUT");
+    expect(req.request.body).toEqual(executionPayload);
+    req.flush(mockResponse);
+  });
+
+  it("completes spray via POST /api/sprays/:id/complete", () => {
+    const completePayload = {
+      actualApplicationDateTime: "2026-10-16T09:00:00Z",
+      actualTreatedArea: 5.0,
+      products: [
+        { inventoryItemId: "item-1", actualQuantity: 2.5 },
+      ],
+    };
+
+    const mockResponse: any = {
+      id: "sp-1",
+      status: "Completed",
+    };
+
+    service.completeSpray("sp-1", completePayload).subscribe((res) => {
+      expect(res.id).toBe("sp-1");
+      expect(res.status).toBe("Completed");
+    });
+
+    const req = httpTesting.expectOne(`${environment.apiUrl}/sprays/sp-1/complete`);
+    expect(req.request.method).toBe("POST");
+    expect(req.request.body).toEqual(completePayload);
+    req.flush(mockResponse);
   });
 });
 

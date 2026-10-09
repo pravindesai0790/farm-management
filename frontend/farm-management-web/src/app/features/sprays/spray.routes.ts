@@ -32,4 +32,34 @@ export const SPRAY_ROUTES: Routes = [
         (m) => m.SprayEditorPageComponent,
       ),
   },
+  {
+    path: ":id/start",
+    title: "Start Spray Application",
+    canActivate: [permissionGuard],
+    data: { permission: "Spray.Start" },
+    loadComponent: () =>
+      import("./spray-execution/spray-execution-page.component").then(
+        (m) => m.SprayExecutionPageComponent,
+      ),
+  },
+  {
+    path: ":id/execution",
+    title: "Spray Execution Progress",
+    canActivate: [permissionGuard],
+    data: { permission: "Spray.Start" },
+    loadComponent: () =>
+      import("./spray-execution/spray-execution-page.component").then(
+        (m) => m.SprayExecutionPageComponent,
+      ),
+  },
+  {
+    path: ":id",
+    title: "Spray Application Details",
+    canActivate: [permissionGuard],
+    data: { permission: "Spray.View" },
+    loadComponent: () =>
+      import("./spray-detail/spray-detail-page.component").then(
+        (m) => m.SprayDetailPageComponent,
+      ),
+  },
 ];

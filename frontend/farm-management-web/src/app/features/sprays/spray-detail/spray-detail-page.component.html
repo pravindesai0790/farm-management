@@ -1,0 +1,414 @@
+<div class="detail-container">
+  @if (isLoading()) {
+    <div class="loading-state">
+      <mat-spinner diameter="40" />
+      <p>Loading spray application details...</p>
+    </div>
+  } @else if (errorMessage()) {
+    <div class="error-banner">
+      <mat-icon>error_outline</mat-icon>
+      <div class="error-text">
+        <h4>Error</h4>
+        <p>{{ errorMessage() }}</p>
+      </div>
+      <a mat-stroked-button routerLink="/sprays">Return to Sprays</a>
+    </div>
+  } @else if (spray(); as s) {
+    <!-- Page Header -->
+    <header class="page-header">
+      <div class="header-left">
+        <span class="eyebrow">PLANT PROTECTION / SPRAY APPLICATIONS</span>
+        <div class="title-row">
+          <h1>{{ s.referenceNumber || 'Draft Spray Application' }}</h1>
+          <span class="status-pill" [ngClass]="getStatusClass(s.status)">
+            {{ getStatusLabel(s.status) }}
+          </span>
+          @if (s.isOverdue) {
+            <span class="overdue-chip" matTooltip="Scheduled date has passed without execution">
+              <mat-icon>warning</mat-icon> OVERDUE
+            </span>
+          }
+        </div>
+      </div>
+
+      <!-- Action Buttons Context Bar -->
+      <div class="header-actions">
+        <a mat-stroked-button routerLink="/sprays">
+          <mat-icon>arrow_back</mat-icon> Sprays List
+        </a>
+
+        <!-- Draft Actions -->
+        @if (s.status === 'Draft') {
+          @if (permissionService.has('Spray.Update')) {
+            <button mat-stroked-button type="button" (click)="onEdit()">
+              <mat-icon>edit</mat-icon> Edit Draft
+            </button>
+          }
+          @if (permissionService.has('Spray.Schedule')) {
+            <button mat-flat-button color="primary" type="button" (click)="onSchedule()">
+              <mat-icon>event</mat-icon> Schedule
+            </button>
+          }
+          @if (permissionService.has('Spray.Cancel')) {
+            <button mat-stroked-button color="warn" type="button" (click)="onCancelSpray()">
+              <mat-icon>cancel</mat-icon> Cancel Spray
+            </button>
+          }
+        }
+
+        <!-- Scheduled Actions -->
+        @if (s.status === 'Scheduled') {
+          @if (permissionService.has('Spray.Start')) {
+            <button mat-flat-button color="primary" type="button" (click)="onStart()">
+              <mat-icon>play_arrow</mat-icon> Start Application
+            </button>
+          }
+          @if (permissionService.has('Spray.Schedule')) {
+            <button mat-stroked-button type="button" (click)="onReschedule()">
+              <mat-icon>update</mat-icon> Reschedule
+            </button>
+          }
+          @if (permissionService.has('Spray.Update')) {
+            <button mat-stroked-button type="button" (click)="onEdit()">
+              <mat-icon>edit</mat-icon> Edit Plan
+            </button>
+          }
+          @if (permissionService.has('Spray.Cancel')) {
+            <button mat-stroked-button color="warn" type="button" (click)="onCancelSpray()">
+              <mat-icon>cancel</mat-icon> Cancel Spray
+            </button>
+          }
+        }
+
+        <!-- InProgress Actions -->
+        @if (s.status === 'InProgress') {
+          @if (permissionService.has('Spray.Start')) {
+            <button mat-stroked-button color="primary" type="button" (click)="onContinueExecution()">
+              <mat-icon>edit_calendar</mat-icon> Continue Execution
+            </button>
+          }
+          @if (permissionService.has('Spray.Complete')) {
+            <button
+              mat-flat-button
+              color="primary"
+              type="button"
+              (click)="onCompleteDirect()"
+              [disabled]="isActionLoading()"
+            >
+              @if (isActionLoading()) {
+                <mat-spinner diameter="18" class="btn-spinner" />
+              }
+              <mat-icon>check_circle</mat-icon> Complete Spray
+            </button>
+          }
+          @if (permissionService.has('Spray.Cancel')) {
+            <button mat-stroked-button color="warn" type="button" (click)="onCancelSpray()">
+              <mat-icon>cancel</mat-icon> Cancel Spray
+            </button>
+          }
+        }
+      </div>
+    </header>
+
+    <!-- Cancellation Banner -->
+    @if (s.status === 'Cancelled') {
+      <div class="cancellation-alert">
+        <mat-icon class="cancel-icon">cancel</mat-icon>
+        <div class="cancel-content">
+          <strong>This spray application was cancelled</strong>
+          <p><strong>Reason:</strong> {{ s.cancellationReason || 'No reason provided' }}</p>
+        </div>
+      </div>
+    }
+
+    <!-- In Progress Notification Banner -->
+    @if (s.status === 'InProgress') {
+      <div class="in-progress-alert">
+        <mat-icon>pending_actions</mat-icon>
+        <div class="alert-content">
+          <strong>Spray Application is Currently In Progress</strong>
+          <p>
+            Started on {{ (s.actualApplicationDateTime | date:'medium') || 'N/A' }}. Products and location context are locked. Update execution details or complete the spray to finalize stock deduction.
+          </p>
+        </div>
+        <button mat-flat-button color="primary" (click)="onContinueExecution()">
+          <mat-icon>tune</mat-icon> Edit Execution
+        </button>
+      </div>
+    }
+
+    <!-- KPI Metrics Strip -->
+    <section class="kpi-strip">
+      <!-- Metric: Treated Area -->
+      <div class="kpi-card">
+        <div class="kpi-icon-wrap area-bg">
+          <mat-icon>crop_square</mat-icon>
+        </div>
+        <div class="kpi-data">
+          <span class="kpi-label">Treated Area</span>
+          <div class="kpi-val-row">
+            <span class="kpi-value">
+              @if (s.actualTreatedArea !== null) {
+                {{ s.actualTreatedArea }} <span class="kpi-unit">{{ s.actualTreatedAreaUnitName || '' }}</span>
+              } @else if (s.plannedArea !== null) {
+                {{ s.plannedArea }} <span class="kpi-unit">{{ s.plannedAreaUnitName || '' }}</span>
+                <span class="kpi-tag-planned">(Planned)</span>
+              } @else {
+                —
+              }
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Metric: Products Count -->
+      <div class="kpi-card">
+        <div class="kpi-icon-wrap products-bg">
+          <mat-icon>science</mat-icon>
+        </div>
+        <div class="kpi-data">
+          <span class="kpi-label">Tank Mix Products</span>
+          <div class="kpi-val-row">
+            <span class="kpi-value">{{ s.products.length }}</span>
+            <span class="kpi-unit">item{{ s.products.length === 1 ? '' : 's' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Metric: Water Carrier Volume -->
+      <div class="kpi-card">
+        <div class="kpi-icon-wrap water-bg">
+          <mat-icon>water_drop</mat-icon>
+        </div>
+        <div class="kpi-data">
+          <span class="kpi-label">Water Carrier Volume</span>
+          <div class="kpi-val-row">
+            <span class="kpi-value">
+              @if (s.waterQuantity !== null) {
+                {{ s.waterQuantity }} <span class="kpi-unit">{{ s.waterUnitName || 'L' }}</span>
+              } @else {
+                —
+              }
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Metric: Timing -->
+      <div class="kpi-card">
+        <div class="kpi-icon-wrap date-bg">
+          <mat-icon>schedule</mat-icon>
+        </div>
+        <div class="kpi-data">
+          <span class="kpi-label">
+            @if (s.status === 'Completed' || s.status === 'InProgress') {
+              Actual Timing
+            } @else {
+              Schedule
+            }
+          </span>
+          <div class="kpi-val-row">
+            <span class="kpi-value date-val">
+              @if (s.actualApplicationDateTime) {
+                {{ s.actualApplicationDateTime | date:'mediumDate' }}
+              } @else if (s.scheduledDateTime) {
+                {{ s.scheduledDateTime | date:'mediumDate' }}
+              } @else if (s.plannedDate) {
+                {{ s.plannedDate | date:'mediumDate' }}
+              } @else {
+                Not scheduled
+              }
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Detail Grid -->
+    <div class="detail-grid">
+      <!-- 1. Agronomic & Location Context Card -->
+      <mat-card class="content-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon class="card-icon">location_on</mat-icon> Location & Crop Context
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="info-list">
+            <div class="info-row">
+              <span class="info-label">Farm</span>
+              <span class="info-val font-medium">{{ s.farmName }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Area / Block</span>
+              <span class="info-val">{{ s.farmAreaName || 'Entire Farm' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Plantation</span>
+              <span class="info-val">{{ s.plantationName || '—' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Crop Cycle</span>
+              <span class="info-val">{{ s.cropCycleName || '—' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Lifecycle Stage</span>
+              <span class="info-val">{{ s.cropCycleStageName || '—' }}</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- 2. Operational Parameters Card -->
+      <mat-card class="content-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon class="card-icon">assignment</mat-icon> Operational Parameters
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="info-list">
+            <div class="info-row">
+              <span class="info-label">Target Organism</span>
+              <span class="info-val font-medium">
+                @if (s.targetName) {
+                  {{ s.targetName }}
+                  @if (s.targetType) {
+                    <span class="target-type-tag">({{ s.targetType }})</span>
+                  }
+                } @else {
+                  None / General Protection
+                }
+              </span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Application Method</span>
+              <span class="info-val">{{ s.applicationMethodName || '—' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Planned Date</span>
+              <span class="info-val">{{ (s.plannedDate | date:'mediumDate') || '—' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Scheduled Time</span>
+              <span class="info-val">{{ (s.scheduledDateTime | date:'medium') || '—' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Actual Application</span>
+              <span class="info-val">{{ (s.actualApplicationDateTime | date:'medium') || '—' }}</span>
+            </div>
+            @if (s.purposeReason) {
+              <div class="info-row notes-row">
+                <span class="info-label">Purpose / Notes</span>
+                <span class="info-val notes-val">{{ s.purposeReason }}</span>
+              </div>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- 3. Tank Mix & Applied Products Card -->
+    <mat-card class="content-card products-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon class="card-icon">science</mat-icon> Tank Mix & Applied Products
+        </mat-card-title>
+        <span class="header-count">{{ s.products.length }} product{{ s.products.length === 1 ? '' : 's' }}</span>
+      </mat-card-header>
+      <mat-card-content>
+        @if (s.products.length === 0) {
+          <div class="empty-products">
+            <p>No products allocated to this spray application.</p>
+          </div>
+        } @else {
+          <div class="table-wrap">
+            <table class="dense-table detail-products-table">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Source Storage Location</th>
+                  <th>Planned Quantity</th>
+                  <th>Actual Quantity</th>
+                  <th>Dosage / Rate</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (p of s.products; track p.id) {
+                  <tr>
+                    <!-- Product Info -->
+                    <td>
+                      <div class="prod-col">
+                        <span class="prod-name">{{ p.inventoryItemName }}</span>
+                        @if (p.inventoryItemSku) {
+                          <span class="prod-sku">SKU: {{ p.inventoryItemSku }}</span>
+                        }
+                      </div>
+                    </td>
+
+                    <!-- Storage Location -->
+                    <td>
+                      @if (p.storageLocationName) {
+                        <div class="storage-tag">
+                          <mat-icon>warehouse</mat-icon>
+                          <span>{{ p.storageLocationName }}</span>
+                        </div>
+                      } @else {
+                        <span class="unallocated">Deferred at start</span>
+                      }
+                    </td>
+
+                    <!-- Planned Quantity -->
+                    <td>
+                      @if (p.plannedQuantity !== null) {
+                        <span class="qty-val">{{ p.plannedQuantity }} {{ p.stockUnitSymbol || p.stockUnitName }}</span>
+                      } @else {
+                        <span class="dash">—</span>
+                      }
+                    </td>
+
+                    <!-- Actual Quantity -->
+                    <td>
+                      @if (p.actualQuantity !== null) {
+                        <span class="qty-val actual-qty font-medium">
+                          {{ p.actualQuantity }} {{ p.stockUnitSymbol || p.stockUnitName }}
+                        </span>
+                      } @else {
+                        <span class="dash">—</span>
+                      }
+                    </td>
+
+                    <!-- Dosage -->
+                    <td>
+                      <span class="dosage-val">{{ p.dosage || '—' }}</span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </mat-card-content>
+    </mat-card>
+
+    <!-- 4. Audit Metadata Footer -->
+    <footer class="audit-footer">
+      <div class="audit-item">
+        <span>Created:</span>
+        <strong>{{ s.createdAt | date:'medium' }}</strong>
+        @if (s.createdBy) {
+          <span>by {{ s.createdBy }}</span>
+        }
+      </div>
+      @if (s.updatedAt) {
+        <div class="audit-item">
+          <span>Last Updated:</span>
+          <strong>{{ s.updatedAt | date:'medium' }}</strong>
+          @if (s.updatedBy) {
+            <span>by {{ s.updatedBy }}</span>
+          }
+        </div>
+      }
+    </footer>
+  }
+</div>

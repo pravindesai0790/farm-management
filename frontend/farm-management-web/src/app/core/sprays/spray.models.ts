@@ -211,3 +211,51 @@ export interface SprayStorageLocationLookupResponse {
   readonly stockUnitId?: string | null;
   readonly stockUnitName?: string | null;
 }
+
+export interface StartSprayProductItemRequest {
+  readonly inventoryItemId: string;
+  readonly storageLocationId: string;
+  readonly actualQuantity: number;
+  readonly dosage?: string | null;
+}
+
+export interface StartSprayRequest {
+  readonly actualApplicationDateTime: string;
+  readonly products: readonly StartSprayProductItemRequest[];
+}
+
+export interface UpdateSprayExecutionProductItemRequest {
+  readonly inventoryItemId: string;
+  readonly actualQuantity: number;
+  readonly dosage?: string | null;
+}
+
+export interface UpdateSprayExecutionRequest {
+  readonly actualApplicationDateTime: string;
+  readonly actualTreatedArea?: number | null;
+  readonly actualTreatedAreaUnitId?: string | null;
+  readonly waterQuantity?: number | null;
+  readonly waterUnitId?: string | null;
+  readonly targetId?: string | null;
+  readonly applicationMethodId?: string | null;
+  readonly purposeReason?: string | null;
+  readonly products?: readonly UpdateSprayExecutionProductItemRequest[] | null;
+}
+
+export interface CompleteSprayProductItemRequest {
+  readonly inventoryItemId: string;
+  readonly actualQuantity: number;
+  readonly dosage?: string | null;
+}
+
+export interface CompleteSprayRequest {
+  readonly actualApplicationDateTime?: string | null;
+  readonly actualTreatedArea?: number | null;
+  readonly actualTreatedAreaUnitId?: string | null;
+  readonly waterQuantity?: number | null;
+  readonly waterUnitId?: string | null;
+  readonly targetId?: string | null;
+  readonly applicationMethodId?: string | null;
+  readonly purposeReason?: string | null;
+  readonly products?: readonly CompleteSprayProductItemRequest[] | null;
+}

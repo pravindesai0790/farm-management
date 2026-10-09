@@ -1,0 +1,420 @@
+<div class="execution-container">
+  @if (isLoading()) {
+    <div class="loading-state">
+      <mat-spinner diameter="40" />
+      <p>Loading spray execution details...</p>
+    </div>
+  } @else if (errorMessage()) {
+    <div class="error-banner">
+      <mat-icon>error_outline</mat-icon>
+      <div class="error-text">
+        <h4>Error</h4>
+        <p>{{ errorMessage() }}</p>
+      </div>
+      <button mat-stroked-button (click)="onCancel()">Return to Sprays</button>
+    </div>
+  } @else {
+    <!-- Page Header -->
+    <header class="page-header">
+      <div class="header-left">
+        <span class="eyebrow">PLANT PROTECTION / SPRAY APPLICATIONS</span>
+        <div class="title-row">
+          <h1>
+            @if (isStartMode()) {
+              Start Spray Execution
+            } @else {
+              Spray Application Execution
+            }
+          </h1>
+          @if (spray()?.referenceNumber) {
+            <span class="ref-badge">{{ spray()?.referenceNumber }}</span>
+          }
+          <span
+            class="status-pill"
+            [class.status-pill--planned]="spray()?.status === 'Scheduled' || spray()?.status === 'Draft'"
+            [class.status-pill--in-progress]="spray()?.status === 'InProgress'"
+            [class.status-pill--completed]="spray()?.status === 'Completed'"
+          >
+            {{ spray()?.statusName || spray()?.status }}
+          </span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button mat-stroked-button type="button" (click)="onCancel()">
+          <mat-icon>arrow_back</mat-icon> Back to Details
+        </button>
+      </div>
+    </header>
+
+    <!-- Invariant Banner Notices -->
+    @if (isStartMode()) {
+      <div class="notice-banner notice-banner--info">
+        <mat-icon>info</mat-icon>
+        <div class="notice-content">
+          <strong>Starting Application Execution</strong>
+          <p>
+            Starting this spray application locks the crop and location context (Farm, Area, Plantation, Cycle, Stage) and locks product selection. Please select source storage locations and verify quantities to begin.
+          </p>
+        </div>
+      </div>
+    } @else {
+      <div class="notice-banner notice-banner--warning">
+        <mat-icon>lock</mat-icon>
+        <div class="notice-content">
+          <strong>Execution Locking Invariants Active</strong>
+          <p>
+            Application context is locked after Start. Farm, area, plantation, crop cycle and stage cannot be changed once the spray is in progress.
+          </p>
+          <p class="notice-sub">
+            Products, storage locations and planned quantities are locked after Start. Actual quantities and dosage can still be adjusted before completion.
+          </p>
+        </div>
+      </div>
+    }
+
+    <form [formGroup]="form" class="execution-form">
+      <!-- 1. Locked Agronomic Context Card -->
+      <mat-card class="content-card context-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon class="section-icon">lock</mat-icon> Application Context (Locked)
+          </mat-card-title>
+          <span class="context-caption">Immutable once started</span>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="context-grid">
+            <div class="context-item">
+              <span class="context-label">Farm</span>
+              <span class="context-value">{{ spray()?.farmName }}</span>
+            </div>
+            <div class="context-item">
+              <span class="context-label">Area / Block</span>
+              <span class="context-value">{{ spray()?.farmAreaName || 'Entire Farm' }}</span>
+            </div>
+            <div class="context-item">
+              <span class="context-label">Plantation</span>
+              <span class="context-value">{{ spray()?.plantationName || '—' }}</span>
+            </div>
+            <div class="context-item">
+              <span class="context-label">Crop Cycle</span>
+              <span class="context-value">{{ spray()?.cropCycleName || '—' }}</span>
+            </div>
+            <div class="context-item">
+              <span class="context-label">Stage</span>
+              <span class="context-value">{{ spray()?.cropCycleStageName || '—' }}</span>
+            </div>
+            <div class="context-item">
+              <span class="context-label">Planned Date</span>
+              <span class="context-value">
+                {{ (spray()?.plannedDate | date:'mediumDate') || '—' }}
+              </span>
+            </div>
+            <div class="context-item">
+              <span class="context-label">Scheduled Time</span>
+              <span class="context-value">
+                {{ (spray()?.scheduledDateTime | date:'medium') || '—' }}
+              </span>
+            </div>
+            <div class="context-item">
+              <span class="context-label">Planned Area</span>
+              <span class="context-value">
+                @if (spray()?.plannedArea) {
+                  {{ spray()?.plannedArea }} {{ spray()?.plannedAreaUnitName || '' }}
+                } @else {
+                  —
+                }
+              </span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- 2. Operational Execution Parameters -->
+      <mat-card class="content-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon class="section-icon">tune</mat-icon> Operational Parameters
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="form-grid">
+            <!-- Actual Application DateTime -->
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="col-6">
+              <mat-label>Actual Application Date & Time *</mat-label>
+              <input
+                matInput
+                type="datetime-local"
+                formControlName="actualApplicationDateTime"
+                required
+              />
+              <mat-error *ngIf="form.get('actualApplicationDateTime')?.hasError('required')">
+                Application date and time is required
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Target Organism -->
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="col-6">
+              <mat-label>Target Organism / Pest / Disease</mat-label>
+              <mat-select formControlName="targetId">
+                <mat-option value="">None / General Protection</mat-option>
+                @for (t of targets(); track t.id) {
+                  <mat-option [value]="t.id">
+                    {{ t.name }} <span class="opt-desc">({{ t.targetType }})</span>
+                  </mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <!-- Actual Treated Area & Unit -->
+            <div class="unit-input-pair col-6">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="qty-field">
+                <mat-label>Actual Treated Area</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  formControlName="actualTreatedArea"
+                />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="unit-field">
+                <mat-label>Unit</mat-label>
+                <mat-select formControlName="actualTreatedAreaUnitId">
+                  <mat-option value="">Select</mat-option>
+                  @for (u of areaUnits(); track u.id) {
+                    <mat-option [value]="u.id">{{ u.name }} ({{ u.symbol }})</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            </div>
+
+            <!-- Water Quantity & Unit -->
+            <div class="unit-input-pair col-6">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="qty-field">
+                <mat-label>Water Carrier Volume</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  placeholder="0.0"
+                  formControlName="waterQuantity"
+                />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="unit-field">
+                <mat-label>Unit</mat-label>
+                <mat-select formControlName="waterUnitId">
+                  <mat-option value="">Select</mat-option>
+                  @for (u of volumeUnits(); track u.id) {
+                    <mat-option [value]="u.id">{{ u.name }} ({{ u.symbol }})</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            </div>
+
+            <!-- Application Method -->
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="col-6">
+              <mat-label>Application Method</mat-label>
+              <mat-select formControlName="applicationMethodId">
+                <mat-option value="">Select Method</mat-option>
+                @for (m of applicationMethods(); track m.id) {
+                  <mat-option [value]="m.id">{{ m.name }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <!-- Objectives / Notes -->
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="col-12">
+              <mat-label>Execution Notes / Observations</mat-label>
+              <textarea
+                matInput
+                rows="2"
+                maxlength="1000"
+                placeholder="Weather conditions, nozzle calibrations, observations..."
+                formControlName="purposeReason"
+              ></textarea>
+            </mat-form-field>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- 3. Products & Tank Mix Execution Card -->
+      <mat-card class="content-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon class="section-icon">science</mat-icon> Products & Tank Mix Execution
+          </mat-card-title>
+          <span class="context-caption">
+            @if (isStartMode()) {
+              Select storage location and enter actual quantities to withdraw
+            } @else {
+              Update actual quantities used before finalizing
+            }
+          </span>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="products-table-wrap">
+            <table class="dense-table execution-table">
+              <thead>
+                <tr>
+                  <th style="width: 32%;">Product</th>
+                  <th style="width: 14%;">Planned Qty</th>
+                  <th style="width: 26%;">Storage Location *</th>
+                  <th style="width: 16%;">Actual Qty *</th>
+                  <th style="width: 12%;">Dosage</th>
+                </tr>
+              </thead>
+              <tbody formArrayName="products">
+                @for (row of productsArray.controls; track $index) {
+                  <tr [formGroupName]="$index">
+                    <!-- Product Info -->
+                    <td>
+                      <div class="product-cell">
+                        <span class="product-name">{{ row.get('inventoryItemName')?.value }}</span>
+                        @if (row.get('inventoryItemSku')?.value) {
+                          <span class="product-sku">SKU: {{ row.get('inventoryItemSku')?.value }}</span>
+                        }
+                      </div>
+                    </td>
+
+                    <!-- Planned Qty -->
+                    <td>
+                      <span class="planned-val">
+                        @if (row.get('plannedQuantity')?.value !== null) {
+                          {{ row.get('plannedQuantity')?.value }} {{ row.get('stockUnitSymbol')?.value }}
+                        } @else {
+                          —
+                        }
+                      </span>
+                    </td>
+
+                    <!-- Storage Location -->
+                    <td>
+                      @if (isStartMode()) {
+                        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="table-field full-width">
+                          <mat-select formControlName="storageLocationId" required>
+                            <mat-option value="">Select Location</mat-option>
+                            @for (loc of getStorageLocations(row.get('inventoryItemId')?.value || ''); track loc.storageLocationId) {
+                              <mat-option [value]="loc.storageLocationId">
+                                {{ loc.storageLocationName }}
+                                <span class="stock-pill" [class.stock-empty]="!loc.hasStock || loc.currentStock <= 0">
+                                  ({{ loc.currentStock }} on hand)
+                                </span>
+                              </mat-option>
+                            }
+                          </mat-select>
+                          <mat-error *ngIf="row.get('storageLocationId')?.hasError('required')">
+                            Location required
+                          </mat-error>
+                        </mat-form-field>
+                      } @else {
+                        <div class="location-readonly">
+                          <mat-icon class="loc-icon">warehouse</mat-icon>
+                          <span>{{ row.get('storageLocationName')?.value || '—' }}</span>
+                        </div>
+                      }
+                    </td>
+
+                    <!-- Actual Qty -->
+                    <td>
+                      <div class="actual-qty-cell">
+                        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="table-field full-width">
+                          <input
+                            matInput
+                            type="number"
+                            step="0.01"
+                            min="0.0001"
+                            placeholder="0.00"
+                            formControlName="actualQuantity"
+                            required
+                          />
+                          <span matSuffix class="unit-suffix">{{ row.get('stockUnitSymbol')?.value }}</span>
+                          <mat-error *ngIf="row.get('actualQuantity')?.hasError('required')">
+                            Required
+                          </mat-error>
+                        </mat-form-field>
+
+                        @if (isStartMode() && row.get('storageLocationId')?.value) {
+                          @let stock = getAvailableStock(row.get('inventoryItemId')?.value || '', row.get('storageLocationId')?.value || '');
+                          @if (stock !== null && (row.get('actualQuantity')?.value || 0) > stock) {
+                            <span class="stock-warn-tag" matTooltip="Actual quantity exceeds available on-hand stock in selected location">
+                              <mat-icon>warning</mat-icon> Exceeds stock ({{ stock }})
+                            </span>
+                          }
+                        }
+                      </div>
+                    </td>
+
+                    <!-- Dosage -->
+                    <td>
+                      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="table-field full-width">
+                        <input
+                          matInput
+                          type="text"
+                          placeholder="e.g. 2 L/ha"
+                          formControlName="dosage"
+                        />
+                      </mat-form-field>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Action Buttons Footer -->
+      <div class="actions-bar">
+        <button mat-stroked-button type="button" (click)="onCancel()" [disabled]="isSubmitting()">
+          Cancel
+        </button>
+
+        <div class="primary-actions">
+          @if (isStartMode()) {
+            <button
+              mat-flat-button
+              color="primary"
+              type="button"
+              (click)="onStart()"
+              [disabled]="isSubmitting() || form.invalid"
+            >
+              @if (isSubmitting()) {
+                <mat-spinner diameter="18" class="btn-spinner" />
+              }
+              <mat-icon>play_arrow</mat-icon> Start Application
+            </button>
+          } @else {
+            <button
+              mat-stroked-button
+              type="button"
+              (click)="onSaveProgress()"
+              [disabled]="isSubmitting() || form.invalid"
+            >
+              @if (isSubmitting()) {
+                <mat-spinner diameter="18" class="btn-spinner" />
+              }
+              <mat-icon>save</mat-icon> Save Progress
+            </button>
+
+            <button
+              mat-flat-button
+              color="primary"
+              type="button"
+              (click)="onComplete()"
+              [disabled]="isSubmitting() || form.invalid"
+            >
+              @if (isSubmitting()) {
+                <mat-spinner diameter="18" class="btn-spinner" />
+              }
+              <mat-icon>check_circle</mat-icon> Complete Spray
+            </button>
+          }
+        </div>
+      </div>
+    </form>
+  }
+</div>
