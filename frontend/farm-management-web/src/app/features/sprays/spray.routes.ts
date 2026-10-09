@@ -12,4 +12,24 @@ export const SPRAY_ROUTES: Routes = [
         (m) => m.SprayListPageComponent,
       ),
   },
+  {
+    path: "new",
+    title: "Plan Spray Application",
+    canActivate: [permissionGuard],
+    data: { permission: "Spray.Create" },
+    loadComponent: () =>
+      import("./spray-editor/spray-editor-page.component").then(
+        (m) => m.SprayEditorPageComponent,
+      ),
+  },
+  {
+    path: ":id/edit",
+    title: "Edit Spray Application",
+    canActivate: [permissionGuard],
+    data: { permission: "Spray.Update" },
+    loadComponent: () =>
+      import("./spray-editor/spray-editor-page.component").then(
+        (m) => m.SprayEditorPageComponent,
+      ),
+  },
 ];

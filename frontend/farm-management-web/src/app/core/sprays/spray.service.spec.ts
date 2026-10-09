@@ -204,4 +204,77 @@ describe("SprayService", () => {
     expect(req.request.method).toBe("GET");
     req.flush(mockProductTypes);
   });
+
+  it("fetches single spray details by ID", () => {
+    const mockDetails: any = {
+      id: "sp-1",
+      farmId: "farm-1",
+      farmName: "Sunrise Vineyard",
+      status: "Draft",
+      products: [],
+    };
+
+    service.getSpray("sp-1").subscribe((res) => {
+      expect(res.id).toBe("sp-1");
+      expect(res.status).toBe("Draft");
+    });
+
+    const req = httpTesting.expectOne(`${environment.apiUrl}/sprays/sp-1`);
+    expect(req.request.method).toBe("GET");
+    req.flush(mockDetails);
+  });
+
+  it("creates spray draft via POST /api/sprays", () => {
+    const createPayload = {
+      farmId: "farm-1",
+      plannedDate: "2026-10-20",
+      products: [
+        { inventoryItemId: "item-1", plannedQuantity: 2.5, dosage: "1 L/ha" },
+      ],
+    };
+
+    const mockCreated: any = {
+      id: "sp-new",
+      farmId: "farm-1",
+      status: "Draft",
+      products: [],
+    };
+
+    service.createDraft(createPayload).subscribe((res) => {
+      expect(res.id).toBe("sp-new");
+      expect(res.status).toBe("Draft");
+    });
+
+    const req = httpTesting.expectOne(`${environment.apiUrl}/sprays`);
+    expect(req.request.method).toBe("POST");
+    expect(req.request.body).toEqual(createPayload);
+    req.flush(mockCreated);
+  });
+
+  it("updates spray draft via PUT /api/sprays/:id", () => {
+    const updatePayload = {
+      farmId: "farm-1",
+      plannedDate: "2026-10-25",
+      products: [
+        { inventoryItemId: "item-2", plannedQuantity: 3.0, dosage: "2 L/ha" },
+      ],
+    };
+
+    const mockUpdated: any = {
+      id: "sp-1",
+      farmId: "farm-1",
+      status: "Draft",
+      products: [],
+    };
+
+    service.updateDraft("sp-1", updatePayload).subscribe((res) => {
+      expect(res.id).toBe("sp-1");
+    });
+
+    const req = httpTesting.expectOne(`${environment.apiUrl}/sprays/sp-1`);
+    expect(req.request.method).toBe("PUT");
+    expect(req.request.body).toEqual(updatePayload);
+    req.flush(mockUpdated);
+  });
 });
+

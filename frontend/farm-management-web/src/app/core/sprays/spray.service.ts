@@ -7,14 +7,17 @@ import { CropCycleStage } from "../farm-management/farm-management.models";
 import {
   ApplicationMethodResponse,
   CancelSprayRequest,
+  CreateSprayDraftRequest,
   ProductTypeResponse,
   RescheduleSprayRequest,
   ScheduleSprayRequest,
+  SprayDetailsResponse,
   SprayListItem,
   SprayListQuery,
   SprayProductLookupResponse,
   SprayStorageLocationLookupResponse,
   TargetResponse,
+  UpdateSprayDraftRequest,
 } from "./spray.models";
 
 @Injectable({ providedIn: "root" })
@@ -44,8 +47,16 @@ export class SprayService {
     return this.http.get<PagedResponse<SprayListItem>>(this.api, { params });
   }
 
-  getSpray(id: string): Observable<any> {
-    return this.http.get<any>(`${this.api}/${id}`);
+  getSpray(id: string): Observable<SprayDetailsResponse> {
+    return this.http.get<SprayDetailsResponse>(`${this.api}/${id}`);
+  }
+
+  createDraft(request: CreateSprayDraftRequest): Observable<SprayDetailsResponse> {
+    return this.http.post<SprayDetailsResponse>(this.api, request);
+  }
+
+  updateDraft(id: string, request: UpdateSprayDraftRequest): Observable<SprayDetailsResponse> {
+    return this.http.put<SprayDetailsResponse>(`${this.api}/${id}`, request);
   }
 
   cancelSpray(id: string, cancellationReason: string): Observable<any> {

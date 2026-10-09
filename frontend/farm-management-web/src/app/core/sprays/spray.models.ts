@@ -80,6 +80,104 @@ export interface CancelSprayRequest {
   readonly cancellationReason: string;
 }
 
+export interface SprayProductDto {
+  readonly id: string;
+  readonly inventoryItemId: string;
+  readonly inventoryItemName: string;
+  readonly inventoryItemSku?: string | null;
+  readonly stockUnitId: string;
+  readonly stockUnitName: string;
+  readonly stockUnitSymbol?: string | null;
+  readonly storageLocationId?: string | null;
+  readonly storageLocationName?: string | null;
+  readonly plannedQuantity?: number | null;
+  readonly actualQuantity?: number | null;
+  readonly dosage?: string | null;
+}
+
+export interface SprayDetailsResponse {
+  readonly id: string;
+  readonly referenceNumber: string | null;
+  readonly organizationId: string;
+  readonly farmId: string;
+  readonly farmName: string;
+  readonly farmAreaId: string | null;
+  readonly farmAreaName: string | null;
+  readonly plantationId: string | null;
+  readonly plantationName: string | null;
+  readonly cropCycleId: string | null;
+  readonly cropCycleName: string | null;
+  readonly cropCycleStageId: string | null;
+  readonly cropCycleStageName: string | null;
+  readonly status: SprayStatus;
+  readonly statusName: string;
+  readonly isOverdue: boolean;
+  readonly plannedDate: string | null;
+  readonly scheduledDateTime: string | null;
+  readonly actualApplicationDateTime: string | null;
+  readonly plannedArea: number | null;
+  readonly plannedAreaUnitId: string | null;
+  readonly plannedAreaUnitName: string | null;
+  readonly actualTreatedArea: number | null;
+  readonly actualTreatedAreaUnitId: string | null;
+  readonly actualTreatedAreaUnitName: string | null;
+  readonly waterQuantity: number | null;
+  readonly waterUnitId: string | null;
+  readonly waterUnitName: string | null;
+  readonly targetId: string | null;
+  readonly targetName: string | null;
+  readonly targetType: string | null;
+  readonly applicationMethodId: string | null;
+  readonly applicationMethodName: string | null;
+  readonly purposeReason: string | null;
+  readonly cancellationReason: string | null;
+  readonly products: readonly SprayProductDto[];
+  readonly createdAt: string;
+  readonly createdBy: string;
+  readonly updatedAt: string | null;
+  readonly updatedBy: string | null;
+}
+
+export interface SprayProductItemRequest {
+  readonly inventoryItemId: string;
+  readonly plannedQuantity?: number | null;
+  readonly dosage?: string | null;
+}
+
+export interface CreateSprayDraftRequest {
+  readonly farmId: string;
+  readonly farmAreaId?: string | null;
+  readonly plantationId?: string | null;
+  readonly cropCycleId?: string | null;
+  readonly cropCycleStageId?: string | null;
+  readonly plannedDate?: string | null;
+  readonly plannedArea?: number | null;
+  readonly plannedAreaUnitId?: string | null;
+  readonly waterQuantity?: number | null;
+  readonly waterUnitId?: string | null;
+  readonly targetId?: string | null;
+  readonly applicationMethodId?: string | null;
+  readonly purposeReason?: string | null;
+  readonly products?: readonly SprayProductItemRequest[] | null;
+}
+
+export interface UpdateSprayDraftRequest {
+  readonly farmId: string;
+  readonly farmAreaId?: string | null;
+  readonly plantationId?: string | null;
+  readonly cropCycleId?: string | null;
+  readonly cropCycleStageId?: string | null;
+  readonly plannedDate?: string | null;
+  readonly plannedArea?: number | null;
+  readonly plannedAreaUnitId?: string | null;
+  readonly waterQuantity?: number | null;
+  readonly waterUnitId?: string | null;
+  readonly targetId?: string | null;
+  readonly applicationMethodId?: string | null;
+  readonly purposeReason?: string | null;
+  readonly products?: readonly SprayProductItemRequest[] | null;
+}
+
 export interface ScheduleSprayRequest {
   readonly scheduledDateTime: string;
   readonly plannedDate?: string | null;
