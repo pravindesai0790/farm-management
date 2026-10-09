@@ -169,6 +169,9 @@ describe("SprayEditorPageComponent", () => {
 
     mockPermissionService.has.and.returnValue(true);
     mockFarmService.listFarms.and.returnValue(of(sampleFarms));
+    mockFarmService.listAreas.and.returnValue(of([]));
+    mockFarmService.listPlantations.and.returnValue(of({ items: [], totalCount: 0, page: 1, pageSize: 100, totalPages: 0 } as any));
+    mockFarmService.listCycles.and.returnValue(of({ items: [], totalCount: 0, page: 1, pageSize: 100, totalPages: 0 } as any));
     mockFarmService.listUnits.and.callFake((category?: string | null) => {
       if (category === "Area") return of(sampleAreaUnits);
       if (category === "Volume") return of(sampleVolumeUnits);
@@ -177,6 +180,7 @@ describe("SprayEditorPageComponent", () => {
     mockSprayService.getTargets.and.returnValue(of(sampleTargets));
     mockSprayService.getApplicationMethods.and.returnValue(of(sampleAppMethods));
     mockSprayService.getProductLookup.and.returnValue(of(sampleProducts));
+    mockSprayService.getCropCycleStages.and.returnValue(of([]));
 
     await TestBed.configureTestingModule({
       imports: [SprayEditorPageComponent, NoopAnimationsModule],
@@ -333,5 +337,59 @@ describe("SprayEditorPageComponent", () => {
   it("should navigate back to /sprays on cancel in create mode", () => {
     component.onCancel();
     expect(mockRouter.navigate).toHaveBeenCalledWith(["/sprays"]);
+  });
+
+  it("should allow saving Farm-only draft when sub-hierarchy is omitted", () => {
+    mockSprayService.createDraft.and.returnValue(of(sampleCreatedSpray));
+
+    component.form.patchValue({
+      farmId: "farm-1",
+      farmAreaId: "",
+      plantationId: "",
+      cropCycleId: "",
+      cropCycleStageId: "",
+      plannedDate: "2026-10-25",
+    });
+    component.addProduct({
+      inventoryItemId: "prod-1",
+      plannedQuantity: 5.0,
+    });
+
+    component.onSaveDraft();
+
+    expect(mockSprayService.createDraft).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        farmId: "farm-1",
+        farmAreaId: null,
+        plantationId: null,
+        cropCycleId: null,
+        cropCycleStageId: null,
+        plannedDate: "2026-10-25",
+      }),
+    );
+  });
+
+  it("should reset downstream hierarchy selections when parent level changes", () => {
+    component.form.patchValue({
+      farmId: "farm-1",
+      farmAreaId: "area-1",
+      plantationId: "plant-1",
+      cropCycleId: "cycle-1",
+      cropCycleStageId: "stage-1",
+    });
+
+    component.onPlantationChange("plant-2");
+    expect(component.form.value.cropCycleId).toBe("");
+    expect(component.form.value.cropCycleStageId).toBe("");
+
+    component.form.patchValue({
+      plantationId: "plant-2",
+      cropCycleId: "cycle-2",
+      cropCycleStageId: "stage-2",
+    });
+    component.onAreaChange("area-2");
+    expect(component.form.value.plantationId).toBe("");
+    expect(component.form.value.cropCycleId).toBe("");
+    expect(component.form.value.cropCycleStageId).toBe("");
   });
 });

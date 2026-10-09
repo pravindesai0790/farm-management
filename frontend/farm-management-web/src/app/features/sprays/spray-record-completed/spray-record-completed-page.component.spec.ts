@@ -469,4 +469,58 @@ describe("SprayRecordCompletedPageComponent", () => {
     component.onCancel();
     expect(mockRouter.navigate).toHaveBeenCalledWith(["/sprays"]);
   });
+
+  it("should record completed spray at Farm-only level without sub-hierarchy", () => {
+    mockDialog.open.and.returnValue({
+      afterClosed: () => of(true),
+    } as any);
+
+    component.form.patchValue({
+      farmId: "farm-1",
+      farmAreaId: "",
+      plantationId: "",
+      cropCycleId: "",
+      cropCycleStageId: "",
+      actualApplicationDateTime: new Date().toISOString(),
+    });
+
+    component.productsArray.at(0).patchValue({
+      inventoryItemId: "prod-1",
+      storageLocationId: "loc-1",
+      actualQuantity: 8.0,
+    });
+
+    component.onSubmit();
+
+    expect(mockSprayService.recordCompleted).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        farmId: "farm-1",
+        farmAreaId: null,
+        plantationId: null,
+        cropCycleId: null,
+        cropCycleStageId: null,
+      }),
+    );
+  });
+
+  it("should reject future actual application date on submit", () => {
+    const futureDate = new Date();
+    futureDate.setFullYear(futureDate.getFullYear() + 1);
+
+    component.form.patchValue({
+      farmId: "farm-1",
+      actualApplicationDateTime: futureDate.toISOString(),
+    });
+    component.productsArray.at(0).patchValue({
+      inventoryItemId: "prod-1",
+      storageLocationId: "loc-1",
+      actualQuantity: 5.0,
+    });
+
+    component.onSubmit();
+
+    expect(component.form.get("actualApplicationDateTime")?.errors?.["futureDate"]).toBeTrue();
+    expect(mockDialog.open).not.toHaveBeenCalled();
+    expect(mockSprayService.recordCompleted).not.toHaveBeenCalled();
+  });
 });

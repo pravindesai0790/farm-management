@@ -210,4 +210,19 @@ describe("SprayDetailPageComponent", () => {
 
     expect(component.getStatusLabel("InProgress")).toBe("In Progress");
   });
+
+  it("should hide all mutation action buttons when spray is Completed", () => {
+    component.spray.set({ ...sampleSpray, status: "Completed", statusName: "Completed" });
+    fixture.detectChanges();
+
+    const buttons: HTMLButtonElement[] = Array.from(fixture.nativeElement.querySelectorAll(".header-actions button"));
+    const buttonTexts = buttons.map((b) => b.textContent?.trim() || "");
+
+    expect(buttonTexts).not.toContain(jasmine.stringMatching(/edit/i));
+    expect(buttonTexts).not.toContain(jasmine.stringMatching(/schedule/i));
+    expect(buttonTexts).not.toContain(jasmine.stringMatching(/start/i));
+    expect(buttonTexts).not.toContain(jasmine.stringMatching(/cancel/i));
+    expect(buttonTexts).not.toContain(jasmine.stringMatching(/continue execution/i));
+    expect(buttonTexts).not.toContain(jasmine.stringMatching(/complete/i));
+  });
 });
