@@ -38,6 +38,16 @@ public sealed class IrrigationService(IIrrigationStore store) : IIrrigationServi
         return new PagedResponse<IrrigationListItemResponse>(responses, page, pageSize, totalCount);
     }
 
+    public async Task<IrrigationSummaryCountsResponse> GetSummaryCountsAsync(
+        IrrigationActor actor,
+        Guid? farmId,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        var now = DateTimeOffset.UtcNow;
+        return await store.GetSummaryCountsAsync(actor.OrganizationId, farmId, now, cancellationToken);
+    }
+
     public async Task<IrrigationDetailsResponse> GetAsync(
         IrrigationActor actor,
         Guid id,
@@ -169,6 +179,8 @@ public sealed class IrrigationService(IIrrigationStore store) : IIrrigationServi
             throw new ConflictException("Only draft irrigation events can be updated.");
         }
 
+        ValidateConcurrencyToken(irrigation, request.ConcurrencyToken);
+
         if (request.FarmId == Guid.Empty)
         {
             throw Validation("farmId", "A farm is required.");
@@ -251,6 +263,8 @@ public sealed class IrrigationService(IIrrigationStore store) : IIrrigationServi
         var irrigation = await store.FindAsync(id, actor.OrganizationId, cancellationToken)
             ?? throw new ResourceNotFoundException("The irrigation event was not found.");
 
+        ValidateConcurrencyToken(irrigation, request.ConcurrencyToken);
+
         if (irrigation.Status != IrrigationStatus.Draft)
         {
             throw new ConflictException($"Only draft irrigation events can be scheduled; current status is '{irrigation.Status}'.");
@@ -294,6 +308,8 @@ public sealed class IrrigationService(IIrrigationStore store) : IIrrigationServi
 
         var irrigation = await store.FindAsync(id, actor.OrganizationId, cancellationToken)
             ?? throw new ResourceNotFoundException("The irrigation event was not found.");
+
+        ValidateConcurrencyToken(irrigation, request.ConcurrencyToken);
 
         if (irrigation.Status != IrrigationStatus.Scheduled)
         {
@@ -339,6 +355,8 @@ public sealed class IrrigationService(IIrrigationStore store) : IIrrigationServi
         var irrigation = await store.FindAsync(id, actor.OrganizationId, cancellationToken)
             ?? throw new ResourceNotFoundException("The irrigation event was not found.");
 
+        ValidateConcurrencyToken(irrigation, request.ConcurrencyToken);
+
         if (irrigation.Status != IrrigationStatus.Draft && irrigation.Status != IrrigationStatus.Scheduled)
         {
             throw new ConflictException($"Cannot start an irrigation event in '{irrigation.Status}' status; allowed transitions are from Draft or Scheduled.");
@@ -382,6 +400,8 @@ public sealed class IrrigationService(IIrrigationStore store) : IIrrigationServi
 
         var irrigation = await store.FindAsync(id, actor.OrganizationId, cancellationToken)
             ?? throw new ResourceNotFoundException("The irrigation event was not found.");
+
+        ValidateConcurrencyToken(irrigation, request.ConcurrencyToken);
 
         if (irrigation.Status == IrrigationStatus.Completed || irrigation.Status == IrrigationStatus.Cancelled)
         {
@@ -566,6 +586,8 @@ public sealed class IrrigationService(IIrrigationStore store) : IIrrigationServi
 
         var irrigation = await store.FindAsync(id, actor.OrganizationId, cancellationToken)
             ?? throw new ResourceNotFoundException("The irrigation event was not found.");
+
+        ValidateConcurrencyToken(irrigation, request.ConcurrencyToken);
 
         if (irrigation.Status == IrrigationStatus.Completed || irrigation.Status == IrrigationStatus.Cancelled)
         {
@@ -872,5 +894,20 @@ public sealed class IrrigationService(IIrrigationStore store) : IIrrigationServi
             UpdatedAt: irrigation.UpdatedAt,
             UpdatedBy: irrigation.UpdatedBy,
             CreatedByName: createdByName,
-            UpdatedByName: updatedByName);
+            UpdatedByName: updatedByName,
+            ConcurrencyToken: ComputeConcurrencyToken(irrigation));
+
+    private static string ComputeConcurrencyToken(IrrigationEvent irrigation) =>
+        (irrigation.UpdatedAt ?? irrigation.CreatedAt).ToString("O");
+
+    private static void ValidateConcurrencyToken(IrrigationEvent irrigation, string? suppliedToken)
+    {
+        if (string.IsNullOrWhiteSpace(suppliedToken)) return;
+
+        var currentToken = ComputeConcurrencyToken(irrigation);
+        if (!string.Equals(currentToken, suppliedToken.Trim(), StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ConflictException("The irrigation event was modified by another operation. Please refresh the latest state and retry.");
+        }
+    }
 }

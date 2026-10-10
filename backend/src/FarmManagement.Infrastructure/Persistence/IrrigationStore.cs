@@ -32,6 +32,44 @@ public sealed class IrrigationStore(ApplicationDbContext dbContext) : IIrrigatio
         return await BuildQuery(organizationId, query, now).CountAsync(cancellationToken);
     }
 
+    public async Task<IrrigationSummaryCountsResponse> GetSummaryCountsAsync(
+        Guid organizationId,
+        Guid? farmId,
+        DateTimeOffset now,
+        CancellationToken cancellationToken = default)
+    {
+        var q = dbContext.IrrigationEvents.Where(e => e.OrganizationId == organizationId);
+        if (farmId.HasValue && farmId.Value != Guid.Empty)
+        {
+            q = q.Where(e => e.FarmId == farmId.Value);
+        }
+
+        var counts = await q
+            .GroupBy(e => 1)
+            .Select(g => new
+            {
+                TotalCount = g.Count(),
+                DraftCount = g.Count(e => e.Status == IrrigationStatus.Draft),
+                ScheduledCount = g.Count(e => e.Status == IrrigationStatus.Scheduled),
+                InProgressCount = g.Count(e => e.Status == IrrigationStatus.InProgress),
+                CompletedCount = g.Count(e => e.Status == IrrigationStatus.Completed),
+                CancelledCount = g.Count(e => e.Status == IrrigationStatus.Cancelled),
+                OverdueCount = g.Count(e => e.Status == IrrigationStatus.Scheduled && e.ScheduledAt.HasValue && e.ScheduledAt.Value < now)
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return counts == null
+            ? new IrrigationSummaryCountsResponse(0, 0, 0, 0, 0, 0, 0)
+            : new IrrigationSummaryCountsResponse(
+                counts.TotalCount,
+                counts.DraftCount,
+                counts.ScheduledCount,
+                counts.InProgressCount,
+                counts.CompletedCount,
+                counts.CancelledCount,
+                counts.OverdueCount);
+    }
+
     public async Task<IReadOnlyList<IrrigationEvent>> ListAsync(
         Guid organizationId,
         IrrigationListQuery query,

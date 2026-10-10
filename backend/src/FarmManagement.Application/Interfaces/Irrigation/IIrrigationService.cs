@@ -10,6 +10,11 @@ public interface IIrrigationService
         IrrigationListQuery query,
         CancellationToken cancellationToken = default);
 
+    Task<IrrigationSummaryCountsResponse> GetSummaryCountsAsync(
+        IrrigationActor actor,
+        Guid? farmId,
+        CancellationToken cancellationToken = default);
+
     Task<IrrigationDetailsResponse> GetAsync(
         IrrigationActor actor,
         Guid id,

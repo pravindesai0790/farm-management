@@ -517,6 +517,53 @@ public class IrrigationServiceTests
         Assert.False(response.IsOverdue);
     }
 
+    [Fact]
+    public async Task GetSummaryCountsAsync_ComputesBucketsCorrectly()
+    {
+        var farm1 = CreateActiveFarm();
+        var farm2 = CreateActiveFarm();
+        var area1 = CreateActiveFarmArea(farm1.Id);
+        var area2 = CreateActiveFarmArea(farm2.Id);
+
+        var draft = new IrrigationEvent(_orgId, farm1.Id, area1.Id, _userId);
+        var scheduledOverdue = new IrrigationEvent(_orgId, farm1.Id, area1.Id, _userId);
+        scheduledOverdue.Schedule(DateTimeOffset.UtcNow.AddHours(-2), DateTimeOffset.UtcNow, _userId);
+        var scheduledFuture = new IrrigationEvent(_orgId, farm2.Id, area2.Id, _userId);
+        scheduledFuture.Schedule(DateTimeOffset.UtcNow.AddHours(2), DateTimeOffset.UtcNow, _userId);
+
+        _store.Irrigations.AddRange([draft, scheduledOverdue, scheduledFuture]);
+
+        var actor = CreateActor();
+        var summaryAll = await _sut.GetSummaryCountsAsync(actor, null);
+        Assert.Equal(3, summaryAll.TotalCount);
+        Assert.Equal(1, summaryAll.DraftCount);
+        Assert.Equal(2, summaryAll.ScheduledCount);
+        Assert.Equal(1, summaryAll.OverdueCount);
+
+        var summaryFarm1 = await _sut.GetSummaryCountsAsync(actor, farm1.Id);
+        Assert.Equal(2, summaryFarm1.TotalCount);
+        Assert.Equal(1, summaryFarm1.DraftCount);
+        Assert.Equal(1, summaryFarm1.ScheduledCount);
+        Assert.Equal(1, summaryFarm1.OverdueCount);
+    }
+
+    [Fact]
+    public async Task Mutation_WithMismatchedConcurrencyToken_ThrowsConflictException()
+    {
+        var farm = CreateActiveFarm();
+        var area = CreateActiveFarmArea(farm.Id);
+        var draft = new IrrigationEvent(_orgId, farm.Id, area.Id, _userId);
+        _store.Irrigations.Add(draft);
+
+        var actor = CreateActor();
+        var staleToken = "2020-01-01T00:00:00.0000000Z";
+
+        var ex = await Assert.ThrowsAsync<ConflictException>(() =>
+            _sut.ScheduleAsync(actor, draft.Id, new ScheduleIrrigationRequest(DateTimeOffset.UtcNow, staleToken), null));
+
+        Assert.Contains("modified by another operation", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
     private sealed class FakeIrrigationStore : IIrrigationStore
     {
         public List<IrrigationEvent> Irrigations { get; } = [];
@@ -571,6 +618,26 @@ public class IrrigationServiceTests
 
         public async Task<T> ExecuteInTransactionAsync<T>(Func<CancellationToken, Task<T>> operation, CancellationToken cancellationToken = default) =>
             await operation(cancellationToken);
+
+        public Task<IrrigationSummaryCountsResponse> GetSummaryCountsAsync(Guid organizationId, Guid? farmId, DateTimeOffset now, CancellationToken cancellationToken = default)
+        {
+            var items = Irrigations.Where(e => e.OrganizationId == organizationId);
+            if (farmId.HasValue && farmId.Value != Guid.Empty)
+            {
+                items = items.Where(e => e.FarmId == farmId.Value);
+            }
+
+            var list = items.ToList();
+            var total = list.Count;
+            var draft = list.Count(e => e.Status == IrrigationStatus.Draft);
+            var scheduled = list.Count(e => e.Status == IrrigationStatus.Scheduled);
+            var inProgress = list.Count(e => e.Status == IrrigationStatus.InProgress);
+            var completed = list.Count(e => e.Status == IrrigationStatus.Completed);
+            var cancelled = list.Count(e => e.Status == IrrigationStatus.Cancelled);
+            var overdue = list.Count(e => e.Status == IrrigationStatus.Scheduled && e.ScheduledAt.HasValue && e.ScheduledAt.Value < now);
+
+            return Task.FromResult(new IrrigationSummaryCountsResponse(total, draft, scheduled, inProgress, completed, cancelled, overdue));
+        }
 
         public Task SaveChangesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     }

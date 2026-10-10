@@ -13,6 +13,12 @@ public interface IIrrigationStore
         DateTimeOffset now,
         CancellationToken cancellationToken = default);
 
+    Task<IrrigationSummaryCountsResponse> GetSummaryCountsAsync(
+        Guid organizationId,
+        Guid? farmId,
+        DateTimeOffset now,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<IrrigationEvent>> ListAsync(
         Guid organizationId,
         IrrigationListQuery query,

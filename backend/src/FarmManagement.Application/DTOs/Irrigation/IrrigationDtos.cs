@@ -19,6 +19,15 @@ public sealed record IrrigationListQuery(
     string? SortBy = null,
     string? SortDirection = null);
 
+public sealed record IrrigationSummaryCountsResponse(
+    int TotalCount,
+    int DraftCount,
+    int ScheduledCount,
+    int InProgressCount,
+    int CompletedCount,
+    int CancelledCount,
+    int OverdueCount);
+
 public sealed record IrrigationListItemResponse(
     Guid Id,
     Guid FarmId,
@@ -89,7 +98,8 @@ public sealed record IrrigationDetailsResponse(
     DateTimeOffset? UpdatedAt,
     Guid? UpdatedBy,
     string? CreatedByName = null,
-    string? UpdatedByName = null);
+    string? UpdatedByName = null,
+    string? ConcurrencyToken = null);
 
 public sealed record CreateIrrigationDraftRequest(
     Guid FarmId,
@@ -114,16 +124,20 @@ public sealed record UpdateIrrigationDraftRequest(
     DateTimeOffset? PlannedAt = null,
     decimal? PlannedWaterQuantity = null,
     Guid? PlannedWaterUnitId = null,
-    string? Notes = null);
+    string? Notes = null,
+    string? ConcurrencyToken = null);
 
 public sealed record ScheduleIrrigationRequest(
-    DateTimeOffset ScheduledAt);
+    DateTimeOffset ScheduledAt,
+    string? ConcurrencyToken = null);
 
 public sealed record RescheduleIrrigationRequest(
-    DateTimeOffset ScheduledAt);
+    DateTimeOffset ScheduledAt,
+    string? ConcurrencyToken = null);
 
 public sealed record StartIrrigationRequest(
-    DateTimeOffset? ActualStartedAt = null);
+    DateTimeOffset? ActualStartedAt = null,
+    string? ConcurrencyToken = null);
 
 public sealed record CompleteIrrigationRequest(
     Guid IrrigationMethodId,
@@ -132,7 +146,8 @@ public sealed record CompleteIrrigationRequest(
     int? ActualDurationMinutes = null,
     decimal? ActualWaterQuantity = null,
     Guid? ActualWaterUnitId = null,
-    string? Notes = null);
+    string? Notes = null,
+    string? ConcurrencyToken = null);
 
 public sealed record RecordCompletedIrrigationRequest(
     Guid FarmId,
@@ -149,7 +164,8 @@ public sealed record RecordCompletedIrrigationRequest(
     string? Notes = null);
 
 public sealed record CancelIrrigationRequest(
-    string CancellationReason);
+    string CancellationReason,
+    string? ConcurrencyToken = null);
 
 public sealed record IrrigationMethodDto(
     Guid Id,
