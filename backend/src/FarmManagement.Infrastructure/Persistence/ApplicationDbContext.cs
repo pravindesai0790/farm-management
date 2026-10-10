@@ -109,6 +109,10 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
 
     public DbSet<SprayProduct> SprayProducts => Set<SprayProduct>();
 
+    public DbSet<IrrigationMethod> IrrigationMethods => Set<IrrigationMethod>();
+
+    public DbSet<IrrigationEvent> IrrigationEvents => Set<IrrigationEvent>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);

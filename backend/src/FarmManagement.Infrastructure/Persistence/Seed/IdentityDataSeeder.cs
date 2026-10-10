@@ -196,7 +196,19 @@ public sealed class IdentityDataSeeder(
         new("Spray.Schedule", "Schedule and reschedule spray applications.", "Sprays"),
         new("Spray.Start", "Start spray application executions.", "Sprays"),
         new("Spray.Complete", "Complete spray applications and consume stock.", "Sprays"),
-        new("Spray.Cancel", "Cancel spray applications.", "Sprays")
+        new("Spray.Cancel", "Cancel spray applications.", "Sprays"),
+        new("Irrigation.View", "View irrigation events and history.", "Irrigation"),
+        new("Irrigation.Create", "Create draft irrigation events.", "Irrigation"),
+        new("Irrigation.Update", "Update draft irrigation events.", "Irrigation"),
+        new("Irrigation.Schedule", "Schedule and reschedule irrigation events.", "Irrigation"),
+        new("Irrigation.Start", "Start irrigation event executions.", "Irrigation"),
+        new("Irrigation.Complete", "Complete irrigation events.", "Irrigation"),
+        new("Irrigation.Cancel", "Cancel scheduled or in-progress irrigation events.", "Irrigation"),
+        new("IrrigationMethod.View", "View irrigation methods.", "Irrigation Methods"),
+        new("IrrigationMethod.Create", "Create irrigation methods.", "Irrigation Methods"),
+        new("IrrigationMethod.Update", "Update irrigation methods.", "Irrigation Methods"),
+        new("IrrigationMethod.Activate", "Activate irrigation methods.", "Irrigation Methods"),
+        new("IrrigationMethod.Deactivate", "Deactivate irrigation methods.", "Irrigation Methods")
     ];
 
     private static readonly IReadOnlySet<string> OrganizationAdminPermissions =
@@ -365,7 +377,19 @@ public sealed class IdentityDataSeeder(
             "Spray.Schedule",
             "Spray.Start",
             "Spray.Complete",
-            "Spray.Cancel"
+            "Spray.Cancel",
+            "Irrigation.View",
+            "Irrigation.Create",
+            "Irrigation.Update",
+            "Irrigation.Schedule",
+            "Irrigation.Start",
+            "Irrigation.Complete",
+            "Irrigation.Cancel",
+            "IrrigationMethod.View",
+            "IrrigationMethod.Create",
+            "IrrigationMethod.Update",
+            "IrrigationMethod.Activate",
+            "IrrigationMethod.Deactivate"
         };
 
     /// <summary>
@@ -443,7 +467,15 @@ public sealed class IdentityDataSeeder(
             "Spray.Schedule",
             "Spray.Start",
             "Spray.Complete",
-            "Spray.Cancel"
+            "Spray.Cancel",
+            "Irrigation.View",
+            "Irrigation.Create",
+            "Irrigation.Update",
+            "Irrigation.Schedule",
+            "Irrigation.Start",
+            "Irrigation.Complete",
+            "Irrigation.Cancel",
+            "IrrigationMethod.View"
         };
 
     /// <summary>
@@ -480,7 +512,11 @@ public sealed class IdentityDataSeeder(
             "ApplicationMethod.View",
             "Spray.View",
             "Spray.Start",
-            "Spray.Complete"
+            "Spray.Complete",
+            "Irrigation.View",
+            "Irrigation.Start",
+            "Irrigation.Complete",
+            "IrrigationMethod.View"
         };
 
     private static readonly IReadOnlyList<SeedFarmOwnershipType> SeedFarmOwnershipTypes =
@@ -645,6 +681,14 @@ public sealed class IdentityDataSeeder(
         new("OTHER", "Other", 60, "Other application equipment or methods.")
     ];
 
+    private static readonly IReadOnlyList<SeedIrrigationMethod> SeedIrrigationMethods =
+    [
+        new("DRIP", "Drip Irrigation", 10, "Targeted root-zone water delivery via emitters and driplines."),
+        new("SPRINKLER", "Sprinkler", 20, "Overhead or micro-sprinkler spray distribution."),
+        new("FLOOD_FURROW", "Flood / Furrow", 30, "Surface gravity-fed basin, border, or furrow flooding."),
+        new("MANUAL", "Manual", 40, "Hand watering via hose pipe, bucket, or manual drenching.")
+    ];
+
     public async Task SeedAsync(CancellationToken cancellationToken = default)
     {
         var initialAdmin = ReadInitialAdminConfiguration();
@@ -686,6 +730,7 @@ public sealed class IdentityDataSeeder(
         await SeedProductTypesAsync(cancellationToken);
         await SeedTargetsAsync(cancellationToken);
         await SeedApplicationMethodsAsync(cancellationToken);
+        await SeedIrrigationMethodsAsync(cancellationToken);
         await SeedInitialSuperAdminAsync(organization, roles["SuperAdmin"], initialAdmin, cancellationToken);
 
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -1075,6 +1120,29 @@ public sealed class IdentityDataSeeder(
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
+    private async Task SeedIrrigationMethodsAsync(CancellationToken cancellationToken)
+    {
+        foreach (var seedMethod in SeedIrrigationMethods)
+        {
+            var exists = await dbContext.IrrigationMethods.AnyAsync(
+                method => method.IsSystem && method.OrganizationId == null && method.Code == seedMethod.Code,
+                cancellationToken);
+
+            if (!exists)
+            {
+                dbContext.IrrigationMethods.Add(new IrrigationMethod(
+                    organizationId: null,
+                    code: seedMethod.Code,
+                    name: seedMethod.Name,
+                    isSystem: true,
+                    description: seedMethod.Description,
+                    displayOrder: seedMethod.DisplayOrder));
+            }
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
     private async Task<Organization> SeedOrganizationAsync(CancellationToken cancellationToken)
     {
         var organization = await dbContext.Organizations
@@ -1379,6 +1447,8 @@ public sealed class IdentityDataSeeder(
     private sealed record SeedTarget(string Code, string Name, TargetType TargetType, int DisplayOrder, string? Description = null);
 
     private sealed record SeedApplicationMethod(string Code, string Name, int DisplayOrder, string? Description = null);
+
+    private sealed record SeedIrrigationMethod(string Code, string Name, int DisplayOrder, string? Description = null);
 
     private sealed record InitialAdminConfiguration(string Email, string Password);
 }

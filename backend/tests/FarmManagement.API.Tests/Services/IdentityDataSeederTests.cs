@@ -57,6 +57,16 @@ public class IdentityDataSeederTests
         Assert.Contains("ProductType.View", permissions);
         Assert.Contains("Target.View", permissions);
         Assert.Contains("ApplicationMethod.View", permissions);
+
+        // Assert Phase 3.8 Irrigation Permissions
+        Assert.Contains("Irrigation.View", permissions);
+        Assert.Contains("Irrigation.Create", permissions);
+        Assert.Contains("Irrigation.Update", permissions);
+        Assert.Contains("Irrigation.Schedule", permissions);
+        Assert.Contains("Irrigation.Start", permissions);
+        Assert.Contains("Irrigation.Complete", permissions);
+        Assert.Contains("Irrigation.Cancel", permissions);
+        Assert.Contains("IrrigationMethod.View", permissions);
     }
 
     [Fact]
@@ -121,6 +131,20 @@ public class IdentityDataSeederTests
         Assert.Contains("ApplicationMethod.Update", permissions);
         Assert.Contains("ApplicationMethod.Activate", permissions);
         Assert.Contains("ApplicationMethod.Deactivate", permissions);
+
+        // Assert Phase 3.8 Permissions
+        Assert.Contains("Irrigation.View", permissions);
+        Assert.Contains("Irrigation.Create", permissions);
+        Assert.Contains("Irrigation.Update", permissions);
+        Assert.Contains("Irrigation.Schedule", permissions);
+        Assert.Contains("Irrigation.Start", permissions);
+        Assert.Contains("Irrigation.Complete", permissions);
+        Assert.Contains("Irrigation.Cancel", permissions);
+        Assert.Contains("IrrigationMethod.View", permissions);
+        Assert.Contains("IrrigationMethod.Create", permissions);
+        Assert.Contains("IrrigationMethod.Update", permissions);
+        Assert.Contains("IrrigationMethod.Activate", permissions);
+        Assert.Contains("IrrigationMethod.Deactivate", permissions);
     }
 
     [Fact]
@@ -152,5 +176,11 @@ public class IdentityDataSeederTests
         Assert.Contains("ProductType.View", permissions);
         Assert.Contains("Target.View", permissions);
         Assert.Contains("ApplicationMethod.View", permissions);
+
+        // Assert Phase 3.8 Irrigation Permissions
+        Assert.Contains("Irrigation.View", permissions);
+        Assert.Contains("Irrigation.Start", permissions);
+        Assert.Contains("Irrigation.Complete", permissions);
+        Assert.Contains("IrrigationMethod.View", permissions);
     }
 }
