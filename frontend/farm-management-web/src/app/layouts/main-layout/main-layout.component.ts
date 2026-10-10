@@ -170,6 +170,13 @@ export class MainLayoutComponent {
           route: "/sprays",
           permissions: ["Spray.View"],
         },
+        {
+          id: "irrigations",
+          label: "Irrigation",
+          icon: "water_drop",
+          route: "/irrigations",
+          permissions: ["Irrigation.View"],
+        },
       ],
     },
     {

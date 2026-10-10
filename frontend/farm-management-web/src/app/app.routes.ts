@@ -624,6 +624,11 @@ export const routes: Routes = [
           import("./features/sprays/spray.routes").then((m) => m.SPRAY_ROUTES),
       },
       {
+        path: "irrigations",
+        loadChildren: () =>
+          import("./features/irrigations/irrigation.routes").then((m) => m.IRRIGATION_ROUTES),
+      },
+      {
         path: "labor",
         children: [
           {
