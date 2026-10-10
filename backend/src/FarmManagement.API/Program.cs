@@ -149,6 +149,7 @@ builder.Services.AddScoped<IExpenseReportService, ExpenseReportService>();
 builder.Services.AddScoped<ISupplierBalanceService, SupplierBalanceService>();
 builder.Services.AddScoped<FarmManagement.Application.Interfaces.PlantProtection.IPlantProtectionProductService, PlantProtectionProductService>();
 builder.Services.AddScoped<FarmManagement.Application.Interfaces.Sprays.ISprayService, SprayService>();
+builder.Services.AddScoped<FarmManagement.Application.Interfaces.Irrigation.IIrrigationService, IrrigationService>();
 
 var app = builder.Build();
 

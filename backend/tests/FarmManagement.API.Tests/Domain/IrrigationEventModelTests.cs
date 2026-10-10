@@ -317,4 +317,75 @@ public class IrrigationEventModelTests
         Assert.Equal(UnitId, irrigation.PlannedWaterUnitId);
         Assert.Equal("Updated planning", irrigation.Notes);
     }
+
+    [Fact]
+    public void Start_FromDraft_SetsInProgress()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var irrigation = new IrrigationEvent(
+            organizationId: OrgId,
+            farmId: FarmId,
+            farmAreaId: FarmAreaId,
+            createdBy: UserId);
+
+        irrigation.Start(now, now, UserId);
+        Assert.Equal(IrrigationStatus.InProgress, irrigation.Status);
+    }
+
+    [Fact]
+    public void Start_WhenAlreadyInProgress_ThrowsInvalidOperationException()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var irrigation = new IrrigationEvent(
+            organizationId: OrgId,
+            farmId: FarmId,
+            farmAreaId: FarmAreaId,
+            createdBy: UserId);
+
+        irrigation.Start(now, now, UserId);
+        var ex = Assert.Throws<InvalidOperationException>(() => irrigation.Start(now, now, UserId));
+        Assert.Contains("Cannot start an irrigation event in 'InProgress' status", ex.Message);
+    }
+
+    [Fact]
+    public void Complete_DirectlyFromDraft_SetsCompleted()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var irrigation = new IrrigationEvent(
+            organizationId: OrgId,
+            farmId: FarmId,
+            farmAreaId: FarmAreaId,
+            createdBy: UserId);
+
+        irrigation.Complete(
+            irrigationMethodId: MethodId,
+            actualStartedAt: now.AddHours(-1),
+            actualEndedAt: now,
+            actualDurationMinutes: 60,
+            actualWaterQuantity: 100m,
+            actualWaterUnitId: UnitId,
+            notes: "Direct completion",
+            now: now,
+            updatedBy: UserId);
+
+        Assert.Equal(IrrigationStatus.Completed, irrigation.Status);
+        Assert.Equal(now, irrigation.CompletedAt);
+    }
+
+    [Fact]
+    public void Cancel_FromInProgress_SetsCancelled()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var irrigation = new IrrigationEvent(
+            organizationId: OrgId,
+            farmId: FarmId,
+            farmAreaId: FarmAreaId,
+            createdBy: UserId);
+
+        irrigation.Start(now, now, UserId);
+        irrigation.Cancel("Pump failed", now, UserId);
+
+        Assert.Equal(IrrigationStatus.Cancelled, irrigation.Status);
+        Assert.Equal("Pump failed", irrigation.CancellationReason);
+    }
 }

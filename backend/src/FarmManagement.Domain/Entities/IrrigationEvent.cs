@@ -130,6 +130,10 @@ public sealed class IrrigationEvent
     public void Schedule(DateTimeOffset scheduledAt, DateTimeOffset now, Guid updatedBy)
     {
         EnsureNotTerminal();
+        if (Status != IrrigationStatus.Draft)
+        {
+            throw new InvalidOperationException($"Only draft irrigation events can be scheduled; current status is '{Status}'.");
+        }
         if (updatedBy == Guid.Empty) throw new ArgumentException("A user is required.", nameof(updatedBy));
 
         ScheduledAt = scheduledAt;
@@ -155,6 +159,10 @@ public sealed class IrrigationEvent
     public void Start(DateTimeOffset? actualStartedAt, DateTimeOffset now, Guid updatedBy)
     {
         EnsureNotTerminal();
+        if (Status != IrrigationStatus.Draft && Status != IrrigationStatus.Scheduled)
+        {
+            throw new InvalidOperationException($"Cannot start an irrigation event in '{Status}' status; allowed transitions are from Draft or Scheduled.");
+        }
         if (updatedBy == Guid.Empty) throw new ArgumentException("A user is required.", nameof(updatedBy));
 
         ActualStartedAt = actualStartedAt ?? now;
