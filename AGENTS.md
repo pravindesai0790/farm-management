@@ -14,7 +14,7 @@ The repository is organized as a layered .NET solution:
 The Angular frontend follows a feature-first structure:
 
 - `frontend/farm-management-web/src/app/core` contains singleton services, auth state, guards, interceptors, and API-facing models.
-- `frontend/farm-management-web/src/app/features` contains route-level screens grouped by business area, such as `auth`, `dashboard`, `farms`, `crops`, `activities`, and `settings`.
+- `frontend/farm-management-web/src/app/features` contains route-level screens grouped by business area, such as `auth`, `dashboard`, `farms`, `crops`, `activities`, `expenses`, `sprays`, and `settings`.
 - `frontend/farm-management-web/src/app/layouts` contains shared application shells such as the main authenticated layout.
 - `frontend/farm-management-web/src/app/pages` contains standalone full-page routes like forbidden and other app-level screens.
 - `frontend/farm-management-web/src/app/shared` contains reusable UI building blocks that are not tied to one feature.
@@ -25,15 +25,36 @@ Keep frontend business logic in services and stores under `core`, keep screens t
 ### Frontend UI/UX Standards
 All frontend features, screens, dialogs, tables, and form controls must strictly adhere to the design system rules, spacing scale, density specifications, and typography hierarchy defined in [`UI_UX_GUIDE.md`](UI_UX_GUIDE.md). Avoid creating duplicate page-specific styling; always leverage shared design tokens and global component classes.
 
+## 3. Existing Operational Entities & Cascading Hierarchy
+
+Reference the standard agricultural hierarchy:
+
+$$\text{Farm} \longrightarrow \text{Farm Area} \longrightarrow \text{Plantation} \longrightarrow \text{Crop Cycle} \longrightarrow \text{Crop Cycle Stage}$$
+
+### 3.1 Entity Mapping
+- **Farm** ([`Farm`](backend/src/FarmManagement.Domain/Entities/Farm.cs)): Only required application context (`FarmId NOT NULL`).
+- **Farm Area** ([`FarmArea`](backend/src/FarmManagement.Domain/Entities/FarmArea.cs)): Optional child of Farm (`FarmAreaId NULL`).
+- **Plantation** ([`CropPlantation`](backend/src/FarmManagement.Domain/Entities/CropPlantation.cs)): Optional child of Farm Area (`PlantationId NULL`).
+- **Crop Cycle** ([`CropCycle`](backend/src/FarmManagement.Domain/Entities/CropCycle.cs)): Optional child of Plantation (`CropCycleId NULL`).
+- **Crop Cycle Stage** ([`CropCycleStage`](backend/src/FarmManagement.Domain/Entities/CropCycleStage.cs)): Optional child of Crop Cycle (`CropCycleStageId NULL`).
+
+### 3.2 Cascading Validation Rules
+The hierarchy is optional but strictly cascading:
+
+- If `PlantationId` is set, `FarmAreaId` is required and must match `plantation.FarmAreaId`.
+- If `CropCycleId` is set, `PlantationId` is required and must match `cycle.PlantationId`.
+- If `CropCycleStageId` is set, `CropCycleId` is required and must match `stage.CropCycleId`.
+- Any parent mismatch (e.g., Farm + Plantation without Area, Area not belonging to Farm, or Cycle not belonging to Plantation) must be rejected by backend validation with a `ValidationException`.
+
 ## Current Implementation Snapshot
 
-Use this as the starting point for feature work. All core Phase 1, Phase 2, and Phase 3 capabilities are implemented across the backend and frontend.
+Use this as the starting point for feature work. All core capabilities across Phase 1, Phase 2, Phase 3, Phase 3.5 (Inventory), Phase 3.6 (Expense Management & Procurement), and Phase 3.7 (Spray Application & Plant Protection) are implemented across the backend and frontend.
 
 ### Backend Capabilities in Place
 
 - **Platform & Security Foundation**:
   - ASP.NET Core 10 API host with Serilog structured logging, OpenAPI in development, health checks (`/health`), CORS, and global RFC 7807 error handling.
-  - PostgreSQL persistence with Entity Framework Core and migrations up to `Phase3_016` (auto-applied in development).
+  - PostgreSQL persistence with Entity Framework Core and migrations up to `Phase3_7_001_AddSprayAndPlantProtection` (auto-applied in development).
   - JWT authentication with in-memory access tokens, HttpOnly refresh token cookie rotation, password hashing, and account lockout handling.
   - Granular permission-based authorization policies and centralized actor context resolution (`UserContextHelper`).
 - **Organization & Administration**:
@@ -64,12 +85,28 @@ Use this as the starting point for feature work. All core Phase 1, Phase 2, and 
   - Worker payments & settlements (`WorkerPayment`, `WorkerPaymentAllocation`, `SettlementStatus`): payment recording, advances, payout settlements, balance calculations, and FIFO payment-to-earnings allocation.
 - **Labor Activities**:
   - Field activity types (`LaborActivityType`) and field activities (`LaborActivity`, `LaborActivityStatus`): scheduling and execution tracking linked to farms, plantations, and cycles, with cancellation workflows and audit reasons.
+  - Full adherence to the operational hierarchy rules (Farm, Farm Area, Plantation, Crop Cycle, Stage).
 - **Inventory & Warehouse Management**:
-  - Master data: Inventory items (`InventoryItem`), storage locations (`StorageLocation`), stock units (`Unit`).
+  - Master data: Inventory items (`InventoryItem`), storage locations (`StorageLocation`), stock units (`Unit`), and categories master table (`InventoryItemCategory`, `Phase3_6_005`) supporting system defaults and tenant-specific categories.
   - Stock balance & ledger (`StockBalance`, `StockMovement`): real-time on-hand stock balances and audit movements across Opening Stock, Receipts, Issues, Adjustments (In/Out), Transfers (In/Out), and Reversals.
   - Concurrency & Integrity: PostgreSQL transaction-level advisory locking (`pg_advisory_xact_lock`), balance update row locking (`FOR UPDATE`), and insufficient stock validation.
   - Transaction Reversals: atomic reversal workflow (`ReverseStockMovementAsync`) generating opposing movement records and linking reversal IDs with audit logging.
-  - Operational Linkages: foreign key linkages (`CropCycleId`, `CropCycleStageId`, `PlantationId`, `FarmAreaId`, `LaborActivityId`) on stock movements for agronomic cost accounting.
+  - Operational Linkages: foreign key linkages (`CropCycleId`, `CropCycleStageId`, `PlantationId`, `FarmAreaId`, `LaborActivityId`, `SprayId`) on stock movements for agronomic cost accounting and input tracking.
+- **Farm Expense Management & Procurement (Phase 3.6)**:
+  - Master data: Expense categories (`ExpenseCategory`), suppliers (`Supplier`) with balance tracking, and currencies (`Currency`).
+  - Direct Expenses (`Expense`, `ExpenseStatus`: Draft, Confirmed, Reversed): direct operational costs, amounts, currencies, suppliers, reference numbers, receipt attachments, reversal reason/linkage, and cascading operational hierarchy (Farm, Farm Area, Plantation, Crop Cycle, Stage).
+  - Purchase Invoices & 3-Way Receiving (`PurchaseInvoice`, `PurchaseInvoiceLine`, `PurchaseInvoiceReceiptLine`, `PurchaseInvoiceStatus`: Draft, Posted, Reversed): itemized procurement invoices with mixed inventory lines and direct expense lines. Partial and full receiving directly into farm storage locations (`StockMovement` receipt) with receipt groups, idempotency, and received quantity tracking.
+  - Supplier Payments & Settlements (`SupplierPayment`, `SupplierPaymentAllocation`, `PaymentStatus`: Draft, Posted, Reversed, `SettlementStatus`: Unpaid, PartiallyPaid, Paid): payments to suppliers with automated FIFO or manual allocation across open posted purchase invoices, reversal workflows, and supplier account balance tracking (`SupplierBalanceService`).
+  - Expense Reports & Financial Analytics (`ExpenseReportService`, `ExpenseReportsController`): aggregation by expense category, farm, crop cycle, plantation, and monthly trends, plus supplier aging and statement balances.
+- **Spray Application & Plant Protection (Phase 3.7)**:
+  - Master data & Chemical Profiles: Plant protection products (`PlantProtectionProduct`) linked to `InventoryItem`, product types (`ProductType`), spray targets (`Target`), and application methods (`ApplicationMethod`). Chemical safety profiles with active ingredients, formulation types, registration numbers, REI (re-entry interval in hours), PHI (pre-harvest interval in days), and standard dosage guidelines.
+  - Spray Execution Lifecycle (`Spray`, `SprayProduct`, `SprayStatus`: Draft, Scheduled, In Progress, Completed, Cancelled):
+    - Planning & scheduling with target pest, application method, planned area/water volume, and multi-product tank mix recipes conforming to cascading operational hierarchy.
+    - Real-time in-progress execution with actual weather telemetry (temperature, relative humidity, wind speed, wind direction), equipment used, and applicator/supervisor tracking.
+    - Automated stock deductions: spray completion atomically deducts chemical quantities from farm storage locations via `StockMovement` (Issue) with PostgreSQL advisory locks and `FOR UPDATE` row locks.
+    - Safety countdowns: automated calculation and display of REI active expiration timestamps and harvest clearance PHI dates.
+    - Direct recording: 1-step "Record Completed Spray" for historical field logging without advance scheduling.
+    - Controlled cancellation: cancellation workflow with audit cancellation reasons.
 - **Dashboard APIs**:
   - Farm 360 metrics, active crop cycle progress trackers, and daily workforce attendance/labor cost summaries.
 
@@ -102,6 +139,24 @@ Use this as the starting point for feature work. All core Phase 1, Phase 2, and 
   - Stock Operations Modal (`StockOperationDialogComponent`) supporting Opening Stock, Receipts, Issues, Adjustments, and Transfers with real-time stock availability check, advisory lock safety, and cascading operational linkages (Crop Cycle, Stage, Plantation, Area, Activity).
   - Stock Movement Ledger (`StockLedgerTabComponent`) with movement badges, operational link tags with deep linking (`?cropCycleId=...`), and transaction reversal dialog integration.
   - Crop Cycle detail page **"Inputs & Inventory Utilized"** tab (`CropCycleInputsTabComponent`) with KPI metrics strip, aggregated net applied quantities ($\sum \text{Issues} - \sum \text{Reversals}$) per item, category chips (Fertilizer, Seed, Chemical, Material), stage breakdowns, interactive reversal dialog, and 1-click "Issue Inputs" modal shortcut pre-selected with cycle metadata.
+- **Farm Expenses & Procurement**:
+  - Expenses hub with sub-navigation tabs (Direct Expenses, Invoices, Payments, Suppliers, Categories, Balances, Reports).
+  - Direct expense list with status/category/farm filters, create/edit modal with cascading operational hierarchy picker (Farm -> Area -> Plantation -> Cycle -> Stage), detail modal, and reversal dialog.
+  - Purchase invoice list with supplier/status filters, comprehensive invoice editor supporting mixed inventory and expense lines, detail page, stock receipt dialog with storage location assignment, and invoice reversal dialog.
+  - Supplier payment list, payment editor with auto/manual allocation to open invoices, payment detail page, and reversal dialog.
+  - Suppliers directory (list and modal editor with tax/contact details).
+  - Expense categories management (list and modal editor).
+  - Supplier balances & statement page with aging.
+  - Expense reporting page with KPI strip, breakdowns by category/farm/cycle, and monthly trend analysis.
+- **Spray Application & Plant Protection**:
+  - Spray list page with status tabs (All, Scheduled, In Progress, Completed, Cancelled), weather/safety badges, and search/filter controls.
+  - Spray editor page for planning sprays with target pest, application method, planned area/water volumes, and multi-product tank mix recipes.
+  - Spray execution page for starting and completing sprays with actual weather telemetry (temperature, humidity, wind), operator attribution, actual product quantities, and storage location selection.
+  - Record completed spray page for direct 1-step historical logging.
+  - Spray detail page with status timeline, safety countdowns (active REI warnings, PHI clearance date), product consumption breakdown with stock movement links, and weather conditions summary.
+  - Spray scheduling and cancellation modals with audit reasons.
+  - Plant protection products catalog page and editor modal (active ingredients, chemical category, formulation, REI/PHI values, dilution rates).
+  - Spray master data management page for product types, application methods, and spray targets.
 - **Operational Dashboard**:
   - Farm 360 overview cards, active cycle progress indicators, and daily labor attendance summary cards.
 - **Shared UI**:
@@ -110,14 +165,14 @@ Use this as the starting point for feature work. All core Phase 1, Phase 2, and 
 ### Automated Test Suite in Place
 
 - Backend test project at `backend/tests/FarmManagement.API.Tests/`.
-- 482 passing unit and integration tests verifying domain models, lifecycle stage invariants, wage calculations, attendance finalization, payment allocation engines, inventory transactions, stock balances, advisory locks, transaction reversals, and crop cycle operational linkages.
+- 857 passing unit and integration tests verifying domain models, lifecycle stage invariants, wage calculations, attendance finalization, payment allocation engines, inventory transactions, stock balances, advisory locks, transaction reversals, purchase invoices, 3-way receiving, supplier payments, direct expenses, spray lifecycle, chemical deductions, REI/PHI validation, and cascading operational linkages.
 
 ### Future Roadmap / Not Yet Implemented
 
+- Irrigation and fertigation management (Phase 3.8: water sources, irrigation blocks/methods, soil moisture, scheduling, and execution tracking).
 - Machinery and farm implement maintenance tracking.
 - Harvest logging, yield collection, grading, and packing.
 - Sales, crop invoicing, dispatch, and customer orders.
-- General farm expense management and accounting beyond labor wages.
 - Crop-specific viticulture/specialty modules (e.g. grape trellis systems, brix monitoring, phenological stages).
 - File uploads and document storage integration (cloud/local).
 - Reporting engine & BI exports (PDF/Excel).
