@@ -151,4 +151,54 @@ describe("IrrigationService", () => {
     expect(req.request.method).toBe("GET");
     req.flush({ id } as any);
   });
+
+  it("should post create draft to /irrigations", () => {
+    const payload = {
+      farmId: "farm-1",
+      farmAreaId: "area-1",
+      plantationId: "plant-1",
+      cropCycleId: "cycle-1",
+      cropCycleStageId: "stage-1",
+      irrigationMethodId: "method-1",
+      plannedAt: "2026-10-20T10:00:00Z",
+      plannedWaterQuantity: 500,
+      plannedWaterUnitId: "unit-l",
+      notes: "Test draft",
+    };
+
+    service.createDraft(payload).subscribe((res) => {
+      expect(res.id).toBe("irr-new");
+    });
+
+    const req = httpMock.expectOne(baseUrl);
+    expect(req.request.method).toBe("POST");
+    expect(req.request.body).toEqual(payload);
+    req.flush({ id: "irr-new", ...payload } as any);
+  });
+
+  it("should put update draft to /irrigations/:id", () => {
+    const id = "irr-123";
+    const payload = {
+      farmId: "farm-1",
+      farmAreaId: "area-1",
+      plantationId: null,
+      cropCycleId: null,
+      cropCycleStageId: null,
+      irrigationMethodId: null,
+      plannedAt: null,
+      plannedWaterQuantity: 300,
+      plannedWaterUnitId: "unit-l",
+      notes: "Updated note",
+      concurrencyToken: "ct-123",
+    };
+
+    service.updateDraft(id, payload).subscribe((res) => {
+      expect(res.id).toBe(id);
+    });
+
+    const req = httpMock.expectOne(`${baseUrl}/${id}`);
+    expect(req.request.method).toBe("PUT");
+    expect(req.request.body).toEqual(payload);
+    req.flush({ id, ...payload } as any);
+  });
 });

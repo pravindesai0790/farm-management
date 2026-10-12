@@ -12,4 +12,24 @@ export const IRRIGATION_ROUTES: Routes = [
         (m) => m.IrrigationListPageComponent,
       ),
   },
+  {
+    path: "new",
+    title: "Plan Irrigation Event",
+    canActivate: [permissionGuard],
+    data: { permission: "Irrigation.Create" },
+    loadComponent: () =>
+      import("./irrigation-editor/irrigation-editor-page.component").then(
+        (m) => m.IrrigationEditorPageComponent,
+      ),
+  },
+  {
+    path: ":id/edit",
+    title: "Edit Irrigation Draft",
+    canActivate: [permissionGuard],
+    data: { permission: "Irrigation.Update" },
+    loadComponent: () =>
+      import("./irrigation-editor/irrigation-editor-page.component").then(
+        (m) => m.IrrigationEditorPageComponent,
+      ),
+  },
 ];

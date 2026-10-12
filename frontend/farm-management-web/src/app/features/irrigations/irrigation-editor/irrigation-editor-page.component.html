@@ -1,0 +1,240 @@
+<div class="section-heading">
+  <div>
+    <p class="eyebrow">Water Management & Operations</p>
+    <h2>{{ isEditMode() ? 'Edit Irrigation Event Draft' : 'Plan Irrigation Event' }}</h2>
+    <p class="subtitle">
+      Plan field watering events, location allocation, application method, and water quantity.
+    </p>
+  </div>
+  <div class="header-actions">
+    <button
+      mat-button
+      type="button"
+      class="action-btn"
+      (click)="onCancel()"
+      [disabled]="isSubmitting()"
+    >
+      Cancel
+    </button>
+    <button
+      mat-flat-button
+      color="primary"
+      type="button"
+      class="action-btn"
+      (click)="onSave()"
+      [disabled]="isSubmitting() || isLoading()"
+    >
+      @if (isSubmitting()) {
+        <mat-spinner diameter="18" class="inline-spinner" />
+      } @else {
+        <mat-icon>save</mat-icon>
+      }
+      Save Draft
+    </button>
+  </div>
+</div>
+
+@if (errorMessage()) {
+  <div class="error-banner">
+    <mat-icon>error_outline</mat-icon>
+    <span>{{ errorMessage() }}</span>
+  </div>
+}
+
+@if (isLoading()) {
+  <div class="loading-state">
+    <mat-spinner diameter="36" />
+    <p>Loading irrigation event data...</p>
+  </div>
+} @else {
+  <form [formGroup]="form" class="editor-form">
+    <!-- Section 1: Location & Crop Context -->
+    <mat-card class="form-card">
+      <mat-card-header>
+        <mat-card-title>Location & Crop Context</mat-card-title>
+        <mat-card-subtitle>
+          Farm and Farm Area are mandatory. Plantation, Cycle, and Stage are optional and cascading.
+        </mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="fields-grid grid-5">
+          <!-- Farm -->
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Farm *</mat-label>
+            <mat-select
+              formControlName="farmId"
+              (valueChange)="onFarmChange($event)"
+              placeholder="Select Farm"
+            >
+              @for (f of farms(); track f.id) {
+                <mat-option [value]="f.id">{{ f.name }}</mat-option>
+              }
+            </mat-select>
+            @if (form.get('farmId')?.hasError('required') && form.get('farmId')?.touched) {
+              <mat-error>Farm is required</mat-error>
+            }
+          </mat-form-field>
+
+          <!-- Farm Area -->
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Farm Area *</mat-label>
+            <mat-select
+              formControlName="farmAreaId"
+              (valueChange)="onAreaChange($event)"
+              [disabled]="!form.value.farmId"
+              placeholder="Select Area"
+            >
+              @for (a of areas(); track a.id) {
+                <mat-option [value]="a.id">{{ a.name }}</mat-option>
+              }
+            </mat-select>
+            @if (form.get('farmAreaId')?.hasError('required') && form.get('farmAreaId')?.touched) {
+              <mat-error>Farm Area is required</mat-error>
+            }
+          </mat-form-field>
+
+          <!-- Plantation -->
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Plantation (Optional)</mat-label>
+            <mat-select
+              formControlName="plantationId"
+              (valueChange)="onPlantationChange($event)"
+              [disabled]="!form.value.farmId"
+              placeholder="Select Plantation"
+            >
+              <mat-option value="">None / Open Area</mat-option>
+              @for (p of plantations(); track p.id) {
+                <mat-option [value]="p.id">{{ p.plantationName }} ({{ p.cropName }})</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <!-- Crop Cycle -->
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Crop Cycle (Optional)</mat-label>
+            <mat-select
+              formControlName="cropCycleId"
+              (valueChange)="onCropCycleChange($event)"
+              [disabled]="!form.value.plantationId"
+              placeholder="Select Cycle"
+            >
+              <mat-option value="">None / Inter-cycle</mat-option>
+              @for (c of cropCycles(); track c.id) {
+                <mat-option [value]="c.id">{{ c.cycleName }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <!-- Cycle Stage -->
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Cycle Stage (Optional)</mat-label>
+            <mat-select
+              formControlName="cropCycleStageId"
+              [disabled]="!form.value.cropCycleId"
+              placeholder="Select Stage"
+            >
+              <mat-option value="">None</mat-option>
+              @for (s of stages(); track s.id) {
+                <mat-option [value]="s.id">{{ s.stageName }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Section 2: Irrigation Parameters & Planning -->
+    <mat-card class="form-card">
+      <mat-card-header>
+        <mat-card-title>Irrigation Planning & Parameters</mat-card-title>
+        <mat-card-subtitle>
+          Specify delivery method, planned execution date, and water volume allocation.
+        </mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="fields-grid grid-3">
+          <!-- Method -->
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Irrigation Method (Optional)</mat-label>
+            <mat-select
+              formControlName="irrigationMethodId"
+              placeholder="Select Method"
+            >
+              <mat-option value="">None / To Be Determined</mat-option>
+              @for (m of methods(); track m.id) {
+                <mat-option [value]="m.id">{{ m.name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <!-- Planned Date -->
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Planned Date (Optional)</mat-label>
+            <input
+              matInput
+              [matDatepicker]="plannedDatePicker"
+              formControlName="plannedAt"
+              placeholder="Choose a date"
+            />
+            <mat-datepicker-toggle matIconSuffix [for]="plannedDatePicker"></mat-datepicker-toggle>
+            <mat-datepicker #plannedDatePicker></mat-datepicker>
+          </mat-form-field>
+
+          <!-- Planned Water Volume & Unit pair -->
+          <div class="water-volume-group">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="qty-field">
+              <mat-label>Planned Water Volume</mat-label>
+              <input
+                matInput
+                type="number"
+                min="0.01"
+                step="any"
+                formControlName="plannedWaterQuantity"
+                placeholder="e.g. 5000"
+              />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="unit-field">
+              <mat-label>Unit</mat-label>
+              <mat-select formControlName="plannedWaterUnitId" placeholder="Volume Unit">
+                <mat-option value="">None</mat-option>
+                @for (u of volumeUnits(); track u.id) {
+                  <mat-option [value]="u.id">{{ u.name }} ({{ u.symbol }})</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </div>
+
+        @if (form.hasError('waterUnitRequired') && (form.get('plannedWaterQuantity')?.touched || form.get('plannedWaterUnitId')?.touched)) {
+          <div class="validation-warning">
+            <mat-icon>warning</mat-icon>
+            <span>A volume unit is required when water quantity is specified.</span>
+          </div>
+        }
+        @if (form.hasError('waterQuantityRequired') && (form.get('plannedWaterQuantity')?.touched || form.get('plannedWaterUnitId')?.touched)) {
+          <div class="validation-warning">
+            <mat-icon>warning</mat-icon>
+            <span>A positive water quantity is required when a water unit is selected.</span>
+          </div>
+        }
+
+        <!-- Notes -->
+        <div class="full-width-field">
+          <mat-form-field appearance="outline" class="notes-field">
+            <mat-label>Notes & Instructions (Optional)</mat-label>
+            <textarea
+              matInput
+              rows="3"
+              formControlName="notes"
+              placeholder="Enter special watering instructions, pressure settings, or observations..."
+            ></textarea>
+            @if (form.get('notes')?.hasError('maxlength')) {
+              <mat-error>Notes cannot exceed 1000 characters</mat-error>
+            }
+          </mat-form-field>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </form>
+}

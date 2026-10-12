@@ -113,3 +113,30 @@ export interface IrrigationDetailsResponse {
   readonly updatedByName?: string | null;
   readonly concurrencyToken?: string | null;
 }
+
+export interface CreateIrrigationDraftRequest {
+  farmId: string;
+  farmAreaId: string;
+  plantationId?: string | null;
+  cropCycleId?: string | null;
+  cropCycleStageId?: string | null;
+  irrigationMethodId?: string | null;
+  plannedAt?: string | null;
+  plannedWaterQuantity?: number | null;
+  plannedWaterUnitId?: string | null;
+  notes?: string | null;
+}
+
+export interface UpdateIrrigationDraftRequest {
+  farmId: string;
+  farmAreaId: string;
+  plantationId?: string | null;
+  cropCycleId?: string | null;
+  cropCycleStageId?: string | null;
+  irrigationMethodId?: string | null;
+  plannedAt?: string | null;
+  plannedWaterQuantity?: number | null;
+  plannedWaterUnitId?: string | null;
+  notes?: string | null;
+  concurrencyToken?: string | null;
+}

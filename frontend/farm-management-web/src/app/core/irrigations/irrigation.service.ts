@@ -4,11 +4,13 @@ import { Observable } from "rxjs";
 import { environment } from "../../../environments/environment";
 import { PagedResponse } from "../models/paged-response.model";
 import {
+  CreateIrrigationDraftRequest,
   IrrigationDetailsResponse,
   IrrigationListItem,
   IrrigationListQuery,
   IrrigationMethodDto,
   IrrigationSummaryCounts,
+  UpdateIrrigationDraftRequest,
 } from "./irrigation.models";
 
 @Injectable({ providedIn: "root" })
@@ -53,6 +55,14 @@ export class IrrigationService {
 
   getIrrigation(id: string): Observable<IrrigationDetailsResponse> {
     return this.http.get<IrrigationDetailsResponse>(`${this.api}/${id}`);
+  }
+
+  createDraft(request: CreateIrrigationDraftRequest): Observable<IrrigationDetailsResponse> {
+    return this.http.post<IrrigationDetailsResponse>(this.api, request);
+  }
+
+  updateDraft(id: string, request: UpdateIrrigationDraftRequest): Observable<IrrigationDetailsResponse> {
+    return this.http.put<IrrigationDetailsResponse>(`${this.api}/${id}`, request);
   }
 
   getCropCycleStages(cropCycleId: string): Observable<readonly import("../farm-management/farm-management.models").CropCycleStage[]> {
