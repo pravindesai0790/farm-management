@@ -140,3 +140,34 @@ export interface UpdateIrrigationDraftRequest {
   notes?: string | null;
   concurrencyToken?: string | null;
 }
+
+export interface ScheduleIrrigationRequest {
+  readonly scheduledAt: string;
+  readonly concurrencyToken?: string | null;
+}
+
+export interface RescheduleIrrigationRequest {
+  readonly scheduledAt: string;
+  readonly concurrencyToken?: string | null;
+}
+
+export interface StartIrrigationRequest {
+  readonly actualStartedAt?: string | null;
+  readonly concurrencyToken?: string | null;
+}
+
+export interface CompleteIrrigationRequest {
+  readonly irrigationMethodId: string;
+  readonly actualStartedAt?: string | null;
+  readonly actualEndedAt?: string | null;
+  readonly actualDurationMinutes?: number | null;
+  readonly actualWaterQuantity?: number | null;
+  readonly actualWaterUnitId?: string | null;
+  readonly notes?: string | null;
+  readonly concurrencyToken?: string | null;
+}
+
+export interface CancelIrrigationRequest {
+  readonly cancellationReason: string;
+  readonly concurrencyToken?: string | null;
+}

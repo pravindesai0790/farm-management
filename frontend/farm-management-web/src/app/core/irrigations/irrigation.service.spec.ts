@@ -201,4 +201,83 @@ describe("IrrigationService", () => {
     expect(req.request.body).toEqual(payload);
     req.flush({ id, ...payload } as any);
   });
+
+  it("should post schedule to /irrigations/:id/schedule", () => {
+    const id = "irr-100";
+    const payload = { scheduledAt: "2026-10-25T08:00:00Z", concurrencyToken: "ct-100" };
+
+    service.schedule(id, payload).subscribe((res) => {
+      expect(res.id).toBe(id);
+    });
+
+    const req = httpMock.expectOne(`${baseUrl}/${id}/schedule`);
+    expect(req.request.method).toBe("POST");
+    expect(req.request.body).toEqual(payload);
+    req.flush({ id, status: "Scheduled" } as any);
+  });
+
+  it("should post reschedule to /irrigations/:id/reschedule", () => {
+    const id = "irr-100";
+    const payload = { scheduledAt: "2026-10-26T09:00:00Z", concurrencyToken: "ct-101" };
+
+    service.reschedule(id, payload).subscribe((res) => {
+      expect(res.id).toBe(id);
+    });
+
+    const req = httpMock.expectOne(`${baseUrl}/${id}/reschedule`);
+    expect(req.request.method).toBe("POST");
+    expect(req.request.body).toEqual(payload);
+    req.flush({ id, status: "Scheduled" } as any);
+  });
+
+  it("should post start to /irrigations/:id/start", () => {
+    const id = "irr-100";
+    const payload = { actualStartedAt: "2026-10-26T09:15:00Z", concurrencyToken: "ct-102" };
+
+    service.start(id, payload).subscribe((res) => {
+      expect(res.id).toBe(id);
+    });
+
+    const req = httpMock.expectOne(`${baseUrl}/${id}/start`);
+    expect(req.request.method).toBe("POST");
+    expect(req.request.body).toEqual(payload);
+    req.flush({ id, status: "InProgress" } as any);
+  });
+
+  it("should post complete to /irrigations/:id/complete", () => {
+    const id = "irr-100";
+    const payload = {
+      irrigationMethodId: "m-1",
+      actualStartedAt: "2026-10-26T09:15:00Z",
+      actualEndedAt: "2026-10-26T10:15:00Z",
+      actualDurationMinutes: 60,
+      actualWaterQuantity: 1200,
+      actualWaterUnitId: "unit-l",
+      notes: "Watered thoroughly",
+      concurrencyToken: "ct-103",
+    };
+
+    service.complete(id, payload).subscribe((res) => {
+      expect(res.id).toBe(id);
+    });
+
+    const req = httpMock.expectOne(`${baseUrl}/${id}/complete`);
+    expect(req.request.method).toBe("POST");
+    expect(req.request.body).toEqual(payload);
+    req.flush({ id, status: "Completed" } as any);
+  });
+
+  it("should post cancel to /irrigations/:id/cancel", () => {
+    const id = "irr-100";
+    const payload = { cancellationReason: "Heavy rain forecasted", concurrencyToken: "ct-104" };
+
+    service.cancel(id, payload).subscribe((res) => {
+      expect(res.id).toBe(id);
+    });
+
+    const req = httpMock.expectOne(`${baseUrl}/${id}/cancel`);
+    expect(req.request.method).toBe("POST");
+    expect(req.request.body).toEqual(payload);
+    req.flush({ id, status: "Cancelled" } as any);
+  });
 });

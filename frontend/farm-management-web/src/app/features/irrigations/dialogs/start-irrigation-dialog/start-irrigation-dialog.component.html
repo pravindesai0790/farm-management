@@ -1,0 +1,51 @@
+<h2 mat-dialog-title class="dialog-title">
+  <mat-icon class="title-icon" color="primary">play_arrow</mat-icon>
+  <span>Start Irrigation Event</span>
+</h2>
+
+<mat-dialog-content class="dialog-content">
+  <div class="context-banner">
+    <div class="context-item">
+      <span class="context-label">Farm</span>
+      <strong class="context-value">{{ data.farmName }}</strong>
+    </div>
+    <div class="context-item">
+      <span class="context-label">Area</span>
+      <strong class="context-value">{{ data.farmAreaName }}</strong>
+    </div>
+  </div>
+
+  <p class="dialog-description">
+    Transition this irrigation event to <strong>In Progress</strong>.
+    You can optionally specify when watering actually started, or leave it blank to record current server time.
+  </p>
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="dialog-form">
+    <app-date-time-picker
+      formControlName="actualStartedAt"
+      label="Actual Start Date & Time (Optional)"
+      [required]="false"
+    />
+    <mat-hint class="d-block mt-1">Leave blank to automatically use current server time</mat-hint>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="dialog-actions">
+  <button mat-button type="button" (click)="onCancel()" [disabled]="isSubmitting()">
+    Cancel
+  </button>
+  <button
+    mat-flat-button
+    color="primary"
+    type="button"
+    (click)="onSubmit()"
+    [disabled]="isSubmitting()"
+  >
+    @if (isSubmitting()) {
+      <mat-spinner diameter="18" class="inline-spinner" />
+    } @else {
+      <mat-icon>play_circle</mat-icon>
+    }
+    Start Watering
+  </button>
+</mat-dialog-actions>

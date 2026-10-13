@@ -1,0 +1,315 @@
+<div class="page-container">
+  @if (isLoading()) {
+    <div class="loading-state">
+      <mat-spinner diameter="36" />
+      <p>Loading irrigation event details...</p>
+    </div>
+  } @else if (errorMessage()) {
+    <div class="error-state">
+      <mat-icon class="error-icon">error_outline</mat-icon>
+      <h3>Failed to load irrigation event</h3>
+      <p>{{ errorMessage() }}</p>
+      <div class="error-actions">
+        <button mat-flat-button color="primary" type="button" (click)="loadIrrigation()">
+          <mat-icon>refresh</mat-icon> Retry
+        </button>
+        <a mat-button routerLink="/irrigations">Back to List</a>
+      </div>
+    </div>
+  } @else if (irrigation(); as item) {
+    <!-- Header with Badges & Actions -->
+    <div class="section-heading">
+      <div class="heading-left">
+        <div class="title-row">
+          <h2>Irrigation Event Details</h2>
+          <span class="status-pill {{ getStatusClass(item.status) }}">
+            <span class="status-pill__dot"></span>
+            {{ getStatusLabel(item.status) }}
+          </span>
+          @if (item.isOverdue) {
+            <span class="status-pill status-pill--overdue">
+              <mat-icon class="pill-icon">warning</mat-icon>
+              Overdue
+            </span>
+          }
+        </div>
+        <p class="subtitle">
+          {{ item.farmName }} &bull; {{ item.farmAreaName }}
+          @if (item.plantationName) {
+            &bull; {{ item.plantationName }}
+          }
+        </p>
+      </div>
+
+      <!-- Action Toolbar -->
+      <div class="header-actions">
+        <a mat-button routerLink="/irrigations" class="back-link">
+          <mat-icon>arrow_back</mat-icon> Back to List
+        </a>
+
+        @if (!isTerminal()) {
+          @if (item.status === 'Draft' && permissionService.has("Irrigation.Update")) {
+            <button mat-stroked-button color="primary" type="button" (click)="onEdit()">
+              <mat-icon>edit</mat-icon> Edit Draft
+            </button>
+          }
+
+          @if (item.status === 'Draft' && permissionService.has("Irrigation.Schedule")) {
+            <button mat-stroked-button color="primary" type="button" (click)="onSchedule()">
+              <mat-icon>event</mat-icon> Schedule
+            </button>
+          }
+
+          @if (item.status === 'Scheduled' && permissionService.has("Irrigation.Schedule")) {
+            <button mat-stroked-button color="primary" type="button" (click)="onReschedule()">
+              <mat-icon>edit_calendar</mat-icon> Reschedule
+            </button>
+          }
+
+          @if ((item.status === 'Draft' || item.status === 'Scheduled') && permissionService.has("Irrigation.Start")) {
+            <button mat-stroked-button color="primary" type="button" (click)="onStart()">
+              <mat-icon>play_arrow</mat-icon> Start Watering
+            </button>
+          }
+
+          @if (permissionService.has("Irrigation.Complete")) {
+            <button mat-flat-button color="primary" type="button" (click)="onComplete()">
+              <mat-icon>check_circle</mat-icon> Complete
+            </button>
+          }
+
+          @if (permissionService.has("Irrigation.Cancel")) {
+            <button mat-button class="btn-cancel" type="button" (click)="onCancel()">
+              <mat-icon>cancel</mat-icon> Cancel
+            </button>
+          }
+        } @else {
+          <span class="terminal-badge">
+            <mat-icon class="lock-icon">lock</mat-icon>
+            {{ item.status === 'Completed' ? 'Completed Event (Read-only)' : 'Cancelled Event (Read-only)' }}
+          </span>
+        }
+      </div>
+    </div>
+
+    <!-- Cancellation Banner (if cancelled) -->
+    @if (item.status === 'Cancelled') {
+      <div class="cancellation-card">
+        <div class="cancellation-header">
+          <mat-icon color="warn">cancel</mat-icon>
+          <h3>Event Cancelled</h3>
+        </div>
+        <p class="cancellation-reason">
+          <strong>Reason:</strong> {{ item.cancellationReason || 'No reason specified' }}
+        </p>
+      </div>
+    }
+
+    <!-- Content Cards Grid -->
+    <div class="details-grid">
+      <!-- Card 1: Agronomic Location & Crop Context -->
+      <mat-card class="detail-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon class="card-icon" color="primary">place</mat-icon>
+            Location & Crop Context
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="property-list">
+            <div class="property-item">
+              <span class="property-label">Farm</span>
+              <strong class="property-value">{{ item.farmName }}</strong>
+            </div>
+            <div class="property-item">
+              <span class="property-label">Farm Area</span>
+              <strong class="property-value">{{ item.farmAreaName }}</strong>
+            </div>
+            <div class="property-item">
+              <span class="property-label">Plantation</span>
+              <strong class="property-value">{{ item.plantationName || 'None / Open Area' }}</strong>
+            </div>
+            <div class="property-item">
+              <span class="property-label">Crop Cycle</span>
+              <strong class="property-value">{{ item.cropCycleName || 'None / Inter-cycle' }}</strong>
+            </div>
+            <div class="property-item">
+              <span class="property-label">Cycle Stage</span>
+              <strong class="property-value">{{ item.cropCycleStageName || 'None' }}</strong>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Card 2: Planned vs Actual Operational Parameters -->
+      <mat-card class="detail-card card-span-2">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon class="card-icon" color="primary">compare_arrows</mat-icon>
+            Planned vs. Actual Execution
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="comparison-table">
+            <div class="comparison-row comparison-header">
+              <div class="col-param">Parameter</div>
+              <div class="col-planned">Planned Value</div>
+              <div class="col-actual">Actual Execution</div>
+            </div>
+
+            <!-- Timing -->
+            <div class="comparison-row">
+              <div class="col-param">
+                <mat-icon class="row-icon">schedule</mat-icon>
+                <span>Timing & Schedule</span>
+              </div>
+              <div class="col-planned">
+                @if (item.scheduledAt) {
+                  <div><span class="sub-label">Scheduled:</span> {{ item.scheduledAt | date:'medium' }}</div>
+                }
+                @if (item.plannedAt) {
+                  <div><span class="sub-label">Planned:</span> {{ item.plannedAt | date:'medium' }}</div>
+                }
+                @if (!item.scheduledAt && !item.plannedAt) {
+                  <span class="text-muted">—</span>
+                }
+              </div>
+              <div class="col-actual">
+                @if (item.actualStartedAt) {
+                  <div><span class="sub-label">Started:</span> {{ item.actualStartedAt | date:'medium' }}</div>
+                }
+                @if (item.actualEndedAt) {
+                  <div><span class="sub-label">Ended:</span> {{ item.actualEndedAt | date:'medium' }}</div>
+                }
+                @if (!item.actualStartedAt && !item.actualEndedAt) {
+                  <span class="text-muted">—</span>
+                }
+              </div>
+            </div>
+
+            <!-- Duration -->
+            <div class="comparison-row">
+              <div class="col-param">
+                <mat-icon class="row-icon">timer</mat-icon>
+                <span>Duration</span>
+              </div>
+              <div class="col-planned">
+                <span class="text-muted">—</span>
+              </div>
+              <div class="col-actual">
+                @if (item.actualDurationMinutes != null) {
+                  <strong class="highlight-val">{{ item.actualDurationMinutes }} minutes</strong>
+                } @else {
+                  <span class="text-muted">—</span>
+                }
+              </div>
+            </div>
+
+            <!-- Method -->
+            <div class="comparison-row">
+              <div class="col-param">
+                <mat-icon class="row-icon">water</mat-icon>
+                <span>Irrigation Method</span>
+              </div>
+              <div class="col-planned">
+                @if (item.irrigationMethodName) {
+                  <span>{{ item.irrigationMethodName }}</span>
+                } @else {
+                  <span class="text-muted">—</span>
+                }
+              </div>
+              <div class="col-actual">
+                @if (item.irrigationMethodName) {
+                  <strong class="highlight-val">{{ item.irrigationMethodName }}</strong>
+                } @else {
+                  <span class="text-muted">—</span>
+                }
+              </div>
+            </div>
+
+            <!-- Water Quantity -->
+            <div class="comparison-row">
+              <div class="col-param">
+                <mat-icon class="row-icon">opacity</mat-icon>
+                <span>Water Volume</span>
+              </div>
+              <div class="col-planned">
+                @if (item.plannedWaterQuantity != null) {
+                  <span>{{ item.plannedWaterQuantity | number:'1.0-2' }} {{ item.plannedWaterUnitSymbol || item.plannedWaterUnitName || '' }}</span>
+                } @else {
+                  <span class="text-muted">—</span>
+                }
+              </div>
+              <div class="col-actual">
+                @if (item.actualWaterQuantity != null) {
+                  <strong class="highlight-val water-actual">
+                    {{ item.actualWaterQuantity | number:'1.0-2' }} {{ item.actualWaterUnitSymbol || item.actualWaterUnitName || '' }}
+                  </strong>
+                } @else {
+                  <span class="text-muted">—</span>
+                }
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Card 3: Execution Notes (if present) -->
+      @if (item.notes) {
+        <mat-card class="detail-card card-full">
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon class="card-icon" color="primary">notes</mat-icon>
+              Notes & Field Observations
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <p class="notes-content">{{ item.notes }}</p>
+          </mat-card-content>
+        </mat-card>
+      }
+
+      <!-- Card 4: Audit & System History -->
+      <mat-card class="detail-card card-full">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon class="card-icon">history</mat-icon>
+            Audit & System Information
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="audit-grid">
+            <div class="audit-item">
+              <span class="audit-label">Event ID</span>
+              <span class="audit-val font-mono">{{ item.id }}</span>
+            </div>
+            <div class="audit-item">
+              <span class="audit-label">Created At</span>
+              <span class="audit-val">{{ item.createdAt | date:'medium' }}</span>
+            </div>
+            <div class="audit-item">
+              <span class="audit-label">Created By</span>
+              <span class="audit-val">{{ item.createdByName || item.createdBy }}</span>
+            </div>
+            @if (item.completedAt) {
+              <div class="audit-item">
+                <span class="audit-label">Completed At</span>
+                <span class="audit-val text-success">{{ item.completedAt | date:'medium' }}</span>
+              </div>
+            }
+            @if (item.updatedAt) {
+              <div class="audit-item">
+                <span class="audit-label">Last Updated At</span>
+                <span class="audit-val">{{ item.updatedAt | date:'medium' }}</span>
+              </div>
+              <div class="audit-item">
+                <span class="audit-label">Last Updated By</span>
+                <span class="audit-val">{{ item.updatedByName || item.updatedBy || '—' }}</span>
+              </div>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  }
+</div>

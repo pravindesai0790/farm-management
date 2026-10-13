@@ -1,0 +1,81 @@
+.dialog-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 16px 20px 12px;
+  font-size: 1.125rem;
+  font-weight: 600;
+
+  .title-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.dialog-content {
+  padding: 0 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.context-banner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  background-color: var(--surface-variant, #f4f6f8);
+  border: 1px solid var(--border-color, #e0e4e8);
+  border-radius: 8px;
+  padding: 10px 14px;
+
+  .context-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    .context-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted, #64748b);
+      font-weight: 600;
+    }
+
+    .context-value {
+      font-size: 0.875rem;
+      color: var(--text-color, #1e293b);
+
+      &.current-date {
+        color: var(--primary, #1b5e20);
+      }
+    }
+  }
+}
+
+.dialog-description {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted, #475569);
+  line-height: 1.45;
+}
+
+.dialog-form {
+  display: flex;
+  flex-direction: column;
+
+  .full-width {
+    width: 100%;
+  }
+}
+
+.dialog-actions {
+  padding: 12px 20px 16px;
+  gap: 8px;
+
+  .inline-spinner {
+    display: inline-block;
+    margin-right: 6px;
+  }
+}

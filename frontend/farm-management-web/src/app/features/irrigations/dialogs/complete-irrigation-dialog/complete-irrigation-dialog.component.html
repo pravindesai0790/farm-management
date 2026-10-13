@@ -1,0 +1,191 @@
+<h2 mat-dialog-title class="dialog-title">
+  <mat-icon class="title-icon" color="primary">check_circle</mat-icon>
+  <span>Complete Irrigation Event</span>
+</h2>
+
+<mat-dialog-content class="dialog-content">
+  <!-- Context & Planned Reference Strip -->
+  <div class="reference-banner">
+    <div class="reference-item">
+      <span class="reference-label">Farm / Area</span>
+      <strong class="reference-value">{{ data.irrigation.farmName }} &bull; {{ data.irrigation.farmAreaName }}</strong>
+    </div>
+    @if (data.irrigation.plantationName) {
+      <div class="reference-item">
+        <span class="reference-label">Plantation</span>
+        <strong class="reference-value">{{ data.irrigation.plantationName }}</strong>
+      </div>
+    }
+    @if (data.irrigation.cropCycleName) {
+      <div class="reference-item">
+        <span class="reference-label">Crop Cycle</span>
+        <strong class="reference-value">{{ data.irrigation.cropCycleName }}</strong>
+      </div>
+    }
+    <div class="reference-item">
+      <span class="reference-label">Planned Volume</span>
+      <strong class="reference-value">
+        @if (data.irrigation.plannedWaterQuantity != null) {
+          {{ data.irrigation.plannedWaterQuantity | number:'1.0-2' }} {{ data.irrigation.plannedWaterUnitSymbol || data.irrigation.plannedWaterUnitName || '' }}
+        } @else {
+          <span class="text-muted">None specified</span>
+        }
+      </strong>
+    </div>
+    @if (data.irrigation.irrigationMethodName) {
+      <div class="reference-item">
+        <span class="reference-label">Planned Method</span>
+        <strong class="reference-value">{{ data.irrigation.irrigationMethodName }}</strong>
+      </div>
+    }
+  </div>
+
+  @if (errorMessage()) {
+    <div class="error-banner">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  @if (isLoading()) {
+    <div class="dialog-loading">
+      <mat-spinner diameter="28" />
+      <span>Loading active irrigation methods & units...</span>
+    </div>
+  } @else {
+    <form [formGroup]="form" class="dialog-form">
+      <!-- Method & Manual Duration -->
+      <div class="form-row grid-2">
+        <!-- Irrigation Method (REQUIRED) -->
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Irrigation Method *</mat-label>
+          <mat-select formControlName="irrigationMethodId" placeholder="Select Method">
+            @for (m of methods(); track m.id) {
+              <mat-option [value]="m.id">{{ m.name }} ({{ m.code }})</mat-option>
+            }
+          </mat-select>
+          @if (form.get('irrigationMethodId')?.hasError('required') && form.get('irrigationMethodId')?.touched) {
+            <mat-error>Irrigation method is required for completion</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Duration (Minutes)</mat-label>
+          <input
+            matInput
+            type="number"
+            min="1"
+            step="1"
+            formControlName="actualDurationMinutes"
+            placeholder="e.g. 60"
+          />
+          <mat-icon matSuffix>timer</mat-icon>
+          <mat-hint>Manual entry, not derived</mat-hint>
+        </mat-form-field>
+      </div>
+
+      <!-- Actual Start & End DateTime Pickers -->
+      <div class="form-row">
+        <app-date-time-picker
+          class="full-width"
+          formControlName="actualStartedAt"
+          label="Actual Start"
+          dateLabel="Actual Start Date (Optional)"
+          timeLabel="Start Time"
+          [required]="false"
+        />
+      </div>
+
+      <div class="form-row">
+        <app-date-time-picker
+          class="full-width"
+          formControlName="actualEndedAt"
+          label="Actual End"
+          dateLabel="Actual End Date (Optional)"
+          timeLabel="End Time"
+          [required]="false"
+        />
+      </div>
+
+      @if (form.hasError('endBeforeStart')) {
+        <div class="field-warning">
+          <mat-icon>warning</mat-icon>
+          <span>End time cannot precede start time.</span>
+        </div>
+      }
+
+      <!-- Actual Water Quantity & Volume Unit -->
+      <div class="form-row grid-2">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Actual Water Quantity</mat-label>
+          <input
+            matInput
+            type="number"
+            min="0.01"
+            step="any"
+            formControlName="actualWaterQuantity"
+            placeholder="e.g. 1500"
+          />
+          <mat-icon matSuffix>opacity</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Volume Unit</mat-label>
+          <mat-select formControlName="actualWaterUnitId" placeholder="Select Unit">
+            <mat-option value="">None</mat-option>
+            @for (u of volumeUnits(); track u.id) {
+              <mat-option [value]="u.id">{{ u.name }} ({{ u.symbol }})</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      @if (form.hasError('waterUnitRequired')) {
+        <div class="field-warning">
+          <mat-icon>warning</mat-icon>
+          <span>Volume unit is required when actual water quantity is provided.</span>
+        </div>
+      }
+      @if (form.hasError('waterQuantityRequired')) {
+        <div class="field-warning">
+          <mat-icon>warning</mat-icon>
+          <span>Actual water quantity is required when volume unit is selected.</span>
+        </div>
+      }
+
+      <!-- Notes -->
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+          <mat-label>Execution Notes (Optional)</mat-label>
+          <textarea
+            matInput
+            rows="2"
+            formControlName="notes"
+            placeholder="Field observations, pump readings, or soil response"
+            maxlength="1000"
+          ></textarea>
+        </mat-form-field>
+      </div>
+    </form>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="dialog-actions">
+  <button mat-button type="button" (click)="onCancel()" [disabled]="isSubmitting()">
+    Cancel
+  </button>
+  <button
+    mat-flat-button
+    color="primary"
+    type="button"
+    (click)="onSubmit()"
+    [disabled]="form.invalid || isSubmitting() || isLoading()"
+  >
+    @if (isSubmitting()) {
+      <mat-spinner diameter="18" class="inline-spinner" />
+    } @else {
+      <mat-icon>check_circle</mat-icon>
+    }
+    Complete Event
+  </button>
+</mat-dialog-actions>

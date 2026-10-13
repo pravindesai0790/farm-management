@@ -32,4 +32,14 @@ export const IRRIGATION_ROUTES: Routes = [
         (m) => m.IrrigationEditorPageComponent,
       ),
   },
+  {
+    path: ":id",
+    title: "Irrigation Event Details",
+    canActivate: [permissionGuard],
+    data: { permission: "Irrigation.View" },
+    loadComponent: () =>
+      import("./irrigation-detail/irrigation-detail-page.component").then(
+        (m) => m.IrrigationDetailPageComponent,
+      ),
+  },
 ];

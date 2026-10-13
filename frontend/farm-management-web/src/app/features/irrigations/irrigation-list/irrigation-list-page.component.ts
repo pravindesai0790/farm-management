@@ -14,6 +14,7 @@ import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
 import { MatDatepickerModule } from "@angular/material/datepicker";
+import { MatDialog } from "@angular/material/dialog";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
@@ -27,6 +28,10 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
 import { Subject, debounceTime, distinctUntilChanged, finalize } from "rxjs";
 import { PermissionService } from "../../../core/auth/permission.service";
+import { CancelIrrigationDialogComponent } from "../dialogs/cancel-irrigation-dialog/cancel-irrigation-dialog.component";
+import { CompleteIrrigationDialogComponent } from "../dialogs/complete-irrigation-dialog/complete-irrigation-dialog.component";
+import { ScheduleIrrigationDialogComponent } from "../dialogs/schedule-irrigation-dialog/schedule-irrigation-dialog.component";
+import { StartIrrigationDialogComponent } from "../dialogs/start-irrigation-dialog/start-irrigation-dialog.component";
 import {
   CropCycle,
   CropCycleStage,
@@ -74,6 +79,7 @@ import { getApiErrorMessage } from "../../../core/models/api-error.model";
 export class IrrigationListPageComponent implements OnInit {
   private readonly irrigationService = inject(IrrigationService);
   private readonly farmService = inject(FarmManagementService);
+  private readonly dialog = inject(MatDialog);
   private readonly snack = inject(MatSnackBar);
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
@@ -117,8 +123,8 @@ export class IrrigationListPageComponent implements OnInit {
   readonly cropCycleStageId = signal("");
   readonly irrigationMethodId = signal("");
   readonly status = signal("");
-  readonly fromDate = signal("");
-  readonly toDate = signal("");
+  readonly fromDate = signal<Date | null>(null);
+  readonly toDate = signal<Date | null>(null);
   readonly includeOverdue = signal(false);
 
   private readonly searchSubject = new Subject<string>();
@@ -207,8 +213,8 @@ export class IrrigationListPageComponent implements OnInit {
       cropCycleStageId: this.cropCycleStageId() || undefined,
       irrigationMethodId: this.irrigationMethodId() || undefined,
       status: this.status() || undefined,
-      fromDate: this.fromDate() || undefined,
-      toDate: this.toDate() || undefined,
+      fromDate: this.formatDateParam(this.fromDate()),
+      toDate: this.formatDateParam(this.toDate()),
       search: this.search().trim() || undefined,
       includeOverdue: this.includeOverdue(),
     };
@@ -345,14 +351,35 @@ export class IrrigationListPageComponent implements OnInit {
     this.resetPageAndReload();
   }
 
-  onFromDateChange(value: Date | null): void {
-    this.fromDate.set(value ? value.toISOString().split("T")[0] : "");
+  onFromDateChange(value: Date | string | null): void {
+    this.fromDate.set(this.parseDateValue(value));
     this.resetPageAndReload();
   }
 
-  onToDateChange(value: Date | null): void {
-    this.toDate.set(value ? value.toISOString().split("T")[0] : "");
+  onToDateChange(value: Date | string | null): void {
+    this.toDate.set(this.parseDateValue(value));
     this.resetPageAndReload();
+  }
+
+  private parseDateValue(val: Date | string | null): Date | null {
+    if (!val) return null;
+    if (val instanceof Date) {
+      return isNaN(val.getTime()) ? null : val;
+    }
+    const parsed = new Date(val);
+    return isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  private formatDateParam(val: Date | string | null): string | undefined {
+    if (!val) return undefined;
+    if (typeof val === "string") {
+      return val.trim() || undefined;
+    }
+    if (isNaN(val.getTime())) return undefined;
+    const y = val.getFullYear();
+    const m = String(val.getMonth() + 1).padStart(2, "0");
+    const d = String(val.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
   }
 
   onSearchChange(value: string): void {
@@ -373,8 +400,8 @@ export class IrrigationListPageComponent implements OnInit {
     this.cropCycleStageId.set("");
     this.irrigationMethodId.set("");
     this.status.set("");
-    this.fromDate.set("");
-    this.toDate.set("");
+    this.fromDate.set(null);
+    this.toDate.set(null);
     this.includeOverdue.set(false);
     this.areas.set([]);
     this.plantations.set([]);
@@ -441,5 +468,84 @@ export class IrrigationListPageComponent implements OnInit {
       default:
         return status;
     }
+  }
+
+  // Row Action Dialog Openers
+  openScheduleDialog(row: IrrigationListItem, isReschedule: boolean = false): void {
+    const ref = this.dialog.open(ScheduleIrrigationDialogComponent, {
+      width: "500px",
+      data: {
+        irrigationId: row.id,
+        farmName: row.farmName,
+        farmAreaName: row.farmAreaName,
+        currentScheduledAt: row.scheduledAt,
+        isReschedule,
+      },
+    });
+
+    ref.afterClosed().subscribe((success) => {
+      if (success) {
+        this.loadAll();
+      }
+    });
+  }
+
+  openStartDialog(row: IrrigationListItem): void {
+    const ref = this.dialog.open(StartIrrigationDialogComponent, {
+      width: "480px",
+      data: {
+        irrigationId: row.id,
+        farmName: row.farmName,
+        farmAreaName: row.farmAreaName,
+      },
+    });
+
+    ref.afterClosed().subscribe((started) => {
+      if (started) {
+        this.loadAll();
+      }
+    });
+  }
+
+  openCompleteDialog(row: IrrigationListItem): void {
+    this.irrigationService.getIrrigation(row.id).subscribe({
+      next: (details) => {
+        const ref = this.dialog.open(CompleteIrrigationDialogComponent, {
+          width: "560px",
+          data: {
+            irrigation: details,
+          },
+        });
+
+        ref.afterClosed().subscribe((completed) => {
+          if (completed) {
+            this.loadAll();
+          }
+        });
+      },
+      error: (err) => {
+        this.snack.open(getApiErrorMessage(err, "Failed to load irrigation details."), "Dismiss", {
+          duration: 4000,
+        });
+      },
+    });
+  }
+
+  openCancelDialog(row: IrrigationListItem): void {
+    const ref = this.dialog.open(CancelIrrigationDialogComponent, {
+      width: "500px",
+      data: {
+        irrigationId: row.id,
+        farmName: row.farmName,
+        farmAreaName: row.farmAreaName,
+        currentStatus: row.status,
+      },
+    });
+
+    ref.afterClosed().subscribe((cancelled) => {
+      if (cancelled) {
+        this.loadAll();
+      }
+    });
   }
 }

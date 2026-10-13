@@ -4,12 +4,17 @@ import { Observable } from "rxjs";
 import { environment } from "../../../environments/environment";
 import { PagedResponse } from "../models/paged-response.model";
 import {
+  CancelIrrigationRequest,
+  CompleteIrrigationRequest,
   CreateIrrigationDraftRequest,
   IrrigationDetailsResponse,
   IrrigationListItem,
   IrrigationListQuery,
   IrrigationMethodDto,
   IrrigationSummaryCounts,
+  RescheduleIrrigationRequest,
+  ScheduleIrrigationRequest,
+  StartIrrigationRequest,
   UpdateIrrigationDraftRequest,
 } from "./irrigation.models";
 
@@ -67,5 +72,25 @@ export class IrrigationService {
 
   getCropCycleStages(cropCycleId: string): Observable<readonly import("../farm-management/farm-management.models").CropCycleStage[]> {
     return this.http.get<readonly import("../farm-management/farm-management.models").CropCycleStage[]>(`${environment.apiUrl}/crop-cycles/${cropCycleId}/stages`);
+  }
+
+  schedule(id: string, request: ScheduleIrrigationRequest): Observable<IrrigationDetailsResponse> {
+    return this.http.post<IrrigationDetailsResponse>(`${this.api}/${id}/schedule`, request);
+  }
+
+  reschedule(id: string, request: RescheduleIrrigationRequest): Observable<IrrigationDetailsResponse> {
+    return this.http.post<IrrigationDetailsResponse>(`${this.api}/${id}/reschedule`, request);
+  }
+
+  start(id: string, request: StartIrrigationRequest): Observable<IrrigationDetailsResponse> {
+    return this.http.post<IrrigationDetailsResponse>(`${this.api}/${id}/start`, request);
+  }
+
+  complete(id: string, request: CompleteIrrigationRequest): Observable<IrrigationDetailsResponse> {
+    return this.http.post<IrrigationDetailsResponse>(`${this.api}/${id}/complete`, request);
+  }
+
+  cancel(id: string, request: CancelIrrigationRequest): Observable<IrrigationDetailsResponse> {
+    return this.http.post<IrrigationDetailsResponse>(`${this.api}/${id}/cancel`, request);
   }
 }

@@ -1,0 +1,64 @@
+<h2 mat-dialog-title class="dialog-title text-warn">
+  <mat-icon class="title-icon">warning</mat-icon>
+  <span>Cancel Irrigation Event</span>
+</h2>
+
+<mat-dialog-content class="dialog-content">
+  <div class="context-banner">
+    <div class="context-item">
+      <span class="context-label">Farm</span>
+      <strong class="context-value">{{ data.farmName }}</strong>
+    </div>
+    <div class="context-item">
+      <span class="context-label">Area</span>
+      <strong class="context-value">{{ data.farmAreaName }}</strong>
+    </div>
+    <div class="context-item">
+      <span class="context-label">Status</span>
+      <strong class="context-value">{{ data.currentStatus }}</strong>
+    </div>
+  </div>
+
+  <div class="warning-callout">
+    <mat-icon>info</mat-icon>
+    <span>
+      Cancelling this irrigation event is a <strong>terminal action</strong>. Once cancelled, this event cannot be rescheduled, started, or edited.
+    </span>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="dialog-form">
+    <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+      <mat-label>Cancellation Reason *</mat-label>
+      <textarea
+        matInput
+        rows="3"
+        formControlName="reason"
+        placeholder="Provide the operational or agronomic reason for cancellation (e.g., rainfall, pump failure, schedule change)"
+        maxlength="1000"
+      ></textarea>
+      @if (form.get('reason')?.hasError('required') && form.get('reason')?.touched) {
+        <mat-error>Cancellation reason is required</mat-error>
+      }
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="dialog-actions">
+  <button mat-button type="button" (click)="onCancel()" [disabled]="isSubmitting()">
+    Keep Event
+  </button>
+  <button
+    mat-flat-button
+    color="warn"
+    type="button"
+    (click)="onSubmit()"
+    [disabled]="form.invalid || isSubmitting()"
+  >
+    @if (isSubmitting()) {
+      <mat-spinner diameter="18" class="inline-spinner" />
+    } @else {
+      <mat-icon>cancel</mat-icon>
+    }
+    Confirm Cancellation
+  </button>
+</mat-dialog-actions>

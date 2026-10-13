@@ -193,7 +193,7 @@
         <input
           matInput
           [matDatepicker]="fromPicker"
-          [ngModel]="fromDate()"
+          [value]="fromDate()"
           (dateChange)="onFromDateChange($event.value)"
           placeholder="MM/DD/YYYY"
         />
@@ -206,7 +206,7 @@
         <input
           matInput
           [matDatepicker]="toPicker"
-          [ngModel]="toDate()"
+          [value]="toDate()"
           (dateChange)="onToDateChange($event.value)"
           placeholder="MM/DD/YYYY"
         />
@@ -404,13 +404,13 @@
                     Edit
                   </a>
                 } @else if (s.status === 'Scheduled' && permissionService.has("Irrigation.Start")) {
-                  <a mat-button color="primary" class="action-btn action-btn-primary" [routerLink]="['/irrigations', s.id, 'start']" matTooltip="Start Watering">
+                  <button mat-button color="primary" class="action-btn action-btn-primary" (click)="openStartDialog(s)" matTooltip="Start Watering">
                     Start
-                  </a>
+                  </button>
                 } @else if (s.status === 'InProgress' && permissionService.has("Irrigation.Complete")) {
-                  <a mat-button color="primary" class="action-btn action-btn-primary" [routerLink]="['/irrigations', s.id, 'complete']" matTooltip="Complete Event">
+                  <button mat-button color="primary" class="action-btn action-btn-primary" (click)="openCompleteDialog(s)" matTooltip="Complete Event">
                     Complete
-                  </a>
+                  </button>
                 } @else {
                   <a mat-button class="action-btn" [routerLink]="['/irrigations', s.id]" matTooltip="View Details">
                     View
@@ -438,33 +438,33 @@
                   }
 
                   @if (s.status === 'Draft' && permissionService.has("Irrigation.Schedule")) {
-                    <a mat-menu-item [routerLink]="['/irrigations', s.id, 'schedule']">
+                    <button mat-menu-item type="button" (click)="openScheduleDialog(s, false)">
                       <mat-icon>event</mat-icon> Schedule
-                    </a>
+                    </button>
                   }
 
                   @if (s.status === 'Scheduled' && permissionService.has("Irrigation.Schedule")) {
-                    <a mat-menu-item [routerLink]="['/irrigations', s.id, 'reschedule']">
+                    <button mat-menu-item type="button" (click)="openScheduleDialog(s, true)">
                       <mat-icon>edit_calendar</mat-icon> Reschedule
-                    </a>
+                    </button>
                   }
 
                   @if ((s.status === 'Draft' || s.status === 'Scheduled') && permissionService.has("Irrigation.Start")) {
-                    <a mat-menu-item [routerLink]="['/irrigations', s.id, 'start']">
+                    <button mat-menu-item type="button" (click)="openStartDialog(s)">
                       <mat-icon>play_arrow</mat-icon> Start
-                    </a>
+                    </button>
                   }
 
                   @if (s.status !== 'Completed' && s.status !== 'Cancelled' && permissionService.has("Irrigation.Complete")) {
-                    <a mat-menu-item [routerLink]="['/irrigations', s.id, 'complete']">
+                    <button mat-menu-item type="button" (click)="openCompleteDialog(s)">
                       <mat-icon>check_circle</mat-icon> Complete
-                    </a>
+                    </button>
                   }
 
                   @if (s.status !== 'Completed' && s.status !== 'Cancelled' && permissionService.has("Irrigation.Cancel")) {
-                    <a mat-menu-item [routerLink]="['/irrigations', s.id, 'cancel']">
+                    <button mat-menu-item type="button" (click)="openCancelDialog(s)">
                       <mat-icon class="text-warn">cancel</mat-icon> Cancel
-                    </a>
+                    </button>
                   }
                 </mat-menu>
               </div>

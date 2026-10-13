@@ -1,0 +1,60 @@
+<h2 mat-dialog-title class="dialog-title">
+  <mat-icon class="title-icon" color="primary">{{ data.isReschedule ? 'edit_calendar' : 'event' }}</mat-icon>
+  <span>{{ data.isReschedule ? 'Reschedule Irrigation Event' : 'Schedule Irrigation Event' }}</span>
+</h2>
+
+<mat-dialog-content class="dialog-content">
+  <div class="context-banner">
+    <div class="context-item">
+      <span class="context-label">Farm</span>
+      <strong class="context-value">{{ data.farmName }}</strong>
+    </div>
+    <div class="context-item">
+      <span class="context-label">Area</span>
+      <strong class="context-value">{{ data.farmAreaName }}</strong>
+    </div>
+    @if (data.isReschedule && data.currentScheduledAt) {
+      <div class="context-item">
+        <span class="context-label">Current Schedule</span>
+        <strong class="context-value current-date">{{ data.currentScheduledAt | date:'medium' }}</strong>
+      </div>
+    }
+  </div>
+
+  <p class="dialog-description">
+    {{ data.isReschedule 
+      ? 'Select a new scheduled date and time. Rescheduling updates this event record while preserving its full audit history.' 
+      : 'Set the scheduled date and time for field watering. Past and future dates are both supported.' }}
+  </p>
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="dialog-form">
+    <app-date-time-picker
+      formControlName="scheduledAt"
+      [label]="data.isReschedule ? 'Rescheduled Date & Time' : 'Scheduled Date & Time'"
+      [required]="true"
+    />
+    @if (form.get('scheduledAt')?.hasError('required') && form.get('scheduledAt')?.touched) {
+      <mat-error class="d-block mt-1">Scheduled date and time is required</mat-error>
+    }
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="dialog-actions">
+  <button mat-button type="button" (click)="onCancel()" [disabled]="isSubmitting()">
+    Cancel
+  </button>
+  <button
+    mat-flat-button
+    color="primary"
+    type="button"
+    (click)="onSubmit()"
+    [disabled]="form.invalid || isSubmitting()"
+  >
+    @if (isSubmitting()) {
+      <mat-spinner diameter="18" class="inline-spinner" />
+    } @else {
+      <mat-icon>{{ data.isReschedule ? 'update' : 'event_available' }}</mat-icon>
+    }
+    {{ data.isReschedule ? 'Reschedule' : 'Schedule' }}
+  </button>
+</mat-dialog-actions>

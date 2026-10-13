@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from "@angular/core/testing";
 import { provideNativeDateAdapter } from "@angular/material/core";
+import { MatDialog } from "@angular/material/dialog";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { provideRouter } from "@angular/router";
@@ -22,6 +23,7 @@ describe("IrrigationListPageComponent", () => {
   let mockIrrigationService: jasmine.SpyObj<IrrigationService>;
   let mockFarmService: jasmine.SpyObj<FarmManagementService>;
   let mockPermissionService: jasmine.SpyObj<PermissionService>;
+  let mockDialog: jasmine.SpyObj<MatDialog>;
   let mockSnackBar: jasmine.SpyObj<MatSnackBar>;
 
   const sampleIrrigationItem: IrrigationListItem = {
@@ -93,6 +95,7 @@ describe("IrrigationListPageComponent", () => {
       "getSummaryCounts",
       "getMethods",
       "getCropCycleStages",
+      "getIrrigation",
     ]);
     mockFarmService = jasmine.createSpyObj("FarmManagementService", [
       "listFarms",
@@ -101,6 +104,7 @@ describe("IrrigationListPageComponent", () => {
       "listCycles",
     ]);
     mockPermissionService = jasmine.createSpyObj("PermissionService", ["has", "hasAny"]);
+    mockDialog = jasmine.createSpyObj("MatDialog", ["open"]);
     mockSnackBar = jasmine.createSpyObj("MatSnackBar", ["open"]);
 
     mockPermissionService.has.and.returnValue(true);
@@ -112,6 +116,7 @@ describe("IrrigationListPageComponent", () => {
     mockIrrigationService.getMethods.and.returnValue(of(sampleMethods));
     mockIrrigationService.getSummaryCounts.and.returnValue(of(sampleSummary));
     mockIrrigationService.listIrrigations.and.returnValue(of(sampleListResponse));
+    mockIrrigationService.getIrrigation.and.returnValue(of(sampleIrrigationItem as any));
 
     await TestBed.configureTestingModule({
       imports: [IrrigationListPageComponent, NoopAnimationsModule],
@@ -121,6 +126,7 @@ describe("IrrigationListPageComponent", () => {
         { provide: IrrigationService, useValue: mockIrrigationService },
         { provide: FarmManagementService, useValue: mockFarmService },
         { provide: PermissionService, useValue: mockPermissionService },
+        { provide: MatDialog, useValue: mockDialog },
         { provide: MatSnackBar, useValue: mockSnackBar },
       ],
     }).compileComponents();
@@ -228,13 +234,33 @@ describe("IrrigationListPageComponent", () => {
     expect(component.status()).toBe("");
   });
 
+  it("should filter by fromDate and toDate using local YYYY-MM-DD format without timezone shift", () => {
+    const selectedFrom = new Date(2026, 9, 15, 0, 0, 0); // Oct 15, 2026 local midnight
+    const selectedTo = new Date(2026, 9, 20, 0, 0, 0);   // Oct 20, 2026 local midnight
+
+    component.onFromDateChange(selectedFrom);
+    expect(component.fromDate()).toEqual(selectedFrom);
+    expect(mockIrrigationService.listIrrigations).toHaveBeenCalledWith(
+      jasmine.objectContaining({ fromDate: "2026-10-15" }),
+    );
+
+    component.onToDateChange(selectedTo);
+    expect(component.toDate()).toEqual(selectedTo);
+    expect(mockIrrigationService.listIrrigations).toHaveBeenCalledWith(
+      jasmine.objectContaining({ fromDate: "2026-10-15", toDate: "2026-10-20" }),
+    );
+  });
+
   it("should clear all filters when clearFilters is called", () => {
     component.onStatusChange("Scheduled");
+    component.onFromDateChange(new Date(2026, 9, 15));
     component.toggleIncludeOverdue();
     expect(component.hasActiveFilters()).toBeTrue();
 
     component.clearFilters();
     expect(component.status()).toBe("");
+    expect(component.fromDate()).toBeNull();
+    expect(component.toDate()).toBeNull();
     expect(component.includeOverdue()).toBeFalse();
     expect(component.hasActiveFilters()).toBeFalse();
   });
@@ -295,5 +321,52 @@ describe("IrrigationListPageComponent", () => {
     const buttons = nativeElement.querySelectorAll(".header-actions a");
     expect(buttons.length).toBe(1);
     expect(buttons[0]?.textContent).toContain("Plan Irrigation");
+  });
+
+  describe("Row Action Dialogs", () => {
+    it("should open schedule dialog and reload list on success", () => {
+      const dialogRefSpy = jasmine.createSpyObj({ afterClosed: of(true) });
+      mockDialog.open.and.returnValue(dialogRefSpy);
+      spyOn(component, "loadAll");
+
+      component.openScheduleDialog(sampleIrrigationItem, false);
+
+      expect(mockDialog.open).toHaveBeenCalled();
+      expect(component.loadAll).toHaveBeenCalled();
+    });
+
+    it("should open start dialog and reload list on success", () => {
+      const dialogRefSpy = jasmine.createSpyObj({ afterClosed: of(true) });
+      mockDialog.open.and.returnValue(dialogRefSpy);
+      spyOn(component, "loadAll");
+
+      component.openStartDialog(sampleIrrigationItem);
+
+      expect(mockDialog.open).toHaveBeenCalled();
+      expect(component.loadAll).toHaveBeenCalled();
+    });
+
+    it("should open complete dialog and reload list on success", () => {
+      const dialogRefSpy = jasmine.createSpyObj({ afterClosed: of(true) });
+      mockDialog.open.and.returnValue(dialogRefSpy);
+      spyOn(component, "loadAll");
+
+      component.openCompleteDialog(sampleIrrigationItem);
+
+      expect(mockIrrigationService.getIrrigation).toHaveBeenCalledWith(sampleIrrigationItem.id);
+      expect(mockDialog.open).toHaveBeenCalled();
+      expect(component.loadAll).toHaveBeenCalled();
+    });
+
+    it("should open cancel dialog and reload list on success", () => {
+      const dialogRefSpy = jasmine.createSpyObj({ afterClosed: of(true) });
+      mockDialog.open.and.returnValue(dialogRefSpy);
+      spyOn(component, "loadAll");
+
+      component.openCancelDialog(sampleIrrigationItem);
+
+      expect(mockDialog.open).toHaveBeenCalled();
+      expect(component.loadAll).toHaveBeenCalled();
+    });
   });
 });

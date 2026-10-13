@@ -167,18 +167,14 @@
             </mat-select>
           </mat-form-field>
 
-          <!-- Planned Date -->
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Planned Date (Optional)</mat-label>
-            <input
-              matInput
-              [matDatepicker]="plannedDatePicker"
-              formControlName="plannedAt"
-              placeholder="Choose a date"
-            />
-            <mat-datepicker-toggle matIconSuffix [for]="plannedDatePicker"></mat-datepicker-toggle>
-            <mat-datepicker #plannedDatePicker></mat-datepicker>
-          </mat-form-field>
+          <!-- Planned Date & Time -->
+          <app-date-time-picker
+            formControlName="plannedAt"
+            label="Planned"
+            dateLabel="Planned Date (Optional)"
+            timeLabel="Planned Time"
+            [required]="false"
+          />
 
           <!-- Planned Water Volume & Unit pair -->
           <div class="water-volume-group">

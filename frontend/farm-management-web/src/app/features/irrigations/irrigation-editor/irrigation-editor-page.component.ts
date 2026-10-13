@@ -48,6 +48,7 @@ import {
   UpdateIrrigationDraftRequest,
 } from "../../../core/irrigations/irrigation.models";
 import { IrrigationService } from "../../../core/irrigations/irrigation.service";
+import { DateTimePickerComponent } from "../../../shared/components/date-time-picker/date-time-picker.component";
 
 /**
  * Validates water quantity and unit coupling:
@@ -86,6 +87,7 @@ export const waterQuantityAndUnitValidator: ValidatorFn = (
     MatProgressSpinnerModule,
     MatSelectModule,
     ReactiveFormsModule,
+    DateTimePickerComponent,
   ],
   templateUrl: "./irrigation-editor-page.component.html",
   styleUrl: "./irrigation-editor-page.component.scss",
@@ -126,7 +128,7 @@ export class IrrigationEditorPageComponent implements OnInit {
       cropCycleId: [""],
       cropCycleStageId: [""],
       irrigationMethodId: [""],
-      plannedAt: [""],
+      plannedAt: [null as string | null],
       plannedWaterQuantity: [null as number | null, [Validators.min(0.01)]],
       plannedWaterUnitId: [""],
       notes: ["", [Validators.maxLength(1000)]],
@@ -211,7 +213,7 @@ export class IrrigationEditorPageComponent implements OnInit {
       cropCycleId: event.cropCycleId || "",
       cropCycleStageId: event.cropCycleStageId || "",
       irrigationMethodId: event.irrigationMethodId || "",
-      plannedAt: event.plannedAt || "",
+      plannedAt: event.plannedAt || null,
       plannedWaterQuantity: event.plannedWaterQuantity,
       plannedWaterUnitId: event.plannedWaterUnitId || "",
       notes: event.notes || "",
