@@ -137,6 +137,10 @@ public sealed record RescheduleIrrigationRequest(
 
 public sealed record StartIrrigationRequest(
     DateTimeOffset? ActualStartedAt = null,
+    Guid? FarmAreaId = null,
+    Guid? PlantationId = null,
+    Guid? CropCycleId = null,
+    Guid? CropCycleStageId = null,
     string? ConcurrencyToken = null);
 
 public sealed record CompleteIrrigationRequest(
@@ -146,6 +150,10 @@ public sealed record CompleteIrrigationRequest(
     int? ActualDurationMinutes = null,
     decimal? ActualWaterQuantity = null,
     Guid? ActualWaterUnitId = null,
+    Guid? FarmAreaId = null,
+    Guid? PlantationId = null,
+    Guid? CropCycleId = null,
+    Guid? CropCycleStageId = null,
     string? Notes = null,
     string? ConcurrencyToken = null);
 

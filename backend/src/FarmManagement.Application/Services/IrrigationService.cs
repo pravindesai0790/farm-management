@@ -174,9 +174,9 @@ public sealed class IrrigationService(IIrrigationStore store) : IIrrigationServi
         var irrigation = await store.FindAsync(id, actor.OrganizationId, cancellationToken)
             ?? throw new ResourceNotFoundException("The irrigation event was not found.");
 
-        if (irrigation.Status != IrrigationStatus.Draft)
+        if (irrigation.Status != IrrigationStatus.Draft && irrigation.Status != IrrigationStatus.Scheduled)
         {
-            throw new ConflictException("Only draft irrigation events can be updated.");
+            throw new ConflictException($"Only draft or scheduled irrigation events can be updated; current status is '{irrigation.Status}'.");
         }
 
         ValidateConcurrencyToken(irrigation, request.ConcurrencyToken);
@@ -357,12 +357,38 @@ public sealed class IrrigationService(IIrrigationStore store) : IIrrigationServi
 
         ValidateConcurrencyToken(irrigation, request.ConcurrencyToken);
 
-        if (irrigation.Status != IrrigationStatus.Draft && irrigation.Status != IrrigationStatus.Scheduled)
+        if (irrigation.Status != IrrigationStatus.Scheduled)
         {
-            throw new ConflictException($"Cannot start an irrigation event in '{irrigation.Status}' status; allowed transitions are from Draft or Scheduled.");
+            throw new ConflictException($"Cannot start an irrigation event in '{irrigation.Status}' status; only scheduled irrigation events can be started.");
         }
 
         var now = DateTimeOffset.UtcNow;
+
+        if (request.FarmAreaId.HasValue || request.PlantationId.HasValue || request.CropCycleId.HasValue || request.CropCycleStageId.HasValue)
+        {
+            var targetAreaId = request.FarmAreaId ?? irrigation.FarmAreaId;
+            var targetPlantationId = request.FarmAreaId.HasValue ? request.PlantationId : (request.PlantationId ?? irrigation.PlantationId);
+            var targetCropCycleId = request.FarmAreaId.HasValue ? request.CropCycleId : (request.CropCycleId ?? irrigation.CropCycleId);
+            var targetCropCycleStageId = request.FarmAreaId.HasValue ? request.CropCycleStageId : (request.CropCycleStageId ?? irrigation.CropCycleStageId);
+
+            await ValidateHierarchyAsync(
+                actor.OrganizationId,
+                irrigation.FarmId,
+                targetAreaId,
+                targetPlantationId,
+                targetCropCycleId,
+                targetCropCycleStageId,
+                cancellationToken);
+
+            irrigation.UpdateLocationContext(
+                targetAreaId,
+                targetPlantationId,
+                targetCropCycleId,
+                targetCropCycleStageId,
+                now,
+                actor.UserId);
+        }
+
         irrigation.Start(request.ActualStartedAt, now, actor.UserId);
 
         AddAudit(
@@ -373,6 +399,10 @@ public sealed class IrrigationService(IIrrigationStore store) : IIrrigationServi
             {
                 irrigation.Id,
                 irrigation.FarmId,
+                irrigation.FarmAreaId,
+                irrigation.PlantationId,
+                irrigation.CropCycleId,
+                irrigation.CropCycleStageId,
                 irrigation.ActualStartedAt,
                 Status = irrigation.Status.ToString().ToUpperInvariant()
             },
@@ -403,9 +433,9 @@ public sealed class IrrigationService(IIrrigationStore store) : IIrrigationServi
 
         ValidateConcurrencyToken(irrigation, request.ConcurrencyToken);
 
-        if (irrigation.Status == IrrigationStatus.Completed || irrigation.Status == IrrigationStatus.Cancelled)
+        if (irrigation.Status != IrrigationStatus.InProgress)
         {
-            throw new ConflictException($"Cannot complete an irrigation event with terminal status '{irrigation.Status}'.");
+            throw new ConflictException($"Only in-progress irrigation events can be completed; current status is '{irrigation.Status}'.");
         }
 
         if (request.IrrigationMethodId == Guid.Empty)
@@ -429,8 +459,36 @@ public sealed class IrrigationService(IIrrigationStore store) : IIrrigationServi
 
         var now = DateTimeOffset.UtcNow;
 
+        var targetAreaId = request.FarmAreaId ?? irrigation.FarmAreaId;
+        var targetPlantationId = request.FarmAreaId.HasValue ? request.PlantationId : (request.PlantationId ?? irrigation.PlantationId);
+        var targetCropCycleId = request.FarmAreaId.HasValue ? request.CropCycleId : (request.CropCycleId ?? irrigation.CropCycleId);
+        var targetCropCycleStageId = request.FarmAreaId.HasValue ? request.CropCycleStageId : (request.CropCycleStageId ?? irrigation.CropCycleStageId);
+
+        if (request.FarmAreaId.HasValue || request.PlantationId.HasValue || request.CropCycleId.HasValue || request.CropCycleStageId.HasValue)
+        {
+            await ValidateHierarchyAsync(
+                actor.OrganizationId,
+                irrigation.FarmId,
+                targetAreaId,
+                targetPlantationId,
+                targetCropCycleId,
+                targetCropCycleStageId,
+                cancellationToken);
+        }
+
         await store.ExecuteInTransactionAsync(async ct =>
         {
+            if (request.FarmAreaId.HasValue || request.PlantationId.HasValue || request.CropCycleId.HasValue || request.CropCycleStageId.HasValue)
+            {
+                irrigation.UpdateLocationContext(
+                    targetAreaId,
+                    targetPlantationId,
+                    targetCropCycleId,
+                    targetCropCycleStageId,
+                    now,
+                    actor.UserId);
+            }
+
             irrigation.Complete(
                 irrigationMethodId: request.IrrigationMethodId,
                 actualStartedAt: effectiveStartedAt,
@@ -450,6 +508,10 @@ public sealed class IrrigationService(IIrrigationStore store) : IIrrigationServi
                 {
                     irrigation.Id,
                     irrigation.FarmId,
+                    irrigation.FarmAreaId,
+                    irrigation.PlantationId,
+                    irrigation.CropCycleId,
+                    irrigation.CropCycleStageId,
                     irrigation.IrrigationMethodId,
                     irrigation.ActualStartedAt,
                     irrigation.ActualEndedAt,

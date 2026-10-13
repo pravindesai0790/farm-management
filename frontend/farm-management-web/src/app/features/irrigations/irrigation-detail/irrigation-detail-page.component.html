@@ -48,9 +48,9 @@
         </a>
 
         @if (!isTerminal()) {
-          @if (item.status === 'Draft' && permissionService.has("Irrigation.Update")) {
+          @if ((item.status === 'Draft' || item.status === 'Scheduled') && permissionService.has("Irrigation.Update")) {
             <button mat-stroked-button color="primary" type="button" (click)="onEdit()">
-              <mat-icon>edit</mat-icon> Edit Draft
+              <mat-icon>edit</mat-icon> {{ item.status === 'Draft' ? 'Edit Draft' : 'Edit Event' }}
             </button>
           }
 
@@ -66,13 +66,13 @@
             </button>
           }
 
-          @if ((item.status === 'Draft' || item.status === 'Scheduled') && permissionService.has("Irrigation.Start")) {
+          @if (item.status === 'Scheduled' && permissionService.has("Irrigation.Start")) {
             <button mat-stroked-button color="primary" type="button" (click)="onStart()">
               <mat-icon>play_arrow</mat-icon> Start Watering
             </button>
           }
 
-          @if (permissionService.has("Irrigation.Complete")) {
+          @if (item.status === 'InProgress' && permissionService.has("Irrigation.Complete")) {
             <button mat-flat-button color="primary" type="button" (click)="onComplete()">
               <mat-icon>check_circle</mat-icon> Complete
             </button>

@@ -19,6 +19,35 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
+  max-width: 600px;
+}
+
+.section-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted, #64748b);
+  margin-top: 6px;
+  margin-bottom: 2px;
+}
+
+.form-grid {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 4px;
+
+  &.grid-2 {
+    grid-template-columns: 1fr 1fr;
+
+    @media (max-width: 540px) {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+.start-time-picker-row {
+  margin-top: 6px;
 }
 
 .context-banner {

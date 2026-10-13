@@ -152,7 +152,7 @@
         </mat-card-subtitle>
       </mat-card-header>
       <mat-card-content>
-        <div class="fields-grid grid-3">
+        <div class="fields-grid grid-2">
           <!-- Method -->
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>Irrigation Method (Optional)</mat-label>
@@ -166,15 +166,6 @@
               }
             </mat-select>
           </mat-form-field>
-
-          <!-- Planned Date & Time -->
-          <app-date-time-picker
-            formControlName="plannedAt"
-            label="Planned"
-            dateLabel="Planned Date (Optional)"
-            timeLabel="Planned Time"
-            [required]="false"
-          />
 
           <!-- Planned Water Volume & Unit pair -->
           <div class="water-volume-group">
@@ -199,6 +190,19 @@
                 }
               </mat-select>
             </mat-form-field>
+          </div>
+        </div>
+
+        <!-- Planned Date & Time -->
+        <div class="fields-grid grid-2 planned-date-row">
+          <div>
+            <app-date-time-picker
+              formControlName="plannedAt"
+              label="Planned Date & Time"
+              dateLabel="Planned Date (Optional)"
+              timeLabel="Planned Time"
+              [required]="false"
+            />
           </div>
         </div>
 

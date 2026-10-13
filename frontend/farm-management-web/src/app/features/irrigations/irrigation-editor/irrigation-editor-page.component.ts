@@ -185,9 +185,9 @@ export class IrrigationEditorPageComponent implements OnInit {
         next: (event) => {
           this.irrigationDetails.set(event);
 
-          if (event.status !== "Draft") {
+          if (event.status !== "Draft" && event.status !== "Scheduled") {
             this.snack.open(
-              `Cannot edit irrigation event in status "${event.status}". Only Draft events can be edited.`,
+              `Cannot edit irrigation event in status "${event.status}". Only Draft and Scheduled events can be edited.`,
               "OK",
               { duration: 5000 },
             );

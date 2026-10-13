@@ -153,6 +153,10 @@ export interface RescheduleIrrigationRequest {
 
 export interface StartIrrigationRequest {
   readonly actualStartedAt?: string | null;
+  readonly farmAreaId?: string | null;
+  readonly plantationId?: string | null;
+  readonly cropCycleId?: string | null;
+  readonly cropCycleStageId?: string | null;
   readonly concurrencyToken?: string | null;
 }
 
@@ -163,6 +167,10 @@ export interface CompleteIrrigationRequest {
   readonly actualDurationMinutes?: number | null;
   readonly actualWaterQuantity?: number | null;
   readonly actualWaterUnitId?: string | null;
+  readonly farmAreaId?: string | null;
+  readonly plantationId?: string | null;
+  readonly cropCycleId?: string | null;
+  readonly cropCycleStageId?: string | null;
   readonly notes?: string | null;
   readonly concurrencyToken?: string | null;
 }

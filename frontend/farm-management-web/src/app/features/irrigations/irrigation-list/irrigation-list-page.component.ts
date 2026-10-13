@@ -492,11 +492,16 @@ export class IrrigationListPageComponent implements OnInit {
 
   openStartDialog(row: IrrigationListItem): void {
     const ref = this.dialog.open(StartIrrigationDialogComponent, {
-      width: "480px",
+      width: "560px",
       data: {
         irrigationId: row.id,
+        farmId: row.farmId,
         farmName: row.farmName,
+        farmAreaId: row.farmAreaId,
         farmAreaName: row.farmAreaName,
+        plantationId: row.plantationId,
+        cropCycleId: row.cropCycleId,
+        cropCycleStageId: row.cropCycleStageId,
       },
     });
 

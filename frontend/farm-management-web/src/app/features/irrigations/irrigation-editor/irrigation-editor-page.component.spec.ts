@@ -458,18 +458,28 @@ describe("IrrigationEditorPageComponent", () => {
       expect(component.form.value.notes).toBe("Initial draft plan");
     });
 
-    it("should redirect to detail page if event is not in Draft status", () => {
+    it("should redirect to detail page if event is in non-editable status (such as InProgress or Completed)", () => {
+      const inProgressEvent = { ...sampleDraftEvent, status: "InProgress" as any };
+      mockIrrigationService.getIrrigation.and.returnValue(of(inProgressEvent));
+
+      component["loadExistingIrrigation"]("irr-123");
+
+      expect(mockSnackBar.open).toHaveBeenCalledWith(
+        'Cannot edit irrigation event in status "InProgress". Only Draft and Scheduled events can be edited.',
+        "OK",
+        jasmine.any(Object),
+      );
+      expect(mockRouter.navigate).toHaveBeenCalledWith(["/irrigations", "irr-123"]);
+    });
+
+    it("should allow editing when event is in Scheduled status", () => {
       const scheduledEvent = { ...sampleDraftEvent, status: "Scheduled" as any };
       mockIrrigationService.getIrrigation.and.returnValue(of(scheduledEvent));
 
       component["loadExistingIrrigation"]("irr-123");
 
-      expect(mockSnackBar.open).toHaveBeenCalledWith(
-        'Cannot edit irrigation event in status "Scheduled". Only Draft events can be edited.',
-        "OK",
-        jasmine.any(Object),
-      );
-      expect(mockRouter.navigate).toHaveBeenCalledWith(["/irrigations", "irr-123"]);
+      expect(mockRouter.navigate).not.toHaveBeenCalled();
+      expect(component.form.value.farmId).toBe("farm-1");
     });
 
     it("should submit updateDraft with concurrencyToken and navigate to detail page on save", () => {

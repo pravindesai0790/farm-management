@@ -281,18 +281,51 @@ public class IrrigationServiceTests
     }
 
     [Fact]
-    public async Task Start_FromDraftOrScheduled_SetsInProgress()
+    public async Task Start_FromDraft_ThrowsConflictException()
     {
         var farm = CreateActiveFarm();
         var area = CreateActiveFarmArea(farm.Id);
         var draft = new IrrigationEvent(_orgId, farm.Id, area.Id, _userId);
         _store.Irrigations.Add(draft);
 
+        await Assert.ThrowsAsync<ConflictException>(() =>
+            _sut.StartAsync(CreateActor(), draft.Id, new StartIrrigationRequest(), "127.0.0.1"));
+    }
+
+    [Fact]
+    public async Task Start_FromScheduled_SetsInProgress()
+    {
+        var farm = CreateActiveFarm();
+        var area = CreateActiveFarmArea(farm.Id);
+        var scheduled = new IrrigationEvent(_orgId, farm.Id, area.Id, _userId);
+        scheduled.Schedule(DateTimeOffset.UtcNow.AddHours(1), DateTimeOffset.UtcNow, _userId);
+        _store.Irrigations.Add(scheduled);
+
         var startTime = DateTimeOffset.UtcNow;
-        var response = await _sut.StartAsync(CreateActor(), draft.Id, new StartIrrigationRequest(startTime), "127.0.0.1");
+        var response = await _sut.StartAsync(CreateActor(), scheduled.Id, new StartIrrigationRequest(startTime), "127.0.0.1");
 
         Assert.Equal(IrrigationStatus.InProgress, response.Status);
         Assert.Equal(startTime, response.ActualStartedAt);
+    }
+
+    [Fact]
+    public async Task Start_WithUpdatedLocation_ValidatesHierarchyAndApplies()
+    {
+        var farm = CreateActiveFarm();
+        var area = CreateActiveFarmArea(farm.Id);
+        var area2 = CreateActiveFarmArea(farm.Id);
+        var scheduled = new IrrigationEvent(_orgId, farm.Id, area.Id, _userId);
+        scheduled.Schedule(DateTimeOffset.UtcNow.AddHours(1), DateTimeOffset.UtcNow, _userId);
+        _store.Irrigations.Add(scheduled);
+
+        var response = await _sut.StartAsync(
+            CreateActor(),
+            scheduled.Id,
+            new StartIrrigationRequest(ActualStartedAt: DateTimeOffset.UtcNow, FarmAreaId: area2.Id),
+            "127.0.0.1");
+
+        Assert.Equal(IrrigationStatus.InProgress, response.Status);
+        Assert.Equal(area2.Id, response.FarmAreaId);
     }
 
     [Fact]
@@ -301,6 +334,7 @@ public class IrrigationServiceTests
         var farm = CreateActiveFarm();
         var area = CreateActiveFarmArea(farm.Id);
         var irrigation = new IrrigationEvent(_orgId, farm.Id, area.Id, _userId);
+        irrigation.Schedule(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, _userId);
         irrigation.Start(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, _userId);
         _store.Irrigations.Add(irrigation);
 
@@ -317,6 +351,7 @@ public class IrrigationServiceTests
         var unit = CreateActiveVolumeUnit();
 
         var irrigation = new IrrigationEvent(_orgId, farm.Id, area.Id, _userId);
+        irrigation.Schedule(DateTimeOffset.UtcNow.AddHours(-2), DateTimeOffset.UtcNow, _userId);
         irrigation.Start(DateTimeOffset.UtcNow.AddHours(-1), DateTimeOffset.UtcNow, _userId);
         _store.Irrigations.Add(irrigation);
 
@@ -339,7 +374,31 @@ public class IrrigationServiceTests
     }
 
     [Fact]
-    public async Task Complete_DirectFromDraft_SetsStatusCompleted()
+    public async Task Complete_FromInProgress_WithUpdatedLocation_AppliesLocationAndCompletes()
+    {
+        var farm = CreateActiveFarm();
+        var area = CreateActiveFarmArea(farm.Id);
+        var area2 = CreateActiveFarmArea(farm.Id);
+        var method = CreateActiveMethod();
+
+        var irrigation = new IrrigationEvent(_orgId, farm.Id, area.Id, _userId);
+        irrigation.Schedule(DateTimeOffset.UtcNow.AddHours(-2), DateTimeOffset.UtcNow, _userId);
+        irrigation.Start(DateTimeOffset.UtcNow.AddHours(-1), DateTimeOffset.UtcNow, _userId);
+        _store.Irrigations.Add(irrigation);
+
+        var request = new CompleteIrrigationRequest(
+            IrrigationMethodId: method.Id,
+            FarmAreaId: area2.Id,
+            ActualDurationMinutes: 45);
+
+        var response = await _sut.CompleteAsync(CreateActor(), irrigation.Id, request, "127.0.0.1");
+
+        Assert.Equal(IrrigationStatus.Completed, response.Status);
+        Assert.Equal(area2.Id, response.FarmAreaId);
+    }
+
+    [Fact]
+    public async Task Complete_FromDraft_ThrowsConflictException()
     {
         var farm = CreateActiveFarm();
         var area = CreateActiveFarmArea(farm.Id);
@@ -352,14 +411,12 @@ public class IrrigationServiceTests
             IrrigationMethodId: method.Id,
             ActualDurationMinutes: 30);
 
-        var response = await _sut.CompleteAsync(CreateActor(), draft.Id, request, "127.0.0.1");
-
-        Assert.Equal(IrrigationStatus.Completed, response.Status);
-        Assert.Equal(30, response.ActualDurationMinutes);
+        await Assert.ThrowsAsync<ConflictException>(() =>
+            _sut.CompleteAsync(CreateActor(), draft.Id, request, "127.0.0.1"));
     }
 
     [Fact]
-    public async Task Complete_DirectFromScheduled_SetsStatusCompleted()
+    public async Task Complete_FromScheduled_ThrowsConflictException()
     {
         var farm = CreateActiveFarm();
         var area = CreateActiveFarmArea(farm.Id);
@@ -373,10 +430,8 @@ public class IrrigationServiceTests
             IrrigationMethodId: method.Id,
             ActualDurationMinutes: 45);
 
-        var response = await _sut.CompleteAsync(CreateActor(), scheduled.Id, request, "127.0.0.1");
-
-        Assert.Equal(IrrigationStatus.Completed, response.Status);
-        Assert.Equal(45, response.ActualDurationMinutes);
+        await Assert.ThrowsAsync<ConflictException>(() =>
+            _sut.CompleteAsync(CreateActor(), scheduled.Id, request, "127.0.0.1"));
     }
 
     [Fact]
@@ -386,8 +441,10 @@ public class IrrigationServiceTests
         var area = CreateActiveFarmArea(farm.Id);
         var method = CreateActiveMethod();
 
-        var draft = new IrrigationEvent(_orgId, farm.Id, area.Id, _userId);
-        _store.Irrigations.Add(draft);
+        var irrigation = new IrrigationEvent(_orgId, farm.Id, area.Id, _userId);
+        irrigation.Schedule(DateTimeOffset.UtcNow.AddHours(-2), DateTimeOffset.UtcNow, _userId);
+        irrigation.Start(DateTimeOffset.UtcNow.AddHours(-1), DateTimeOffset.UtcNow, _userId);
+        _store.Irrigations.Add(irrigation);
 
         var start = DateTimeOffset.UtcNow;
         var end = start.AddHours(-1);
@@ -398,7 +455,7 @@ public class IrrigationServiceTests
             ActualEndedAt: end);
 
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
-            _sut.CompleteAsync(CreateActor(), draft.Id, request, "127.0.0.1"));
+            _sut.CompleteAsync(CreateActor(), irrigation.Id, request, "127.0.0.1"));
 
         Assert.True(ex.Errors?.ContainsKey("actualEndedAt"));
     }
@@ -411,6 +468,8 @@ public class IrrigationServiceTests
         var method = CreateActiveMethod();
 
         var completed = new IrrigationEvent(_orgId, farm.Id, area.Id, _userId);
+        completed.Schedule(DateTimeOffset.UtcNow.AddHours(-2), DateTimeOffset.UtcNow, _userId);
+        completed.Start(DateTimeOffset.UtcNow.AddHours(-1), DateTimeOffset.UtcNow, _userId);
         completed.Complete(method.Id, null, null, null, null, null, null, DateTimeOffset.UtcNow, _userId);
         _store.Irrigations.Add(completed);
 
@@ -481,11 +540,37 @@ public class IrrigationServiceTests
         var method = CreateActiveMethod();
 
         var completed = new IrrigationEvent(_orgId, farm.Id, area.Id, _userId);
+        completed.Schedule(DateTimeOffset.UtcNow.AddHours(-2), DateTimeOffset.UtcNow, _userId);
+        completed.Start(DateTimeOffset.UtcNow.AddHours(-1), DateTimeOffset.UtcNow, _userId);
         completed.Complete(method.Id, null, null, null, null, null, null, DateTimeOffset.UtcNow, _userId);
         _store.Irrigations.Add(completed);
 
         await Assert.ThrowsAsync<ConflictException>(() =>
             _sut.CancelAsync(CreateActor(), completed.Id, new CancelIrrigationRequest("Cannot cancel"), "127.0.0.1"));
+    }
+
+    [Fact]
+    public async Task UpdateDraft_WhenScheduled_UpdatesSuccessfully()
+    {
+        var farm = CreateActiveFarm();
+        var area = CreateActiveFarmArea(farm.Id);
+        var unit = CreateActiveVolumeUnit();
+        var scheduled = new IrrigationEvent(_orgId, farm.Id, area.Id, _userId);
+        scheduled.Schedule(DateTimeOffset.UtcNow.AddDays(1), DateTimeOffset.UtcNow, _userId);
+        _store.Irrigations.Add(scheduled);
+
+        var request = new UpdateIrrigationDraftRequest(
+            FarmId: farm.Id,
+            FarmAreaId: area.Id,
+            PlannedWaterQuantity: 750m,
+            PlannedWaterUnitId: unit.Id,
+            Notes: "Updated scheduled notes");
+
+        var response = await _sut.UpdateDraftAsync(CreateActor(), scheduled.Id, request, "127.0.0.1");
+
+        Assert.Equal(IrrigationStatus.Scheduled, response.Status);
+        Assert.Equal("Updated scheduled notes", response.Notes);
+        Assert.Equal(750m, response.PlannedWaterQuantity);
     }
 
     [Fact]

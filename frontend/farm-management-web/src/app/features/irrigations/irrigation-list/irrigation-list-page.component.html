@@ -399,7 +399,11 @@
             <th mat-header-cell *matHeaderCellDef class="text-right">Actions</th>
             <td mat-cell *matCellDef="let s" class="text-right">
               <div class="row-actions">
-                @if (s.status === 'Draft' && permissionService.has("Irrigation.Update")) {
+                @if (s.status === 'Draft' && permissionService.has("Irrigation.Schedule")) {
+                  <button mat-button color="primary" class="action-btn action-btn-primary" (click)="openScheduleDialog(s, false)" matTooltip="Schedule Event">
+                    Schedule
+                  </button>
+                } @else if (s.status === 'Draft' && permissionService.has("Irrigation.Update")) {
                   <a mat-button class="action-btn" [routerLink]="['/irrigations', s.id, 'edit']" matTooltip="Edit Draft">
                     Edit
                   </a>
@@ -431,9 +435,9 @@
                     <mat-icon>visibility</mat-icon> View Details
                   </a>
 
-                  @if (s.status === 'Draft' && permissionService.has("Irrigation.Update")) {
+                  @if ((s.status === 'Draft' || s.status === 'Scheduled') && permissionService.has("Irrigation.Update")) {
                     <a mat-menu-item [routerLink]="['/irrigations', s.id, 'edit']">
-                      <mat-icon>edit</mat-icon> Edit Draft
+                      <mat-icon>edit</mat-icon> {{ s.status === 'Draft' ? 'Edit Draft' : 'Edit Event' }}
                     </a>
                   }
 
@@ -449,13 +453,13 @@
                     </button>
                   }
 
-                  @if ((s.status === 'Draft' || s.status === 'Scheduled') && permissionService.has("Irrigation.Start")) {
+                  @if (s.status === 'Scheduled' && permissionService.has("Irrigation.Start")) {
                     <button mat-menu-item type="button" (click)="openStartDialog(s)">
                       <mat-icon>play_arrow</mat-icon> Start
                     </button>
                   }
 
-                  @if (s.status !== 'Completed' && s.status !== 'Cancelled' && permissionService.has("Irrigation.Complete")) {
+                  @if (s.status === 'InProgress' && permissionService.has("Irrigation.Complete")) {
                     <button mat-menu-item type="button" (click)="openCompleteDialog(s)">
                       <mat-icon>check_circle</mat-icon> Complete
                     </button>

@@ -159,9 +159,9 @@ public sealed class IrrigationEvent
     public void Start(DateTimeOffset? actualStartedAt, DateTimeOffset now, Guid updatedBy)
     {
         EnsureNotTerminal();
-        if (Status != IrrigationStatus.Draft && Status != IrrigationStatus.Scheduled)
+        if (Status != IrrigationStatus.Scheduled)
         {
-            throw new InvalidOperationException($"Cannot start an irrigation event in '{Status}' status; allowed transitions are from Draft or Scheduled.");
+            throw new InvalidOperationException($"Only scheduled irrigation events can be started; current status is '{Status}'.");
         }
         if (updatedBy == Guid.Empty) throw new ArgumentException("A user is required.", nameof(updatedBy));
 
@@ -183,6 +183,10 @@ public sealed class IrrigationEvent
         Guid updatedBy)
     {
         EnsureNotTerminal();
+        if (Status != IrrigationStatus.InProgress)
+        {
+            throw new InvalidOperationException($"Only in-progress irrigation events can be completed; current status is '{Status}'.");
+        }
         if (irrigationMethodId == Guid.Empty)
         {
             throw new ArgumentException("An irrigation method is required to complete an irrigation event.", nameof(irrigationMethodId));
@@ -238,9 +242,9 @@ public sealed class IrrigationEvent
         Guid updatedBy)
     {
         EnsureNotTerminal();
-        if (Status != IrrigationStatus.Draft)
+        if (Status != IrrigationStatus.Draft && Status != IrrigationStatus.Scheduled)
         {
-            throw new InvalidOperationException("Only draft irrigation events can have core planning fields updated directly.");
+            throw new InvalidOperationException($"Only draft or scheduled irrigation events can have core planning fields updated directly; current status is '{Status}'.");
         }
         if (farmId == Guid.Empty) throw new ArgumentException("A farm is required.", nameof(farmId));
         if (farmAreaId == Guid.Empty) throw new ArgumentException("A farm area is required.", nameof(farmAreaId));
@@ -257,6 +261,26 @@ public sealed class IrrigationEvent
         PlannedWaterQuantity = plannedWaterQuantity;
         PlannedWaterUnitId = plannedWaterUnitId;
         Notes = NormalizeOptional(notes);
+        UpdatedAt = now;
+        UpdatedBy = updatedBy;
+    }
+
+    public void UpdateLocationContext(
+        Guid farmAreaId,
+        Guid? plantationId,
+        Guid? cropCycleId,
+        Guid? cropCycleStageId,
+        DateTimeOffset now,
+        Guid updatedBy)
+    {
+        EnsureNotTerminal();
+        if (farmAreaId == Guid.Empty) throw new ArgumentException("A farm area is required.", nameof(farmAreaId));
+        if (updatedBy == Guid.Empty) throw new ArgumentException("A user is required.", nameof(updatedBy));
+
+        FarmAreaId = farmAreaId;
+        PlantationId = plantationId;
+        CropCycleId = cropCycleId;
+        CropCycleStageId = cropCycleStageId;
         UpdatedAt = now;
         UpdatedBy = updatedBy;
     }

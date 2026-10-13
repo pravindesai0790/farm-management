@@ -78,12 +78,12 @@ describe("CompleteIrrigationDialogComponent", () => {
     cropCycleStageName: "Vegetative",
     irrigationMethodId: "method-1",
     irrigationMethodName: "Drip Irrigation",
-    status: "Draft",
-    statusName: "Draft",
+    status: "InProgress",
+    statusName: "In Progress",
     isOverdue: false,
     plannedAt: "2026-10-25T08:00:00Z",
-    scheduledAt: null,
-    actualStartedAt: null,
+    scheduledAt: "2026-10-25T08:00:00Z",
+    actualStartedAt: "2026-10-25T08:00:00Z",
     actualEndedAt: null,
     actualDurationMinutes: null,
     plannedWaterQuantity: 1000,
@@ -95,7 +95,7 @@ describe("CompleteIrrigationDialogComponent", () => {
     actualWaterUnitName: null,
     actualWaterUnitSymbol: null,
     cancellationReason: null,
-    notes: "Planned watering",
+    notes: "In-progress watering",
     concurrencyToken: "ct-100",
     createdAt: "2026-10-12T00:00:00Z",
     createdBy: "user-1",
@@ -112,13 +112,31 @@ describe("CompleteIrrigationDialogComponent", () => {
     mockIrrigationService = jasmine.createSpyObj("IrrigationService", [
       "getMethods",
       "complete",
+      "getCropCycleStages",
     ]);
-    mockFarmService = jasmine.createSpyObj("FarmManagementService", ["listUnits"]);
+    mockFarmService = jasmine.createSpyObj("FarmManagementService", [
+      "listUnits",
+      "listFarmAreas",
+      "listPlantations",
+      "listCycles",
+    ]);
     mockDialogRef = jasmine.createSpyObj("MatDialogRef", ["close"]);
     mockSnackBar = jasmine.createSpyObj("MatSnackBar", ["open"]);
 
     mockIrrigationService.getMethods.and.returnValue(of(sampleMethods));
     mockFarmService.listUnits.and.returnValue(of(sampleUnits));
+    mockFarmService.listFarmAreas.and.returnValue(
+      of({ items: [{ id: "area-1", name: "North Block" } as any], totalCount: 1, page: 1, pageSize: 100, totalPages: 1 }),
+    );
+    mockFarmService.listPlantations.and.returnValue(
+      of({ items: [{ id: "plant-1", plantationName: "Wheat Field", cropName: "Wheat" } as any], totalCount: 1, page: 1, pageSize: 100, totalPages: 1 }),
+    );
+    mockFarmService.listCycles.and.returnValue(
+      of({ items: [{ id: "cycle-1", cycleName: "Spring 2026" } as any], totalCount: 1, page: 1, pageSize: 100, totalPages: 1 }),
+    );
+    mockIrrigationService.getCropCycleStages.and.returnValue(
+      of([{ id: "stage-1", stageName: "Vegetative" } as any]),
+    );
     mockIrrigationService.complete.and.returnValue(of({ id: "irr-1", status: "Completed" } as any));
 
     await TestBed.configureTestingModule({
@@ -196,12 +214,14 @@ describe("CompleteIrrigationDialogComponent", () => {
       expect(component.methods().length).toBe(2);
       expect(component.volumeUnits().length).toBe(1);
       expect(component.form.value.irrigationMethodId).toBe("method-1");
+      expect(component.form.value.farmAreaId).toBe("area-1");
     });
 
-    it("should require irrigationMethodId", () => {
-      component.form.patchValue({ irrigationMethodId: "" });
+    it("should require irrigationMethodId and farmAreaId", () => {
+      component.form.patchValue({ irrigationMethodId: "", farmAreaId: "" });
       expect(component.form.valid).toBeFalse();
       expect(component.form.controls.irrigationMethodId.hasError("required")).toBeTrue();
+      expect(component.form.controls.farmAreaId.hasError("required")).toBeTrue();
     });
 
     it("should close dialog with false on onCancel", () => {
@@ -209,8 +229,33 @@ describe("CompleteIrrigationDialogComponent", () => {
       expect(mockDialogRef.close).toHaveBeenCalledWith(false);
     });
 
-    it("should submit complete payload with manual duration and concurrency token", () => {
+    it("should auto-calculate duration when start and end times change, and allow manual editing", () => {
       component.form.patchValue({
+        actualStartedAt: "2026-10-25T08:00",
+        actualEndedAt: "2026-10-25T09:30",
+      });
+
+      expect(component.form.value.actualDurationMinutes).toBe(90);
+
+      // User manually overrides duration
+      component.form.patchValue({
+        actualDurationMinutes: 85,
+      });
+      expect(component.form.value.actualDurationMinutes).toBe(85);
+
+      // Changing end time again recalculates duration
+      component.form.patchValue({
+        actualEndedAt: "2026-10-25T10:00",
+      });
+      expect(component.form.value.actualDurationMinutes).toBe(120);
+    });
+
+    it("should submit complete payload with updated location, duration, and concurrency token", () => {
+      component.form.patchValue({
+        farmAreaId: "area-1",
+        plantationId: "plant-1",
+        cropCycleId: "cycle-1",
+        cropCycleStageId: "stage-1",
         irrigationMethodId: "method-1",
         actualStartedAt: "2026-10-25T08:00",
         actualEndedAt: "2026-10-25T09:30",
@@ -225,6 +270,10 @@ describe("CompleteIrrigationDialogComponent", () => {
       expect(mockIrrigationService.complete).toHaveBeenCalledWith(
         "irr-1",
         jasmine.objectContaining({
+          farmAreaId: "area-1",
+          plantationId: "plant-1",
+          cropCycleId: "cycle-1",
+          cropCycleStageId: "stage-1",
           irrigationMethodId: "method-1",
           actualDurationMinutes: 90,
           actualWaterQuantity: 1100,
@@ -237,22 +286,6 @@ describe("CompleteIrrigationDialogComponent", () => {
         "Irrigation event completed successfully.",
         "OK",
         jasmine.any(Object),
-      );
-      expect(mockDialogRef.close).toHaveBeenCalledWith(true);
-    });
-
-    it("should allow direct completion from Scheduled status without prior start step", () => {
-      (component as any).data = { irrigation: { ...sampleIrrigation, status: "Scheduled" as any } };
-      component.form.patchValue({ irrigationMethodId: "method-1" });
-
-      component.onSubmit();
-
-      expect(mockIrrigationService.complete).toHaveBeenCalledWith(
-        "irr-1",
-        jasmine.objectContaining({
-          irrigationMethodId: "method-1",
-          concurrencyToken: "ct-100",
-        }),
       );
       expect(mockDialogRef.close).toHaveBeenCalledWith(true);
     });

@@ -200,6 +200,7 @@ public class IrrigationEventModelTests
             createdBy: UserId);
 
         var startTime = now;
+        irrigation.Schedule(now, now, UserId);
         irrigation.Start(startTime, now, UserId);
 
         var ex = Assert.Throws<ArgumentException>(() =>
@@ -227,6 +228,7 @@ public class IrrigationEventModelTests
             farmAreaId: FarmAreaId,
             createdBy: UserId);
 
+        irrigation.Schedule(now, now, UserId);
         irrigation.Start(now, now, UserId);
 
         var ex = Assert.Throws<ArgumentException>(() =>
@@ -271,6 +273,8 @@ public class IrrigationEventModelTests
             farmAreaId: FarmAreaId,
             createdBy: UserId);
 
+        irrigation.Schedule(now.AddHours(-2), now, UserId);
+        irrigation.Start(now.AddHours(-1), now, UserId);
         irrigation.Complete(
             irrigationMethodId: MethodId,
             actualStartedAt: now.AddHours(-1),
@@ -319,7 +323,7 @@ public class IrrigationEventModelTests
     }
 
     [Fact]
-    public void Start_FromDraft_SetsInProgress()
+    public void UpdatePlanning_WhenScheduled_UpdatesSuccessfully()
     {
         var now = DateTimeOffset.UtcNow;
         var irrigation = new IrrigationEvent(
@@ -328,8 +332,63 @@ public class IrrigationEventModelTests
             farmAreaId: FarmAreaId,
             createdBy: UserId);
 
-        irrigation.Start(now, now, UserId);
-        Assert.Equal(IrrigationStatus.InProgress, irrigation.Status);
+        irrigation.Schedule(now.AddDays(1), now, UserId);
+
+        var newAreaId = Guid.NewGuid();
+        var newPlannedTime = now.AddDays(3);
+        irrigation.UpdatePlanning(
+            farmId: FarmId,
+            farmAreaId: newAreaId,
+            plantationId: null,
+            cropCycleId: null,
+            cropCycleStageId: null,
+            plannedAt: newPlannedTime,
+            plannedWaterQuantity: 900m,
+            plannedWaterUnitId: UnitId,
+            notes: "Updated scheduled planning",
+            now: now,
+            updatedBy: UserId);
+
+        Assert.Equal(newAreaId, irrigation.FarmAreaId);
+        Assert.Equal(newPlannedTime, irrigation.PlannedAt);
+        Assert.Equal(900m, irrigation.PlannedWaterQuantity);
+    }
+
+    [Fact]
+    public void UpdateLocationContext_UpdatesFields()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var irrigation = new IrrigationEvent(
+            organizationId: OrgId,
+            farmId: FarmId,
+            farmAreaId: FarmAreaId,
+            createdBy: UserId);
+
+        var newAreaId = Guid.NewGuid();
+        var newPlantationId = Guid.NewGuid();
+        var newCycleId = Guid.NewGuid();
+        var newStageId = Guid.NewGuid();
+
+        irrigation.UpdateLocationContext(newAreaId, newPlantationId, newCycleId, newStageId, now, UserId);
+
+        Assert.Equal(newAreaId, irrigation.FarmAreaId);
+        Assert.Equal(newPlantationId, irrigation.PlantationId);
+        Assert.Equal(newCycleId, irrigation.CropCycleId);
+        Assert.Equal(newStageId, irrigation.CropCycleStageId);
+    }
+
+    [Fact]
+    public void Start_FromDraft_ThrowsInvalidOperationException()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var irrigation = new IrrigationEvent(
+            organizationId: OrgId,
+            farmId: FarmId,
+            farmAreaId: FarmAreaId,
+            createdBy: UserId);
+
+        var ex = Assert.Throws<InvalidOperationException>(() => irrigation.Start(now, now, UserId));
+        Assert.Contains("Only scheduled irrigation events can be started", ex.Message);
     }
 
     [Fact]
@@ -342,13 +401,14 @@ public class IrrigationEventModelTests
             farmAreaId: FarmAreaId,
             createdBy: UserId);
 
+        irrigation.Schedule(now, now, UserId);
         irrigation.Start(now, now, UserId);
         var ex = Assert.Throws<InvalidOperationException>(() => irrigation.Start(now, now, UserId));
-        Assert.Contains("Cannot start an irrigation event in 'InProgress' status", ex.Message);
+        Assert.Contains("Only scheduled irrigation events can be started", ex.Message);
     }
 
     [Fact]
-    public void Complete_DirectlyFromDraft_SetsCompleted()
+    public void Complete_DirectlyFromDraft_ThrowsInvalidOperationException()
     {
         var now = DateTimeOffset.UtcNow;
         var irrigation = new IrrigationEvent(
@@ -357,7 +417,7 @@ public class IrrigationEventModelTests
             farmAreaId: FarmAreaId,
             createdBy: UserId);
 
-        irrigation.Complete(
+        var ex = Assert.Throws<InvalidOperationException>(() => irrigation.Complete(
             irrigationMethodId: MethodId,
             actualStartedAt: now.AddHours(-1),
             actualEndedAt: now,
@@ -366,10 +426,35 @@ public class IrrigationEventModelTests
             actualWaterUnitId: UnitId,
             notes: "Direct completion",
             now: now,
-            updatedBy: UserId);
+            updatedBy: UserId));
 
-        Assert.Equal(IrrigationStatus.Completed, irrigation.Status);
-        Assert.Equal(now, irrigation.CompletedAt);
+        Assert.Contains("Only in-progress irrigation events can be completed", ex.Message);
+    }
+
+    [Fact]
+    public void Complete_DirectlyFromScheduled_ThrowsInvalidOperationException()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var irrigation = new IrrigationEvent(
+            organizationId: OrgId,
+            farmId: FarmId,
+            farmAreaId: FarmAreaId,
+            createdBy: UserId);
+
+        irrigation.Schedule(now, now, UserId);
+
+        var ex = Assert.Throws<InvalidOperationException>(() => irrigation.Complete(
+            irrigationMethodId: MethodId,
+            actualStartedAt: now.AddHours(-1),
+            actualEndedAt: now,
+            actualDurationMinutes: 60,
+            actualWaterQuantity: 100m,
+            actualWaterUnitId: UnitId,
+            notes: "Direct completion",
+            now: now,
+            updatedBy: UserId));
+
+        Assert.Contains("Only in-progress irrigation events can be completed", ex.Message);
     }
 
     [Fact]
@@ -382,6 +467,7 @@ public class IrrigationEventModelTests
             farmAreaId: FarmAreaId,
             createdBy: UserId);
 
+        irrigation.Schedule(now, now, UserId);
         irrigation.Start(now, now, UserId);
         irrigation.Cancel("Pump failed", now, UserId);
 

@@ -162,11 +162,16 @@ export class IrrigationDetailPageComponent implements OnInit {
     if (!item) return;
 
     const ref = this.dialog.open(StartIrrigationDialogComponent, {
-      width: "480px",
+      width: "560px",
       data: {
         irrigationId: item.id,
+        farmId: item.farmId,
         farmName: item.farmName,
+        farmAreaId: item.farmAreaId,
         farmAreaName: item.farmAreaName,
+        plantationId: item.plantationId,
+        cropCycleId: item.cropCycleId,
+        cropCycleStageId: item.cropCycleStageId,
         concurrencyToken: item.concurrencyToken,
       },
     });
