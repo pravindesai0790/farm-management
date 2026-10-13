@@ -29,11 +29,14 @@ import { PermissionService } from "../../core/auth/permission.service";
 import { BreadcrumbService } from "../../core/breadcrumb/breadcrumb.service";
 
 export interface NavigationChildItem {
+  readonly id?: string;
   readonly label: string;
-  readonly route: string;
+  readonly route?: string;
+  readonly icon?: string;
   readonly permissions?: readonly string[];
   readonly exactMatch?: boolean;
   readonly badge?: string;
+  readonly children?: readonly NavigationChildItem[];
 }
 
 export interface NavigationItem {
@@ -157,25 +160,54 @@ export class MainLayoutComponent {
           exactMatch: true,
           children: [
             {
+              id: "labor-activities",
               label: "Labor activities",
               route: "/activities/labor-activities",
               permissions: ["LaborActivity.View"],
             },
+            {
+              id: "activities-sprays",
+              label: "Spray & Protection",
+              icon: "pest_control",
+              route: "/sprays",
+              permissions: [
+                "Spray.View",
+                "PlantProtectionProduct.View",
+                "ProductType.View",
+                "Target.View",
+                "ApplicationMethod.View",
+              ],
+              children: [
+                {
+                  label: "Spray Applications",
+                  route: "/sprays",
+                  exactMatch: true,
+                  permissions: ["Spray.View"],
+                },
+                {
+                  label: "Protection products",
+                  route: "/sprays/products",
+                  permissions: ["PlantProtectionProduct.View"],
+                },
+                {
+                  label: "Spray masters",
+                  route: "/sprays/master-data",
+                  permissions: [
+                    "ProductType.View",
+                    "Target.View",
+                    "ApplicationMethod.View",
+                  ],
+                },
+              ],
+            },
+            {
+              id: "irrigations",
+              label: "Irrigation",
+              icon: "water_drop",
+              route: "/irrigations",
+              permissions: ["Irrigation.View"],
+            },
           ],
-        },
-        {
-          id: "sprays",
-          label: "Sprays & Protection",
-          icon: "pest_control",
-          route: "/sprays",
-          permissions: ["Spray.View"],
-        },
-        {
-          id: "irrigations",
-          label: "Irrigation",
-          icon: "water_drop",
-          route: "/irrigations",
-          permissions: ["Irrigation.View"],
         },
       ],
     },
@@ -333,24 +365,6 @@ export class MainLayoutComponent {
           route: "/crop-lifecycle-templates",
           permissions: ["CropLifecycleTemplate.View"],
         },
-        {
-          id: "plant-protection-products",
-          label: "Protection products",
-          icon: "science",
-          route: "/sprays/products",
-          permissions: ["PlantProtectionProduct.View"],
-        },
-        {
-          id: "spray-masters",
-          label: "Spray masters",
-          icon: "tune",
-          route: "/sprays/master-data",
-          permissions: [
-            "ProductType.View",
-            "Target.View",
-            "ApplicationMethod.View",
-          ],
-        },
       ],
     },
     {
@@ -391,11 +405,27 @@ export class MainLayoutComponent {
         ...group,
         items: group.items
           .map((item) => {
-            const visibleChildren = item.children?.filter(
-              (c) =>
-                c.permissions === undefined ||
-                this.permissionService.hasAny(c.permissions),
-            );
+            const visibleChildren = item.children
+              ?.map((child) => {
+                if (!child.children || child.children.length === 0) {
+                  return child;
+                }
+                const visibleSubChildren = child.children.filter(
+                  (sub) =>
+                    sub.permissions === undefined ||
+                    this.permissionService.hasAny(sub.permissions),
+                );
+                return {
+                  ...child,
+                  children: visibleSubChildren,
+                };
+              })
+              .filter(
+                (c) =>
+                  (c.permissions === undefined ||
+                    this.permissionService.hasAny(c.permissions)) &&
+                  (c.route !== undefined || (c.children && c.children.length > 0)),
+              );
             return {
               ...item,
               children: visibleChildren,
@@ -446,6 +476,14 @@ export class MainLayoutComponent {
     this.toggleMenu(item.id);
   }
 
+  toggleChildChevron(child: NavigationChildItem, event: MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    if (child.id) {
+      this.toggleMenu(child.id);
+    }
+  }
+
   onParentClick(item: NavigationItem, event: MouseEvent): void {
     if (item.children && item.children.length > 0) {
       const current = new Set(this.expandedMenus());
@@ -460,15 +498,40 @@ export class MainLayoutComponent {
     }
   }
 
-  isParentActive(item: NavigationItem): boolean {
-    const url = this.currentUrl();
+  onChildParentClick(child: NavigationChildItem, event: MouseEvent): void {
+    if (child.children && child.children.length > 0 && child.id) {
+      const current = new Set(this.expandedMenus());
+      if (!current.has(child.id)) {
+        current.add(child.id);
+        this.expandedMenus.set(current);
+      }
+      if (!child.route) {
+        event.preventDefault();
+        this.toggleMenu(child.id);
+      }
+    }
+  }
+
+  isChildActive(child: NavigationChildItem, targetUrl?: string): boolean {
+    const url = targetUrl ?? this.currentUrl();
+    if (child.route && (child.exactMatch ? url === child.route : url.startsWith(child.route))) {
+      return true;
+    }
+    if (child.children) {
+      return child.children.some((sc) =>
+        sc.route && (sc.exactMatch ? url === sc.route : url.startsWith(sc.route)),
+      );
+    }
+    return false;
+  }
+
+  isParentActive(item: NavigationItem, targetUrl?: string): boolean {
+    const url = targetUrl ?? this.currentUrl();
     if (item.route && (item.exactMatch ? url === item.route : url.startsWith(item.route))) {
       return true;
     }
     if (item.children) {
-      return item.children.some((c) =>
-        c.exactMatch ? url === c.route : url.startsWith(c.route),
-      );
+      return item.children.some((c) => this.isChildActive(c, url));
     }
     return false;
   }
@@ -479,11 +542,21 @@ export class MainLayoutComponent {
       for (const item of group.items) {
         if (item.children && item.children.length > 0) {
           const matchesParent = item.route && (item.exactMatch ? url === item.route : url.startsWith(item.route));
-          const matchesChild = item.children.some((c) =>
-            c.exactMatch ? url === c.route : url.startsWith(c.route),
-          );
+          const matchesChild = item.children.some((c) => this.isChildActive(c, url));
           if (matchesParent || matchesChild) {
             toExpand.push(item.id);
+          }
+
+          for (const child of item.children) {
+            if (child.children && child.children.length > 0 && child.id) {
+              const childMatches = child.route && (child.exactMatch ? url === child.route : url.startsWith(child.route));
+              const subMatches = child.children.some((sc) =>
+                sc.route && (sc.exactMatch ? url === sc.route : url.startsWith(sc.route)),
+              );
+              if (childMatches || subMatches) {
+                toExpand.push(child.id);
+              }
+            }
           }
         }
       }

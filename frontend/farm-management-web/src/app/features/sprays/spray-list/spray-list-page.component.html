@@ -1,3 +1,5 @@
+<app-spray-sub-nav></app-spray-sub-nav>
+
 <div class="section-heading">
   <div>
     <p class="eyebrow">Plant Protection & Agronomy</p>
@@ -13,16 +15,6 @@
     @if (permissionService.has("Spray.Complete")) {
       <a mat-stroked-button routerLink="/sprays/record-completed">
         <mat-icon>check_circle</mat-icon> Record Completed
-      </a>
-    }
-    @if (permissionService.has("PlantProtectionProduct.View")) {
-      <a mat-stroked-button routerLink="/sprays/products">
-        <mat-icon>science</mat-icon> Protection Products
-      </a>
-    }
-    @if (permissionService.hasAny(["ProductType.View", "Target.View", "ApplicationMethod.View"])) {
-      <a mat-stroked-button routerLink="/sprays/master-data">
-        <mat-icon>tune</mat-icon> Spray Masters
       </a>
     }
   </div>

@@ -46,6 +46,7 @@ import {
 import { SprayService } from "../../../core/sprays/spray.service";
 import { CancelSprayDialogComponent } from "../dialogs/cancel-spray-dialog/cancel-spray-dialog.component";
 import { ScheduleSprayDialogComponent } from "../dialogs/schedule-spray-dialog/schedule-spray-dialog.component";
+import { SpraySubNavComponent } from "../components/spray-sub-nav/spray-sub-nav.component";
 
 @Component({
   selector: "app-spray-list-page",
@@ -66,6 +67,7 @@ import { ScheduleSprayDialogComponent } from "../dialogs/schedule-spray-dialog/s
     MatTableModule,
     MatTooltipModule,
     RouterLink,
+    SpraySubNavComponent,
   ],
   templateUrl: "./spray-list-page.component.html",
   styleUrl: "./spray-list-page.component.scss",

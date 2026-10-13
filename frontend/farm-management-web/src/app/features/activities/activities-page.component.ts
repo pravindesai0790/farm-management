@@ -68,7 +68,11 @@ export class ActivitiesPageComponent {
       description:
         "Schedule and record chemical, pesticide, and organic spray applications, target pests, and safety intervals.",
       icon: "pest_control",
-      status: "UPCOMING",
+      route: "/sprays",
+      status: "AVAILABLE",
+      requiredPermission: "Spray.View",
+      createPermission: "Spray.Create",
+      createRoute: "/sprays/new",
       highlights: [
         "Chemical & bio sprays",
         "Dosage & dilution",
@@ -98,7 +102,11 @@ export class ActivitiesPageComponent {
       description:
         "Monitor watering sessions, irrigation methods (drip, sprinkler, flood), durations, and water volumes.",
       icon: "water_drop",
-      status: "UPCOMING",
+      route: "/irrigations",
+      status: "AVAILABLE",
+      requiredPermission: "Irrigation.View",
+      createPermission: "Irrigation.Create",
+      createRoute: "/irrigations/new",
       highlights: [
         "Drip & sprinkler methods",
         "Duration & flow rate",

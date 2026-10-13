@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed, fakeAsync, tick } from "@angular/core/testin
 import { MatDialog } from "@angular/material/dialog";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { ActivatedRoute } from "@angular/router";
+import { ActivatedRoute, provideRouter } from "@angular/router";
 import { of } from "rxjs";
 import { PermissionService } from "../../../core/auth/permission.service";
 import {
@@ -92,9 +92,10 @@ describe("SprayMasterDataPageComponent", () => {
 
     mockDialog = jasmine.createSpyObj("MatDialog", ["open"]);
     mockSnackBar = jasmine.createSpyObj("MatSnackBar", ["open"]);
-    mockPermissionService = jasmine.createSpyObj("PermissionService", ["has"]);
+    mockPermissionService = jasmine.createSpyObj("PermissionService", ["has", "hasAny"]);
 
     mockPermissionService.has.and.returnValue(true);
+    mockPermissionService.hasAny.and.returnValue(true);
     mockMasterService.listProductTypes.and.returnValue(of(sampleProductTypes));
     mockMasterService.listTargets.and.returnValue(of(sampleTargets));
     mockMasterService.listApplicationMethods.and.returnValue(of(sampleMethods));
@@ -102,6 +103,7 @@ describe("SprayMasterDataPageComponent", () => {
     await TestBed.configureTestingModule({
       imports: [NoopAnimationsModule, SprayMasterDataPageComponent],
       providers: [
+        provideRouter([]),
         { provide: SprayMasterDataService, useValue: mockMasterService },
         { provide: MatDialog, useValue: mockDialog },
         { provide: MatSnackBar, useValue: mockSnackBar },

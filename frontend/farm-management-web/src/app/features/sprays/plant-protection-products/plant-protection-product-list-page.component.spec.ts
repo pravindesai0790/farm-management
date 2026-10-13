@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from "@angular/core/testing";
+import { provideRouter } from "@angular/router";
 import { MatDialog } from "@angular/material/dialog";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
@@ -91,11 +92,12 @@ describe("PlantProtectionProductListPageComponent", () => {
       "deactivateProduct",
     ]);
     mockSprayService = jasmine.createSpyObj("SprayService", ["getProductTypes"]);
-    mockPermissionService = jasmine.createSpyObj("PermissionService", ["has"]);
+    mockPermissionService = jasmine.createSpyObj("PermissionService", ["has", "hasAny"]);
     mockDialog = jasmine.createSpyObj("MatDialog", ["open"]);
     mockSnackBar = jasmine.createSpyObj("MatSnackBar", ["open"]);
 
     mockPermissionService.has.and.returnValue(true);
+    mockPermissionService.hasAny.and.returnValue(true);
     mockSprayService.getProductTypes.and.returnValue(of(sampleProductTypes));
     mockPlantProtectionService.listProducts.and.returnValue(
       of({ items: sampleProducts, totalCount: 2, page: 1, pageSize: 20, totalPages: 1 }),
@@ -106,6 +108,7 @@ describe("PlantProtectionProductListPageComponent", () => {
     await TestBed.configureTestingModule({
       imports: [PlantProtectionProductListPageComponent, NoopAnimationsModule],
       providers: [
+        provideRouter([]),
         { provide: PlantProtectionService, useValue: mockPlantProtectionService },
         { provide: SprayService, useValue: mockSprayService },
         { provide: PermissionService, useValue: mockPermissionService },

@@ -33,6 +33,7 @@ import {
 import { PlantProtectionService } from "../../../core/plant-protection/plant-protection.service";
 import { ProductTypeResponse } from "../../../core/sprays/spray.models";
 import { SprayService } from "../../../core/sprays/spray.service";
+import { SpraySubNavComponent } from "../components/spray-sub-nav/spray-sub-nav.component";
 import { PlantProtectionProductEditorDialogComponent } from "./dialogs/plant-protection-product-editor-dialog.component";
 
 @Component({
@@ -52,6 +53,7 @@ import { PlantProtectionProductEditorDialogComponent } from "./dialogs/plant-pro
     MatSelectModule,
     MatTableModule,
     MatTooltipModule,
+    SpraySubNavComponent,
   ],
   templateUrl: "./plant-protection-product-list-page.component.html",
   styleUrl: "./plant-protection-product-list-page.component.scss",

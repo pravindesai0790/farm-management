@@ -62,19 +62,101 @@
                 <!-- Child Sub-tree -->
                 @if (item.children && item.children.length > 0 && isMenuExpanded(item.id)) {
                   <div class="nav-sub-tree">
-                    @for (child of item.children; track child.route) {
-                      <a
-                        [routerLink]="child.route"
-                        routerLinkActive="nav-child-active"
-                        [routerLinkActiveOptions]="{ exact: child.exactMatch ?? false }"
-                        class="nav-child-link"
-                      >
-                        <span class="nav-child-dot" aria-hidden="true"></span>
-                        <span class="nav-child-label">{{ child.label }}</span>
-                        @if (child.badge) {
-                          <span class="navigation-badge child-badge">{{ child.badge }}</span>
-                        }
-                      </a>
+                    @for (child of item.children; track child.id || child.route || child.label) {
+                      @if (child.children && child.children.length > 0) {
+                        <!-- Level 2 Branch (e.g. Spray & Protection) -->
+                        <div class="nav-nested-wrapper" [class.nav-group-expanded]="child.id && isMenuExpanded(child.id)">
+                          <div class="nav-nested-parent-row" [class.nested-parent-active]="isChildActive(child)">
+                            @if (child.route) {
+                              <a
+                                [routerLink]="child.route"
+                                routerLinkActive="nav-child-active"
+                                [routerLinkActiveOptions]="{ exact: child.exactMatch ?? false }"
+                                class="nav-nested-link"
+                                (click)="onChildParentClick(child, $event)"
+                              >
+                                @if (child.icon) {
+                                  <mat-icon class="nav-nested-icon">{{ child.icon }}</mat-icon>
+                                } @else {
+                                  <span class="nav-child-dot" aria-hidden="true"></span>
+                                }
+                                <span class="nav-child-label">{{ child.label }}</span>
+                                @if (child.badge) {
+                                  <span class="navigation-badge child-badge">{{ child.badge }}</span>
+                                }
+                              </a>
+                            } @else {
+                              <button
+                                type="button"
+                                class="nav-nested-link"
+                                (click)="child.id && toggleMenu(child.id)"
+                              >
+                                @if (child.icon) {
+                                  <mat-icon class="nav-nested-icon">{{ child.icon }}</mat-icon>
+                                } @else {
+                                  <span class="nav-child-dot" aria-hidden="true"></span>
+                                }
+                                <span class="nav-child-label">{{ child.label }}</span>
+                                @if (child.badge) {
+                                  <span class="navigation-badge child-badge">{{ child.badge }}</span>
+                                }
+                              </button>
+                            }
+
+                            @if (child.id) {
+                              <button
+                                type="button"
+                                class="nav-sub-chevron-btn"
+                                (click)="toggleChildChevron(child, $event)"
+                                [attr.aria-expanded]="isMenuExpanded(child.id)"
+                                [attr.aria-label]="(isMenuExpanded(child.id) ? 'Collapse ' : 'Expand ') + child.label"
+                              >
+                                <mat-icon class="sub-chevron" [class.chevron-open]="isMenuExpanded(child.id)">
+                                  expand_more
+                                </mat-icon>
+                              </button>
+                            }
+                          </div>
+
+                          <!-- Level 3 Grandchildren -->
+                          @if (child.id && isMenuExpanded(child.id)) {
+                            <div class="nav-grandchild-tree">
+                              @for (subChild of child.children; track subChild.route || subChild.label) {
+                                <a
+                                  [routerLink]="subChild.route"
+                                  routerLinkActive="nav-grandchild-active"
+                                  [routerLinkActiveOptions]="{ exact: subChild.exactMatch ?? false }"
+                                  class="nav-grandchild-link"
+                                >
+                                  <span class="nav-grandchild-bullet" aria-hidden="true">&bull;</span>
+                                  <span class="nav-grandchild-label">{{ subChild.label }}</span>
+                                  @if (subChild.badge) {
+                                    <span class="navigation-badge child-badge">{{ subChild.badge }}</span>
+                                  }
+                                </a>
+                              }
+                            </div>
+                          }
+                        </div>
+                      } @else {
+                        <!-- Level 2 Leaf Link (e.g. Labor activities, Irrigation) -->
+                        <a
+                          [routerLink]="child.route"
+                          routerLinkActive="nav-child-active"
+                          [routerLinkActiveOptions]="{ exact: child.exactMatch ?? false }"
+                          class="nav-child-link"
+                        >
+                          @if (child.icon) {
+                            <mat-icon class="nav-child-icon">{{ child.icon }}</mat-icon>
+                          } @else {
+                            <span class="nav-child-dot" aria-hidden="true"></span>
+                          }
+                          <span class="nav-child-label">{{ child.label }}</span>
+                          @if (child.badge) {
+                            <span class="navigation-badge child-badge">{{ child.badge }}</span>
+                          }
+                        </a>
+                      }
                     }
                   </div>
                 }

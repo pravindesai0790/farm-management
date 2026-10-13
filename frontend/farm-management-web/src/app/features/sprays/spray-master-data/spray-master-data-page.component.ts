@@ -26,6 +26,7 @@ import {
 } from "../../../core/sprays/spray-master-data.models";
 import { SprayMasterDataService } from "../../../core/sprays/spray-master-data.service";
 import { ConfirmDialogComponent } from "../../../shared/components/confirm-dialog/confirm-dialog.component";
+import { SpraySubNavComponent } from "../components/spray-sub-nav/spray-sub-nav.component";
 import {
   SprayMasterEditorDialogComponent,
   SprayMasterEditorDialogData,
@@ -49,6 +50,7 @@ import {
     MatSelectModule,
     MatTooltipModule,
     MatProgressSpinnerModule,
+    SpraySubNavComponent,
   ],
   templateUrl: "./spray-master-data-page.component.html",
   styleUrl: "./spray-master-data-page.component.scss",
