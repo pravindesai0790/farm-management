@@ -171,3 +171,18 @@ export interface CancelIrrigationRequest {
   readonly cancellationReason: string;
   readonly concurrencyToken?: string | null;
 }
+
+export interface RecordCompletedIrrigationRequest {
+  readonly farmId: string;
+  readonly farmAreaId: string;
+  readonly irrigationMethodId: string;
+  readonly plantationId?: string | null;
+  readonly cropCycleId?: string | null;
+  readonly cropCycleStageId?: string | null;
+  readonly actualStartedAt?: string | null;
+  readonly actualEndedAt?: string | null;
+  readonly actualDurationMinutes?: number | null;
+  readonly actualWaterQuantity?: number | null;
+  readonly actualWaterUnitId?: string | null;
+  readonly notes?: string | null;
+}

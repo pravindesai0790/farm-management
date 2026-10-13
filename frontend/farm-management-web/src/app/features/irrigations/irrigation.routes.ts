@@ -33,6 +33,16 @@ export const IRRIGATION_ROUTES: Routes = [
       ),
   },
   {
+    path: "record-completed",
+    title: "Record Completed Irrigation",
+    canActivate: [permissionGuard],
+    data: { permission: "Irrigation.Complete" },
+    loadComponent: () =>
+      import(
+        "./irrigation-record-completed/irrigation-record-completed-page.component"
+      ).then((m) => m.IrrigationRecordCompletedPageComponent),
+  },
+  {
     path: ":id",
     title: "Irrigation Event Details",
     canActivate: [permissionGuard],

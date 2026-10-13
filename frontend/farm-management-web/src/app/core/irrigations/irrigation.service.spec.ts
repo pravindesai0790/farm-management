@@ -280,4 +280,31 @@ describe("IrrigationService", () => {
     expect(req.request.body).toEqual(payload);
     req.flush({ id, status: "Cancelled" } as any);
   });
+
+  it("should post recordCompleted to /irrigations/record-completed", () => {
+    const payload = {
+      farmId: "farm-1",
+      farmAreaId: "area-1",
+      irrigationMethodId: "method-1",
+      plantationId: "plant-1",
+      cropCycleId: "cycle-1",
+      cropCycleStageId: "stage-1",
+      actualStartedAt: "2026-10-26T08:00:00Z",
+      actualEndedAt: "2026-10-26T10:00:00Z",
+      actualDurationMinutes: 120,
+      actualWaterQuantity: 2500,
+      actualWaterUnitId: "unit-vol-1",
+      notes: "Direct completed recording",
+    };
+
+    service.recordCompleted(payload).subscribe((res) => {
+      expect(res.id).toBe("irr-new-completed");
+      expect(res.status).toBe("Completed" as any);
+    });
+
+    const req = httpMock.expectOne(`${baseUrl}/record-completed`);
+    expect(req.request.method).toBe("POST");
+    expect(req.request.body).toEqual(payload);
+    req.flush({ id: "irr-new-completed", status: "Completed" } as any);
+  });
 });

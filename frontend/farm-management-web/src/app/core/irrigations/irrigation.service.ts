@@ -12,6 +12,7 @@ import {
   IrrigationListQuery,
   IrrigationMethodDto,
   IrrigationSummaryCounts,
+  RecordCompletedIrrigationRequest,
   RescheduleIrrigationRequest,
   ScheduleIrrigationRequest,
   StartIrrigationRequest,
@@ -88,6 +89,10 @@ export class IrrigationService {
 
   complete(id: string, request: CompleteIrrigationRequest): Observable<IrrigationDetailsResponse> {
     return this.http.post<IrrigationDetailsResponse>(`${this.api}/${id}/complete`, request);
+  }
+
+  recordCompleted(request: RecordCompletedIrrigationRequest): Observable<IrrigationDetailsResponse> {
+    return this.http.post<IrrigationDetailsResponse>(`${this.api}/record-completed`, request);
   }
 
   cancel(id: string, request: CancelIrrigationRequest): Observable<IrrigationDetailsResponse> {
