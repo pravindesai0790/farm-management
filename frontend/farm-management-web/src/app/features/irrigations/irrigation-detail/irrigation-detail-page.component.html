@@ -17,6 +17,14 @@
       </div>
     </div>
   } @else if (irrigation(); as item) {
+    <!-- Back Navigation Bar -->
+    <div class="back-link-bar">
+      <a routerLink="/irrigations" class="back-link">
+        <mat-icon>arrow_back</mat-icon>
+        <span>Back to Irrigation</span>
+      </a>
+    </div>
+
     <!-- Header with Badges & Actions -->
     <div class="section-heading">
       <div class="heading-left">
@@ -164,11 +172,11 @@
                 <span>Timing & Schedule</span>
               </div>
               <div class="col-planned">
-                @if (item.scheduledAt) {
-                  <div><span class="sub-label">Scheduled:</span> {{ item.scheduledAt | date:'medium' }}</div>
-                }
                 @if (item.plannedAt) {
                   <div><span class="sub-label">Planned:</span> {{ item.plannedAt | date:'medium' }}</div>
+                }
+                @if (item.scheduledAt) {
+                  <div><span class="sub-label">Scheduled:</span> {{ item.scheduledAt | date:'medium' }}</div>
                 }
                 @if (!item.scheduledAt && !item.plannedAt) {
                   <span class="text-muted">—</span>

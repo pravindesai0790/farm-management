@@ -10,13 +10,15 @@ export interface BreadcrumbItem {
 
 @Injectable({ providedIn: "root" })
 export class BreadcrumbService {
-  private readonly router = inject(Router);
+  private readonly router = inject(Router, { optional: true });
 
   private readonly overrideTrail = signal<readonly BreadcrumbItem[] | null>(null);
-  private readonly currentUrl = signal<string>(this.router.url);
+  private readonly currentUrl = signal<string>(this.router?.url ?? "");
+  private readonly version = signal<number>(0);
   private readonly labelCache = new Map<string, string>();
 
   readonly breadcrumbs = computed<readonly BreadcrumbItem[]>(() => {
+    this.version();
     const override = this.overrideTrail();
     if (override !== null && override.length > 0) {
       return override;
@@ -25,12 +27,14 @@ export class BreadcrumbService {
   });
 
   constructor() {
-    this.router.events
-      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
-      .subscribe((event) => {
-        this.overrideTrail.set(null);
-        this.currentUrl.set(event.urlAfterRedirects);
-      });
+    if (this.router?.events) {
+      this.router.events
+        .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+        .subscribe((event) => {
+          this.overrideTrail.set(null);
+          this.currentUrl.set(event.urlAfterRedirects);
+        });
+    }
   }
 
   setTrail(items: readonly BreadcrumbItem[]): void {
@@ -39,8 +43,7 @@ export class BreadcrumbService {
 
   setEntityName(id: string, name: string): void {
     this.labelCache.set(id, name);
-    // Trigger signal re-evaluation
-    this.currentUrl.set(this.currentUrl());
+    this.version.update((v) => v + 1);
   }
 
   getEntityName(id: string): string | undefined {
@@ -346,6 +349,25 @@ export class BreadcrumbService {
             items.push({ label: "Execution" });
           } else {
             items.push({ label: sprayName });
+          }
+        }
+        break;
+
+      case "irrigations":
+        items.push({ label: "Activities", route: "/activities" });
+        items.push({ label: "Irrigation", route: "/irrigations" });
+        if (segments[1] === "new") {
+          items.push({ label: "Plan Irrigation" });
+        } else if (segments[1] === "record-completed") {
+          items.push({ label: "Record Completed" });
+        } else if (segments[1]) {
+          const irrigationId = segments[1];
+          const irrigationName = this.labelCache.get(irrigationId) ?? "Irrigation details";
+          if (segments[2] === "edit") {
+            items.push({ label: irrigationName, route: ["/irrigations", irrigationId] });
+            items.push({ label: "Edit" });
+          } else {
+            items.push({ label: irrigationName });
           }
         }
         break;

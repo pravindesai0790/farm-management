@@ -22,6 +22,26 @@
 <div class="kpi-grid">
   <div
     class="kpi-card kpi-card--interactive"
+    [class.kpi-card--active]="status() === 'Draft' && !includeOverdue()"
+    (click)="onKpiClick('Draft')"
+    role="button"
+    tabindex="0"
+    matTooltip="Filter by Draft"
+  >
+    <div class="kpi-icon-wrapper kpi-draft-bg">
+      <mat-icon class="kpi-icon icon-draft">edit_note</mat-icon>
+    </div>
+    <div class="kpi-content">
+      <span class="kpi-label">Draft</span>
+      <strong class="kpi-value">
+        @if (isSummaryLoading()) { — } @else { {{ summary()?.draftCount ?? 0 }} }
+      </strong>
+      <span class="kpi-subtext">Planned drafts</span>
+    </div>
+  </div>
+
+  <div
+    class="kpi-card kpi-card--interactive"
     [class.kpi-card--active]="status() === 'Scheduled' && !includeOverdue()"
     (click)="onKpiClick('Scheduled')"
     role="button"

@@ -7,6 +7,7 @@ import { ActivatedRoute, Router } from "@angular/router";
 import { of, throwError } from "rxjs";
 
 import { PermissionService } from "../../../core/auth/permission.service";
+import { BreadcrumbService } from "../../../core/breadcrumb/breadcrumb.service";
 import { FarmManagementService } from "../../../core/farm-management/farm-management.service";
 import {
   CropCycle,
@@ -37,6 +38,7 @@ describe("IrrigationEditorPageComponent", () => {
   let mockPermissionService: jasmine.SpyObj<PermissionService>;
   let mockSnackBar: jasmine.SpyObj<MatSnackBar>;
   let mockRouter: jasmine.SpyObj<Router>;
+  let mockBreadcrumbService: jasmine.SpyObj<BreadcrumbService>;
 
   const sampleFarms: any[] = [
     {
@@ -197,6 +199,7 @@ describe("IrrigationEditorPageComponent", () => {
     mockPermissionService = jasmine.createSpyObj("PermissionService", ["has"]);
     mockSnackBar = jasmine.createSpyObj("MatSnackBar", ["open"]);
     mockRouter = jasmine.createSpyObj("Router", ["navigate"]);
+    mockBreadcrumbService = jasmine.createSpyObj("BreadcrumbService", ["setEntityName"]);
 
     mockPermissionService.has.and.returnValue(true);
     mockFarmService.listFarms.and.returnValue(
@@ -226,6 +229,7 @@ describe("IrrigationEditorPageComponent", () => {
         { provide: PermissionService, useValue: mockPermissionService },
         { provide: MatSnackBar, useValue: mockSnackBar },
         { provide: Router, useValue: mockRouter },
+        { provide: BreadcrumbService, useValue: mockBreadcrumbService },
         {
           provide: ActivatedRoute,
           useValue: {
@@ -456,6 +460,10 @@ describe("IrrigationEditorPageComponent", () => {
       expect(component.form.value.plannedWaterQuantity).toBe(1500);
       expect(component.form.value.plannedWaterUnitId).toBe("unit-l");
       expect(component.form.value.notes).toBe("Initial draft plan");
+      expect(mockBreadcrumbService.setEntityName).toHaveBeenCalledWith(
+        "irr-123",
+        "Sunny Valley Farm — North Plot",
+      );
     });
 
     it("should redirect to detail page if event is in non-editable status (such as InProgress or Completed)", () => {

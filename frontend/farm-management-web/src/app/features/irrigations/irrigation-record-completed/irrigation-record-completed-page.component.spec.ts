@@ -4,7 +4,7 @@ import { provideNativeDateAdapter } from "@angular/material/core";
 import { MatDialog } from "@angular/material/dialog";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { Router } from "@angular/router";
+import { provideRouter, Router } from "@angular/router";
 import { of, throwError } from "rxjs";
 
 import { PermissionService } from "../../../core/auth/permission.service";
@@ -170,15 +170,18 @@ describe("IrrigationRecordCompletedPageComponent", () => {
     await TestBed.configureTestingModule({
       imports: [IrrigationRecordCompletedPageComponent, NoopAnimationsModule],
       providers: [
+        provideRouter([]),
         provideNativeDateAdapter(),
         { provide: IrrigationService, useValue: mockIrrigationService },
         { provide: FarmManagementService, useValue: mockFarmService },
         { provide: PermissionService, useValue: mockPermissionService },
         { provide: MatSnackBar, useValue: mockSnackBar },
-        { provide: Router, useValue: mockRouter },
         { provide: MatDialog, useValue: mockDialog },
       ],
     }).compileComponents();
+
+    mockRouter = TestBed.inject(Router) as any;
+    spyOn(mockRouter, "navigate");
 
     fixture = TestBed.createComponent(IrrigationRecordCompletedPageComponent);
     component = fixture.componentInstance;

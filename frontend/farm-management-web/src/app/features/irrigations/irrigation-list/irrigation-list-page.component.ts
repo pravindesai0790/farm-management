@@ -413,13 +413,21 @@ export class IrrigationListPageComponent implements OnInit {
   }
 
   // Quick Card Click Filter Shortcuts
-  onKpiClick(filterType: "Scheduled" | "InProgress" | "Completed" | "Overdue"): void {
+  onKpiClick(filterType: "Draft" | "Scheduled" | "InProgress" | "Completed" | "Overdue"): void {
     if (filterType === "Overdue") {
-      this.includeOverdue.set(true);
-      this.status.set("");
+      if (this.includeOverdue()) {
+        this.includeOverdue.set(false);
+      } else {
+        this.includeOverdue.set(true);
+        this.status.set("");
+      }
     } else {
-      this.status.set(filterType);
-      this.includeOverdue.set(false);
+      if (this.status() === filterType && !this.includeOverdue()) {
+        this.status.set("");
+      } else {
+        this.status.set(filterType);
+        this.includeOverdue.set(false);
+      }
     }
     this.resetPageAndReload();
   }

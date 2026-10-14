@@ -222,6 +222,18 @@ describe("IrrigationListPageComponent", () => {
   });
 
   it("should filter when KPI card is clicked", () => {
+    component.onKpiClick("Draft");
+    expect(component.status()).toBe("Draft");
+    expect(component.includeOverdue()).toBeFalse();
+    expect(mockIrrigationService.listIrrigations).toHaveBeenCalledWith(
+      jasmine.objectContaining({ status: "Draft" }),
+    );
+
+    // Clicking active Draft card toggles it off
+    component.onKpiClick("Draft");
+    expect(component.status()).toBe("");
+    expect(component.includeOverdue()).toBeFalse();
+
     component.onKpiClick("Completed");
     expect(component.status()).toBe("Completed");
     expect(component.includeOverdue()).toBeFalse();
@@ -232,6 +244,10 @@ describe("IrrigationListPageComponent", () => {
     component.onKpiClick("Overdue");
     expect(component.includeOverdue()).toBeTrue();
     expect(component.status()).toBe("");
+
+    // Clicking active Overdue card toggles it off
+    component.onKpiClick("Overdue");
+    expect(component.includeOverdue()).toBeFalse();
   });
 
   it("should filter by fromDate and toDate using local YYYY-MM-DD format without timezone shift", () => {

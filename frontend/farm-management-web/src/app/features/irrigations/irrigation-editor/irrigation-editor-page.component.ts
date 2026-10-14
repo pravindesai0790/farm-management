@@ -30,6 +30,7 @@ import { ActivatedRoute, Router } from "@angular/router";
 import { finalize, forkJoin } from "rxjs";
 
 import { PermissionService } from "../../../core/auth/permission.service";
+import { BreadcrumbService } from "../../../core/breadcrumb/breadcrumb.service";
 import {
   CropCycle,
   CropCycleStage,
@@ -101,6 +102,7 @@ export class IrrigationEditorPageComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly farmService = inject(FarmManagementService);
   private readonly irrigationService = inject(IrrigationService);
+  private readonly breadcrumbService = inject(BreadcrumbService);
   readonly permissionService = inject(PermissionService);
 
   readonly id = this.route.snapshot.paramMap.get("id");
@@ -184,6 +186,11 @@ export class IrrigationEditorPageComponent implements OnInit {
       .subscribe({
         next: (event) => {
           this.irrigationDetails.set(event);
+
+          const label = event.farmAreaName
+            ? `${event.farmName} — ${event.farmAreaName}`
+            : event.farmName;
+          this.breadcrumbService.setEntityName(event.id, label);
 
           if (event.status !== "Draft" && event.status !== "Scheduled") {
             this.snack.open(
