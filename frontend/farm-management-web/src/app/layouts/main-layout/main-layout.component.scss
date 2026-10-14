@@ -39,14 +39,17 @@
   overflow-y: auto;
   padding-right: 2px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+  scrollbar-color: var(--app-scrollbar-thumb) var(--app-scrollbar-track);
 
   &::-webkit-scrollbar {
-    width: 4px;
+    width: var(--app-scrollbar-size, 6px);
   }
   &::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.15);
-    border-radius: 4px;
+    background-color: var(--app-scrollbar-thumb);
+    border-radius: 9999px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: var(--app-scrollbar-thumb-hover);
   }
 }
 

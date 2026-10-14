@@ -119,6 +119,14 @@ All detail, editor, and sub-pages must include a clean back link bar above the h
 </div>
 ```
 
+### 4.4 Global Scrollbar Standard (Material 3 Slim)
+To maintain a modern, compact, and desktop-efficient experience, all horizontal and vertical scrollbars across the entire application adhere to standardized slim scrollbar design system tokens:
+- **Small Width & Height**: `6px` (`--app-scrollbar-size: 6px`).
+- **Capsule Thumb**: Fully rounded (`border-radius: 9999px`) in subtle neutral `rgba(0, 0, 0, 0.2)` on rest, darkening to `rgba(0, 0, 0, 0.38)` on hover, and `var(--app-primary, #2d6e4b)` when dragging.
+- **Transparent Track**: Zero box borders or opaque background gutters (`background: transparent`).
+- **No Stepper Arrows**: Scrollbar stepper buttons hidden (`display: none`).
+- **Universal Application**: Standard `scrollbar-width: thin` and `scrollbar-color: ...` together with `::-webkit-scrollbar` declared globally in `src/styles.scss` for automatic inheritance across page shells, tables (`.table-wrap`), dialogs (`.mat-mdc-dialog-content`), and overlay dropdown panels.
+
 ---
 
 ## 5. Form Controls & Form Layouts
