@@ -85,8 +85,18 @@ export class MainLayoutComponent {
   readonly currentUser = this.authService.user;
   readonly breadcrumbs = this.breadcrumbService.breadcrumbs;
 
+  static readonly SIDEBAR_COLLAPSED_KEY = "fm_sidebar_collapsed";
+
   readonly currentUrl = signal<string>(this.router.url);
   readonly expandedMenus = signal<ReadonlySet<string>>(new Set<string>());
+  readonly isSidebarCollapsed = signal<boolean>(
+    typeof window !== "undefined" &&
+      window.localStorage.getItem(MainLayoutComponent.SIDEBAR_COLLAPSED_KEY) === "true",
+  );
+  readonly isSidenavOpened = signal<boolean>(true);
+  readonly isCollapsedRail = computed(
+    () => this.isSidebarCollapsed() && this.isSidenavOpened(),
+  );
 
   readonly organizationName = computed(
     () => this.currentUser()?.organizationName || "Farm Management",
@@ -456,6 +466,20 @@ export class MainLayoutComponent {
       });
   }
 
+  toggleSidebarCollapse(): void {
+    if (!this.isSidenavOpened()) {
+      this.isSidenavOpened.set(true);
+    }
+    const next = !this.isSidebarCollapsed();
+    this.isSidebarCollapsed.set(next);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(
+        MainLayoutComponent.SIDEBAR_COLLAPSED_KEY,
+        String(next),
+      );
+    }
+  }
+
   isMenuExpanded(id: string): boolean {
     return this.expandedMenus().has(id);
   }
@@ -485,6 +509,15 @@ export class MainLayoutComponent {
   }
 
   onParentClick(item: NavigationItem, event: MouseEvent): void {
+    if (this.isSidebarCollapsed()) {
+      this.isSidebarCollapsed.set(false);
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(
+          MainLayoutComponent.SIDEBAR_COLLAPSED_KEY,
+          "false",
+        );
+      }
+    }
     if (item.children && item.children.length > 0) {
       const current = new Set(this.expandedMenus());
       if (!current.has(item.id)) {

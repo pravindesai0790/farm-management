@@ -1,10 +1,36 @@
-<mat-sidenav-container class="layout-container">
-  <mat-sidenav #sidenav class="navigation" mode="side" opened>
-    <div class="navigation-brand">
-      <div class="brand-mark" aria-hidden="true">
+<mat-sidenav-container
+  class="layout-container"
+  [class.sidebar-collapsed]="isCollapsedRail()"
+>
+  <mat-sidenav
+    #sidenav
+    class="navigation"
+    [class.navigation-collapsed]="isCollapsedRail()"
+    mode="side"
+    opened
+    (openedChange)="isSidenavOpened.set($event)"
+  >
+    <div class="navigation-brand" [class.brand-collapsed]="isCollapsedRail()">
+      <div
+        class="brand-mark"
+        aria-hidden="true"
+        [matTooltip]="isCollapsedRail() ? 'Farm Management' : ''"
+        matTooltipPosition="right"
+      >
         <mat-icon>eco</mat-icon>
       </div>
-      <span>Farm Management</span>
+      <span class="brand-title">Farm Management</span>
+      <button
+        type="button"
+        class="sidebar-toggle-btn"
+        (click)="toggleSidebarCollapse()"
+        [matTooltip]="isCollapsedRail() ? 'Expand sidebar' : 'Collapse sidebar'"
+        matTooltipPosition="right"
+        [attr.aria-label]="isCollapsedRail() ? 'Expand sidebar' : 'Collapse sidebar'"
+        [attr.aria-expanded]="!isCollapsedRail()"
+      >
+        <mat-icon>{{ isCollapsedRail() ? 'chevron_right' : 'menu_open' }}</mat-icon>
+      </button>
     </div>
 
     <div class="navigation-scroll">
@@ -22,6 +48,8 @@
                       routerLinkActive="nav-item-active"
                       [routerLinkActiveOptions]="{ exact: item.exactMatch ?? false }"
                       class="nav-link nav-parent-link"
+                      [matTooltip]="isCollapsedRail() ? item.label : ''"
+                      matTooltipPosition="right"
                       (click)="onParentClick(item, $event)"
                     >
                       <mat-icon class="nav-icon">{{ item.icon }}</mat-icon>
@@ -34,7 +62,9 @@
                     <button
                       type="button"
                       class="nav-link nav-parent-link"
-                      (click)="toggleMenu(item.id)"
+                      [matTooltip]="isCollapsedRail() ? item.label : ''"
+                      matTooltipPosition="right"
+                      (click)="onParentClick(item, $event)"
                     >
                       <mat-icon class="nav-icon">{{ item.icon }}</mat-icon>
                       <span class="nav-label">{{ item.label }}</span>
@@ -167,9 +197,14 @@
       }
     </div>
 
-    <div class="navigation-footer">
+    <div
+      class="navigation-footer"
+      [class.footer-collapsed]="isCollapsedRail()"
+      [matTooltip]="isCollapsedRail() ? 'Farm Management v1.0' : ''"
+      matTooltipPosition="right"
+    >
       <mat-icon aria-hidden="true">eco</mat-icon>
-      <span>Farm Management v1.0</span>
+      <span class="footer-text">Farm Management v1.0</span>
     </div>
   </mat-sidenav>
 
@@ -180,7 +215,8 @@
           mat-icon-button
           type="button"
           aria-label="Toggle navigation"
-          (click)="sidenav.toggle()"
+          (click)="toggleSidebarCollapse()"
+          matTooltip="Toggle navigation"
         >
           <mat-icon>menu</mat-icon>
         </button>

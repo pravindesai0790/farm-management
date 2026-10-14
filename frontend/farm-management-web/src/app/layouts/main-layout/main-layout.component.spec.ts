@@ -180,4 +180,100 @@ describe("MainLayoutComponent Navigation", () => {
     expect(sprayParent?.children?.length).toBe(1);
     expect(sprayParent?.children?.[0].label).toBe("Spray Applications");
   });
+
+  describe("Sidebar Toggle & Collapsed Rail", () => {
+    beforeEach(() => {
+      localStorage.removeItem(MainLayoutComponent.SIDEBAR_COLLAPSED_KEY);
+    });
+
+    afterEach(() => {
+      localStorage.removeItem(MainLayoutComponent.SIDEBAR_COLLAPSED_KEY);
+    });
+
+    it("should initialize isSidebarCollapsed to false by default", () => {
+      expect(component.isSidebarCollapsed()).toBeFalse();
+      const sidenavEl = fixture.nativeElement.querySelector(".navigation");
+      expect(sidenavEl.classList.contains("navigation-collapsed")).toBeFalse();
+    });
+
+    it("should toggle sidebar collapse state and persist to localStorage", () => {
+      expect(component.isSidebarCollapsed()).toBeFalse();
+      expect(component.isCollapsedRail()).toBeFalse();
+
+      component.toggleSidebarCollapse();
+      expect(component.isSidebarCollapsed()).toBeTrue();
+      expect(component.isCollapsedRail()).toBeTrue();
+      expect(localStorage.getItem(MainLayoutComponent.SIDEBAR_COLLAPSED_KEY)).toBe("true");
+
+      fixture.detectChanges();
+      const containerEl = fixture.nativeElement.querySelector(".layout-container");
+      const sidenavEl = fixture.nativeElement.querySelector(".navigation");
+      expect(containerEl.classList.contains("sidebar-collapsed")).toBeTrue();
+      expect(sidenavEl.classList.contains("navigation-collapsed")).toBeTrue();
+
+      component.toggleSidebarCollapse();
+      expect(component.isSidebarCollapsed()).toBeFalse();
+      expect(component.isCollapsedRail()).toBeFalse();
+      expect(localStorage.getItem(MainLayoutComponent.SIDEBAR_COLLAPSED_KEY)).toBe("false");
+
+      fixture.detectChanges();
+      expect(containerEl.classList.contains("sidebar-collapsed")).toBeFalse();
+      expect(sidenavEl.classList.contains("navigation-collapsed")).toBeFalse();
+    });
+
+    it("should not activate collapsed rail if sidenav is closed", () => {
+      component.isSidebarCollapsed.set(true);
+      component.isSidenavOpened.set(false);
+      expect(component.isCollapsedRail()).toBeFalse();
+
+      fixture.detectChanges();
+      const containerEl = fixture.nativeElement.querySelector(".layout-container");
+      expect(containerEl.classList.contains("sidebar-collapsed")).toBeFalse();
+    });
+
+    it("should toggle sidebar when sidebar header toggle button is clicked", () => {
+      const toggleBtn = fixture.nativeElement.querySelector(".sidebar-toggle-btn");
+      expect(toggleBtn).toBeTruthy();
+
+      toggleBtn.click();
+      fixture.detectChanges();
+
+      expect(component.isSidebarCollapsed()).toBeTrue();
+      expect(toggleBtn.getAttribute("aria-label")).toBe("Expand sidebar");
+
+      toggleBtn.click();
+      fixture.detectChanges();
+
+      expect(component.isSidebarCollapsed()).toBeFalse();
+      expect(toggleBtn.getAttribute("aria-label")).toBe("Collapse sidebar");
+    });
+
+    it("should toggle sidebar when topbar hamburger button is clicked", () => {
+      const topbarBtn = fixture.nativeElement.querySelector(".topbar-left button[aria-label='Toggle navigation']");
+      expect(topbarBtn).toBeTruthy();
+
+      topbarBtn.click();
+      fixture.detectChanges();
+
+      expect(component.isSidebarCollapsed()).toBeTrue();
+
+      topbarBtn.click();
+      fixture.detectChanges();
+
+      expect(component.isSidebarCollapsed()).toBeFalse();
+    });
+
+    it("should expand collapsed sidebar when a parent menu item is clicked", () => {
+      component.isSidebarCollapsed.set(true);
+      const farmOpsGroup = component.navigationGroups.find((g) => g.title === "Farm Operations");
+      const farmsItem = farmOpsGroup?.items.find((i) => i.id === "farms")!;
+
+      const mockEvent = new MouseEvent("click");
+      component.onParentClick(farmsItem, mockEvent);
+
+      expect(component.isSidebarCollapsed()).toBeFalse();
+      expect(localStorage.getItem(MainLayoutComponent.SIDEBAR_COLLAPSED_KEY)).toBe("false");
+      expect(component.isMenuExpanded("farms")).toBeTrue();
+    });
+  });
 });
