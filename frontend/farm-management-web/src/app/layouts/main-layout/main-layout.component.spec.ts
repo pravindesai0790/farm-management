@@ -275,5 +275,30 @@ describe("MainLayoutComponent Navigation", () => {
       expect(localStorage.getItem(MainLayoutComponent.SIDEBAR_COLLAPSED_KEY)).toBe("false");
       expect(component.isMenuExpanded("farms")).toBeTrue();
     });
+
+    it("should apply sidebar-closed class when sidenav is not opened", () => {
+      component.isSidenavOpened.set(false);
+      fixture.detectChanges();
+
+      const containerEl = fixture.nativeElement.querySelector(".layout-container");
+      expect(containerEl.classList.contains("sidebar-closed")).toBeTrue();
+    });
+
+    it("should correctly transition container classes when starting collapsed and toggling to expanded", () => {
+      // Simulate component initializing in collapsed state (e.g. from localStorage)
+      component.isSidebarCollapsed.set(true);
+      fixture.detectChanges();
+
+      const containerEl = fixture.nativeElement.querySelector(".layout-container");
+      expect(containerEl.classList.contains("sidebar-collapsed")).toBeTrue();
+
+      // Now toggle to expand
+      component.toggleSidebarCollapse();
+      fixture.detectChanges();
+
+      expect(component.isSidebarCollapsed()).toBeFalse();
+      expect(containerEl.classList.contains("sidebar-collapsed")).toBeFalse();
+      expect(containerEl.classList.contains("sidebar-closed")).toBeFalse();
+    });
   });
 });

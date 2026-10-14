@@ -1,6 +1,7 @@
 <mat-sidenav-container
   class="layout-container"
   [class.sidebar-collapsed]="isCollapsedRail()"
+  [class.sidebar-closed]="!isSidenavOpened()"
 >
   <mat-sidenav
     #sidenav
