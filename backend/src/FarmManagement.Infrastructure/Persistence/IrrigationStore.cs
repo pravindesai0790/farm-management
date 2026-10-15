@@ -23,6 +23,26 @@ public sealed class IrrigationStore(ApplicationDbContext dbContext) : IIrrigatio
             .FirstOrDefaultAsync(e => e.Id == id && e.OrganizationId == organizationId, cancellationToken);
     }
 
+    public async Task<IrrigationEvent?> FindByIdempotencyKeyAsync(Guid organizationId, string idempotencyKey, CancellationToken cancellationToken = default)
+    {
+        var trimmed = idempotencyKey?.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed))
+        {
+            return null;
+        }
+
+        return await dbContext.IrrigationEvents
+            .Include(e => e.Farm)
+            .Include(e => e.FarmArea)
+            .Include(e => e.Plantation)
+            .Include(e => e.CropCycle)
+            .Include(e => e.CropCycleStage)
+            .Include(e => e.IrrigationMethod)
+            .Include(e => e.PlannedWaterUnit)
+            .Include(e => e.ActualWaterUnit)
+            .FirstOrDefaultAsync(e => e.OrganizationId == organizationId && e.IdempotencyKey == trimmed, cancellationToken);
+    }
+
     public async Task<int> CountAsync(
         Guid organizationId,
         IrrigationListQuery query,

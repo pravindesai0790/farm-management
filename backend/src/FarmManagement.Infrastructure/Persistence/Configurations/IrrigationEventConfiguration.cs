@@ -97,6 +97,7 @@ public sealed class IrrigationEventConfiguration : IEntityTypeConfiguration<Irri
         builder.Property(e => e.CancellationReason).HasColumnName("cancellation_reason").HasMaxLength(1000);
         builder.Property(e => e.CompletedAt).HasColumnName("completed_at");
 
+        builder.Property(e => e.IdempotencyKey).HasColumnName("idempotency_key").HasMaxLength(100);
         builder.Property(e => e.CreatedAt).HasColumnName("created_at").IsRequired();
         builder.Property(e => e.CreatedBy).HasColumnName("created_by").IsRequired();
         builder.Property(e => e.UpdatedAt).HasColumnName("updated_at");
@@ -111,6 +112,10 @@ public sealed class IrrigationEventConfiguration : IEntityTypeConfiguration<Irri
         builder.HasIndex(e => e.CropCycleStageId).HasDatabaseName("ix_irrigation_events_crop_cycle_stage_id");
         builder.HasIndex(e => e.ScheduledAt).HasDatabaseName("ix_irrigation_events_scheduled_at");
         builder.HasIndex(e => e.CompletedAt).HasDatabaseName("ix_irrigation_events_completed_at");
+        builder.HasIndex(e => new { e.OrganizationId, e.IdempotencyKey })
+            .HasDatabaseName("ix_irrigation_events_org_idempotency")
+            .IsUnique()
+            .HasFilter("idempotency_key IS NOT NULL");
     }
 
     private static string ToStringValue(IrrigationStatus status) => status switch

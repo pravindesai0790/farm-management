@@ -29,7 +29,8 @@ public sealed class IrrigationEvent
         Guid? actualWaterUnitId = null,
         string? notes = null,
         string? cancellationReason = null,
-        DateTimeOffset? completedAt = null)
+        DateTimeOffset? completedAt = null,
+        string? idempotencyKey = null)
     {
         if (organizationId == Guid.Empty)
         {
@@ -87,12 +88,14 @@ public sealed class IrrigationEvent
         Notes = NormalizeOptional(notes);
         CancellationReason = NormalizeOptional(cancellationReason);
         CompletedAt = completedAt;
+        IdempotencyKey = NormalizeOptional(idempotencyKey);
         CreatedAt = DateTimeOffset.UtcNow;
         CreatedBy = createdBy;
     }
 
     public Guid Id { get; private set; }
     public Guid OrganizationId { get; private set; }
+    public string? IdempotencyKey { get; private set; }
     public Guid FarmId { get; private set; }
     public Guid FarmAreaId { get; private set; }
     public Guid? PlantationId { get; private set; }

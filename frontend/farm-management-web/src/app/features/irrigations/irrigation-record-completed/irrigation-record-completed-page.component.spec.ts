@@ -418,20 +418,23 @@ describe("IrrigationRecordCompletedPageComponent", () => {
 
       component.onSubmit();
 
-      expect(mockIrrigationService.recordCompleted).toHaveBeenCalledWith({
-        farmId: "farm-1",
-        farmAreaId: "area-1",
-        irrigationMethodId: "method-1",
-        plantationId: null,
-        cropCycleId: null,
-        cropCycleStageId: null,
-        actualStartedAt: new Date("2026-10-10T10:00:00Z").toISOString(),
-        actualEndedAt: new Date("2026-10-10T12:00:00Z").toISOString(),
-        actualDurationMinutes: 120,
-        actualWaterQuantity: 2500,
-        actualWaterUnitId: "unit-l",
-        notes: "Field fully irrigated",
-      });
+      expect(mockIrrigationService.recordCompleted).toHaveBeenCalledWith(
+        jasmine.objectContaining({
+          farmId: "farm-1",
+          farmAreaId: "area-1",
+          irrigationMethodId: "method-1",
+          plantationId: null,
+          cropCycleId: null,
+          cropCycleStageId: null,
+          actualStartedAt: new Date("2026-10-10T10:00:00Z").toISOString(),
+          actualEndedAt: new Date("2026-10-10T12:00:00Z").toISOString(),
+          actualDurationMinutes: 120,
+          actualWaterQuantity: 2500,
+          actualWaterUnitId: "unit-l",
+          notes: "Field fully irrigated",
+          idempotencyKey: jasmine.stringMatching(/^IRR-/),
+        }),
+      );
 
       expect(mockSnackBar.open).toHaveBeenCalledWith(
         "Completed irrigation event recorded successfully.",

@@ -98,6 +98,15 @@ public sealed class IrrigationService(IIrrigationStore store) : IIrrigationServi
             throw Validation("farmAreaId", "A farm area is required.");
         }
 
+        if (!string.IsNullOrWhiteSpace(request.IdempotencyKey))
+        {
+            var existing = await store.FindByIdempotencyKeyAsync(actor.OrganizationId, request.IdempotencyKey, cancellationToken);
+            if (existing is not null)
+            {
+                return await GetAsync(actor, existing.Id, cancellationToken);
+            }
+        }
+
         await ValidateHierarchyAsync(
             actor.OrganizationId,
             request.FarmId,
@@ -128,7 +137,8 @@ public sealed class IrrigationService(IIrrigationStore store) : IIrrigationServi
             scheduledAt: request.ScheduledAt,
             plannedWaterQuantity: request.PlannedWaterQuantity,
             plannedWaterUnitId: request.PlannedWaterUnitId,
-            notes: request.Notes);
+            notes: request.Notes,
+            idempotencyKey: request.IdempotencyKey);
 
         store.Add(irrigation);
 
@@ -553,6 +563,15 @@ public sealed class IrrigationService(IIrrigationStore store) : IIrrigationServi
             throw Validation("irrigationMethodId", "An irrigation method is required.");
         }
 
+        if (!string.IsNullOrWhiteSpace(request.IdempotencyKey))
+        {
+            var existing = await store.FindByIdempotencyKeyAsync(actor.OrganizationId, request.IdempotencyKey, cancellationToken);
+            if (existing is not null)
+            {
+                return await GetAsync(actor, existing.Id, cancellationToken);
+            }
+        }
+
         await ValidateHierarchyAsync(
             actor.OrganizationId,
             request.FarmId,
@@ -594,7 +613,8 @@ public sealed class IrrigationService(IIrrigationStore store) : IIrrigationServi
             actualWaterQuantity: request.ActualWaterQuantity,
             actualWaterUnitId: request.ActualWaterUnitId,
             notes: request.Notes,
-            completedAt: now);
+            completedAt: now,
+            idempotencyKey: request.IdempotencyKey);
 
         await store.ExecuteInTransactionAsync(async ct =>
         {
@@ -955,6 +975,7 @@ public sealed class IrrigationService(IIrrigationStore store) : IIrrigationServi
             CreatedBy: irrigation.CreatedBy,
             UpdatedAt: irrigation.UpdatedAt,
             UpdatedBy: irrigation.UpdatedBy,
+            IdempotencyKey: irrigation.IdempotencyKey,
             CreatedByName: createdByName,
             UpdatedByName: updatedByName,
             ConcurrencyToken: ComputeConcurrencyToken(irrigation));

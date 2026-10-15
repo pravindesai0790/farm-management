@@ -109,6 +109,7 @@ export interface IrrigationDetailsResponse {
   readonly createdBy: string;
   readonly updatedAt: string | null;
   readonly updatedBy: string | null;
+  readonly idempotencyKey?: string | null;
   readonly createdByName?: string | null;
   readonly updatedByName?: string | null;
   readonly concurrencyToken?: string | null;
@@ -125,6 +126,7 @@ export interface CreateIrrigationDraftRequest {
   plannedWaterQuantity?: number | null;
   plannedWaterUnitId?: string | null;
   notes?: string | null;
+  idempotencyKey?: string | null;
 }
 
 export interface UpdateIrrigationDraftRequest {
@@ -193,4 +195,5 @@ export interface RecordCompletedIrrigationRequest {
   readonly actualWaterQuantity?: number | null;
   readonly actualWaterUnitId?: string | null;
   readonly notes?: string | null;
+  readonly idempotencyKey?: string | null;
 }

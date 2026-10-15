@@ -1549,6 +1549,11 @@ namespace FarmManagement.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("farm_id");
 
+                    b.Property<string>("IdempotencyKey")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("idempotency_key");
+
                     b.Property<Guid?>("IrrigationMethodId")
                         .HasColumnType("uuid")
                         .HasColumnName("irrigation_method_id");
@@ -1631,6 +1636,11 @@ namespace FarmManagement.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("FarmId", "Status")
                         .HasDatabaseName("ix_irrigation_events_farm_status");
+
+                    b.HasIndex("OrganizationId", "IdempotencyKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_irrigation_events_org_idempotency")
+                        .HasFilter("idempotency_key IS NOT NULL");
 
                     b.ToTable("irrigation_events", (string)null);
                 });

@@ -412,6 +412,9 @@ export class IrrigationEditorPageComponent implements OnInit {
       };
     }
 
-    return basePayload;
+    return {
+      ...basePayload,
+      idempotencyKey: `IRR-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+    };
   }
 }

@@ -361,6 +361,7 @@ export class IrrigationRecordCompletedPageComponent implements OnInit {
           : null,
       actualWaterUnitId: val.actualWaterUnitId || null,
       notes: val.notes?.trim() || null,
+      idempotencyKey: `IRR-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
     };
 
     this.isSubmitting.set(true);

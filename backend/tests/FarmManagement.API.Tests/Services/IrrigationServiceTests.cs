@@ -664,6 +664,9 @@ public class IrrigationServiceTests
         public Task<IrrigationEvent?> FindAsync(Guid id, Guid organizationId, CancellationToken cancellationToken = default) =>
             Task.FromResult(Irrigations.FirstOrDefault(e => e.Id == id && e.OrganizationId == organizationId));
 
+        public Task<IrrigationEvent?> FindByIdempotencyKeyAsync(Guid organizationId, string idempotencyKey, CancellationToken cancellationToken = default) =>
+            Task.FromResult(Irrigations.FirstOrDefault(e => e.OrganizationId == organizationId && e.IdempotencyKey == idempotencyKey));
+
         public Task<int> CountAsync(Guid organizationId, IrrigationListQuery query, DateTimeOffset now, CancellationToken cancellationToken = default) =>
             Task.FromResult(Irrigations.Count(e => e.OrganizationId == organizationId));
 

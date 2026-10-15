@@ -97,6 +97,7 @@ public sealed record IrrigationDetailsResponse(
     Guid CreatedBy,
     DateTimeOffset? UpdatedAt,
     Guid? UpdatedBy,
+    string? IdempotencyKey = null,
     string? CreatedByName = null,
     string? UpdatedByName = null,
     string? ConcurrencyToken = null);
@@ -112,7 +113,8 @@ public sealed record CreateIrrigationDraftRequest(
     DateTimeOffset? ScheduledAt = null,
     decimal? PlannedWaterQuantity = null,
     Guid? PlannedWaterUnitId = null,
-    string? Notes = null);
+    string? Notes = null,
+    string? IdempotencyKey = null);
 
 public sealed record UpdateIrrigationDraftRequest(
     Guid FarmId,
@@ -169,7 +171,8 @@ public sealed record RecordCompletedIrrigationRequest(
     int? ActualDurationMinutes = null,
     decimal? ActualWaterQuantity = null,
     Guid? ActualWaterUnitId = null,
-    string? Notes = null);
+    string? Notes = null,
+    string? IdempotencyKey = null);
 
 public sealed record CancelIrrigationRequest(
     string CancellationReason,

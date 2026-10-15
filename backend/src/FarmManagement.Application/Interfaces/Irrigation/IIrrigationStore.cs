@@ -7,6 +7,11 @@ public interface IIrrigationStore
 {
     Task<IrrigationEvent?> FindAsync(Guid id, Guid organizationId, CancellationToken cancellationToken = default);
 
+    Task<IrrigationEvent?> FindByIdempotencyKeyAsync(
+        Guid organizationId,
+        string idempotencyKey,
+        CancellationToken cancellationToken = default);
+
     Task<int> CountAsync(
         Guid organizationId,
         IrrigationListQuery query,
