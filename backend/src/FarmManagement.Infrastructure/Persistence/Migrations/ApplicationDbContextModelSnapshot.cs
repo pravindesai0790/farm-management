@@ -66,6 +66,14 @@ namespace FarmManagement.Infrastructure.Persistence.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("is_system");
 
+                    b.Property<string>("Module")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("SPRAY")
+                        .HasColumnName("module");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(150)
@@ -86,14 +94,14 @@ namespace FarmManagement.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Code")
+                    b.HasIndex("Module", "Code")
                         .IsUnique()
-                        .HasDatabaseName("ux_application_methods_system_code")
+                        .HasDatabaseName("ux_application_methods_system_module_code")
                         .HasFilter("organization_id IS NULL");
 
-                    b.HasIndex("OrganizationId", "Code")
+                    b.HasIndex("OrganizationId", "Module", "Code")
                         .IsUnique()
-                        .HasDatabaseName("ux_application_methods_organization_code");
+                        .HasDatabaseName("ux_application_methods_organization_module_code");
 
                     b.ToTable("application_methods", (string)null);
                 });
@@ -1324,6 +1332,294 @@ namespace FarmManagement.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ux_farm_ownership_types_code");
 
                     b.ToTable("farm_ownership_types", (string)null);
+                });
+
+            modelBuilder.Entity("FarmManagement.Domain.Entities.FertilizerApplication", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateOnly?>("ActualApplicationDate")
+                        .HasColumnType("date")
+                        .HasColumnName("actual_application_date");
+
+                    b.Property<decimal?>("ActualArea")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("actual_area");
+
+                    b.Property<Guid?>("ActualAreaUnitId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("actual_area_unit_id");
+
+                    b.Property<Guid?>("ApplicationMethodId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("application_method_id");
+
+                    b.Property<string>("CancellationReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("cancellation_reason");
+
+                    b.Property<DateTimeOffset?>("CancelledAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("cancelled_at");
+
+                    b.Property<Guid?>("CancelledBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cancelled_by");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<Guid?>("CompletedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("completed_by");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid?>("CropCycleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("crop_cycle_id");
+
+                    b.Property<Guid?>("CropCycleStageId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("crop_cycle_stage_id");
+
+                    b.Property<Guid?>("FarmAreaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("farm_area_id");
+
+                    b.Property<Guid?>("FarmId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("farm_id");
+
+                    b.Property<string>("IdempotencyKey")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("idempotency_key");
+
+                    b.Property<Guid?>("IrrigationEventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("irrigation_event_id");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<string>("OtherMethodDescription")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("other_method_description");
+
+                    b.Property<decimal?>("PlannedArea")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("planned_area");
+
+                    b.Property<Guid?>("PlannedAreaUnitId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("planned_area_unit_id");
+
+                    b.Property<DateOnly?>("PlannedDate")
+                        .HasColumnType("date")
+                        .HasColumnName("planned_date");
+
+                    b.Property<Guid?>("PlantationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("plantation_id");
+
+                    b.Property<string>("PurposeReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("purpose_reason");
+
+                    b.Property<string>("ReferenceNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("reference_number");
+
+                    b.Property<DateOnly?>("ScheduledDate")
+                        .HasColumnType("date")
+                        .HasColumnName("scheduled_date");
+
+                    b.Property<DateTimeOffset?>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
+
+                    b.Property<Guid?>("StartedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("started_by");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(1L)
+                        .HasColumnName("version");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActualApplicationDate")
+                        .HasDatabaseName("ix_fertilizer_applications_actual_app_date");
+
+                    b.HasIndex("ActualAreaUnitId");
+
+                    b.HasIndex("ApplicationMethodId");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("ix_fertilizer_applications_created_at");
+
+                    b.HasIndex("CropCycleId")
+                        .HasDatabaseName("ix_fertilizer_applications_crop_cycle_id");
+
+                    b.HasIndex("CropCycleStageId")
+                        .HasDatabaseName("ix_fertilizer_applications_crop_cycle_stage_id");
+
+                    b.HasIndex("FarmAreaId")
+                        .HasDatabaseName("ix_fertilizer_applications_farm_area_id");
+
+                    b.HasIndex("FarmId")
+                        .HasDatabaseName("ix_fertilizer_applications_farm_id");
+
+                    b.HasIndex("IrrigationEventId");
+
+                    b.HasIndex("PlannedAreaUnitId");
+
+                    b.HasIndex("PlannedDate")
+                        .HasDatabaseName("ix_fertilizer_applications_planned_date");
+
+                    b.HasIndex("PlantationId")
+                        .HasDatabaseName("ix_fertilizer_applications_plantation_id");
+
+                    b.HasIndex("ScheduledDate")
+                        .HasDatabaseName("ix_fertilizer_applications_scheduled_date");
+
+                    b.HasIndex("OrganizationId", "IdempotencyKey")
+                        .HasDatabaseName("ix_fertilizer_applications_org_idempotency");
+
+                    b.HasIndex("OrganizationId", "ReferenceNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ux_fertilizer_applications_org_ref");
+
+                    b.HasIndex("OrganizationId", "Status")
+                        .HasDatabaseName("ix_fertilizer_applications_org_status");
+
+                    b.ToTable("fertilizer_applications", (string)null);
+                });
+
+            modelBuilder.Entity("FarmManagement.Domain.Entities.FertilizerApplicationProduct", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal?>("ActualQuantity")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("actual_quantity");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("FertilizerApplicationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("fertilizer_application_id");
+
+                    b.Property<Guid>("InventoryItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("inventory_item_id");
+
+                    b.Property<decimal>("PlannedQuantity")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("planned_quantity");
+
+                    b.Property<Guid?>("StockMovementId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("stock_movement_id");
+
+                    b.Property<Guid?>("StorageLocationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("storage_location_id");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InventoryItemId")
+                        .HasDatabaseName("ix_fertilizer_application_products_inventory_item_id");
+
+                    b.HasIndex("StockMovementId")
+                        .HasDatabaseName("ix_fertilizer_application_products_stock_movement_id");
+
+                    b.HasIndex("StorageLocationId")
+                        .HasDatabaseName("ix_fertilizer_application_products_storage_location_id");
+
+                    b.HasIndex("FertilizerApplicationId", "InventoryItemId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_fertilizer_application_products_application_item");
+
+                    b.ToTable("fertilizer_application_products", (string)null);
+                });
+
+            modelBuilder.Entity("FarmManagement.Domain.Entities.FertilizerReferenceSequence", b =>
+                {
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("integer")
+                        .HasColumnName("year");
+
+                    b.Property<int>("LastNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("last_number");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("OrganizationId", "Year");
+
+                    b.ToTable("fertilizer_reference_sequences", (string)null);
                 });
 
             modelBuilder.Entity("FarmManagement.Domain.Entities.InventoryItem", b =>
@@ -3238,6 +3534,10 @@ namespace FarmManagement.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("farm_id");
 
+                    b.Property<Guid?>("FertilizerApplicationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("fertilizer_application_id");
+
                     b.Property<Guid>("InventoryItemId")
                         .HasColumnType("uuid")
                         .HasColumnName("inventory_item_id");
@@ -3326,6 +3626,10 @@ namespace FarmManagement.Infrastructure.Persistence.Migrations
                     b.HasIndex("FarmAreaId")
                         .HasDatabaseName("ix_stock_movements_farm_area")
                         .HasFilter("farm_area_id IS NOT NULL");
+
+                    b.HasIndex("FertilizerApplicationId")
+                        .HasDatabaseName("ix_stock_movements_fertilizer_application")
+                        .HasFilter("fertilizer_application_id IS NOT NULL");
 
                     b.HasIndex("LaborActivityId")
                         .HasDatabaseName("ix_stock_movements_labor_activity")
@@ -4909,6 +5213,139 @@ namespace FarmManagement.Infrastructure.Persistence.Migrations
                     b.Navigation("ParentFarmArea");
                 });
 
+            modelBuilder.Entity("FarmManagement.Domain.Entities.FertilizerApplication", b =>
+                {
+                    b.HasOne("FarmManagement.Domain.Entities.Unit", "ActualAreaUnit")
+                        .WithMany()
+                        .HasForeignKey("ActualAreaUnitId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_fertilizer_applications_actual_area_unit");
+
+                    b.HasOne("FarmManagement.Domain.Entities.ApplicationMethod", "ApplicationMethod")
+                        .WithMany()
+                        .HasForeignKey("ApplicationMethodId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_fertilizer_applications_application_method");
+
+                    b.HasOne("FarmManagement.Domain.Entities.CropCycle", "CropCycle")
+                        .WithMany()
+                        .HasForeignKey("CropCycleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_fertilizer_applications_crop_cycle");
+
+                    b.HasOne("FarmManagement.Domain.Entities.CropCycleStage", "CropCycleStage")
+                        .WithMany()
+                        .HasForeignKey("CropCycleStageId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_fertilizer_applications_crop_cycle_stage");
+
+                    b.HasOne("FarmManagement.Domain.Entities.FarmArea", "FarmArea")
+                        .WithMany()
+                        .HasForeignKey("FarmAreaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_fertilizer_applications_farm_area");
+
+                    b.HasOne("FarmManagement.Domain.Entities.Farm", "Farm")
+                        .WithMany()
+                        .HasForeignKey("FarmId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_fertilizer_applications_farm");
+
+                    b.HasOne("FarmManagement.Domain.Entities.IrrigationEvent", "IrrigationEvent")
+                        .WithMany()
+                        .HasForeignKey("IrrigationEventId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_fertilizer_applications_irrigation_event");
+
+                    b.HasOne("FarmManagement.Domain.Entities.Organization", "Organization")
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_fertilizer_applications_organization");
+
+                    b.HasOne("FarmManagement.Domain.Entities.Unit", "PlannedAreaUnit")
+                        .WithMany()
+                        .HasForeignKey("PlannedAreaUnitId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_fertilizer_applications_planned_area_unit");
+
+                    b.HasOne("FarmManagement.Domain.Entities.CropPlantation", "Plantation")
+                        .WithMany()
+                        .HasForeignKey("PlantationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_fertilizer_applications_plantation");
+
+                    b.Navigation("ActualAreaUnit");
+
+                    b.Navigation("ApplicationMethod");
+
+                    b.Navigation("CropCycle");
+
+                    b.Navigation("CropCycleStage");
+
+                    b.Navigation("Farm");
+
+                    b.Navigation("FarmArea");
+
+                    b.Navigation("IrrigationEvent");
+
+                    b.Navigation("Organization");
+
+                    b.Navigation("PlannedAreaUnit");
+
+                    b.Navigation("Plantation");
+                });
+
+            modelBuilder.Entity("FarmManagement.Domain.Entities.FertilizerApplicationProduct", b =>
+                {
+                    b.HasOne("FarmManagement.Domain.Entities.FertilizerApplication", "FertilizerApplication")
+                        .WithMany("Products")
+                        .HasForeignKey("FertilizerApplicationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_fertilizer_application_products_fertilizer_application");
+
+                    b.HasOne("FarmManagement.Domain.Entities.InventoryItem", "InventoryItem")
+                        .WithMany()
+                        .HasForeignKey("InventoryItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_fertilizer_application_products_inventory_item");
+
+                    b.HasOne("FarmManagement.Domain.Entities.StockMovement", "StockMovement")
+                        .WithMany()
+                        .HasForeignKey("StockMovementId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_fertilizer_application_products_stock_movement");
+
+                    b.HasOne("FarmManagement.Domain.Entities.StorageLocation", "StorageLocation")
+                        .WithMany()
+                        .HasForeignKey("StorageLocationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_fertilizer_application_products_storage_location");
+
+                    b.Navigation("FertilizerApplication");
+
+                    b.Navigation("InventoryItem");
+
+                    b.Navigation("StockMovement");
+
+                    b.Navigation("StorageLocation");
+                });
+
+            modelBuilder.Entity("FarmManagement.Domain.Entities.FertilizerReferenceSequence", b =>
+                {
+                    b.HasOne("FarmManagement.Domain.Entities.Organization", "Organization")
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_fertilizer_reference_sequences_organization");
+
+                    b.Navigation("Organization");
+                });
+
             modelBuilder.Entity("FarmManagement.Domain.Entities.InventoryItem", b =>
                 {
                     b.HasOne("FarmManagement.Domain.Entities.InventoryItemCategory", "Category")
@@ -5609,6 +6046,12 @@ namespace FarmManagement.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_stock_movements_farm");
 
+                    b.HasOne("FarmManagement.Domain.Entities.FertilizerApplication", "FertilizerApplication")
+                        .WithMany()
+                        .HasForeignKey("FertilizerApplicationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_stock_movements_fertilizer_application");
+
                     b.HasOne("FarmManagement.Domain.Entities.InventoryItem", "InventoryItem")
                         .WithMany()
                         .HasForeignKey("InventoryItemId")
@@ -5674,6 +6117,8 @@ namespace FarmManagement.Infrastructure.Persistence.Migrations
                     b.Navigation("Farm");
 
                     b.Navigation("FarmArea");
+
+                    b.Navigation("FertilizerApplication");
 
                     b.Navigation("InventoryItem");
 
@@ -6012,6 +6457,11 @@ namespace FarmManagement.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("FarmManagement.Domain.Entities.Farm", b =>
                 {
                     b.Navigation("WorkerAssignments");
+                });
+
+            modelBuilder.Entity("FarmManagement.Domain.Entities.FertilizerApplication", b =>
+                {
+                    b.Navigation("Products");
                 });
 
             modelBuilder.Entity("FarmManagement.Domain.Entities.LaborCategory", b =>

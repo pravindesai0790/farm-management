@@ -208,7 +208,16 @@ public sealed class IdentityDataSeeder(
         new("IrrigationMethod.Create", "Create irrigation methods.", "Irrigation Methods"),
         new("IrrigationMethod.Update", "Update irrigation methods.", "Irrigation Methods"),
         new("IrrigationMethod.Activate", "Activate irrigation methods.", "Irrigation Methods"),
-        new("IrrigationMethod.Deactivate", "Deactivate irrigation methods.", "Irrigation Methods")
+        new("IrrigationMethod.Deactivate", "Deactivate irrigation methods.", "Irrigation Methods"),
+        new("Fertilizer.View", "View fertilizer applications and history.", "Fertilizer"),
+        new("Fertilizer.Create", "Create fertilizer application drafts.", "Fertilizer"),
+        new("Fertilizer.Update", "Update draft, plan, and schedule fertilizer applications.", "Fertilizer"),
+        new("Fertilizer.Start", "Start fertilizer application executions.", "Fertilizer"),
+        new("Fertilizer.Complete", "Complete fertilizer applications and consume stock.", "Fertilizer"),
+        new("Fertilizer.Cancel", "Cancel fertilizer applications.", "Fertilizer"),
+        new("Fertilizer.RecordCompleted", "Directly record completed fertilizer applications.", "Fertilizer"),
+        new("Fertilizer.DeleteDraft", "Delete fertilizer application drafts.", "Fertilizer"),
+        new("Fertilizer.Export", "Export fertilizer applications to CSV.", "Fertilizer")
     ];
 
     private static readonly IReadOnlySet<string> OrganizationAdminPermissions =
@@ -389,7 +398,16 @@ public sealed class IdentityDataSeeder(
             "IrrigationMethod.Create",
             "IrrigationMethod.Update",
             "IrrigationMethod.Activate",
-            "IrrigationMethod.Deactivate"
+            "IrrigationMethod.Deactivate",
+            "Fertilizer.View",
+            "Fertilizer.Create",
+            "Fertilizer.Update",
+            "Fertilizer.Start",
+            "Fertilizer.Complete",
+            "Fertilizer.Cancel",
+            "Fertilizer.RecordCompleted",
+            "Fertilizer.DeleteDraft",
+            "Fertilizer.Export"
         };
 
     /// <summary>
@@ -475,7 +493,16 @@ public sealed class IdentityDataSeeder(
             "Irrigation.Start",
             "Irrigation.Complete",
             "Irrigation.Cancel",
-            "IrrigationMethod.View"
+            "IrrigationMethod.View",
+            "Fertilizer.View",
+            "Fertilizer.Create",
+            "Fertilizer.Update",
+            "Fertilizer.Start",
+            "Fertilizer.Complete",
+            "Fertilizer.Cancel",
+            "Fertilizer.RecordCompleted",
+            "Fertilizer.DeleteDraft",
+            "Fertilizer.Export"
         };
 
     /// <summary>
@@ -516,7 +543,12 @@ public sealed class IdentityDataSeeder(
             "Irrigation.View",
             "Irrigation.Start",
             "Irrigation.Complete",
-            "IrrigationMethod.View"
+            "IrrigationMethod.View",
+            "Fertilizer.View",
+            "Fertilizer.Start",
+            "Fertilizer.Complete",
+            "Fertilizer.Cancel",
+            "Fertilizer.RecordCompleted"
         };
 
     private static readonly IReadOnlyList<SeedFarmOwnershipType> SeedFarmOwnershipTypes =
@@ -673,12 +705,22 @@ public sealed class IdentityDataSeeder(
 
     private static readonly IReadOnlyList<SeedApplicationMethod> SeedApplicationMethods =
     [
-        new("KNAPSACK_SPRAYER", "Knapsack Sprayer", 10, "Manual or battery-operated backpack knapsack sprayer."),
-        new("POWER_SPRAYER", "Power Sprayer", 20, "Engine or motor-driven high-pressure power sprayer."),
-        new("TRACTOR_SPRAYER", "Tractor Sprayer", 30, "Tractor-mounted boom or air-blast sprayer."),
-        new("DRONE_SPRAYER", "Drone Sprayer", 40, "Agricultural spraying drone (UAV)."),
-        new("MANUAL", "Manual", 50, "Manual drenching, brush, or hand application."),
-        new("OTHER", "Other", 60, "Other application equipment or methods.")
+        // Spray Application Methods
+        new("KNAPSACK_SPRAYER", "Knapsack Sprayer", 10, "SPRAY", "Manual or battery-operated backpack knapsack sprayer."),
+        new("POWER_SPRAYER", "Power Sprayer", 20, "SPRAY", "Engine or motor-driven high-pressure power sprayer."),
+        new("TRACTOR_SPRAYER", "Tractor Sprayer", 30, "SPRAY", "Tractor-mounted boom or air-blast sprayer."),
+        new("DRONE_SPRAYER", "Drone Sprayer", 40, "SPRAY", "Agricultural spraying drone (UAV)."),
+        new("MANUAL", "Manual", 50, "SPRAY", "Manual drenching, brush, or hand application."),
+        new("OTHER", "Other", 60, "SPRAY", "Other application equipment or methods."),
+
+        // Fertilizer Application Methods
+        new("BROADCASTING", "Broadcasting", 10, "FERTILIZER", "Uniform spreading of granular or pelletized fertilizer across the entire soil surface."),
+        new("TOP_DRESSING", "Top Dressing", 20, "FERTILIZER", "Application of fertilizer directly onto the surface of an established crop or soil canopy."),
+        new("SIDE_DRESSING_BANDING", "Side Dressing / Banding", 30, "FERTILIZER", "Concentrated application of fertilizer in narrow bands alongside plant rows or crop root zones."),
+        new("PLACEMENT", "Placement", 40, "FERTILIZER", "Placement of fertilizer in planting furrows, seed drills, or holes below or near the seed."),
+        new("FERTIGATION", "Fertigation", 50, "FERTILIZER", "Application of water-soluble fertilizers dissolved directly within the irrigation system."),
+        new("FOLIAR", "Foliar Application", 60, "FERTILIZER", "Spraying of liquid nutrient solutions directly onto plant leaves and foliage for rapid uptake."),
+        new("OTHER", "Other", 70, "FERTILIZER", "Specialized or custom application methods. Requires nonblank description.")
     ];
 
     private static readonly IReadOnlyList<SeedIrrigationMethod> SeedIrrigationMethods =
@@ -1102,7 +1144,7 @@ public sealed class IdentityDataSeeder(
         foreach (var seedMethod in SeedApplicationMethods)
         {
             var exists = await dbContext.ApplicationMethods.AnyAsync(
-                method => method.IsSystem && method.OrganizationId == null && method.Code == seedMethod.Code,
+                method => method.IsSystem && method.OrganizationId == null && method.Module == seedMethod.Module && method.Code == seedMethod.Code,
                 cancellationToken);
 
             if (!exists)
@@ -1113,7 +1155,8 @@ public sealed class IdentityDataSeeder(
                     name: seedMethod.Name,
                     isSystem: true,
                     description: seedMethod.Description,
-                    displayOrder: seedMethod.DisplayOrder));
+                    displayOrder: seedMethod.DisplayOrder,
+                    module: seedMethod.Module));
             }
         }
 
@@ -1446,7 +1489,7 @@ public sealed class IdentityDataSeeder(
 
     private sealed record SeedTarget(string Code, string Name, TargetType TargetType, int DisplayOrder, string? Description = null);
 
-    private sealed record SeedApplicationMethod(string Code, string Name, int DisplayOrder, string? Description = null);
+    private sealed record SeedApplicationMethod(string Code, string Name, int DisplayOrder, string Module = "SPRAY", string? Description = null);
 
     private sealed record SeedIrrigationMethod(string Code, string Name, int DisplayOrder, string? Description = null);
 

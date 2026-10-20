@@ -6,6 +6,7 @@ public sealed class ApplicationMethod
     {
         Name = string.Empty;
         Code = string.Empty;
+        Module = "SPRAY";
     }
 
     public ApplicationMethod(
@@ -15,7 +16,8 @@ public sealed class ApplicationMethod
         bool isSystem = false,
         string? description = null,
         int displayOrder = 0,
-        Guid? createdBy = null)
+        Guid? createdBy = null,
+        string module = "SPRAY")
     {
         if (isSystem && organizationId is not null)
         {
@@ -50,6 +52,7 @@ public sealed class ApplicationMethod
         DisplayOrder = displayOrder;
         IsSystem = isSystem;
         IsActive = true;
+        Module = string.IsNullOrWhiteSpace(module) ? "SPRAY" : module.Trim().ToUpperInvariant();
         CreatedAt = DateTimeOffset.UtcNow;
         CreatedBy = createdBy;
     }
@@ -62,6 +65,7 @@ public sealed class ApplicationMethod
     public int DisplayOrder { get; private set; }
     public bool IsSystem { get; private set; }
     public bool IsActive { get; private set; }
+    public string Module { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public Guid? CreatedBy { get; private set; }
     public DateTimeOffset? UpdatedAt { get; private set; }

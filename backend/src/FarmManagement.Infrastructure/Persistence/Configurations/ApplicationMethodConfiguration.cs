@@ -20,6 +20,7 @@ public sealed class ApplicationMethodConfiguration : IEntityTypeConfiguration<Ap
             .HasConstraintName("fk_application_methods_organization")
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.Property(am => am.Module).HasColumnName("module").HasMaxLength(50).HasDefaultValue("SPRAY").IsRequired();
         builder.Property(am => am.Code).HasColumnName("code").HasMaxLength(50).IsRequired();
         builder.Property(am => am.Name).HasColumnName("name").HasMaxLength(150).IsRequired();
         builder.Property(am => am.Description).HasColumnName("description");
@@ -32,12 +33,12 @@ public sealed class ApplicationMethodConfiguration : IEntityTypeConfiguration<Ap
         builder.Property(am => am.UpdatedAt).HasColumnName("updated_at");
         builder.Property(am => am.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(am => new { am.OrganizationId, am.Code })
-            .HasDatabaseName("ux_application_methods_organization_code")
+        builder.HasIndex(am => new { am.OrganizationId, am.Module, am.Code })
+            .HasDatabaseName("ux_application_methods_organization_module_code")
             .IsUnique();
 
-        builder.HasIndex(am => am.Code)
-            .HasDatabaseName("ux_application_methods_system_code")
+        builder.HasIndex(am => new { am.Module, am.Code })
+            .HasDatabaseName("ux_application_methods_system_module_code")
             .HasFilter("organization_id IS NULL")
             .IsUnique();
     }

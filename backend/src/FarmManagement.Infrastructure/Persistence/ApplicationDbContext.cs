@@ -113,6 +113,12 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
 
     public DbSet<IrrigationEvent> IrrigationEvents => Set<IrrigationEvent>();
 
+    public DbSet<FertilizerApplication> FertilizerApplications => Set<FertilizerApplication>();
+
+    public DbSet<FertilizerApplicationProduct> FertilizerApplicationProducts => Set<FertilizerApplicationProduct>();
+
+    public DbSet<FertilizerReferenceSequence> FertilizerReferenceSequences => Set<FertilizerReferenceSequence>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);

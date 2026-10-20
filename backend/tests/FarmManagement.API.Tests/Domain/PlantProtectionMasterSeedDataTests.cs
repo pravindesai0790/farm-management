@@ -148,7 +148,7 @@ public sealed class PlantProtectionMasterSeedDataTests
         await seeder.SeedAsync();
 
         var methods = await dbContext.ApplicationMethods
-            .Where(m => m.IsSystem && m.OrganizationId == null)
+            .Where(m => m.IsSystem && m.OrganizationId == null && m.Module == "SPRAY")
             .OrderBy(m => m.DisplayOrder)
             .ToListAsync();
 
@@ -192,7 +192,7 @@ public sealed class PlantProtectionMasterSeedDataTests
 
         var ptCount1 = await dbContext.ProductTypes.CountAsync(pt => pt.IsSystem);
         var targetCount1 = await dbContext.Targets.CountAsync(t => t.IsSystem);
-        var methodCount1 = await dbContext.ApplicationMethods.CountAsync(m => m.IsSystem);
+        var methodCount1 = await dbContext.ApplicationMethods.CountAsync(m => m.IsSystem && m.Module == "SPRAY");
 
         Assert.Equal(9, ptCount1);
         Assert.Equal(16, targetCount1);
@@ -203,7 +203,7 @@ public sealed class PlantProtectionMasterSeedDataTests
 
         var ptCount2 = await dbContext.ProductTypes.CountAsync(pt => pt.IsSystem);
         var targetCount2 = await dbContext.Targets.CountAsync(t => t.IsSystem);
-        var methodCount2 = await dbContext.ApplicationMethods.CountAsync(m => m.IsSystem);
+        var methodCount2 = await dbContext.ApplicationMethods.CountAsync(m => m.IsSystem && m.Module == "SPRAY");
 
         Assert.Equal(9, ptCount2);
         Assert.Equal(16, targetCount2);

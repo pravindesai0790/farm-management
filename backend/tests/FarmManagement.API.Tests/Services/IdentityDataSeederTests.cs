@@ -67,6 +67,17 @@ public class IdentityDataSeederTests
         Assert.Contains("Irrigation.Complete", permissions);
         Assert.Contains("Irrigation.Cancel", permissions);
         Assert.Contains("IrrigationMethod.View", permissions);
+
+        // Assert Phase 3.9 Fertilizer Permissions
+        Assert.Contains("Fertilizer.View", permissions);
+        Assert.Contains("Fertilizer.Create", permissions);
+        Assert.Contains("Fertilizer.Update", permissions);
+        Assert.Contains("Fertilizer.Start", permissions);
+        Assert.Contains("Fertilizer.Complete", permissions);
+        Assert.Contains("Fertilizer.Cancel", permissions);
+        Assert.Contains("Fertilizer.RecordCompleted", permissions);
+        Assert.Contains("Fertilizer.DeleteDraft", permissions);
+        Assert.Contains("Fertilizer.Export", permissions);
     }
 
     [Fact]
@@ -145,6 +156,17 @@ public class IdentityDataSeederTests
         Assert.Contains("IrrigationMethod.Update", permissions);
         Assert.Contains("IrrigationMethod.Activate", permissions);
         Assert.Contains("IrrigationMethod.Deactivate", permissions);
+
+        // Assert Phase 3.9 Permissions
+        Assert.Contains("Fertilizer.View", permissions);
+        Assert.Contains("Fertilizer.Create", permissions);
+        Assert.Contains("Fertilizer.Update", permissions);
+        Assert.Contains("Fertilizer.Start", permissions);
+        Assert.Contains("Fertilizer.Complete", permissions);
+        Assert.Contains("Fertilizer.Cancel", permissions);
+        Assert.Contains("Fertilizer.RecordCompleted", permissions);
+        Assert.Contains("Fertilizer.DeleteDraft", permissions);
+        Assert.Contains("Fertilizer.Export", permissions);
     }
 
     [Fact]
@@ -182,5 +204,12 @@ public class IdentityDataSeederTests
         Assert.Contains("Irrigation.Start", permissions);
         Assert.Contains("Irrigation.Complete", permissions);
         Assert.Contains("IrrigationMethod.View", permissions);
+
+        // Assert Phase 3.9 Fertilizer Permissions
+        Assert.Contains("Fertilizer.View", permissions);
+        Assert.Contains("Fertilizer.Start", permissions);
+        Assert.Contains("Fertilizer.Complete", permissions);
+        Assert.Contains("Fertilizer.Cancel", permissions);
+        Assert.Contains("Fertilizer.RecordCompleted", permissions);
     }
 }
