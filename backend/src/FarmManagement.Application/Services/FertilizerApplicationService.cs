@@ -585,6 +585,519 @@ public sealed class FertilizerApplicationService(
         return await GetAsync(actor, newApp.Id, cancellationToken);
     }
 
+    public async Task<FertilizerApplicationDetailsResponse> PlanAsync(
+        FertilizerActor actor,
+        Guid id,
+        PlanFertilizerApplicationRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (id == Guid.Empty)
+        {
+            throw new ResourceNotFoundException("The fertilizer application was not found.");
+        }
+
+        var app = await store.FindAsync(id, actor.OrganizationId, cancellationToken)
+            ?? throw new ResourceNotFoundException("The fertilizer application was not found.");
+
+        if (app.Status != FertilizerApplicationStatus.Draft)
+        {
+            throw new ConflictException("Only draft fertilizer applications can be planned.");
+        }
+
+        if (request.Version.HasValue && request.Version.Value != app.Version)
+        {
+            throw new ConflictException("The fertilizer application has been modified by another user. Please reload and try again.");
+        }
+
+        // If request provides updated fields, apply them
+        var farmId = request.FarmId ?? app.FarmId;
+        var farmAreaId = request.FarmAreaId ?? app.FarmAreaId;
+        var plantationId = request.PlantationId ?? app.PlantationId;
+        var cropCycleId = request.CropCycleId ?? app.CropCycleId;
+        var cropCycleStageId = request.CropCycleStageId ?? app.CropCycleStageId;
+        var applicationMethodId = request.ApplicationMethodId ?? app.ApplicationMethodId;
+        var otherMethodDescription = request.OtherMethodDescription ?? app.OtherMethodDescription;
+        var irrigationEventId = request.IrrigationEventId ?? app.IrrigationEventId;
+        var plannedDate = request.PlannedDate ?? app.PlannedDate;
+        var scheduledDate = request.ScheduledDate ?? app.ScheduledDate;
+        var plannedArea = request.PlannedArea ?? app.PlannedArea;
+        var plannedAreaUnitId = request.PlannedAreaUnitId ?? app.PlannedAreaUnitId;
+        var purposeReason = request.PurposeReason ?? app.PurposeReason;
+
+        var now = DateTimeOffset.UtcNow;
+
+        // Synchronize products if provided in request
+        if (request.Products is not null)
+        {
+            var seenItemIds = new HashSet<Guid>();
+            foreach (var p in request.Products)
+            {
+                if (p.InventoryItemId == Guid.Empty)
+                {
+                    throw Validation("products", "A valid inventory item is required.");
+                }
+
+                if (!seenItemIds.Add(p.InventoryItemId))
+                {
+                    throw Validation("products", $"Duplicate inventory item '{p.InventoryItemId}' is not allowed.");
+                }
+            }
+
+            var toRemove = app.Products.Where(p => !seenItemIds.Contains(p.InventoryItemId)).ToList();
+            foreach (var product in toRemove)
+            {
+                app.RemoveProduct(product.InventoryItemId);
+                store.RemoveProduct(product);
+            }
+
+            foreach (var p in request.Products)
+            {
+                var existing = app.Products.FirstOrDefault(x => x.InventoryItemId == p.InventoryItemId);
+                if (existing is not null)
+                {
+                    existing.UpdatePlanned(p.PlannedQuantity, p.StorageLocationId, now, actor.UserId);
+                }
+                else
+                {
+                    app.AddProduct(p.InventoryItemId, p.PlannedQuantity, actor.UserId, p.StorageLocationId);
+                }
+            }
+        }
+
+        app.UpdateDraft(
+            farmId: farmId,
+            farmAreaId: farmAreaId,
+            plantationId: plantationId,
+            cropCycleId: cropCycleId,
+            cropCycleStageId: cropCycleStageId,
+            applicationMethodId: applicationMethodId,
+            otherMethodDescription: otherMethodDescription,
+            irrigationEventId: irrigationEventId,
+            plannedDate: plannedDate,
+            scheduledDate: scheduledDate,
+            plannedArea: plannedArea,
+            plannedAreaUnitId: plannedAreaUnitId,
+            purposeReason: purposeReason,
+            now: now,
+            updatedBy: actor.UserId);
+
+        // Required field validations for Plan transition
+        if (!app.FarmId.HasValue || app.FarmId.Value == Guid.Empty)
+        {
+            throw Validation("farmId", "A farm is required to plan a fertilizer application.");
+        }
+
+        if (!app.FarmAreaId.HasValue || app.FarmAreaId.Value == Guid.Empty)
+        {
+            throw Validation("farmAreaId", "A farm area is required to plan a fertilizer application.");
+        }
+
+        if (!app.ApplicationMethodId.HasValue || app.ApplicationMethodId.Value == Guid.Empty)
+        {
+            throw Validation("applicationMethodId", "An application method is required to plan a fertilizer application.");
+        }
+
+        if (!app.PlannedDate.HasValue)
+        {
+            throw Validation("plannedDate", "A planned date is required to plan a fertilizer application.");
+        }
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        if (app.PlannedDate.Value < today)
+        {
+            throw Validation("plannedDate", "Planned date must be today or in the future.");
+        }
+
+        if (app.Products.Count == 0)
+        {
+            throw Validation("products", "At least one product line is required to plan a fertilizer application.");
+        }
+
+        // Validate hierarchy
+        await validator.ValidateHierarchyAsync(
+            actor.OrganizationId,
+            app.FarmId.Value,
+            app.FarmAreaId,
+            app.PlantationId,
+            app.CropCycleId,
+            app.CropCycleStageId,
+            isPreStart: true,
+            cancellationToken);
+
+        // Validate method and irrigation link
+        await validator.ValidateApplicationMethodAsync(
+            actor.OrganizationId,
+            app.ApplicationMethodId,
+            app.OtherMethodDescription,
+            cancellationToken);
+
+        await validator.ValidateIrrigationLinkAsync(
+            actor.OrganizationId,
+            app.ApplicationMethodId,
+            app.IrrigationEventId,
+            app.FarmId,
+            app.FarmAreaId,
+            cancellationToken);
+
+        // Validate area if entered
+        await validator.ValidateAreaAndUnitsAsync(
+            actor.OrganizationId,
+            app.PlannedArea,
+            app.PlannedAreaUnitId,
+            null,
+            null,
+            cancellationToken);
+
+        // Validate product lines: positive planned quantity, eligible item, valid farm storage location
+        var duplicateCheck = new HashSet<Guid>();
+        foreach (var p in app.Products)
+        {
+            if (!duplicateCheck.Add(p.InventoryItemId))
+            {
+                throw Validation("products", $"Duplicate inventory item '{p.InventoryItemId}' is not allowed.");
+            }
+
+            if (p.PlannedQuantity <= 0m)
+            {
+                throw Validation("products", "Planned quantity must be greater than zero for all products to plan.");
+            }
+
+            if (!p.StorageLocationId.HasValue || p.StorageLocationId.Value == Guid.Empty)
+            {
+                throw Validation("storageLocationId", "A storage location is required for all products to plan.");
+            }
+
+            await validator.ValidateProductEligibilityAsync(
+                actor.OrganizationId,
+                p.InventoryItemId,
+                isPreStart: true,
+                cancellationToken);
+
+            await validator.ValidateStorageLocationAsync(
+                actor.OrganizationId,
+                app.FarmId.Value,
+                p.StorageLocationId.Value,
+                isPreStart: true,
+                cancellationToken);
+        }
+
+        // Execute plan transition on domain entity
+        app.Plan(now, actor.UserId);
+
+        AddAudit(
+            actor,
+            app,
+            "Fertilizer.Planned",
+            new
+            {
+                app.Id,
+                app.ReferenceNumber,
+                app.FarmId,
+                app.FarmAreaId,
+                app.PlantationId,
+                app.CropCycleId,
+                app.CropCycleStageId,
+                app.PlannedDate,
+                ProductCount = app.Products.Count,
+                Status = app.Status.ToString().ToUpperInvariant()
+            },
+            ipAddress);
+
+        await store.SaveChangesAsync(cancellationToken);
+
+        return await GetAsync(actor, app.Id, cancellationToken);
+    }
+
+    public async Task<FertilizerApplicationDetailsResponse> ScheduleAsync(
+        FertilizerActor actor,
+        Guid id,
+        ScheduleFertilizerApplicationRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (id == Guid.Empty)
+        {
+            throw new ResourceNotFoundException("The fertilizer application was not found.");
+        }
+
+        var app = await store.FindAsync(id, actor.OrganizationId, cancellationToken)
+            ?? throw new ResourceNotFoundException("The fertilizer application was not found.");
+
+        if (app.Status != FertilizerApplicationStatus.Planned && app.Status != FertilizerApplicationStatus.Draft)
+        {
+            throw new ConflictException("Only draft or planned fertilizer applications can be scheduled.");
+        }
+
+        if (request.Version.HasValue && request.Version.Value != app.Version)
+        {
+            throw new ConflictException("The fertilizer application has been modified by another user. Please reload and try again.");
+        }
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        if (request.ScheduledDate < today)
+        {
+            throw Validation("scheduledDate", "Scheduled date must be today or in the future.");
+        }
+
+        var now = DateTimeOffset.UtcNow;
+
+        // If coming from Draft, run planning validation first
+        if (app.Status == FertilizerApplicationStatus.Draft)
+        {
+            if (!app.PlannedDate.HasValue)
+            {
+                app.UpdateDraft(
+                    app.FarmId, app.FarmAreaId, app.PlantationId, app.CropCycleId, app.CropCycleStageId,
+                    app.ApplicationMethodId, app.OtherMethodDescription, app.IrrigationEventId,
+                    request.ScheduledDate, request.ScheduledDate, app.PlannedArea, app.PlannedAreaUnitId,
+                    app.PurposeReason, now, actor.UserId);
+            }
+
+            await PlanAsync(actor, id, new PlanFertilizerApplicationRequest(Version: app.Version), ipAddress, cancellationToken);
+            app = await store.FindAsync(id, actor.OrganizationId, cancellationToken)
+                ?? throw new ResourceNotFoundException("The fertilizer application was not found.");
+        }
+
+        app.Schedule(request.ScheduledDate, now, actor.UserId);
+
+        AddAudit(
+            actor,
+            app,
+            "Fertilizer.Scheduled",
+            new
+            {
+                app.Id,
+                app.ReferenceNumber,
+                ScheduledDate = request.ScheduledDate,
+                Status = app.Status.ToString().ToUpperInvariant()
+            },
+            ipAddress);
+
+        await store.SaveChangesAsync(cancellationToken);
+
+        return await GetAsync(actor, app.Id, cancellationToken);
+    }
+
+    public async Task<FertilizerApplicationDetailsResponse> RescheduleAsync(
+        FertilizerActor actor,
+        Guid id,
+        RescheduleFertilizerApplicationRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (id == Guid.Empty)
+        {
+            throw new ResourceNotFoundException("The fertilizer application was not found.");
+        }
+
+        var app = await store.FindAsync(id, actor.OrganizationId, cancellationToken)
+            ?? throw new ResourceNotFoundException("The fertilizer application was not found.");
+
+        if (app.Status != FertilizerApplicationStatus.Planned && app.Status != FertilizerApplicationStatus.Scheduled)
+        {
+            throw new ConflictException("Only planned or scheduled fertilizer applications can be rescheduled.");
+        }
+
+        if (request.Version.HasValue && request.Version.Value != app.Version)
+        {
+            throw new ConflictException("The fertilizer application has been modified by another user. Please reload and try again.");
+        }
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        if (request.ScheduledDate < today)
+        {
+            throw Validation("scheduledDate", "Scheduled date must be today or in the future.");
+        }
+
+        var originalScheduledDate = app.ScheduledDate;
+        var now = DateTimeOffset.UtcNow;
+
+        app.Reschedule(request.ScheduledDate, now, actor.UserId);
+
+        AddAudit(
+            actor,
+            app,
+            "Fertilizer.Rescheduled",
+            new
+            {
+                app.Id,
+                app.ReferenceNumber,
+                OriginalScheduledDate = originalScheduledDate,
+                NewScheduledDate = request.ScheduledDate,
+                RescheduledAt = now,
+                RescheduledBy = actor.UserId,
+                Status = app.Status.ToString().ToUpperInvariant()
+            },
+            ipAddress);
+
+        await store.SaveChangesAsync(cancellationToken);
+
+        return await GetAsync(actor, app.Id, cancellationToken);
+    }
+
+    public async Task<FertilizerApplicationDetailsResponse> StartAsync(
+        FertilizerActor actor,
+        Guid id,
+        StartFertilizerApplicationRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (id == Guid.Empty)
+        {
+            throw new ResourceNotFoundException("The fertilizer application was not found.");
+        }
+
+        var app = await store.FindAsync(id, actor.OrganizationId, cancellationToken)
+            ?? throw new ResourceNotFoundException("The fertilizer application was not found.");
+
+        if (app.Status != FertilizerApplicationStatus.Planned && app.Status != FertilizerApplicationStatus.Scheduled)
+        {
+            throw new ConflictException("Only planned or scheduled fertilizer applications can be started.");
+        }
+
+        if (request.Version.HasValue && request.Version.Value != app.Version)
+        {
+            throw new ConflictException("The fertilizer application has been modified by another user. Please reload and try again.");
+        }
+
+        if (app.Products.Count == 0)
+        {
+            throw Validation("products", "At least one product line is required to start a fertilizer application.");
+        }
+
+        // 1. Revalidate context before start
+        await validator.ValidateHierarchyAsync(
+            actor.OrganizationId,
+            app.FarmId,
+            app.FarmAreaId,
+            app.PlantationId,
+            app.CropCycleId,
+            app.CropCycleStageId,
+            isPreStart: true,
+            cancellationToken);
+
+        await validator.ValidateApplicationMethodAsync(
+            actor.OrganizationId,
+            app.ApplicationMethodId,
+            app.OtherMethodDescription,
+            cancellationToken);
+
+        await validator.ValidateIrrigationLinkAsync(
+            actor.OrganizationId,
+            app.ApplicationMethodId,
+            app.IrrigationEventId,
+            app.FarmId,
+            app.FarmAreaId,
+            cancellationToken);
+
+        // 2. Revalidate product eligibility & locations, and perform stock availability gate check
+        var shortages = new List<FertilizerStockShortageDto>();
+        var errors = new Dictionary<string, string[]>();
+
+        for (var i = 0; i < app.Products.Count; i++)
+        {
+            var p = app.Products.ElementAt(i);
+
+            if (p.PlannedQuantity <= 0m)
+            {
+                throw Validation("products", "Planned quantity must be greater than zero for all products to start.");
+            }
+
+            if (!p.StorageLocationId.HasValue || p.StorageLocationId.Value == Guid.Empty)
+            {
+                throw Validation("storageLocationId", "A storage location is required for all products to start.");
+            }
+
+            await validator.ValidateProductEligibilityAsync(
+                actor.OrganizationId,
+                p.InventoryItemId,
+                isPreStart: true,
+                cancellationToken);
+
+            await validator.ValidateStorageLocationAsync(
+                actor.OrganizationId,
+                app.FarmId!.Value,
+                p.StorageLocationId.Value,
+                isPreStart: true,
+                cancellationToken);
+
+            var balance = await store.FindStockBalanceAsync(
+                p.StorageLocationId.Value,
+                p.InventoryItemId,
+                actor.OrganizationId,
+                cancellationToken);
+
+            var available = balance?.QuantityOnHand ?? 0m;
+            if (available < p.PlannedQuantity)
+            {
+                var item = await store.FindInventoryItemAsync(p.InventoryItemId, actor.OrganizationId, cancellationToken);
+                var loc = await store.FindStorageLocationAsync(p.StorageLocationId.Value, actor.OrganizationId, cancellationToken);
+                var itemName = item?.Name ?? "Unknown Item";
+                var locName = loc?.Name ?? "Unknown Location";
+                var unitSymbol = item?.StockUnit?.Symbol ?? string.Empty;
+                var shortageQty = p.PlannedQuantity - available;
+
+                shortages.Add(new FertilizerStockShortageDto(
+                    p.InventoryItemId,
+                    itemName,
+                    item?.Sku,
+                    p.StorageLocationId.Value,
+                    locName,
+                    p.PlannedQuantity,
+                    available,
+                    shortageQty,
+                    unitSymbol));
+
+                errors[$"products[{i}]"] = [
+                    $"Insufficient stock for '{itemName}' at '{locName}'. Required: {p.PlannedQuantity}, Available: {available}, Shortage: {shortageQty} {unitSymbol}."
+                ];
+            }
+        }
+
+        // If ANY line has shortage, block entire transition and return all shortages
+        if (shortages.Count > 0)
+        {
+            throw new ValidationException(
+                "One or more product lines have insufficient stock to start the application.",
+                errors);
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        app.Start(now, actor.UserId);
+
+        AddAudit(
+            actor,
+            app,
+            "Fertilizer.Started",
+            new
+            {
+                app.Id,
+                app.ReferenceNumber,
+                Status = app.Status.ToString().ToUpperInvariant(),
+                StartedAt = now,
+                StartedBy = actor.UserId,
+                ProductCount = app.Products.Count
+            },
+            ipAddress);
+
+        await store.SaveChangesAsync(cancellationToken);
+
+        return await GetAsync(actor, app.Id, cancellationToken);
+    }
+
     private void AddAudit(
         FertilizerActor actor,
         FertilizerApplication app,

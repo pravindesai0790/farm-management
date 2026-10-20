@@ -251,6 +251,11 @@ public sealed class FertilizerApplication
 
         foreach (var p in _products)
         {
+            if (!p.StorageLocationId.HasValue || p.StorageLocationId.Value == Guid.Empty)
+            {
+                throw new InvalidOperationException("Storage location is required for all products to plan.");
+            }
+
             if (p.PlannedQuantity <= 0m)
             {
                 throw new InvalidOperationException("Planned quantity must be positive for all products to plan.");

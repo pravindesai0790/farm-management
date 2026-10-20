@@ -130,4 +130,56 @@ public sealed class FertilizerApplicationsController(IFertilizerApplicationServi
         var result = await service.CopyAsNewDraftAsync(actor, id, ipAddress, cancellationToken);
         return CreatedAtAction(nameof(Get), new { id = result.Id }, result);
     }
+
+    [HttpPost("{id:guid}/plan")]
+    [Authorize(Policy = "Permission:Fertilizer.Update")]
+    public async Task<IActionResult> Plan(
+        Guid id,
+        [FromBody] PlanFertilizerApplicationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var actor = UserContextHelper.GetUserContext<FertilizerActor>(User);
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var result = await service.PlanAsync(actor, id, request, ipAddress, cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpPost("{id:guid}/schedule")]
+    [Authorize(Policy = "Permission:Fertilizer.Update")]
+    public async Task<IActionResult> Schedule(
+        Guid id,
+        [FromBody] ScheduleFertilizerApplicationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var actor = UserContextHelper.GetUserContext<FertilizerActor>(User);
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var result = await service.ScheduleAsync(actor, id, request, ipAddress, cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpPost("{id:guid}/reschedule")]
+    [Authorize(Policy = "Permission:Fertilizer.Update")]
+    public async Task<IActionResult> Reschedule(
+        Guid id,
+        [FromBody] RescheduleFertilizerApplicationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var actor = UserContextHelper.GetUserContext<FertilizerActor>(User);
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var result = await service.RescheduleAsync(actor, id, request, ipAddress, cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpPost("{id:guid}/start")]
+    [Authorize(Policy = "Permission:Fertilizer.Start")]
+    public async Task<IActionResult> Start(
+        Guid id,
+        [FromBody] StartFertilizerApplicationRequest? request,
+        CancellationToken cancellationToken = default)
+    {
+        var actor = UserContextHelper.GetUserContext<FertilizerActor>(User);
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var result = await service.StartAsync(actor, id, request ?? new StartFertilizerApplicationRequest(), ipAddress, cancellationToken);
+        return Ok(result);
+    }
 }

@@ -59,4 +59,32 @@ public interface IFertilizerApplicationService
         Guid sourceId,
         string? ipAddress,
         CancellationToken cancellationToken = default);
+
+    Task<FertilizerApplicationDetailsResponse> PlanAsync(
+        FertilizerActor actor,
+        Guid id,
+        PlanFertilizerApplicationRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default);
+
+    Task<FertilizerApplicationDetailsResponse> ScheduleAsync(
+        FertilizerActor actor,
+        Guid id,
+        ScheduleFertilizerApplicationRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default);
+
+    Task<FertilizerApplicationDetailsResponse> RescheduleAsync(
+        FertilizerActor actor,
+        Guid id,
+        RescheduleFertilizerApplicationRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default);
+
+    Task<FertilizerApplicationDetailsResponse> StartAsync(
+        FertilizerActor actor,
+        Guid id,
+        StartFertilizerApplicationRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default);
 }

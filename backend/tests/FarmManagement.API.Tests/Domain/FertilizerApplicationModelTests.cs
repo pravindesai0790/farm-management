@@ -124,7 +124,7 @@ public sealed class FertilizerApplicationModelTests
             now,
             _userId);
 
-        app.AddProduct(Guid.NewGuid(), 50m, _userId);
+        app.AddProduct(Guid.NewGuid(), 50m, _userId, Guid.NewGuid());
 
         app.Plan(now, _userId);
 
@@ -176,7 +176,7 @@ public sealed class FertilizerApplicationModelTests
         var now = DateTimeOffset.UtcNow;
 
         app.UpdateDraft(_farmId, _farmAreaId, null, null, null, _methodId, null, null, plannedDate, null, null, null, null, now, _userId);
-        app.AddProduct(Guid.NewGuid(), 20m, _userId);
+        app.AddProduct(Guid.NewGuid(), 20m, _userId, Guid.NewGuid());
         app.Plan(now, _userId);
 
         app.Schedule(scheduledDate, now, _userId);
@@ -191,7 +191,7 @@ public sealed class FertilizerApplicationModelTests
         var app = FertilizerApplication.CreateEmptyDraft(_organizationId, "FA-2026-0001", _userId);
         var now = DateTimeOffset.UtcNow;
         app.UpdateDraft(_farmId, _farmAreaId, null, null, null, _methodId, null, null, new DateOnly(2026, 11, 15), null, null, null, null, now, _userId);
-        app.AddProduct(Guid.NewGuid(), 20m, _userId);
+        app.AddProduct(Guid.NewGuid(), 20m, _userId, Guid.NewGuid());
         app.Plan(now, _userId);
         app.Schedule(new DateOnly(2026, 11, 16), now, _userId);
 
@@ -220,16 +220,14 @@ public sealed class FertilizerApplicationModelTests
     }
 
     [Fact]
-    public void Start_WhenProductMissingStorageLocation_ThrowsInvalidOperationException()
+    public void Plan_WhenProductMissingStorageLocation_ThrowsInvalidOperationException()
     {
         var app = FertilizerApplication.CreateEmptyDraft(_organizationId, "FA-2026-0001", _userId);
         var now = DateTimeOffset.UtcNow;
         app.UpdateDraft(_farmId, _farmAreaId, null, null, null, _methodId, null, null, new DateOnly(2026, 11, 15), null, null, null, null, now, _userId);
         app.AddProduct(Guid.NewGuid(), 20m, _userId); // no storage location
-        app.Plan(now, _userId);
-        app.Schedule(new DateOnly(2026, 11, 16), now, _userId);
 
-        Assert.Throws<InvalidOperationException>(() => app.Start(now.AddHours(2), _userId));
+        Assert.Throws<InvalidOperationException>(() => app.Plan(now, _userId));
     }
 
     [Fact]

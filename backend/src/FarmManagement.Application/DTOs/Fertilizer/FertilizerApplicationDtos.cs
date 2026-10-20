@@ -212,3 +212,42 @@ public sealed record FertilizerDraftProductLineRequest(
     Guid InventoryItemId,
     decimal PlannedQuantity = 0m,
     Guid? StorageLocationId = null);
+
+public sealed record PlanFertilizerApplicationRequest(
+    DateOnly? PlannedDate = null,
+    DateOnly? ScheduledDate = null,
+    Guid? FarmId = null,
+    Guid? FarmAreaId = null,
+    Guid? PlantationId = null,
+    Guid? CropCycleId = null,
+    Guid? CropCycleStageId = null,
+    Guid? ApplicationMethodId = null,
+    string? OtherMethodDescription = null,
+    Guid? IrrigationEventId = null,
+    decimal? PlannedArea = null,
+    Guid? PlannedAreaUnitId = null,
+    string? PurposeReason = null,
+    uint? Version = null,
+    IReadOnlyList<FertilizerDraftProductLineRequest>? Products = null);
+
+public sealed record ScheduleFertilizerApplicationRequest(
+    DateOnly ScheduledDate,
+    uint? Version = null);
+
+public sealed record RescheduleFertilizerApplicationRequest(
+    DateOnly ScheduledDate,
+    uint? Version = null);
+
+public sealed record StartFertilizerApplicationRequest(
+    uint? Version = null);
+
+public sealed record FertilizerStockShortageDto(
+    Guid InventoryItemId,
+    string ItemName,
+    string? Sku,
+    Guid StorageLocationId,
+    string StorageLocationName,
+    decimal RequiredQuantity,
+    decimal AvailableQuantity,
+    decimal ShortageQuantity,
+    string UnitSymbol);

@@ -213,6 +213,82 @@ public class FertilizerApplicationsControllerTests
         Assert.Equal(FertilizerApplicationStatus.Draft, result.Status);
     }
 
+    [Fact]
+    public async Task Plan_ReturnsOkWithPlannedDetails()
+    {
+        // Arrange
+        var fakeService = new FakeFertilizerApplicationService();
+        var controller = CreateController(fakeService);
+        var id = Guid.NewGuid();
+        var request = new PlanFertilizerApplicationRequest(PlannedDate: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)));
+
+        // Act
+        var actionResult = await controller.Plan(id, request);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(actionResult);
+        var result = Assert.IsType<FertilizerApplicationDetailsResponse>(okResult.Value);
+        Assert.Equal(id, result.Id);
+        Assert.Equal(FertilizerApplicationStatus.Planned, result.Status);
+    }
+
+    [Fact]
+    public async Task Schedule_ReturnsOkWithScheduledDetails()
+    {
+        // Arrange
+        var fakeService = new FakeFertilizerApplicationService();
+        var controller = CreateController(fakeService);
+        var id = Guid.NewGuid();
+        var request = new ScheduleFertilizerApplicationRequest(DateOnly.FromDateTime(DateTime.UtcNow.AddDays(2)));
+
+        // Act
+        var actionResult = await controller.Schedule(id, request);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(actionResult);
+        var result = Assert.IsType<FertilizerApplicationDetailsResponse>(okResult.Value);
+        Assert.Equal(id, result.Id);
+        Assert.Equal(FertilizerApplicationStatus.Scheduled, result.Status);
+    }
+
+    [Fact]
+    public async Task Reschedule_ReturnsOkWithUpdatedScheduledDetails()
+    {
+        // Arrange
+        var fakeService = new FakeFertilizerApplicationService();
+        var controller = CreateController(fakeService);
+        var id = Guid.NewGuid();
+        var request = new RescheduleFertilizerApplicationRequest(DateOnly.FromDateTime(DateTime.UtcNow.AddDays(5)));
+
+        // Act
+        var actionResult = await controller.Reschedule(id, request);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(actionResult);
+        var result = Assert.IsType<FertilizerApplicationDetailsResponse>(okResult.Value);
+        Assert.Equal(id, result.Id);
+        Assert.Equal(FertilizerApplicationStatus.Scheduled, result.Status);
+    }
+
+    [Fact]
+    public async Task Start_ReturnsOkWithInProgressDetails()
+    {
+        // Arrange
+        var fakeService = new FakeFertilizerApplicationService();
+        var controller = CreateController(fakeService);
+        var id = Guid.NewGuid();
+        var request = new StartFertilizerApplicationRequest();
+
+        // Act
+        var actionResult = await controller.Start(id, request);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(actionResult);
+        var result = Assert.IsType<FertilizerApplicationDetailsResponse>(okResult.Value);
+        Assert.Equal(id, result.Id);
+        Assert.Equal(FertilizerApplicationStatus.InProgress, result.Status);
+    }
+
     private sealed class FakeFertilizerApplicationService : IFertilizerApplicationService
     {
         public Task<PagedResponse<FertilizerApplicationListItemResponse>> ListAsync(
@@ -475,6 +551,122 @@ public class FertilizerApplicationsControllerTests
                 null, null, null, null, null, null, null, null,
                 "Admin", null, null, null, null,
                 1, "1");
+
+            return Task.FromResult(response);
+        }
+
+        public Task<FertilizerApplicationDetailsResponse> PlanAsync(
+            FertilizerActor actor,
+            Guid id,
+            PlanFertilizerApplicationRequest request,
+            string? ipAddress,
+            CancellationToken cancellationToken = default)
+        {
+            var response = new FertilizerApplicationDetailsResponse(
+                id,
+                actor.OrganizationId,
+                "FERT-2026-000001",
+                FertilizerApplicationStatus.Planned,
+                "PLANNED",
+                Guid.NewGuid(), null, Guid.NewGuid(), null, null, null, null, null, null, null,
+                Guid.NewGuid(), null, null, null, null,
+                DateOnly.FromDateTime(DateTime.UtcNow), null, null,
+                null, null, null, null, null, null,
+                "Planned application",
+                null,
+                [],
+                DateTimeOffset.UtcNow,
+                actor.UserId,
+                null, null, null, null, null, null, null, null,
+                "Admin", null, null, null, null,
+                2, "2");
+
+            return Task.FromResult(response);
+        }
+
+        public Task<FertilizerApplicationDetailsResponse> ScheduleAsync(
+            FertilizerActor actor,
+            Guid id,
+            ScheduleFertilizerApplicationRequest request,
+            string? ipAddress,
+            CancellationToken cancellationToken = default)
+        {
+            var response = new FertilizerApplicationDetailsResponse(
+                id,
+                actor.OrganizationId,
+                "FERT-2026-000001",
+                FertilizerApplicationStatus.Scheduled,
+                "SCHEDULED",
+                Guid.NewGuid(), null, Guid.NewGuid(), null, null, null, null, null, null, null,
+                Guid.NewGuid(), null, null, null, null,
+                DateOnly.FromDateTime(DateTime.UtcNow), request.ScheduledDate, null,
+                null, null, null, null, null, null,
+                "Scheduled application",
+                null,
+                [],
+                DateTimeOffset.UtcNow,
+                actor.UserId,
+                null, null, null, null, null, null, null, null,
+                "Admin", null, null, null, null,
+                2, "2");
+
+            return Task.FromResult(response);
+        }
+
+        public Task<FertilizerApplicationDetailsResponse> RescheduleAsync(
+            FertilizerActor actor,
+            Guid id,
+            RescheduleFertilizerApplicationRequest request,
+            string? ipAddress,
+            CancellationToken cancellationToken = default)
+        {
+            var response = new FertilizerApplicationDetailsResponse(
+                id,
+                actor.OrganizationId,
+                "FERT-2026-000001",
+                FertilizerApplicationStatus.Scheduled,
+                "SCHEDULED",
+                Guid.NewGuid(), null, Guid.NewGuid(), null, null, null, null, null, null, null,
+                Guid.NewGuid(), null, null, null, null,
+                DateOnly.FromDateTime(DateTime.UtcNow), request.ScheduledDate, null,
+                null, null, null, null, null, null,
+                "Rescheduled application",
+                null,
+                [],
+                DateTimeOffset.UtcNow,
+                actor.UserId,
+                null, null, null, null, null, null, null, null,
+                "Admin", null, null, null, null,
+                3, "3");
+
+            return Task.FromResult(response);
+        }
+
+        public Task<FertilizerApplicationDetailsResponse> StartAsync(
+            FertilizerActor actor,
+            Guid id,
+            StartFertilizerApplicationRequest request,
+            string? ipAddress,
+            CancellationToken cancellationToken = default)
+        {
+            var response = new FertilizerApplicationDetailsResponse(
+                id,
+                actor.OrganizationId,
+                "FERT-2026-000001",
+                FertilizerApplicationStatus.InProgress,
+                "IN_PROGRESS",
+                Guid.NewGuid(), null, Guid.NewGuid(), null, null, null, null, null, null, null,
+                Guid.NewGuid(), null, null, null, null,
+                DateOnly.FromDateTime(DateTime.UtcNow), null, null,
+                null, null, null, null, null, null,
+                "Started application",
+                null,
+                [],
+                DateTimeOffset.UtcNow,
+                actor.UserId,
+                null, null, DateTimeOffset.UtcNow, actor.UserId, null, null, null, null,
+                "Admin", null, "Admin", null, null,
+                3, "3");
 
             return Task.FromResult(response);
         }
