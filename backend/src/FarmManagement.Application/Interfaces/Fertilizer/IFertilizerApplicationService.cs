@@ -34,4 +34,29 @@ public interface IFertilizerApplicationService
         Guid? farmId,
         Guid? farmAreaId,
         CancellationToken cancellationToken = default);
+
+    Task<FertilizerApplicationDetailsResponse> CreateDraftAsync(
+        FertilizerActor actor,
+        CreateFertilizerDraftRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default);
+
+    Task<FertilizerApplicationDetailsResponse> UpdateDraftAsync(
+        FertilizerActor actor,
+        Guid id,
+        UpdateFertilizerDraftRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default);
+
+    Task DeleteDraftAsync(
+        FertilizerActor actor,
+        Guid id,
+        string? ipAddress,
+        CancellationToken cancellationToken = default);
+
+    Task<FertilizerApplicationDetailsResponse> CopyAsNewDraftAsync(
+        FertilizerActor actor,
+        Guid sourceId,
+        string? ipAddress,
+        CancellationToken cancellationToken = default);
 }

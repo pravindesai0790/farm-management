@@ -78,4 +78,56 @@ public sealed class FertilizerApplicationsController(IFertilizerApplicationServi
         var result = await service.ListIrrigationsLookupAsync(actor, farmId, farmAreaId, cancellationToken);
         return Ok(result);
     }
+
+    [HttpPost]
+    [HttpPost("drafts")]
+    [Authorize(Policy = "Permission:Fertilizer.Create")]
+    public async Task<IActionResult> Create(
+        [FromBody] CreateFertilizerDraftRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var actor = UserContextHelper.GetUserContext<FertilizerActor>(User);
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var result = await service.CreateDraftAsync(actor, request, ipAddress, cancellationToken);
+        return CreatedAtAction(nameof(Get), new { id = result.Id }, result);
+    }
+
+    [HttpPut("{id:guid}")]
+    [HttpPut("drafts/{id:guid}")]
+    [Authorize(Policy = "Permission:Fertilizer.Update")]
+    public async Task<IActionResult> Update(
+        Guid id,
+        [FromBody] UpdateFertilizerDraftRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var actor = UserContextHelper.GetUserContext<FertilizerActor>(User);
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var result = await service.UpdateDraftAsync(actor, id, request, ipAddress, cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpDelete("{id:guid}")]
+    [HttpDelete("drafts/{id:guid}")]
+    [Authorize(Policy = "Permission:Fertilizer.DeleteDraft")]
+    public async Task<IActionResult> Delete(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var actor = UserContextHelper.GetUserContext<FertilizerActor>(User);
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+        await service.DeleteDraftAsync(actor, id, ipAddress, cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/copy")]
+    [Authorize(Policy = "Permission:Fertilizer.Create")]
+    public async Task<IActionResult> Copy(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var actor = UserContextHelper.GetUserContext<FertilizerActor>(User);
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var result = await service.CopyAsNewDraftAsync(actor, id, ipAddress, cancellationToken);
+        return CreatedAtAction(nameof(Get), new { id = result.Id }, result);
+    }
 }

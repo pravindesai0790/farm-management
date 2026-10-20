@@ -411,4 +411,19 @@ public sealed class FertilizerApplicationStore(ApplicationDbContext dbContext) :
 
         return q;
     }
+
+    public void Add(FertilizerApplication application) =>
+        dbContext.FertilizerApplications.Add(application);
+
+    public void Remove(FertilizerApplication application) =>
+        dbContext.FertilizerApplications.Remove(application);
+
+    public void RemoveProduct(FertilizerApplicationProduct product) =>
+        dbContext.FertilizerApplicationProducts.Remove(product);
+
+    public void AddAuditLog(AuditLog auditLog) =>
+        dbContext.AuditLogs.Add(auditLog);
+
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
+        dbContext.SaveChangesAsync(cancellationToken);
 }

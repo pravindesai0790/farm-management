@@ -66,4 +66,14 @@ public interface IFertilizerApplicationStore
     Task<IrrigationEvent?> FindIrrigationEventAsync(Guid irrigationEventId, Guid organizationId, CancellationToken cancellationToken = default);
 
     Task<StockBalance?> FindStockBalanceAsync(Guid storageLocationId, Guid inventoryItemId, Guid organizationId, CancellationToken cancellationToken = default);
+
+    void Add(FertilizerApplication application);
+
+    void Remove(FertilizerApplication application);
+
+    void RemoveProduct(FertilizerApplicationProduct product);
+
+    void AddAuditLog(AuditLog auditLog);
+
+    Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

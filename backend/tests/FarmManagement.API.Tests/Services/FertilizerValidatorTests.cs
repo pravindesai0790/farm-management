@@ -595,5 +595,11 @@ public class FertilizerValidatorTests
 
         public Task<StockBalance?> FindStockBalanceAsync(Guid storageLocationId, Guid inventoryItemId, Guid organizationId, CancellationToken cancellationToken = default) =>
             Task.FromResult(StockBalances.FirstOrDefault(sb => sb.StorageLocationId == storageLocationId && sb.InventoryItemId == inventoryItemId && sb.OrganizationId == organizationId));
+
+        public void Add(FertilizerApplication application) { }
+        public void Remove(FertilizerApplication application) { }
+        public void RemoveProduct(FertilizerApplicationProduct product) { }
+        public void AddAuditLog(AuditLog auditLog) { }
+        public Task SaveChangesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 }

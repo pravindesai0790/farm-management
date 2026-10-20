@@ -142,6 +142,77 @@ public class FertilizerApplicationsControllerTests
         Assert.Equal("Area North", result[0].FarmAreaName);
     }
 
+    [Fact]
+    public async Task Create_ReturnsCreatedWithDetails()
+    {
+        // Arrange
+        var fakeService = new FakeFertilizerApplicationService();
+        var controller = CreateController(fakeService);
+        var request = new CreateFertilizerDraftRequest(PurposeReason: "Spring fertilization");
+
+        // Act
+        var actionResult = await controller.Create(request);
+
+        // Assert
+        var createdResult = Assert.IsType<CreatedAtActionResult>(actionResult);
+        var result = Assert.IsType<FertilizerApplicationDetailsResponse>(createdResult.Value);
+        Assert.Equal("FERT-2026-000001", result.ReferenceNumber);
+        Assert.Equal(FertilizerApplicationStatus.Draft, result.Status);
+    }
+
+    [Fact]
+    public async Task Update_ReturnsOkWithUpdatedDetails()
+    {
+        // Arrange
+        var fakeService = new FakeFertilizerApplicationService();
+        var controller = CreateController(fakeService);
+        var id = Guid.NewGuid();
+        var request = new UpdateFertilizerDraftRequest(PurposeReason: "Updated draft", Version: 1);
+
+        // Act
+        var actionResult = await controller.Update(id, request);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(actionResult);
+        var result = Assert.IsType<FertilizerApplicationDetailsResponse>(okResult.Value);
+        Assert.Equal(id, result.Id);
+        Assert.Equal(2u, result.Version);
+    }
+
+    [Fact]
+    public async Task Delete_ReturnsNoContent()
+    {
+        // Arrange
+        var fakeService = new FakeFertilizerApplicationService();
+        var controller = CreateController(fakeService);
+        var id = Guid.NewGuid();
+
+        // Act
+        var actionResult = await controller.Delete(id);
+
+        // Assert
+        Assert.IsType<NoContentResult>(actionResult);
+    }
+
+    [Fact]
+    public async Task Copy_ReturnsCreatedWithNewDraftDetails()
+    {
+        // Arrange
+        var fakeService = new FakeFertilizerApplicationService();
+        var controller = CreateController(fakeService);
+        var sourceId = Guid.NewGuid();
+
+        // Act
+        var actionResult = await controller.Copy(sourceId);
+
+        // Assert
+        var createdResult = Assert.IsType<CreatedAtActionResult>(actionResult);
+        var result = Assert.IsType<FertilizerApplicationDetailsResponse>(createdResult.Value);
+        Assert.NotEqual(sourceId, result.Id);
+        Assert.Equal("FERT-2026-000002", result.ReferenceNumber);
+        Assert.Equal(FertilizerApplicationStatus.Draft, result.Status);
+    }
+
     private sealed class FakeFertilizerApplicationService : IFertilizerApplicationService
     {
         public Task<PagedResponse<FertilizerApplicationListItemResponse>> ListAsync(
@@ -271,6 +342,141 @@ public class FertilizerApplicationsControllerTests
                 "L");
 
             return Task.FromResult<IReadOnlyList<FertilizerIrrigationLookupResponse>>([irrigation]);
+        }
+
+        public Task<FertilizerApplicationDetailsResponse> CreateDraftAsync(
+            FertilizerActor actor,
+            CreateFertilizerDraftRequest request,
+            string? ipAddress,
+            CancellationToken cancellationToken = default)
+        {
+            var id = Guid.NewGuid();
+            var response = new FertilizerApplicationDetailsResponse(
+                id,
+                actor.OrganizationId,
+                "FERT-2026-000001",
+                FertilizerApplicationStatus.Draft,
+                "DRAFT",
+                request.FarmId,
+                null,
+                request.FarmAreaId,
+                null,
+                request.PlantationId,
+                null,
+                request.CropCycleId,
+                null,
+                request.CropCycleStageId,
+                null,
+                request.ApplicationMethodId,
+                null,
+                request.OtherMethodDescription,
+                request.IrrigationEventId,
+                null,
+                request.PlannedDate,
+                request.ScheduledDate,
+                null,
+                request.PlannedArea,
+                request.PlannedAreaUnitId,
+                null,
+                null,
+                null,
+                null,
+                request.PurposeReason,
+                null,
+                [],
+                DateTimeOffset.UtcNow,
+                actor.UserId,
+                null, null, null, null, null, null, null, null,
+                "Admin", null, null, null, null,
+                1, "1");
+
+            return Task.FromResult(response);
+        }
+
+        public Task<FertilizerApplicationDetailsResponse> UpdateDraftAsync(
+            FertilizerActor actor,
+            Guid id,
+            UpdateFertilizerDraftRequest request,
+            string? ipAddress,
+            CancellationToken cancellationToken = default)
+        {
+            var response = new FertilizerApplicationDetailsResponse(
+                id,
+                actor.OrganizationId,
+                "FERT-2026-000001",
+                FertilizerApplicationStatus.Draft,
+                "DRAFT",
+                request.FarmId,
+                null,
+                request.FarmAreaId,
+                null,
+                request.PlantationId,
+                null,
+                request.CropCycleId,
+                null,
+                request.CropCycleStageId,
+                null,
+                request.ApplicationMethodId,
+                null,
+                request.OtherMethodDescription,
+                request.IrrigationEventId,
+                null,
+                request.PlannedDate,
+                request.ScheduledDate,
+                null,
+                request.PlannedArea,
+                request.PlannedAreaUnitId,
+                null,
+                null,
+                null,
+                null,
+                request.PurposeReason,
+                null,
+                [],
+                DateTimeOffset.UtcNow,
+                actor.UserId,
+                DateTimeOffset.UtcNow,
+                actor.UserId,
+                null, null, null, null, null, null,
+                "Admin", "Admin", null, null, null,
+                2, "2");
+
+            return Task.FromResult(response);
+        }
+
+        public Task DeleteDraftAsync(
+            FertilizerActor actor,
+            Guid id,
+            string? ipAddress,
+            CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task<FertilizerApplicationDetailsResponse> CopyAsNewDraftAsync(
+            FertilizerActor actor,
+            Guid sourceId,
+            string? ipAddress,
+            CancellationToken cancellationToken = default)
+        {
+            var newId = Guid.NewGuid();
+            var response = new FertilizerApplicationDetailsResponse(
+                newId,
+                actor.OrganizationId,
+                "FERT-2026-000002",
+                FertilizerApplicationStatus.Draft,
+                "DRAFT",
+                null, null, null, null, null, null, null, null, null, null,
+                null, null, null, null, null,
+                null, null, null, null, null, null, null, null, null,
+                "Copied application",
+                null,
+                [],
+                DateTimeOffset.UtcNow,
+                actor.UserId,
+                null, null, null, null, null, null, null, null,
+                "Admin", null, null, null, null,
+                1, "1");
+
+            return Task.FromResult(response);
         }
     }
 }

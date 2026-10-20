@@ -174,3 +174,41 @@ public sealed record FertilizerIrrigationLookupResponse(
     string? IrrigationMethodName,
     decimal? ActualWaterQuantity,
     string? WaterUnitSymbol);
+
+public sealed record CreateFertilizerDraftRequest(
+    Guid? FarmId = null,
+    Guid? FarmAreaId = null,
+    Guid? PlantationId = null,
+    Guid? CropCycleId = null,
+    Guid? CropCycleStageId = null,
+    Guid? ApplicationMethodId = null,
+    string? OtherMethodDescription = null,
+    Guid? IrrigationEventId = null,
+    DateOnly? PlannedDate = null,
+    DateOnly? ScheduledDate = null,
+    decimal? PlannedArea = null,
+    Guid? PlannedAreaUnitId = null,
+    string? PurposeReason = null,
+    IReadOnlyList<FertilizerDraftProductLineRequest>? Products = null);
+
+public sealed record UpdateFertilizerDraftRequest(
+    Guid? FarmId = null,
+    Guid? FarmAreaId = null,
+    Guid? PlantationId = null,
+    Guid? CropCycleId = null,
+    Guid? CropCycleStageId = null,
+    Guid? ApplicationMethodId = null,
+    string? OtherMethodDescription = null,
+    Guid? IrrigationEventId = null,
+    DateOnly? PlannedDate = null,
+    DateOnly? ScheduledDate = null,
+    decimal? PlannedArea = null,
+    Guid? PlannedAreaUnitId = null,
+    string? PurposeReason = null,
+    uint? Version = null,
+    IReadOnlyList<FertilizerDraftProductLineRequest>? Products = null);
+
+public sealed record FertilizerDraftProductLineRequest(
+    Guid InventoryItemId,
+    decimal PlannedQuantity = 0m,
+    Guid? StorageLocationId = null);

@@ -19,7 +19,18 @@ public class FertilizerApplicationServiceTests
 
     public FertilizerApplicationServiceTests()
     {
-        _sut = new FertilizerApplicationService(_store);
+        var validator = new FarmManagement.Application.Services.Fertilizer.FertilizerValidator(_store);
+        _sut = new FertilizerApplicationService(_store, validator, new FakeFertilizerReferenceGenerator());
+    }
+
+    private sealed class FakeFertilizerReferenceGenerator : IFertilizerReferenceGenerator
+    {
+        private int _seq = 0;
+        public Task<string> NextReferenceNumberAsync(Guid organizationId, int year, CancellationToken cancellationToken = default)
+        {
+            _seq++;
+            return Task.FromResult($"FERT-{year}-{_seq:D6}");
+        }
     }
 
     private FertilizerActor CreateActor(Guid? orgId = null) =>
@@ -355,6 +366,24 @@ public class FertilizerApplicationServiceTests
         public List<StorageLocation> StorageLocations { get; } = [];
         public List<IrrigationEvent> IrrigationEvents { get; } = [];
         public List<StockBalance> StockBalances { get; } = [];
+        public List<AuditLog> AuditLogs { get; } = [];
+
+        public void Add(FertilizerApplication application) => Applications.Add(application);
+
+        public void Remove(FertilizerApplication application) => Applications.Remove(application);
+
+        public void RemoveProduct(FertilizerApplicationProduct product)
+        {
+            var app = Applications.FirstOrDefault(a => a.Id == product.FertilizerApplicationId);
+            if (app is not null)
+            {
+                app.RemoveProduct(product.InventoryItemId);
+            }
+        }
+
+        public void AddAuditLog(AuditLog auditLog) => AuditLogs.Add(auditLog);
+
+        public Task SaveChangesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 
         public IReadOnlyList<FertilizerProductLookupResponse> ProductsLookup { get; set; } = [];
         public IReadOnlyList<FertilizerStorageLocationLookupResponse> LocationsLookup { get; set; } = [];
