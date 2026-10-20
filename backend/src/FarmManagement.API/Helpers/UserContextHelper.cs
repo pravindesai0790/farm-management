@@ -9,6 +9,7 @@ using FarmManagement.Application.DTOs.LaborActivities;
 using FarmManagement.Application.DTOs.PlantProtection;
 using FarmManagement.Application.DTOs.Sprays;
 using FarmManagement.Application.DTOs.Irrigation;
+using FarmManagement.Application.DTOs.Fertilizer;
 using FarmManagement.Application.Interfaces;
 using FarmManagement.Application.Interfaces.CropCycles;
 using FarmManagement.Application.Interfaces.Crops;
@@ -180,6 +181,11 @@ public static class UserContextHelper
         if (typeof(TActor) == typeof(IrrigationActor))
         {
             return (TActor)(object)new IrrigationActor(userId, organizationId);
+        }
+
+        if (typeof(TActor) == typeof(FertilizerActor))
+        {
+            return (TActor)(object)new FertilizerActor(userId, organizationId);
         }
 
         if (typeof(TActor) == typeof(UserAdministrationActor))
