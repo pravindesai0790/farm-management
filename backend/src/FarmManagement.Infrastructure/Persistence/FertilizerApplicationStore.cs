@@ -1,3 +1,4 @@
+using System.Data;
 using FarmManagement.Application.DTOs.Fertilizer;
 using FarmManagement.Application.Interfaces.Fertilizer;
 using FarmManagement.Domain.Constants;
@@ -423,6 +424,68 @@ public sealed class FertilizerApplicationStore(ApplicationDbContext dbContext) :
 
     public void AddAuditLog(AuditLog auditLog) =>
         dbContext.AuditLogs.Add(auditLog);
+
+    public Task<StockBalance?> LockBalanceAsync(Guid storageLocationId, Guid inventoryItemId, Guid organizationId, CancellationToken cancellationToken = default) =>
+        dbContext.StockBalances
+            .FromSqlInterpolated($"SELECT * FROM stock_balances WHERE storage_location_id = {storageLocationId} AND inventory_item_id = {inventoryItemId} AND organization_id = {organizationId} FOR UPDATE")
+            .Include(b => b.Farm)
+            .Include(b => b.StorageLocation)
+            .Include(b => b.InventoryItem)
+                .ThenInclude(i => i!.StockUnit)
+            .SingleOrDefaultAsync(cancellationToken);
+
+    public async Task AcquireAdvisoryLockAsync(Guid storageLocationId, Guid inventoryItemId, CancellationToken cancellationToken = default)
+    {
+        if (dbContext.Database.ProviderName?.Contains("Npgsql", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            var locStr = storageLocationId.ToString();
+            var itemStr = inventoryItemId.ToString();
+            await dbContext.Database.ExecuteSqlInterpolatedAsync(
+                $"SELECT pg_advisory_xact_lock(hashtext({locStr}), hashtext({itemStr}))",
+                cancellationToken);
+        }
+    }
+
+    public async Task<T> ExecuteInTransactionAsync<T>(
+        Func<CancellationToken, Task<T>> operation,
+        CancellationToken cancellationToken = default)
+    {
+        if (dbContext.Database.CurrentTransaction is not null)
+        {
+            return await operation(cancellationToken);
+        }
+
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
+        try
+        {
+            var result = await operation(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return result;
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
+    }
+
+    public void AddMovement(StockMovement movement) =>
+        dbContext.StockMovements.Add(movement);
+
+    public Task<FertilizerOperationIdempotencyRecord?> FindIdempotencyRecordAsync(
+        Guid organizationId,
+        string operationType,
+        string idempotencyKey,
+        CancellationToken cancellationToken = default) =>
+        dbContext.FertilizerOperationIdempotencyRecords
+            .FirstOrDefaultAsync(
+                r => r.OrganizationId == organizationId
+                  && r.OperationType == operationType
+                  && r.IdempotencyKey == idempotencyKey,
+                cancellationToken);
+
+    public void AddIdempotencyRecord(FertilizerOperationIdempotencyRecord record) =>
+        dbContext.FertilizerOperationIdempotencyRecords.Add(record);
 
     public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
         dbContext.SaveChangesAsync(cancellationToken);

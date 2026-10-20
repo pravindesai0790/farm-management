@@ -239,7 +239,8 @@ public sealed record RescheduleFertilizerApplicationRequest(
     uint? Version = null);
 
 public sealed record StartFertilizerApplicationRequest(
-    uint? Version = null);
+    uint? Version = null,
+    string? IdempotencyKey = null);
 
 public sealed record FertilizerStockShortageDto(
     Guid InventoryItemId,

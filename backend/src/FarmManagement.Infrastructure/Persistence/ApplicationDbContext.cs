@@ -119,6 +119,8 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
 
     public DbSet<FertilizerReferenceSequence> FertilizerReferenceSequences => Set<FertilizerReferenceSequence>();
 
+    public DbSet<FertilizerOperationIdempotencyRecord> FertilizerOperationIdempotencyRecords => Set<FertilizerOperationIdempotencyRecord>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);

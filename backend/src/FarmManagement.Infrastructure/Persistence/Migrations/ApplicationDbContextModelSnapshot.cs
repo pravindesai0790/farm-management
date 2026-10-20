@@ -1599,6 +1599,55 @@ namespace FarmManagement.Infrastructure.Persistence.Migrations
                     b.ToTable("fertilizer_application_products", (string)null);
                 });
 
+            modelBuilder.Entity("FarmManagement.Domain.Entities.FertilizerOperationIdempotencyRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("FertilizerApplicationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("fertilizer_application_id");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("idempotency_key");
+
+                    b.Property<string>("OperationType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("operation_type");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<string>("RequestHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("request_hash");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FertilizerApplicationId")
+                        .HasDatabaseName("ix_fertilizer_operation_idempotency_app_id");
+
+                    b.HasIndex("OrganizationId", "OperationType", "IdempotencyKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_fertilizer_operation_idempotency");
+
+                    b.ToTable("fertilizer_operation_idempotency_records", (string)null);
+                });
+
             modelBuilder.Entity("FarmManagement.Domain.Entities.FertilizerReferenceSequence", b =>
                 {
                     b.Property<Guid>("OrganizationId")
@@ -5332,6 +5381,25 @@ namespace FarmManagement.Infrastructure.Persistence.Migrations
                     b.Navigation("StockMovement");
 
                     b.Navigation("StorageLocation");
+                });
+
+            modelBuilder.Entity("FarmManagement.Domain.Entities.FertilizerOperationIdempotencyRecord", b =>
+                {
+                    b.HasOne("FarmManagement.Domain.Entities.FertilizerApplication", "FertilizerApplication")
+                        .WithMany()
+                        .HasForeignKey("FertilizerApplicationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("FarmManagement.Domain.Entities.Organization", "Organization")
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("FertilizerApplication");
+
+                    b.Navigation("Organization");
                 });
 
             modelBuilder.Entity("FarmManagement.Domain.Entities.FertilizerReferenceSequence", b =>

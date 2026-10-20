@@ -67,11 +67,23 @@ public interface IFertilizerApplicationStore
 
     Task<StockBalance?> FindStockBalanceAsync(Guid storageLocationId, Guid inventoryItemId, Guid organizationId, CancellationToken cancellationToken = default);
 
+    Task<StockBalance?> LockBalanceAsync(Guid storageLocationId, Guid inventoryItemId, Guid organizationId, CancellationToken cancellationToken = default);
+
+    Task AcquireAdvisoryLockAsync(Guid storageLocationId, Guid inventoryItemId, CancellationToken cancellationToken = default);
+
+    Task<T> ExecuteInTransactionAsync<T>(Func<CancellationToken, Task<T>> operation, CancellationToken cancellationToken = default);
+
     void Add(FertilizerApplication application);
 
     void Remove(FertilizerApplication application);
 
     void RemoveProduct(FertilizerApplicationProduct product);
+
+    void AddMovement(StockMovement movement);
+
+    Task<FertilizerOperationIdempotencyRecord?> FindIdempotencyRecordAsync(Guid organizationId, string operationType, string idempotencyKey, CancellationToken cancellationToken = default);
+
+    void AddIdempotencyRecord(FertilizerOperationIdempotencyRecord record);
 
     void AddAuditLog(AuditLog auditLog);
 

@@ -11,7 +11,8 @@ namespace FarmManagement.Application.Services;
 public sealed class FertilizerApplicationService(
     IFertilizerApplicationStore store,
     IFertilizerValidator validator,
-    IFertilizerReferenceGenerator referenceGenerator) : IFertilizerApplicationService
+    IFertilizerReferenceGenerator referenceGenerator,
+    IFertilizerStockManager stockManager) : IFertilizerApplicationService
 {
     private const int DefaultPageSize = 20;
     private const int MaximumPageSize = 100;
@@ -960,6 +961,21 @@ public sealed class FertilizerApplicationService(
             throw new ResourceNotFoundException("The fertilizer application was not found.");
         }
 
+        if (!string.IsNullOrWhiteSpace(request.IdempotencyKey))
+        {
+            var replay = await stockManager.CheckIdempotencyAsync(
+                actor.OrganizationId,
+                "Start",
+                request.IdempotencyKey,
+                request,
+                cancellationToken);
+
+            if (replay is not null)
+            {
+                return await GetAsync(actor, replay.FertilizerApplicationId, cancellationToken);
+            }
+        }
+
         var app = await store.FindAsync(id, actor.OrganizationId, cancellationToken)
             ?? throw new ResourceNotFoundException("The fertilizer application was not found.");
 
@@ -1093,10 +1109,41 @@ public sealed class FertilizerApplicationService(
             },
             ipAddress);
 
+        if (!string.IsNullOrWhiteSpace(request.IdempotencyKey))
+        {
+            stockManager.RecordIdempotency(
+                actor.OrganizationId,
+                "Start",
+                request.IdempotencyKey,
+                app.Id,
+                request);
+        }
+
         await store.SaveChangesAsync(cancellationToken);
 
         return await GetAsync(actor, app.Id, cancellationToken);
     }
+
+    public Task<FertilizerStockConsumptionResult> ConsumeStockAsync(
+        FertilizerActor actor,
+        FertilizerApplication application,
+        IReadOnlyList<FertilizerStockConsumptionItem> itemsToIssue,
+        DateOnly movementDate,
+        string operationType,
+        string? idempotencyKey,
+        object? requestPayloadForHashing,
+        string? notes = null,
+        CancellationToken cancellationToken = default) =>
+        stockManager.ConsumeStockAsync(
+            actor,
+            application,
+            itemsToIssue,
+            movementDate,
+            operationType,
+            idempotencyKey,
+            requestPayloadForHashing,
+            notes,
+            cancellationToken);
 
     private void AddAudit(
         FertilizerActor actor,

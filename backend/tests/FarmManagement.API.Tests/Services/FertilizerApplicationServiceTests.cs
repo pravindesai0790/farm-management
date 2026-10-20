@@ -20,7 +20,8 @@ public class FertilizerApplicationServiceTests
     public FertilizerApplicationServiceTests()
     {
         var validator = new FarmManagement.Application.Services.Fertilizer.FertilizerValidator(_store);
-        _sut = new FertilizerApplicationService(_store, validator, new FakeFertilizerReferenceGenerator());
+        var stockManager = new FarmManagement.Application.Services.Fertilizer.FertilizerStockManager(_store);
+        _sut = new FertilizerApplicationService(_store, validator, new FakeFertilizerReferenceGenerator(), stockManager);
     }
 
     private sealed class FakeFertilizerReferenceGenerator : IFertilizerReferenceGenerator
@@ -367,6 +368,24 @@ public class FertilizerApplicationServiceTests
         public List<IrrigationEvent> IrrigationEvents { get; } = [];
         public List<StockBalance> StockBalances { get; } = [];
         public List<AuditLog> AuditLogs { get; } = [];
+        public List<StockMovement> StockMovements { get; } = [];
+        public List<FertilizerOperationIdempotencyRecord> IdempotencyRecords { get; } = [];
+
+        public Task<StockBalance?> LockBalanceAsync(Guid storageLocationId, Guid inventoryItemId, Guid organizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(StockBalances.FirstOrDefault(sb => sb.StorageLocationId == storageLocationId && sb.InventoryItemId == inventoryItemId && sb.OrganizationId == organizationId));
+
+        public Task AcquireAdvisoryLockAsync(Guid storageLocationId, Guid inventoryItemId, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public async Task<T> ExecuteInTransactionAsync<T>(Func<CancellationToken, Task<T>> operation, CancellationToken cancellationToken = default) =>
+            await operation(cancellationToken);
+
+        public void AddMovement(StockMovement movement) => StockMovements.Add(movement);
+
+        public Task<FertilizerOperationIdempotencyRecord?> FindIdempotencyRecordAsync(Guid organizationId, string operationType, string idempotencyKey, CancellationToken cancellationToken = default) =>
+            Task.FromResult(IdempotencyRecords.FirstOrDefault(r => r.OrganizationId == organizationId && r.OperationType == operationType && r.IdempotencyKey == idempotencyKey));
+
+        public void AddIdempotencyRecord(FertilizerOperationIdempotencyRecord record) => IdempotencyRecords.Add(record);
 
         public void Add(FertilizerApplication application) => Applications.Add(application);
 
