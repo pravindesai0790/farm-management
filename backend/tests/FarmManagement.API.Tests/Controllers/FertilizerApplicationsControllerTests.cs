@@ -308,6 +308,25 @@ public class FertilizerApplicationsControllerTests
         Assert.Equal(FertilizerApplicationStatus.Completed, result.Status);
     }
 
+    [Fact]
+    public async Task Cancel_ReturnsOkWithCancelledDetails()
+    {
+        // Arrange
+        var fakeService = new FakeFertilizerApplicationService();
+        var controller = CreateController(fakeService);
+        var id = Guid.NewGuid();
+        var request = new CancelFertilizerApplicationRequest("Adverse weather");
+
+        // Act
+        var actionResult = await controller.Cancel(id, request);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(actionResult);
+        var result = Assert.IsType<FertilizerApplicationDetailsResponse>(okResult.Value);
+        Assert.Equal(id, result.Id);
+        Assert.Equal(FertilizerApplicationStatus.Cancelled, result.Status);
+    }
+
     private sealed class FakeFertilizerApplicationService : IFertilizerApplicationService
     {
         public Task<PagedResponse<FertilizerApplicationListItemResponse>> ListAsync(
@@ -715,6 +734,35 @@ public class FertilizerApplicationsControllerTests
                 null, null, null, null, DateTimeOffset.UtcNow, actor.UserId, null, null,
                 "Admin", null, null, "Admin", null,
                 4, "4");
+
+            return Task.FromResult(response);
+        }
+
+        public Task<FertilizerApplicationDetailsResponse> CancelAsync(
+            FertilizerActor actor,
+            Guid id,
+            CancelFertilizerApplicationRequest request,
+            string? ipAddress,
+            CancellationToken cancellationToken = default)
+        {
+            var response = new FertilizerApplicationDetailsResponse(
+                id,
+                actor.OrganizationId,
+                "FERT-2026-000001",
+                FertilizerApplicationStatus.Cancelled,
+                "CANCELLED",
+                Guid.NewGuid(), null, Guid.NewGuid(), null, null, null, null, null, null, null,
+                Guid.NewGuid(), null, null, null, null,
+                null, null, request.ActualApplicationDate,
+                null, null, null, null, null, null,
+                "Cancelled application",
+                request.CancellationReason,
+                [],
+                DateTimeOffset.UtcNow,
+                actor.UserId,
+                null, null, null, null, null, null, DateTimeOffset.UtcNow, actor.UserId,
+                "Admin", null, null, null, "Admin",
+                5, "5");
 
             return Task.FromResult(response);
         }

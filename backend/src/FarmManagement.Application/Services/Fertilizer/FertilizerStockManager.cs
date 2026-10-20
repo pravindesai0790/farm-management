@@ -86,6 +86,21 @@ public sealed class FertilizerStockManager(IFertilizerApplicationStore store) : 
 
         if (itemsToIssue.Count == 0)
         {
+            var replay = await CheckIdempotencyAsync(actor.OrganizationId, operationType, idempotencyKey, requestPayloadForHashing, cancellationToken);
+            if (replay is not null)
+            {
+                return new FertilizerStockConsumptionResult(true, [], []);
+            }
+
+            var now = DateTimeOffset.UtcNow;
+            if (!string.IsNullOrWhiteSpace(idempotencyKey))
+            {
+                RecordIdempotency(actor.OrganizationId, operationType, idempotencyKey, application.Id, requestPayloadForHashing);
+            }
+
+            beforeSave?.Invoke(now);
+            await store.SaveChangesAsync(cancellationToken);
+
             return new FertilizerStockConsumptionResult(false, [], []);
         }
 
@@ -99,8 +114,8 @@ public sealed class FertilizerStockManager(IFertilizerApplicationStore store) : 
         }
 
         // Check idempotency replay before initiating transaction
-        var replay = await CheckIdempotencyAsync(actor.OrganizationId, operationType, idempotencyKey, requestPayloadForHashing, cancellationToken);
-        if (replay is not null)
+        var replayPositive = await CheckIdempotencyAsync(actor.OrganizationId, operationType, idempotencyKey, requestPayloadForHashing, cancellationToken);
+        if (replayPositive is not null)
         {
             return new FertilizerStockConsumptionResult(true, [], []);
         }
@@ -109,11 +124,14 @@ public sealed class FertilizerStockManager(IFertilizerApplicationStore store) : 
         var positiveItems = itemsToIssue.Where(i => i.ActualQuantity > 0m).ToList();
         if (positiveItems.Count == 0)
         {
+            var now = DateTimeOffset.UtcNow;
             if (!string.IsNullOrWhiteSpace(idempotencyKey))
             {
                 RecordIdempotency(actor.OrganizationId, operationType, idempotencyKey, application.Id, requestPayloadForHashing);
-                await store.SaveChangesAsync(cancellationToken);
             }
+
+            beforeSave?.Invoke(now);
+            await store.SaveChangesAsync(cancellationToken);
 
             return new FertilizerStockConsumptionResult(false, [], []);
         }

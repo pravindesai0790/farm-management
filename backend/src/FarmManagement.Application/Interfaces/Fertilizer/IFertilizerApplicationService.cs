@@ -94,4 +94,11 @@ public interface IFertilizerApplicationService
         CompleteFertilizerApplicationRequest request,
         string? ipAddress,
         CancellationToken cancellationToken = default);
+
+    Task<FertilizerApplicationDetailsResponse> CancelAsync(
+        FertilizerActor actor,
+        Guid id,
+        CancelFertilizerApplicationRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default);
 }

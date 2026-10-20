@@ -1321,6 +1321,235 @@ public sealed class FertilizerApplicationService(
         return await GetAsync(actor, app.Id, cancellationToken);
     }
 
+
+
+    public async Task<FertilizerApplicationDetailsResponse> CancelAsync(
+        FertilizerActor actor,
+        Guid id,
+        CancelFertilizerApplicationRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (id == Guid.Empty)
+        {
+            throw new ResourceNotFoundException("The fertilizer application was not found.");
+        }
+
+        // 1. Idempotency check before loading / locking
+        if (!string.IsNullOrWhiteSpace(request.IdempotencyKey))
+        {
+            var replay = await stockManager.CheckIdempotencyAsync(
+                actor.OrganizationId,
+                "Cancel",
+                request.IdempotencyKey,
+                request,
+                cancellationToken);
+
+            if (replay is not null)
+            {
+                return await GetAsync(actor, replay.FertilizerApplicationId, cancellationToken);
+            }
+        }
+
+        var app = await store.FindAsync(id, actor.OrganizationId, cancellationToken)
+            ?? throw new ResourceNotFoundException("The fertilizer application was not found.");
+
+        // 2. State invariant: reject COMPLETED and CANCELLED; allow DRAFT, PLANNED, SCHEDULED, IN_PROGRESS
+        if (app.Status == FertilizerApplicationStatus.Completed || app.Status == FertilizerApplicationStatus.Cancelled)
+        {
+            throw new ConflictException("Completed or already cancelled fertilizer applications cannot be cancelled.");
+        }
+
+        // 3. Optimistic concurrency check
+        if (request.Version.HasValue && request.Version.Value != app.Version)
+        {
+            throw new ConflictException("The fertilizer application has been modified by another user. Please reload and try again.");
+        }
+
+        // 4. Cancellation reason: mandatory and nonblank
+        if (string.IsNullOrWhiteSpace(request.CancellationReason))
+        {
+            throw Validation("cancellationReason", "A cancellation reason is required.");
+        }
+
+        // 5. Build product usage map and validate quantities
+        var productMap = new Dictionary<Guid, (decimal ActualQuantity, Guid? StorageLocationId)>();
+        if (request.Products is not null)
+        {
+            foreach (var p in request.Products)
+            {
+                if (p.InventoryItemId == Guid.Empty)
+                {
+                    throw Validation("products", "A valid inventory item is required for every product line.");
+                }
+
+                if (p.ActualQuantity < 0m)
+                {
+                    throw Validation("products", "Actual quantity cannot be negative.");
+                }
+
+                if (!productMap.TryAdd(p.InventoryItemId, (p.ActualQuantity, p.StorageLocationId)))
+                {
+                    throw Validation("products", "Duplicate inventory item found in cancellation product lines.");
+                }
+            }
+        }
+
+        // InProgress requires every line to be present if products list was submitted
+        if (app.Status == FertilizerApplicationStatus.InProgress && request.Products is not null && request.Products.Count > 0)
+        {
+            if (request.Products.Count != app.Products.Count)
+            {
+                throw Validation("products", "Actual quantities must be provided for every product line when cancelling an in-progress application.");
+            }
+        }
+
+        // Map and validate usage across application product lines
+        var hasPositiveUsage = false;
+        var consumptionItems = new List<FertilizerStockConsumptionItem>();
+        var lineUsageList = new List<(FertilizerApplicationProduct AppLine, decimal ActualQuantity, Guid? StorageLocationId)>();
+
+        foreach (var appLine in app.Products)
+        {
+            decimal actualQty = 0m;
+            Guid? storageLocationId = appLine.StorageLocationId;
+
+            if (productMap.TryGetValue(appLine.InventoryItemId, out var reqUsage))
+            {
+                actualQty = reqUsage.ActualQuantity;
+                if (app.Status != FertilizerApplicationStatus.InProgress && reqUsage.StorageLocationId.HasValue)
+                {
+                    storageLocationId = reqUsage.StorageLocationId.Value;
+                }
+            }
+
+            if (actualQty < 0m)
+            {
+                throw Validation("products", "Actual quantity cannot be negative.");
+            }
+
+            if (actualQty > 0m)
+            {
+                hasPositiveUsage = true;
+
+                // Validate location for positive line
+                if (!storageLocationId.HasValue || storageLocationId.Value == Guid.Empty)
+                {
+                    var item = await store.FindInventoryItemAsync(appLine.InventoryItemId, actor.OrganizationId, cancellationToken);
+                    throw Validation("products", $"A storage location is required for product line '{item?.Name ?? appLine.InventoryItemId.ToString()}' with positive usage.");
+                }
+
+                // If pre-start, validate location belongs to Farm & Org
+                if (app.Status != FertilizerApplicationStatus.InProgress)
+                {
+                    if (!app.FarmId.HasValue || app.FarmId.Value == Guid.Empty)
+                    {
+                        throw Validation("farmId", "A farm is required to record positive fertilizer usage.");
+                    }
+
+                    await validator.ValidateStorageLocationAsync(
+                        actor.OrganizationId,
+                        app.FarmId.Value,
+                        storageLocationId.Value,
+                        isPreStart: true,
+                        cancellationToken: cancellationToken);
+
+                    // Update storage location on appLine if changed
+                    if (appLine.StorageLocationId != storageLocationId.Value)
+                    {
+                        appLine.SetStorageLocation(storageLocationId.Value, DateTimeOffset.UtcNow, actor.UserId);
+                    }
+                }
+
+                consumptionItems.Add(new FertilizerStockConsumptionItem(
+                    appLine.InventoryItemId,
+                    storageLocationId.Value,
+                    actualQty));
+            }
+
+            lineUsageList.Add((appLine, actualQty, storageLocationId));
+        }
+
+        // 6. Date validation for positive usage
+        DateOnly? actualDate = null;
+        if (hasPositiveUsage)
+        {
+            if (!request.ActualApplicationDate.HasValue || request.ActualApplicationDate.Value == default)
+            {
+                throw Validation("actualApplicationDate", "Actual application date is required when fertilizer usage is recorded.");
+            }
+
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            if (request.ActualApplicationDate.Value > today)
+            {
+                throw Validation("actualApplicationDate", "Actual application date cannot be in the future.");
+            }
+
+            actualDate = request.ActualApplicationDate.Value;
+        }
+
+        // 7. Atomic consumption (or zero usage save), status transition, and audit
+        var priorStatusName = app.Status.ToString().ToUpperInvariant();
+        await stockManager.ConsumeStockAsync(
+            actor,
+            app,
+            consumptionItems,
+            actualDate ?? DateOnly.FromDateTime(DateTime.UtcNow),
+            "Cancel",
+            request.IdempotencyKey,
+            request,
+            notes: $"Cancelled fertilizer application {app.ReferenceNumber}: {request.CancellationReason.Trim()}",
+            beforeSave: now =>
+            {
+                app.Cancel(
+                    request.CancellationReason,
+                    now,
+                    actor.UserId,
+                    actualDate);
+
+                // Record actual quantity for zero-usage lines
+                foreach (var (line, qty, _) in lineUsageList)
+                {
+                    if (qty == 0m)
+                    {
+                        line.RecordActual(0m, null, now, actor.UserId);
+                    }
+                }
+
+                AddAudit(
+                    actor,
+                    app,
+                    "Fertilizer.Cancelled",
+                    new
+                    {
+                        app.Id,
+                        app.ReferenceNumber,
+                        PreviousStatus = priorStatusName,
+                        Status = "CANCELLED",
+                        Reason = request.CancellationReason.Trim(),
+                        ActualApplicationDate = actualDate,
+                        CancelledAt = now,
+                        CancelledBy = actor.UserId,
+                        HasPositiveUsage = hasPositiveUsage,
+                        Lines = lineUsageList.Select(x => new
+                        {
+                            x.AppLine.InventoryItemId,
+                            x.StorageLocationId,
+                            x.AppLine.PlannedQuantity,
+                            ActualQuantity = x.ActualQuantity,
+                            x.AppLine.StockMovementId
+                        })
+                    },
+                    ipAddress);
+            },
+            cancellationToken: cancellationToken);
+
+        return await GetAsync(actor, app.Id, cancellationToken);
+    }
+
     public Task<FertilizerStockConsumptionResult> ConsumeStockAsync(
         FertilizerActor actor,
         FertilizerApplication application,

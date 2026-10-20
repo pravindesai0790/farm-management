@@ -195,4 +195,17 @@ public sealed class FertilizerApplicationsController(IFertilizerApplicationServi
         var result = await service.CompleteAsync(actor, id, request, ipAddress, cancellationToken);
         return Ok(result);
     }
+
+    [HttpPost("{id:guid}/cancel")]
+    [Authorize(Policy = "Permission:Fertilizer.Cancel")]
+    public async Task<IActionResult> Cancel(
+        Guid id,
+        [FromBody] CancelFertilizerApplicationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var actor = UserContextHelper.GetUserContext<FertilizerActor>(User);
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var result = await service.CancelAsync(actor, id, request, ipAddress, cancellationToken);
+        return Ok(result);
+    }
 }

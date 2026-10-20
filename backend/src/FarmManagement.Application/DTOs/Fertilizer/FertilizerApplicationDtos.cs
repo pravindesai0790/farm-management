@@ -255,6 +255,18 @@ public sealed record CompleteFertilizerApplicationProductLineRequest(
     Guid InventoryItemId,
     decimal ActualQuantity);
 
+public sealed record CancelFertilizerApplicationRequest(
+    string CancellationReason,
+    DateOnly? ActualApplicationDate = null,
+    uint? Version = null,
+    string? IdempotencyKey = null,
+    IReadOnlyList<CancelFertilizerApplicationProductLineRequest>? Products = null);
+
+public sealed record CancelFertilizerApplicationProductLineRequest(
+    Guid InventoryItemId,
+    decimal ActualQuantity,
+    Guid? StorageLocationId = null);
+
 public sealed record FertilizerStockShortageDto(
     Guid InventoryItemId,
     string ItemName,
