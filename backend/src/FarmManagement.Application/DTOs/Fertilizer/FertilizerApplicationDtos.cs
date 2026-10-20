@@ -242,6 +242,19 @@ public sealed record StartFertilizerApplicationRequest(
     uint? Version = null,
     string? IdempotencyKey = null);
 
+public sealed record CompleteFertilizerApplicationRequest(
+    DateOnly ActualApplicationDate,
+    decimal? ActualArea = null,
+    Guid? ActualAreaUnitId = null,
+    uint? Version = null,
+    string? IdempotencyKey = null,
+    bool AcknowledgeVariance = false,
+    IReadOnlyList<CompleteFertilizerApplicationProductLineRequest>? Products = null);
+
+public sealed record CompleteFertilizerApplicationProductLineRequest(
+    Guid InventoryItemId,
+    decimal ActualQuantity);
+
 public sealed record FertilizerStockShortageDto(
     Guid InventoryItemId,
     string ItemName,

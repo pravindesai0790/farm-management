@@ -77,6 +77,7 @@ public sealed class FertilizerStockManager(IFertilizerApplicationStore store) : 
         string? idempotencyKey,
         object? requestPayloadForHashing,
         string? notes = null,
+        Action<DateTimeOffset>? beforeSave = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(actor);
@@ -240,6 +241,8 @@ public sealed class FertilizerStockManager(IFertilizerApplicationStore store) : 
             {
                 RecordIdempotency(actor.OrganizationId, operationType, idempotencyKey, application.Id, requestPayloadForHashing);
             }
+
+            beforeSave?.Invoke(now);
 
             await store.SaveChangesAsync(ct);
             return new FertilizerStockConsumptionResult(false, movements, deductions);

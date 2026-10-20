@@ -289,6 +289,25 @@ public class FertilizerApplicationsControllerTests
         Assert.Equal(FertilizerApplicationStatus.InProgress, result.Status);
     }
 
+    [Fact]
+    public async Task Complete_ReturnsOkWithCompletedDetails()
+    {
+        // Arrange
+        var fakeService = new FakeFertilizerApplicationService();
+        var controller = CreateController(fakeService);
+        var id = Guid.NewGuid();
+        var request = new CompleteFertilizerApplicationRequest(DateOnly.FromDateTime(DateTime.UtcNow));
+
+        // Act
+        var actionResult = await controller.Complete(id, request);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(actionResult);
+        var result = Assert.IsType<FertilizerApplicationDetailsResponse>(okResult.Value);
+        Assert.Equal(id, result.Id);
+        Assert.Equal(FertilizerApplicationStatus.Completed, result.Status);
+    }
+
     private sealed class FakeFertilizerApplicationService : IFertilizerApplicationService
     {
         public Task<PagedResponse<FertilizerApplicationListItemResponse>> ListAsync(
@@ -667,6 +686,35 @@ public class FertilizerApplicationsControllerTests
                 null, null, DateTimeOffset.UtcNow, actor.UserId, null, null, null, null,
                 "Admin", null, "Admin", null, null,
                 3, "3");
+
+            return Task.FromResult(response);
+        }
+
+        public Task<FertilizerApplicationDetailsResponse> CompleteAsync(
+            FertilizerActor actor,
+            Guid id,
+            CompleteFertilizerApplicationRequest request,
+            string? ipAddress,
+            CancellationToken cancellationToken = default)
+        {
+            var response = new FertilizerApplicationDetailsResponse(
+                id,
+                actor.OrganizationId,
+                "FERT-2026-000001",
+                FertilizerApplicationStatus.Completed,
+                "COMPLETED",
+                Guid.NewGuid(), null, Guid.NewGuid(), null, null, null, null, null, null, null,
+                Guid.NewGuid(), null, null, null, null,
+                null, null, request.ActualApplicationDate,
+                null, null, null, request.ActualArea, request.ActualAreaUnitId, null,
+                "Completed application",
+                null,
+                [],
+                DateTimeOffset.UtcNow,
+                actor.UserId,
+                null, null, null, null, DateTimeOffset.UtcNow, actor.UserId, null, null,
+                "Admin", null, null, "Admin", null,
+                4, "4");
 
             return Task.FromResult(response);
         }

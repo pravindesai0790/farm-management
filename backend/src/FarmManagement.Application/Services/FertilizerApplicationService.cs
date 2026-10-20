@@ -1124,6 +1124,203 @@ public sealed class FertilizerApplicationService(
         return await GetAsync(actor, app.Id, cancellationToken);
     }
 
+    public async Task<FertilizerApplicationDetailsResponse> CompleteAsync(
+        FertilizerActor actor,
+        Guid id,
+        CompleteFertilizerApplicationRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (id == Guid.Empty)
+        {
+            throw new ResourceNotFoundException("The fertilizer application was not found.");
+        }
+
+        // 1. Idempotency check before loading / locking
+        if (!string.IsNullOrWhiteSpace(request.IdempotencyKey))
+        {
+            var replay = await stockManager.CheckIdempotencyAsync(
+                actor.OrganizationId,
+                "Complete",
+                request.IdempotencyKey,
+                request,
+                cancellationToken);
+
+            if (replay is not null)
+            {
+                return await GetAsync(actor, replay.FertilizerApplicationId, cancellationToken);
+            }
+        }
+
+        var app = await store.FindAsync(id, actor.OrganizationId, cancellationToken)
+            ?? throw new ResourceNotFoundException("The fertilizer application was not found.");
+
+        if (app.Status != FertilizerApplicationStatus.InProgress)
+        {
+            throw new ConflictException("Only in-progress fertilizer applications can be completed.");
+        }
+
+        if (request.Version.HasValue && request.Version.Value != app.Version)
+        {
+            throw new ConflictException("The fertilizer application has been modified by another user. Please reload and try again.");
+        }
+
+        // 2. Validate date boundaries: required, past allowed, future rejected
+        if (request.ActualApplicationDate == default)
+        {
+            throw Validation("actualApplicationDate", "Actual application date is required.");
+        }
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        if (request.ActualApplicationDate > today)
+        {
+            throw Validation("actualApplicationDate", "Actual application date cannot be in the future.");
+        }
+
+        // 3. Validate optional Actual Area & Unit
+        await validator.ValidateAreaAndUnitsAsync(
+            actor.OrganizationId,
+            null,
+            null,
+            request.ActualArea,
+            request.ActualAreaUnitId,
+            cancellationToken);
+
+        // 4. Validate product lines
+        if (app.Products.Count == 0)
+        {
+            throw Validation("products", "At least one product line is required to complete the application.");
+        }
+
+        if (request.Products is null || request.Products.Count == 0)
+        {
+            throw Validation("products", "Product line actual quantities are required to complete the application.");
+        }
+
+        if (request.Products.Count != app.Products.Count)
+        {
+            throw Validation("products", "Actual quantities must be provided for every product line.");
+        }
+
+        var productMap = new Dictionary<Guid, decimal>();
+        foreach (var p in request.Products)
+        {
+            if (p.InventoryItemId == Guid.Empty)
+            {
+                throw Validation("products", "A valid inventory item is required for every product line.");
+            }
+
+            if (!productMap.TryAdd(p.InventoryItemId, p.ActualQuantity))
+            {
+                throw Validation("products", "Duplicate inventory item found in completion product lines.");
+            }
+        }
+
+        var varianceErrors = new Dictionary<string, string[]>();
+        var hasAnyVariance = false;
+        var consumptionItems = new List<FertilizerStockConsumptionItem>();
+
+        var appProducts = app.Products.ToList();
+        for (var i = 0; i < appProducts.Count; i++)
+        {
+            var appLine = appProducts[i];
+            if (!productMap.TryGetValue(appLine.InventoryItemId, out var actualQty))
+            {
+                var item = await store.FindInventoryItemAsync(appLine.InventoryItemId, actor.OrganizationId, cancellationToken);
+                throw Validation("products", $"Missing actual quantity for product '{item?.Name ?? appLine.InventoryItemId.ToString()}'.");
+            }
+
+            if (actualQty <= 0m)
+            {
+                var item = await store.FindInventoryItemAsync(appLine.InventoryItemId, actor.OrganizationId, cancellationToken);
+                throw Validation("products", $"Actual quantity must be greater than zero for product '{item?.Name ?? appLine.InventoryItemId.ToString()}'.");
+            }
+
+            if (!appLine.StorageLocationId.HasValue || appLine.StorageLocationId.Value == Guid.Empty)
+            {
+                throw Validation("products", $"Storage location is missing for product line '{appLine.InventoryItemId}'.");
+            }
+
+            var variance = actualQty - appLine.PlannedQuantity;
+            if (variance != 0m)
+            {
+                hasAnyVariance = true;
+                var item = await store.FindInventoryItemAsync(appLine.InventoryItemId, actor.OrganizationId, cancellationToken);
+                var unitSymbol = item?.StockUnit?.Symbol ?? string.Empty;
+                var diffStr = variance > 0 ? $"+{variance:0.##}" : $"{variance:0.##}";
+                varianceErrors[$"products[{i}]"] =
+                [
+                    $"Product '{item?.Name}' has a quantity variance of {diffStr} {unitSymbol} (Planned: {appLine.PlannedQuantity:0.##} {unitSymbol}, Actual: {actualQty:0.##} {unitSymbol}). Explicit variance acknowledgement is required to complete."
+                ];
+            }
+
+            consumptionItems.Add(new FertilizerStockConsumptionItem(
+                appLine.InventoryItemId,
+                appLine.StorageLocationId.Value,
+                actualQty));
+        }
+
+        // 5. Require variance acknowledgement if non-zero variance exists
+        if (hasAnyVariance && !request.AcknowledgeVariance)
+        {
+            throw new ValidationException(
+                "One or more product lines have quantity variance compared to planned. Explicit variance acknowledgement is required.",
+                varianceErrors);
+        }
+
+        // 6. Atomic stock issue, status transition, audit and idempotency record
+        await stockManager.ConsumeStockAsync(
+            actor,
+            app,
+            consumptionItems,
+            request.ActualApplicationDate,
+            "Complete",
+            request.IdempotencyKey,
+            request,
+            notes: $"Completed fertilizer application {app.ReferenceNumber}",
+            beforeSave: now =>
+            {
+                app.Complete(
+                    request.ActualApplicationDate,
+                    request.ActualArea,
+                    request.ActualAreaUnitId,
+                    now,
+                    actor.UserId);
+
+                AddAudit(
+                    actor,
+                    app,
+                    "Fertilizer.Completed",
+                    new
+                    {
+                        app.Id,
+                        app.ReferenceNumber,
+                        Status = app.Status.ToString().ToUpperInvariant(),
+                        request.ActualApplicationDate,
+                        request.ActualArea,
+                        request.ActualAreaUnitId,
+                        CompletedAt = now,
+                        CompletedBy = actor.UserId,
+                        Lines = app.Products.Select(p => new
+                        {
+                            p.InventoryItemId,
+                            p.StorageLocationId,
+                            p.PlannedQuantity,
+                            p.ActualQuantity,
+                            p.StockMovementId,
+                            Variance = (p.ActualQuantity ?? 0m) - p.PlannedQuantity
+                        })
+                    },
+                    ipAddress);
+            },
+            cancellationToken: cancellationToken);
+
+        return await GetAsync(actor, app.Id, cancellationToken);
+    }
+
     public Task<FertilizerStockConsumptionResult> ConsumeStockAsync(
         FertilizerActor actor,
         FertilizerApplication application,
@@ -1133,6 +1330,7 @@ public sealed class FertilizerApplicationService(
         string? idempotencyKey,
         object? requestPayloadForHashing,
         string? notes = null,
+        Action<DateTimeOffset>? beforeSave = null,
         CancellationToken cancellationToken = default) =>
         stockManager.ConsumeStockAsync(
             actor,
@@ -1143,6 +1341,7 @@ public sealed class FertilizerApplicationService(
             idempotencyKey,
             requestPayloadForHashing,
             notes,
+            beforeSave,
             cancellationToken);
 
     private void AddAudit(
@@ -1260,7 +1459,7 @@ public sealed class FertilizerApplicationService(
                 p.ActualQuantity,
                 variance,
                 p.StockMovementId,
-                null);
+                p.StockMovement?.ReferenceNumber);
         }).ToArray();
 
         return new FertilizerApplicationDetailsResponse(

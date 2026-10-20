@@ -87,4 +87,11 @@ public interface IFertilizerApplicationService
         StartFertilizerApplicationRequest request,
         string? ipAddress,
         CancellationToken cancellationToken = default);
+
+    Task<FertilizerApplicationDetailsResponse> CompleteAsync(
+        FertilizerActor actor,
+        Guid id,
+        CompleteFertilizerApplicationRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default);
 }

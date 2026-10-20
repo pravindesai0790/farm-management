@@ -14,6 +14,7 @@ public interface IFertilizerStockManager
         string? idempotencyKey,
         object? requestPayloadForHashing,
         string? notes = null,
+        Action<DateTimeOffset>? beforeSave = null,
         CancellationToken cancellationToken = default);
 
     Task<FertilizerOperationIdempotencyRecord?> CheckIdempotencyAsync(
