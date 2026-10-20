@@ -327,6 +327,35 @@ public class FertilizerApplicationsControllerTests
         Assert.Equal(FertilizerApplicationStatus.Cancelled, result.Status);
     }
 
+    [Fact]
+    public async Task RecordCompleted_ReturnsCreatedWithDetails()
+    {
+        // Arrange
+        var fakeService = new FakeFertilizerApplicationService();
+        var controller = CreateController(fakeService);
+        var farmId = Guid.NewGuid();
+        var areaId = Guid.NewGuid();
+        var methodId = Guid.NewGuid();
+        var itemId = Guid.NewGuid();
+        var locId = Guid.NewGuid();
+
+        var request = new RecordCompletedFertilizerApplicationRequest(
+            FarmId: farmId,
+            FarmAreaId: areaId,
+            ApplicationMethodId: methodId,
+            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            Products: [new(itemId, locId, 50m)]);
+
+        // Act
+        var actionResult = await controller.RecordCompleted(request);
+
+        // Assert
+        var createdResult = Assert.IsType<CreatedAtActionResult>(actionResult);
+        var result = Assert.IsType<FertilizerApplicationDetailsResponse>(createdResult.Value);
+        Assert.Equal(FertilizerApplicationStatus.Completed, result.Status);
+        Assert.Equal("COMPLETED", result.StatusName);
+    }
+
     private sealed class FakeFertilizerApplicationService : IFertilizerApplicationService
     {
         public Task<PagedResponse<FertilizerApplicationListItemResponse>> ListAsync(
@@ -763,6 +792,35 @@ public class FertilizerApplicationsControllerTests
                 null, null, null, null, null, null, DateTimeOffset.UtcNow, actor.UserId,
                 "Admin", null, null, null, "Admin",
                 5, "5");
+
+            return Task.FromResult(response);
+        }
+
+        public Task<FertilizerApplicationDetailsResponse> RecordCompletedAsync(
+            FertilizerActor actor,
+            RecordCompletedFertilizerApplicationRequest request,
+            string? ipAddress,
+            CancellationToken cancellationToken = default)
+        {
+            var id = Guid.NewGuid();
+            var response = new FertilizerApplicationDetailsResponse(
+                id,
+                actor.OrganizationId,
+                "FERT-2026-000001",
+                FertilizerApplicationStatus.Completed,
+                "COMPLETED",
+                request.FarmId, null, request.FarmAreaId, null, null, null, null, null, null, null,
+                request.ApplicationMethodId, null, null, null, null,
+                null, null, request.ActualApplicationDate,
+                null, null, null, request.ActualArea, request.ActualAreaUnitId, null,
+                "Direct completed application",
+                null,
+                [],
+                DateTimeOffset.UtcNow,
+                actor.UserId,
+                null, null, null, null, DateTimeOffset.UtcNow, actor.UserId, null, null,
+                "Admin", null, null, "Admin", null,
+                1, "1");
 
             return Task.FromResult(response);
         }

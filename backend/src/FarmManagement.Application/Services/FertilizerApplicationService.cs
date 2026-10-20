@@ -1550,6 +1550,305 @@ public sealed class FertilizerApplicationService(
         return await GetAsync(actor, app.Id, cancellationToken);
     }
 
+    public async Task<FertilizerApplicationDetailsResponse> RecordCompletedAsync(
+        FertilizerActor actor,
+        RecordCompletedFertilizerApplicationRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+        ArgumentNullException.ThrowIfNull(request);
+
+        // 1. Check idempotency replay before initiating any validation or transaction
+        var replay = await stockManager.CheckIdempotencyAsync(
+            actor.OrganizationId,
+            "RecordCompleted",
+            request.IdempotencyKey,
+            request,
+            cancellationToken);
+
+        if (replay is not null)
+        {
+            var existing = await store.FindAsync(replay.FertilizerApplicationId, actor.OrganizationId, cancellationToken);
+            if (existing is not null)
+            {
+                return await GetAsync(actor, existing.Id, cancellationToken);
+            }
+        }
+
+        // 2. Validate mandatory Farm and FarmArea
+        if (request.FarmId == Guid.Empty)
+        {
+            throw Validation("farmId", "A farm is required to record a completed fertilizer application.");
+        }
+
+        if (request.FarmAreaId == Guid.Empty)
+        {
+            throw Validation("farmAreaId", "A farm area is required to record a completed fertilizer application.");
+        }
+
+        if (request.ApplicationMethodId == Guid.Empty)
+        {
+            throw Validation("applicationMethodId", "An application method is required.");
+        }
+
+        // 3. Hierarchy validation
+        await validator.ValidateHierarchyAsync(
+            actor.OrganizationId,
+            request.FarmId,
+            request.FarmAreaId,
+            request.PlantationId,
+            request.CropCycleId,
+            request.CropCycleStageId,
+            isPreStart: true,
+            cancellationToken: cancellationToken);
+
+        // 4. Method validation
+        await validator.ValidateApplicationMethodAsync(
+            actor.OrganizationId,
+            request.ApplicationMethodId,
+            request.OtherMethodDescription,
+            cancellationToken);
+
+        // 5. Irrigation event validation (allowed ONLY if method is Fertigation)
+        await validator.ValidateIrrigationLinkAsync(
+            actor.OrganizationId,
+            request.ApplicationMethodId,
+            request.IrrigationEventId,
+            request.FarmId,
+            request.FarmAreaId,
+            cancellationToken);
+
+        // 6. Actual Area and Unit validation
+        await validator.ValidateAreaAndUnitsAsync(
+            actor.OrganizationId,
+            plannedArea: null,
+            plannedAreaUnitId: null,
+            actualArea: request.ActualArea,
+            actualAreaUnitId: request.ActualAreaUnitId,
+            cancellationToken: cancellationToken);
+
+        // 7. Date validation & retrospective warning check
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        if (request.ActualApplicationDate > today)
+        {
+            throw Validation("actualApplicationDate", "Actual application date cannot be in the future.");
+        }
+
+        if (request.ActualApplicationDate < today && !request.AcknowledgeRetrospectiveStockDeduction)
+        {
+            throw Validation("actualApplicationDate", "Application date is in the past. Inventory will be deducted from current on-hand stock rather than reconstructed historical stock. Explicit acknowledgement is required to proceed.");
+        }
+
+        // 8. Product lines validation
+        if (request.Products is null || request.Products.Count == 0)
+        {
+            throw Validation("products", "At least one product line is required to record a completed fertilizer application.");
+        }
+
+        var duplicates = request.Products
+            .GroupBy(p => p.InventoryItemId)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key)
+            .ToList();
+
+        if (duplicates.Count > 0)
+        {
+            throw Validation("products", "Duplicate inventory items are not allowed in fertilizer product lines.");
+        }
+
+        var validatedProducts = new List<(RecordCompletedFertilizerProductLineRequest Line, InventoryItem Item, StorageLocation Location)>();
+
+        foreach (var line in request.Products)
+        {
+            if (line.InventoryItemId == Guid.Empty)
+            {
+                throw Validation("products", "An inventory item is required for every product line.");
+            }
+
+            if (line.StorageLocationId == Guid.Empty)
+            {
+                throw Validation("products", "A storage location is required for every product line.");
+            }
+
+            if (line.ActualQuantity <= 0m)
+            {
+                throw Validation("products", "Actual quantity must be greater than zero for all product lines.");
+            }
+
+            await validator.ValidateProductEligibilityAsync(
+                actor.OrganizationId,
+                line.InventoryItemId,
+                isPreStart: true,
+                cancellationToken: cancellationToken);
+
+            await validator.ValidateStorageLocationAsync(
+                actor.OrganizationId,
+                request.FarmId,
+                line.StorageLocationId,
+                isPreStart: true,
+                cancellationToken: cancellationToken);
+
+            var itemEntity = await store.FindInventoryItemAsync(line.InventoryItemId, actor.OrganizationId, cancellationToken)
+                ?? throw new ResourceNotFoundException("The selected inventory item was not found.");
+
+            var locEntity = await store.FindStorageLocationAsync(line.StorageLocationId, actor.OrganizationId, cancellationToken)
+                ?? throw new ResourceNotFoundException("The selected storage location was not found.");
+
+            validatedProducts.Add((line, itemEntity, locEntity));
+        }
+
+        // 9. Atomic stock verification, lock acquisition, shortage check, reference allocation, and creation
+        var orderedProducts = validatedProducts
+            .OrderBy(p => p.Line.StorageLocationId)
+            .ThenBy(p => p.Line.InventoryItemId)
+            .ToList();
+
+        var createdApplication = await store.ExecuteInTransactionAsync(async ct =>
+        {
+            var lockedBalances = new List<(StockBalance Balance, decimal Quantity, InventoryItem Item, StorageLocation Location, RecordCompletedFertilizerProductLineRequest Line)>();
+            var shortages = new List<FertilizerStockShortageDto>();
+            var shortageErrors = new Dictionary<string, string[]>();
+
+            for (var i = 0; i < orderedProducts.Count; i++)
+            {
+                var (line, itemEntity, locEntity) = orderedProducts[i];
+
+                await store.AcquireAdvisoryLockAsync(line.StorageLocationId, line.InventoryItemId, ct);
+
+                var balance = await store.LockBalanceAsync(line.StorageLocationId, line.InventoryItemId, actor.OrganizationId, ct);
+                var available = balance?.QuantityOnHand ?? 0m;
+
+                if (balance is null || available < line.ActualQuantity)
+                {
+                    var shortageQty = line.ActualQuantity - available;
+                    var unitSymbol = itemEntity.StockUnit?.Symbol ?? string.Empty;
+
+                    shortages.Add(new FertilizerStockShortageDto(
+                        itemEntity.Id,
+                        itemEntity.Name,
+                        itemEntity.Sku,
+                        locEntity.Id,
+                        locEntity.Name,
+                        line.ActualQuantity,
+                        available,
+                        shortageQty,
+                        unitSymbol));
+
+                    shortageErrors[$"products[{i}]"] =
+                    [
+                        $"Insufficient stock for '{itemEntity.Name}'. Required: {line.ActualQuantity}, Available: {available}, Shortage: {shortageQty} at '{locEntity.Name}'."
+                    ];
+                }
+                else
+                {
+                    lockedBalances.Add((balance, line.ActualQuantity, itemEntity, locEntity, line));
+                }
+            }
+
+            if (shortages.Count > 0)
+            {
+                throw new ValidationException("One or more product lines have insufficient stock.", shortageErrors);
+            }
+
+            // Allocate reference number only on successful stock verification
+            var referenceNumber = await referenceGenerator.NextReferenceNumberAsync(actor.OrganizationId, request.ActualApplicationDate.Year, ct);
+
+            var app = FertilizerApplication.RecordCompletedDirect(
+                actor.OrganizationId,
+                referenceNumber,
+                request.FarmId,
+                request.FarmAreaId,
+                request.ApplicationMethodId,
+                request.ActualApplicationDate,
+                actor.UserId,
+                request.PlantationId,
+                request.CropCycleId,
+                request.CropCycleStageId,
+                request.OtherMethodDescription,
+                request.IrrigationEventId,
+                request.ActualArea,
+                request.ActualAreaUnitId,
+                request.PurposeReason,
+                request.IdempotencyKey);
+
+            var now = DateTimeOffset.UtcNow;
+            var movementDate = request.ActualApplicationDate;
+
+            foreach (var (balance, quantity, itemEntity, _, line) in lockedBalances)
+            {
+                balance.DeductStock(quantity, now, actor.UserId);
+
+                var movement = new StockMovement(
+                    organizationId: actor.OrganizationId,
+                    movementType: StockMovementType.Issue,
+                    inventoryItemId: line.InventoryItemId,
+                    farmId: request.FarmId,
+                    storageLocationId: line.StorageLocationId,
+                    quantity: quantity,
+                    stockUnitId: itemEntity.StockUnitId,
+                    movementDate: movementDate,
+                    createdBy: actor.UserId,
+                    referenceNumber: referenceNumber,
+                    notes: $"Applied during fertilizer application {referenceNumber}",
+                    cropCycleId: request.CropCycleId,
+                    cropCycleStageId: request.CropCycleStageId,
+                    plantationId: request.PlantationId,
+                    farmAreaId: request.FarmAreaId,
+                    laborActivityId: null,
+                    sprayId: null,
+                    fertilizerApplicationId: app.Id);
+
+                store.AddMovement(movement);
+
+                var product = new FertilizerApplicationProduct(
+                    app.Id,
+                    line.InventoryItemId,
+                    plannedQuantity: 0m,
+                    createdBy: actor.UserId,
+                    storageLocationId: line.StorageLocationId,
+                    actualQuantity: quantity,
+                    stockMovementId: movement.Id);
+
+                app.AddDirectProduct(product);
+            }
+
+            store.Add(app);
+
+            if (!string.IsNullOrWhiteSpace(request.IdempotencyKey))
+            {
+                stockManager.RecordIdempotency(actor.OrganizationId, "RecordCompleted", request.IdempotencyKey, app.Id, request);
+            }
+
+            AddAudit(
+                actor,
+                app,
+                "Fertilizer.RecordCompleted",
+                new
+                {
+                    app.Id,
+                    app.ReferenceNumber,
+                    app.FarmId,
+                    app.FarmAreaId,
+                    app.ApplicationMethodId,
+                    app.ActualApplicationDate,
+                    Products = app.Products.Select(p => new
+                    {
+                        p.InventoryItemId,
+                        p.StorageLocationId,
+                        p.ActualQuantity,
+                        p.StockMovementId
+                    })
+                },
+                ipAddress);
+
+            await store.SaveChangesAsync(ct);
+            return app;
+        }, cancellationToken);
+
+        return await GetAsync(actor, createdApplication.Id, cancellationToken);
+    }
+
     public Task<FertilizerStockConsumptionResult> ConsumeStockAsync(
         FertilizerActor actor,
         FertilizerApplication application,
@@ -1614,13 +1913,19 @@ public sealed class FertilizerApplicationService(
         FertilizerApplication app,
         string? createdByName)
     {
-        var summaries = app.Products.Select(p => new FertilizerApplicationItemSummaryDto(
-            p.InventoryItemId,
-            p.InventoryItem?.Name ?? string.Empty,
-            p.InventoryItem?.Sku,
-            p.PlannedQuantity,
-            p.ActualQuantity,
-            p.InventoryItem?.StockUnit?.Symbol ?? string.Empty)).ToArray();
+        var summaries = app.Products.Select(p =>
+        {
+            var isDirectCompletedLine = app.Status == FertilizerApplicationStatus.Completed && !app.PlannedDate.HasValue && p.PlannedQuantity == 0m;
+            decimal? plannedQty = isDirectCompletedLine ? null : p.PlannedQuantity;
+
+            return new FertilizerApplicationItemSummaryDto(
+                p.InventoryItemId,
+                p.InventoryItem?.Name ?? string.Empty,
+                p.InventoryItem?.Sku,
+                plannedQty,
+                p.ActualQuantity,
+                p.InventoryItem?.StockUnit?.Symbol ?? string.Empty);
+        }).ToArray();
 
         return new FertilizerApplicationListItemResponse(
             app.Id,
@@ -1668,7 +1973,9 @@ public sealed class FertilizerApplicationService(
     {
         var products = app.Products.Select(p =>
         {
-            decimal? variance = p.ActualQuantity.HasValue
+            var isDirectCompletedLine = app.Status == FertilizerApplicationStatus.Completed && !app.PlannedDate.HasValue && p.PlannedQuantity == 0m;
+            decimal? plannedQty = isDirectCompletedLine ? null : p.PlannedQuantity;
+            decimal? variance = p.ActualQuantity.HasValue && !isDirectCompletedLine
                 ? p.ActualQuantity.Value - p.PlannedQuantity
                 : null;
 
@@ -1684,7 +1991,7 @@ public sealed class FertilizerApplicationService(
                 p.InventoryItem?.StockUnit?.Symbol,
                 p.StorageLocationId,
                 p.StorageLocation?.Name,
-                p.PlannedQuantity,
+                plannedQty,
                 p.ActualQuantity,
                 variance,
                 p.StockMovementId,

@@ -277,3 +277,25 @@ public sealed record FertilizerStockShortageDto(
     decimal AvailableQuantity,
     decimal ShortageQuantity,
     string UnitSymbol);
+
+public sealed record RecordCompletedFertilizerApplicationRequest(
+    Guid FarmId,
+    Guid FarmAreaId,
+    Guid ApplicationMethodId,
+    DateOnly ActualApplicationDate,
+    IReadOnlyList<RecordCompletedFertilizerProductLineRequest> Products,
+    Guid? PlantationId = null,
+    Guid? CropCycleId = null,
+    Guid? CropCycleStageId = null,
+    string? OtherMethodDescription = null,
+    Guid? IrrigationEventId = null,
+    decimal? ActualArea = null,
+    Guid? ActualAreaUnitId = null,
+    string? PurposeReason = null,
+    bool AcknowledgeRetrospectiveStockDeduction = false,
+    string? IdempotencyKey = null);
+
+public sealed record RecordCompletedFertilizerProductLineRequest(
+    Guid InventoryItemId,
+    Guid StorageLocationId,
+    decimal ActualQuantity);

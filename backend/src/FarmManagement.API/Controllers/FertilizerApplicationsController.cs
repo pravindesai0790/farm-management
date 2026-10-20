@@ -208,4 +208,16 @@ public sealed class FertilizerApplicationsController(IFertilizerApplicationServi
         var result = await service.CancelAsync(actor, id, request, ipAddress, cancellationToken);
         return Ok(result);
     }
+
+    [HttpPost("record-completed")]
+    [Authorize(Policy = "Permission:Fertilizer.RecordCompleted")]
+    public async Task<IActionResult> RecordCompleted(
+        [FromBody] RecordCompletedFertilizerApplicationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var actor = UserContextHelper.GetUserContext<FertilizerActor>(User);
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var result = await service.RecordCompletedAsync(actor, request, ipAddress, cancellationToken);
+        return CreatedAtAction(nameof(Get), new { id = result.Id }, result);
+    }
 }

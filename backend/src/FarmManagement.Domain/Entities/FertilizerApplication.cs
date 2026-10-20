@@ -131,6 +131,23 @@ public sealed class FertilizerApplication
         _products.Add(product);
     }
 
+    public void AddDirectProduct(FertilizerApplicationProduct product)
+    {
+        ArgumentNullException.ThrowIfNull(product);
+
+        if (Status != FertilizerApplicationStatus.Completed)
+        {
+            throw new InvalidOperationException("Direct products can only be added to a direct completed application.");
+        }
+
+        if (_products.Any(p => p.InventoryItemId == product.InventoryItemId))
+        {
+            throw new InvalidOperationException($"Product with InventoryItemId '{product.InventoryItemId}' already exists in this application.");
+        }
+
+        _products.Add(product);
+    }
+
     public FertilizerApplicationProduct AddProduct(
         Guid inventoryItemId,
         decimal plannedQuantity,

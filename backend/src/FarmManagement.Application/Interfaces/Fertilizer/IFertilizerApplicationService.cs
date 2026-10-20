@@ -101,4 +101,10 @@ public interface IFertilizerApplicationService
         CancelFertilizerApplicationRequest request,
         string? ipAddress,
         CancellationToken cancellationToken = default);
+
+    Task<FertilizerApplicationDetailsResponse> RecordCompletedAsync(
+        FertilizerActor actor,
+        RecordCompletedFertilizerApplicationRequest request,
+        string? ipAddress,
+        CancellationToken cancellationToken = default);
 }
