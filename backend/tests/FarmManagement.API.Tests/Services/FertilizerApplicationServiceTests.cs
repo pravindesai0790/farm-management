@@ -340,9 +340,22 @@ public class FertilizerApplicationServiceTests
         }
     }
 
-    private sealed class FakeFertilizerStore : IFertilizerApplicationStore
+    public sealed class FakeFertilizerStore : IFertilizerApplicationStore
     {
         public List<FertilizerApplication> Applications { get; } = [];
+        public List<Farm> Farms { get; } = [];
+        public List<FarmArea> FarmAreas { get; } = [];
+        public List<CropPlantation> Plantations { get; } = [];
+        public List<CropCycle> CropCycles { get; } = [];
+        public List<CropCycleStage> CropCycleStages { get; } = [];
+        public List<ApplicationMethod> ApplicationMethods { get; } = [];
+        public List<Unit> Units { get; } = [];
+        public List<InventoryItem> InventoryItems { get; } = [];
+        public HashSet<Guid> ActivePppItemIds { get; } = [];
+        public List<StorageLocation> StorageLocations { get; } = [];
+        public List<IrrigationEvent> IrrigationEvents { get; } = [];
+        public List<StockBalance> StockBalances { get; } = [];
+
         public IReadOnlyList<FertilizerProductLookupResponse> ProductsLookup { get; set; } = [];
         public IReadOnlyList<FertilizerStorageLocationLookupResponse> LocationsLookup { get; set; } = [];
         public IReadOnlyList<FertilizerApplicationMethodLookupResponse> MethodsLookup { get; set; } = [];
@@ -383,6 +396,42 @@ public class FertilizerApplicationServiceTests
 
         public Task<IReadOnlyDictionary<Guid, string>> GetUserNamesAsync(IEnumerable<Guid> userIds, CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyDictionary<Guid, string>>(new Dictionary<Guid, string>());
+
+        public Task<Farm?> FindFarmAsync(Guid farmId, Guid organizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(Farms.FirstOrDefault(f => f.Id == farmId && f.OrganizationId == organizationId));
+
+        public Task<FarmArea?> FindFarmAreaAsync(Guid farmAreaId, Guid organizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(FarmAreas.FirstOrDefault(fa => fa.Id == farmAreaId && fa.OrganizationId == organizationId));
+
+        public Task<CropPlantation?> FindPlantationAsync(Guid plantationId, Guid organizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(Plantations.FirstOrDefault(p => p.Id == plantationId && p.OrganizationId == organizationId));
+
+        public Task<CropCycle?> FindCropCycleAsync(Guid cropCycleId, Guid organizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(CropCycles.FirstOrDefault(c => c.Id == cropCycleId && c.OrganizationId == organizationId));
+
+        public Task<CropCycleStage?> FindCropCycleStageAsync(Guid cropCycleStageId, Guid organizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(CropCycleStages.FirstOrDefault(s => s.Id == cropCycleStageId));
+
+        public Task<ApplicationMethod?> FindApplicationMethodAsync(Guid applicationMethodId, Guid organizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(ApplicationMethods.FirstOrDefault(m => m.Id == applicationMethodId && ((m.IsSystem && m.OrganizationId == null) || m.OrganizationId == organizationId)));
+
+        public Task<Unit?> FindUnitAsync(Guid unitId, Guid organizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(Units.FirstOrDefault(u => u.Id == unitId && ((u.IsSystem && u.OrganizationId == null) || u.OrganizationId == organizationId)));
+
+        public Task<InventoryItem?> FindInventoryItemAsync(Guid inventoryItemId, Guid organizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(InventoryItems.FirstOrDefault(i => i.Id == inventoryItemId && i.OrganizationId == organizationId));
+
+        public Task<bool> HasActivePlantProtectionProfileAsync(Guid inventoryItemId, Guid organizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(ActivePppItemIds.Contains(inventoryItemId));
+
+        public Task<StorageLocation?> FindStorageLocationAsync(Guid storageLocationId, Guid organizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(StorageLocations.FirstOrDefault(l => l.Id == storageLocationId && l.OrganizationId == organizationId));
+
+        public Task<IrrigationEvent?> FindIrrigationEventAsync(Guid irrigationEventId, Guid organizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(IrrigationEvents.FirstOrDefault(e => e.Id == irrigationEventId && e.OrganizationId == organizationId));
+
+        public Task<StockBalance?> FindStockBalanceAsync(Guid storageLocationId, Guid inventoryItemId, Guid organizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(StockBalances.FirstOrDefault(sb => sb.StorageLocationId == storageLocationId && sb.InventoryItemId == inventoryItemId && sb.OrganizationId == organizationId));
 
         private IEnumerable<FertilizerApplication> ApplyFilters(Guid organizationId, FertilizerApplicationListQuery query)
         {

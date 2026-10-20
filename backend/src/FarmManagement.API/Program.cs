@@ -151,6 +151,7 @@ builder.Services.AddScoped<FarmManagement.Application.Interfaces.PlantProtection
 builder.Services.AddScoped<FarmManagement.Application.Interfaces.Sprays.ISprayService, SprayService>();
 builder.Services.AddScoped<FarmManagement.Application.Interfaces.Irrigation.IIrrigationService, IrrigationService>();
 builder.Services.AddScoped<FarmManagement.Application.Interfaces.Fertilizer.IFertilizerApplicationService, FertilizerApplicationService>();
+builder.Services.AddScoped<FarmManagement.Application.Interfaces.Fertilizer.IFertilizerValidator, FarmManagement.Application.Services.Fertilizer.FertilizerValidator>();
 
 var app = builder.Build();
 
