@@ -48,6 +48,9 @@ import {
 import { FertilizerService } from '../../../core/fertilizers/fertilizer.service';
 import { getApiErrorMessage } from '../../../core/models/api-error.model';
 import { formatDateOnly, parseDateOnly } from '../../../core/utils/date.utils';
+import { StartFertilizerDialogComponent } from '../dialogs/start-fertilizer-dialog/start-fertilizer-dialog.component';
+import { CompleteFertilizerDialogComponent } from '../dialogs/complete-fertilizer-dialog/complete-fertilizer-dialog.component';
+import { CancelFertilizerDialogComponent } from '../dialogs/cancel-fertilizer-dialog/cancel-fertilizer-dialog.component';
 
 export interface StatusTabOption {
   readonly key: string;
@@ -505,6 +508,84 @@ export class FertilizerListPageComponent implements OnInit {
         error: (err) => {
           this.snack.open(
             getApiErrorMessage(err, 'Failed to delete draft application.'),
+            'Dismiss',
+            { duration: 4000 },
+          );
+        },
+      });
+  }
+
+  startApplication(app: FertilizerApplicationListItem): void {
+    this.fertilizerService
+      .get(app.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (fullApp) => {
+          const dialogRef = this.dialog.open(StartFertilizerDialogComponent, {
+            width: '640px',
+            data: { application: fullApp },
+          });
+          dialogRef.afterClosed().subscribe((result) => {
+            if (result) {
+              this.loadApplications();
+            }
+          });
+        },
+        error: (err) => {
+          this.snack.open(
+            getApiErrorMessage(err, 'Failed to load application details.'),
+            'Dismiss',
+            { duration: 4000 },
+          );
+        },
+      });
+  }
+
+  completeApplication(app: FertilizerApplicationListItem): void {
+    this.fertilizerService
+      .get(app.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (fullApp) => {
+          const dialogRef = this.dialog.open(CompleteFertilizerDialogComponent, {
+            width: '760px',
+            data: { application: fullApp },
+          });
+          dialogRef.afterClosed().subscribe((result) => {
+            if (result) {
+              this.loadApplications();
+            }
+          });
+        },
+        error: (err) => {
+          this.snack.open(
+            getApiErrorMessage(err, 'Failed to load application details.'),
+            'Dismiss',
+            { duration: 4000 },
+          );
+        },
+      });
+  }
+
+  cancelApplication(app: FertilizerApplicationListItem): void {
+    this.fertilizerService
+      .get(app.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (fullApp) => {
+          const dialogRef = this.dialog.open(CancelFertilizerDialogComponent, {
+            width: '760px',
+            data: { application: fullApp },
+          });
+          dialogRef.afterClosed().subscribe((result) => {
+            if (result) {
+              this.loadApplications();
+            }
+          });
+        },
+        error: (err) => {
+          this.snack.open(
+            getApiErrorMessage(err, 'Failed to load application details.'),
             'Dismiss',
             { duration: 4000 },
           );

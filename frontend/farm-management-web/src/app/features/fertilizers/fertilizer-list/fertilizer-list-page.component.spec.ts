@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { provideNativeDateAdapter } from '@angular/material/core';
+import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { Router, provideRouter } from '@angular/router';
@@ -24,6 +25,7 @@ describe('FertilizerListPageComponent', () => {
   let mockFarmService: jasmine.SpyObj<FarmManagementService>;
   let mockPermissionService: jasmine.SpyObj<PermissionService>;
   let mockSnackBar: jasmine.SpyObj<MatSnackBar>;
+  let mockDialog: jasmine.SpyObj<MatDialog>;
   let router: Router;
 
   const sampleFertilizerItem: FertilizerApplicationListItem = {
@@ -119,6 +121,7 @@ describe('FertilizerListPageComponent', () => {
   beforeEach(async () => {
     mockFertilizerService = jasmine.createSpyObj('FertilizerService', [
       'list',
+      'get',
       'exportCsv',
       'getApplicationMethodsLookup',
       'getProductsLookup',
@@ -135,6 +138,7 @@ describe('FertilizerListPageComponent', () => {
     ]);
     mockPermissionService = jasmine.createSpyObj('PermissionService', ['has', 'hasAny']);
     mockSnackBar = jasmine.createSpyObj('MatSnackBar', ['open']);
+    mockDialog = jasmine.createSpyObj('MatDialog', ['open']);
 
     mockPermissionService.has.and.returnValue(true);
     mockPermissionService.hasAny.and.returnValue(true);
@@ -166,6 +170,7 @@ describe('FertilizerListPageComponent', () => {
         { provide: FarmManagementService, useValue: mockFarmService },
         { provide: PermissionService, useValue: mockPermissionService },
         { provide: MatSnackBar, useValue: mockSnackBar },
+        { provide: MatDialog, useValue: mockDialog },
       ],
     }).compileComponents();
 
@@ -385,6 +390,73 @@ describe('FertilizerListPageComponent', () => {
     expect(component.search()).toBe('');
     expect(component.farmId()).toBe('');
     expect(component.dateType()).toBe('CreatedDate');
+    expect(mockFertilizerService.list).toHaveBeenCalled();
+  });
+
+  it('should open StartFertilizerDialogComponent on startApplication and reload on success', () => {
+    const plannedItem: FertilizerApplicationListItem = {
+      ...sampleFertilizerItem,
+      status: 'Planned',
+      statusName: 'Planned',
+    };
+    mockFertilizerService.get.and.returnValue(of({ id: plannedItem.id, version: 1 } as any));
+    mockDialog.open.and.returnValue({
+      afterClosed: () => of(true),
+    } as any);
+    mockFertilizerService.list.calls.reset();
+
+    component.startApplication(plannedItem);
+
+    expect(mockFertilizerService.get).toHaveBeenCalledWith(plannedItem.id);
+    expect(mockDialog.open).toHaveBeenCalledWith(
+      jasmine.any(Function),
+      jasmine.objectContaining({
+        data: jasmine.objectContaining({ application: jasmine.any(Object) }),
+      }),
+    );
+    expect(mockFertilizerService.list).toHaveBeenCalled();
+  });
+
+  it('should open CompleteFertilizerDialogComponent on completeApplication and reload on success', () => {
+    const inProgressItem: FertilizerApplicationListItem = {
+      ...sampleFertilizerItem,
+      status: 'InProgress',
+      statusName: 'In Progress',
+    };
+    mockFertilizerService.get.and.returnValue(of({ id: inProgressItem.id, version: 1 } as any));
+    mockDialog.open.and.returnValue({
+      afterClosed: () => of(true),
+    } as any);
+    mockFertilizerService.list.calls.reset();
+
+    component.completeApplication(inProgressItem);
+
+    expect(mockFertilizerService.get).toHaveBeenCalledWith(inProgressItem.id);
+    expect(mockDialog.open).toHaveBeenCalledWith(
+      jasmine.any(Function),
+      jasmine.objectContaining({
+        data: jasmine.objectContaining({ application: jasmine.any(Object) }),
+      }),
+    );
+    expect(mockFertilizerService.list).toHaveBeenCalled();
+  });
+
+  it('should open CancelFertilizerDialogComponent on cancelApplication and reload on success', () => {
+    mockFertilizerService.get.and.returnValue(of({ id: sampleFertilizerItem.id, version: 1 } as any));
+    mockDialog.open.and.returnValue({
+      afterClosed: () => of(true),
+    } as any);
+    mockFertilizerService.list.calls.reset();
+
+    component.cancelApplication(sampleFertilizerItem);
+
+    expect(mockFertilizerService.get).toHaveBeenCalledWith(sampleFertilizerItem.id);
+    expect(mockDialog.open).toHaveBeenCalledWith(
+      jasmine.any(Function),
+      jasmine.objectContaining({
+        data: jasmine.objectContaining({ application: jasmine.any(Object) }),
+      }),
+    );
     expect(mockFertilizerService.list).toHaveBeenCalled();
   });
 });

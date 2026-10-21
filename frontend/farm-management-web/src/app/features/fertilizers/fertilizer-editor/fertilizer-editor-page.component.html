@@ -1,0 +1,574 @@
+<div class="fertilizer-editor-container">
+  <!-- Header & Title -->
+  <header class="editor-header">
+    <div class="header-left">
+      <nav class="breadcrumb-nav">
+        <a routerLink="/fertilizer-applications" class="breadcrumb-link">Fertilizer Applications</a>
+        <mat-icon class="separator">chevron_right</mat-icon>
+        <span class="current">{{ isEditMode() ? 'Edit Application' : 'New Application' }}</span>
+      </nav>
+
+      <div class="title-row">
+        <h1 class="page-title">
+          {{ isEditMode() ? (applicationDetails()?.referenceNumber || 'Application') : 'Plan Fertilizer Application' }}
+        </h1>
+        <span class="status-badge" [ngClass]="getStatusBadgeClass(currentStatus())">
+          {{ getStatusDisplayName(currentStatus()) }}
+        </span>
+        @if (applicationDetails()?.version) {
+          <span class="version-badge" matTooltip="Concurrency version token">
+            v{{ applicationDetails()?.version }}
+          </span>
+        }
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button mat-button type="button" routerLink="/fertilizer-applications">
+        <mat-icon>arrow_back</mat-icon>
+        <span>Back to List</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Loading State -->
+  @if (isLoading()) {
+    <div class="loading-shade">
+      <mat-spinner diameter="40" />
+      <span>Loading application details...</span>
+    </div>
+  }
+
+  <!-- Stale Write Conflict Banner -->
+  @if (isStaleConflict()) {
+    <div class="alert-banner alert-banner--warning" role="alert">
+      <mat-icon>warning</mat-icon>
+      <div class="alert-content">
+        <strong>Concurrency Conflict:</strong> This application was updated by another user or session.
+      </div>
+      <button mat-flat-button color="warn" type="button" (click)="reloadAfterConflict()">
+        <mat-icon>refresh</mat-icon>
+        <span>Reload Latest Data</span>
+      </button>
+    </div>
+  }
+
+  <!-- General Error Banner -->
+  @if (errorMessage() && !isStaleConflict()) {
+    <div class="alert-banner alert-banner--error" role="alert">
+      <mat-icon>error_outline</mat-icon>
+      <div class="alert-content">{{ errorMessage() }}</div>
+    </div>
+  }
+
+  <!-- Frozen Application Warning -->
+  @if (isFrozen()) {
+    <div class="alert-banner alert-banner--info" role="status">
+      <mat-icon>lock</mat-icon>
+      <div class="alert-content">
+        <strong>Application is {{ currentStatus() }}:</strong> Operational context, products, and planned attributes cannot be modified after Start.
+      </div>
+    </div>
+  }
+
+  <!-- Plan Validation Errors List -->
+  @if (validationErrors().length > 0) {
+    <div class="alert-banner alert-banner--warning" role="alert">
+      <mat-icon>rule</mat-icon>
+      <div class="alert-content">
+        <strong>Requirements for Planning:</strong>
+        <ul class="validation-list">
+          @for (err of validationErrors(); track err) {
+            <li>{{ err }}</li>
+          }
+        </ul>
+      </div>
+    </div>
+  }
+
+  <!-- Main Editor Form -->
+  <form [formGroup]="form" class="editor-form">
+    <!-- Card 1: Operational & Land Context -->
+    <mat-card class="editor-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar color="primary">landscape</mat-icon>
+        <mat-card-title>Operational & Land Context</mat-card-title>
+        <mat-card-subtitle>Specify farm, zone/area, and optional crop cycle linkages</mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content class="card-grid">
+        <!-- Farm Selector -->
+        <mat-form-field appearance="outline" class="form-field">
+          <mat-label>Farm</mat-label>
+          <mat-select formControlName="farmId" (valueChange)="onFarmChange($event)">
+            <mat-option value="">-- None / Draft --</mat-option>
+            @for (f of farms(); track f.id) {
+              <mat-option [value]="f.id">{{ f.name }}</mat-option>
+            }
+          </mat-select>
+          <mat-hint>Required for Plan / Schedule</mat-hint>
+        </mat-form-field>
+
+        <!-- Farm Area Selector -->
+        <mat-form-field appearance="outline" class="form-field">
+          <mat-label>Farm Area / Zone</mat-label>
+          <mat-select
+            formControlName="farmAreaId"
+            (valueChange)="onAreaChange($event)"
+          >
+            <mat-option value="">-- None / Select Area --</mat-option>
+            @for (a of areas(); track a.id) {
+              <mat-option [value]="a.id">{{ a.name }}</mat-option>
+            }
+          </mat-select>
+          <mat-hint>Required for Plan / Schedule</mat-hint>
+        </mat-form-field>
+
+        <!-- Plantation Selector -->
+        <mat-form-field appearance="outline" class="form-field">
+          <mat-label>Plantation (Optional)</mat-label>
+          <mat-select
+            formControlName="plantationId"
+            (valueChange)="onPlantationChange($event)"
+          >
+            <mat-option value="">-- None --</mat-option>
+            @for (p of plantations(); track p.id) {
+              <mat-option [value]="p.id">{{ p.plantationName }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Crop Cycle Selector -->
+        <mat-form-field appearance="outline" class="form-field">
+          <mat-label>Crop Cycle (Optional)</mat-label>
+          <mat-select
+            formControlName="cropCycleId"
+            (valueChange)="onCropCycleChange($event)"
+          >
+            <mat-option value="">-- None --</mat-option>
+            @for (c of cropCycles(); track c.id) {
+              <mat-option [value]="c.id">{{ c.cycleName }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Crop Cycle Stage Selector -->
+        <mat-form-field appearance="outline" class="form-field">
+          <mat-label>Stage (Optional)</mat-label>
+          <mat-select
+            formControlName="cropCycleStageId"
+          >
+            <mat-option value="">-- None --</mat-option>
+            @for (s of stages(); track s.id) {
+              <mat-option [value]="s.id">{{ s.stageName }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Card 2: Method & Fertigation -->
+    <mat-card class="editor-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar color="primary">science</mat-icon>
+        <mat-card-title>Application Method & Fertigation</mat-card-title>
+        <mat-card-subtitle>Select the fertilizer delivery technique and optional irrigation linkage</mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content class="card-grid">
+        <!-- Application Method -->
+        <mat-form-field appearance="outline" class="form-field">
+          <mat-label>Application Method</mat-label>
+          <mat-select formControlName="applicationMethodId" (valueChange)="onMethodChange()">
+            <mat-option value="">-- Select Method --</mat-option>
+            @for (m of applicationMethods(); track m.id) {
+              <mat-option [value]="m.id">{{ m.name }}</mat-option>
+            }
+          </mat-select>
+          <mat-hint>Required for Plan</mat-hint>
+        </mat-form-field>
+
+        <!-- Other Method Description (shown if requiresDescription) -->
+        @if (requiresOtherDescription()) {
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Other Method Description</mat-label>
+            <input
+              matInput
+              formControlName="otherMethodDescription"
+              placeholder="Describe the application method..."
+              maxlength="200"
+              required
+            />
+            <mat-hint align="end">{{ form.value.otherMethodDescription?.length || 0 }}/200</mat-hint>
+          </mat-form-field>
+        }
+
+        <!-- Linked Irrigation Event (shown only for Fertigation) -->
+        @if (isFertigation()) {
+          <mat-form-field appearance="outline" class="form-field span-2">
+            <mat-label>Linked Irrigation Event (Fertigation)</mat-label>
+            <mat-select formControlName="irrigationEventId">
+              <mat-option value="">-- None / Select Irrigation --</mat-option>
+              @for (irr of irrigations(); track irr.id) {
+                <mat-option [value]="irr.id">
+                  {{ irr.farmAreaName }} - {{ irr.irrigationMethodName || 'Irrigation' }} ({{ irr.status }})
+                  @if (irr.plannedAt || irr.scheduledAt) {
+                    - {{ (irr.scheduledAt || irr.plannedAt) | date: 'shortDate' }}
+                  }
+                </mat-option>
+              }
+            </mat-select>
+            <mat-hint>Compatible active or scheduled irrigation event on this farm/area</mat-hint>
+          </mat-form-field>
+        }
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Card 3: Schedule, Area & Purpose -->
+    <mat-card class="editor-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar color="primary">calendar_month</mat-icon>
+        <mat-card-title>Schedule, Area & Purpose</mat-card-title>
+        <mat-card-subtitle>Operational timing, coverage area, and application purpose</mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content class="card-grid">
+        <!-- Planned Date -->
+        <mat-form-field appearance="outline" class="form-field">
+          <mat-label>Planned Date</mat-label>
+          <input
+            matInput
+            [matDatepicker]="plannedPicker"
+            formControlName="plannedDate"
+            [min]="minPlannedDate"
+            placeholder="Select date"
+          />
+          <mat-datepicker-toggle matIconSuffix [for]="plannedPicker" />
+          <mat-datepicker #plannedPicker />
+          <mat-hint>Must be today or future when planning</mat-hint>
+        </mat-form-field>
+
+        <!-- Scheduled Date (Read-only shortcut or datepicker) -->
+        <mat-form-field appearance="outline" class="form-field">
+          <mat-label>Scheduled Date</mat-label>
+          <input
+            matInput
+            [matDatepicker]="scheduledPicker"
+            formControlName="scheduledDate"
+            placeholder="Select date"
+          />
+          <mat-datepicker-toggle matIconSuffix [for]="scheduledPicker" />
+          <mat-datepicker #scheduledPicker />
+          <mat-hint>Required for Scheduled status</mat-hint>
+        </mat-form-field>
+
+        <!-- Planned Area -->
+        <mat-form-field appearance="outline" class="form-field">
+          <mat-label>Planned Area</mat-label>
+          <input
+            matInput
+            type="number"
+            step="0.01"
+            min="0"
+            formControlName="plannedArea"
+            placeholder="e.g. 2.50"
+          />
+        </mat-form-field>
+
+        <!-- Planned Area Unit -->
+        <mat-form-field appearance="outline" class="form-field">
+          <mat-label>Area Unit</mat-label>
+          <mat-select formControlName="plannedAreaUnitId">
+            <mat-option value="">-- Select Unit --</mat-option>
+            @for (u of areaUnits(); track u.id) {
+              <mat-option [value]="u.id">{{ u.name }} ({{ u.symbol }})</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Purpose / Reason -->
+        <mat-form-field appearance="outline" class="form-field span-2">
+          <mat-label>Purpose / Reason Notes</mat-label>
+          <textarea
+            matInput
+            rows="2"
+            formControlName="purposeReason"
+            maxlength="500"
+            placeholder="Agronomic purpose, soil feeding recommendations, notes..."
+          ></textarea>
+          <mat-hint align="end">{{ form.value.purposeReason?.length || 0 }}/500</mat-hint>
+        </mat-form-field>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Card 4: Fertilizer Products & Storage Locations -->
+    <mat-card class="editor-card products-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar color="primary">inventory_2</mat-icon>
+        <mat-card-title>Fertilizer Products & Storage Locations</mat-card-title>
+        <mat-card-subtitle>Add itemized fertilizers, quantities, and issuing warehouse locations</mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content>
+        @if (productsArray.length === 0) {
+          <div class="empty-products-placeholder">
+            <mat-icon>science</mat-icon>
+            <p>No fertilizer products added yet. Draft can be saved empty, but at least one product is required to plan.</p>
+            <button
+              mat-stroked-button
+              color="primary"
+              type="button"
+              (click)="addProduct()"
+              [disabled]="isFrozen()"
+            >
+              <mat-icon>add</mat-icon>
+              <span>Add Fertilizer Product</span>
+            </button>
+          </div>
+        } @else {
+          <div class="products-table-container">
+            <table class="products-table" formArrayName="products">
+              <thead>
+                <tr>
+                  <th class="col-item">Fertilizer Product *</th>
+                  <th class="col-unit">Unit</th>
+                  <th class="col-qty">Planned Quantity</th>
+                  <th class="col-loc">Storage Location</th>
+                  <th class="col-act">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of productsArray.controls; track $index; let idx = $index) {
+                  <tr [formGroupName]="idx" class="product-row">
+                    <!-- Product Selector -->
+                    <td class="col-item">
+                      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="dense-field">
+                        <mat-select formControlName="inventoryItemId">
+                          <mat-option value="" disabled>-- Select Product --</mat-option>
+                          @for (p of products(); track p.inventoryItemId) {
+                            <mat-option
+                              [value]="p.inventoryItemId"
+                              [disabled]="isProductOptionDisabled(p.inventoryItemId, idx)"
+                            >
+                              {{ p.itemName }}
+                              @if (p.sku) { ({{ p.sku }}) }
+                            </mat-option>
+                          }
+                        </mat-select>
+                      </mat-form-field>
+                    </td>
+
+                    <!-- Read-only Unit -->
+                    <td class="col-unit">
+                      @if (getProductInfo(row.value.inventoryItemId); as pInfo) {
+                        <span class="unit-badge">{{ pInfo.stockUnitSymbol || pInfo.stockUnitName }}</span>
+                      } @else {
+                        <span class="text-muted">—</span>
+                      }
+                    </td>
+
+                    <!-- Planned Quantity -->
+                    <td class="col-qty">
+                      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="dense-field">
+                        <input
+                          matInput
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          formControlName="plannedQuantity"
+                          placeholder="0.00"
+                        />
+                      </mat-form-field>
+                    </td>
+
+                    <!-- Storage Location Selector -->
+                    <td class="col-loc">
+                      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="dense-field">
+                        <mat-select formControlName="storageLocationId">
+                          <mat-option value="">-- Select Location --</mat-option>
+                          @for (loc of storageLocations(); track loc.storageLocationId) {
+                            <mat-option [value]="loc.storageLocationId">
+                              {{ loc.storageLocationName }}
+                            </mat-option>
+                          }
+                        </mat-select>
+                      </mat-form-field>
+                    </td>
+
+                    <!-- Actions -->
+                    <td class="col-act">
+                      <button
+                        mat-icon-button
+                        color="warn"
+                        type="button"
+                        (click)="removeProduct(idx)"
+                        [disabled]="isFrozen()"
+                        matTooltip="Remove product line"
+                      >
+                        <mat-icon>delete_outline</mat-icon>
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <div class="table-footer-actions">
+            <button
+              mat-stroked-button
+              type="button"
+              (click)="addProduct()"
+              [disabled]="isFrozen()"
+            >
+              <mat-icon>add</mat-icon>
+              <span>Add Another Product</span>
+            </button>
+          </div>
+        }
+      </mat-card-content>
+    </mat-card>
+  </form>
+
+  <!-- Sticky Bottom Action Bar -->
+  <footer class="editor-action-bar">
+    <div class="action-bar-left">
+      @if (isEditMode() && isDraft() && permissionService.has('Fertilizer.DeleteDraft')) {
+        <button
+          mat-button
+          color="warn"
+          type="button"
+          (click)="onDeleteDraft()"
+          [disabled]="isSubmitting()"
+        >
+          <mat-icon>delete</mat-icon>
+          <span>Delete Draft</span>
+        </button>
+      }
+
+      @if (isEditMode()) {
+        <button
+          mat-button
+          type="button"
+          (click)="onCopyAsDraft()"
+          [disabled]="isSubmitting()"
+          matTooltip="Create a new draft using this application as a template"
+        >
+          <mat-icon>content_copy</mat-icon>
+          <span>Copy as New Draft</span>
+        </button>
+      }
+    </div>
+
+    <div class="action-bar-right">
+      <button mat-button type="button" routerLink="/fertilizer-applications" [disabled]="isSubmitting()">
+        Cancel
+      </button>
+
+      <!-- Save Draft (allowed in draft state) -->
+      @if (isDraft()) {
+        <button
+          mat-stroked-button
+          type="button"
+          (click)="onSaveDraft()"
+          [disabled]="isSubmitting()"
+        >
+          @if (isSubmitting()) {
+            <ng-container>
+              <mat-spinner diameter="18" class="btn-spinner" />
+              <span>Saving...</span>
+            </ng-container>
+          } @else {
+            <ng-container>
+              <mat-icon>save</mat-icon>
+              <span>Save as Draft</span>
+            </ng-container>
+          }
+        </button>
+      }
+
+      <!-- Plan Application (from Draft) -->
+      @if (isDraft() && permissionService.has('Fertilizer.Update')) {
+        <button
+          mat-flat-button
+          color="primary"
+          type="button"
+          (click)="onPlan()"
+          [disabled]="isSubmitting()"
+        >
+          <mat-icon>check_circle</mat-icon>
+          <span>Plan Application</span>
+        </button>
+      }
+
+      <!-- Schedule Application (from Planned) -->
+      @if (isPlanned() && permissionService.has('Fertilizer.Update')) {
+        <button
+          mat-flat-button
+          color="primary"
+          type="button"
+          (click)="onSchedule()"
+          [disabled]="isSubmitting()"
+        >
+          <mat-icon>schedule</mat-icon>
+          <span>Schedule Application</span>
+        </button>
+      }
+
+      <!-- Reschedule Application (from Planned or Scheduled) -->
+      @if ((isPlanned() || isScheduled()) && permissionService.has('Fertilizer.Update')) {
+        <button
+          mat-stroked-button
+          type="button"
+          (click)="onReschedule()"
+          [disabled]="isSubmitting()"
+        >
+          <mat-icon>update</mat-icon>
+          <span>Reschedule</span>
+        </button>
+      }
+
+      <!-- Start Application (from Planned or Scheduled) -->
+      @if ((isPlanned() || isScheduled()) && permissionService.has('Fertilizer.Start')) {
+        <button
+          mat-flat-button
+          color="primary"
+          type="button"
+          (click)="onStart()"
+          [disabled]="isSubmitting()"
+        >
+          <mat-icon>play_arrow</mat-icon>
+          <span>Start Application</span>
+        </button>
+      }
+
+      <!-- Complete Application (from InProgress) -->
+      @if (currentStatus() === 'InProgress' && permissionService.has('Fertilizer.Complete')) {
+        <button
+          mat-flat-button
+          color="primary"
+          type="button"
+          (click)="onComplete()"
+          [disabled]="isSubmitting()"
+        >
+          <mat-icon>check_circle</mat-icon>
+          <span>Complete Application</span>
+        </button>
+      }
+
+      <!-- Cancel Application (from Draft, Planned, Scheduled, InProgress) -->
+      @if (isCancelable() && permissionService.has('Fertilizer.Cancel')) {
+        <button
+          mat-stroked-button
+          color="warn"
+          type="button"
+          (click)="onCancelApplication()"
+          [disabled]="isSubmitting()"
+        >
+          <mat-icon>cancel</mat-icon>
+          <span>Cancel Application</span>
+        </button>
+      }
+    </div>
+  </footer>
+</div>

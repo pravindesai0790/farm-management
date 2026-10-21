@@ -1,0 +1,71 @@
+<h2 mat-dialog-title class="dialog-title">
+  <mat-icon class="title-icon">event</mat-icon>
+  <span>{{ data.isReschedule ? 'Reschedule Fertilizer Application' : 'Schedule Fertilizer Application' }}</span>
+</h2>
+
+<mat-dialog-content class="dialog-content">
+  <div class="summary-card">
+    <div class="summary-row">
+      <span class="label">Reference:</span>
+      <span class="value ref-number">{{ data.referenceNumber }}</span>
+    </div>
+    @if (data.farmName) {
+      <div class="summary-row">
+        <span class="label">Farm:</span>
+        <span class="value">{{ data.farmName }}</span>
+      </div>
+    }
+    <div class="summary-row">
+      <span class="label">Status:</span>
+      <span class="value">{{ data.status }}</span>
+    </div>
+  </div>
+
+  @if (errorMessage()) {
+    <div class="error-banner" role="alert">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  <form [formGroup]="form" class="schedule-form" (ngSubmit)="onSubmit()">
+    <mat-form-field appearance="outline" class="w-full">
+      <mat-label>Scheduled Date</mat-label>
+      <input
+        matInput
+        [matDatepicker]="picker"
+        formControlName="scheduledDate"
+        [min]="minDate"
+        placeholder="Choose date"
+        required
+      />
+      <mat-datepicker-toggle matIconSuffix [for]="picker" />
+      <mat-datepicker #picker />
+      @if (form.get('scheduledDate')?.hasError('required') && form.get('scheduledDate')?.touched) {
+        <mat-error>Scheduled date is required</mat-error>
+      }
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="dialog-actions">
+  <button mat-button type="button" (click)="onCancel()" [disabled]="isSubmitting()">
+    Cancel
+  </button>
+  <button
+    mat-flat-button
+    color="primary"
+    type="button"
+    (click)="onSubmit()"
+    [disabled]="isSubmitting() || form.invalid"
+  >
+    @if (isSubmitting()) {
+      <ng-container>
+        <mat-spinner diameter="18" class="btn-spinner" />
+        <span>Saving...</span>
+      </ng-container>
+    } @else {
+      <span>{{ data.isReschedule ? 'Reschedule' : 'Confirm Schedule' }}</span>
+    }
+  </button>
+</mat-dialog-actions>

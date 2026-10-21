@@ -1,0 +1,134 @@
+<div class="start-dialog">
+  <div mat-dialog-title class="dialog-header">
+    <div class="header-left">
+      <mat-icon class="header-icon" color="primary">play_arrow</mat-icon>
+      <span class="dialog-title-text">Start Fertilizer Application</span>
+    </div>
+    <span class="ref-badge">{{ app.referenceNumber }}</span>
+  </div>
+
+  <mat-dialog-content class="dialog-content">
+    <!-- Operational summary card -->
+    <div class="summary-box">
+      <div class="summary-item">
+        <span class="summary-label">Farm / Area:</span>
+        <span class="summary-value">{{ app.farmName }} &bull; {{ app.farmAreaName }}</span>
+      </div>
+      @if (app.plantationName) {
+        <div class="summary-item">
+          <span class="summary-label">Plantation:</span>
+          <span class="summary-value">{{ app.plantationName }}</span>
+        </div>
+      }
+      @if (app.cropCycleName) {
+        <div class="summary-item">
+          <span class="summary-label">Crop Cycle:</span>
+          <span class="summary-value">{{ app.cropCycleName }}</span>
+        </div>
+      }
+      <div class="summary-item">
+        <span class="summary-label">Method:</span>
+        <span class="summary-value">{{ app.applicationMethodName }}</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Planned Date:</span>
+        <span class="summary-value">{{ app.plannedDate || 'Unscheduled' }}</span>
+      </div>
+    </div>
+
+    <!-- Informational callout -->
+    <div class="alert alert--info">
+      <mat-icon class="alert-icon">info</mat-icon>
+      <div class="alert-body">
+        <strong>Execution & Stock Notice:</strong>
+        <p>
+          Starting transitions this application to <em>In Progress</em> and locks the operational context,
+          method, product lines, and storage locations.
+        </p>
+        <span class="sub-text">
+          No inventory is reserved or deducted at Start. Actual warehouse stock deduction will occur atomically upon Completion.
+        </span>
+      </div>
+    </div>
+
+    <!-- Error message banner if any -->
+    @if (errorMessage()) {
+      <div class="alert alert--danger">
+        <mat-icon class="alert-icon">error</mat-icon>
+        <div class="alert-body">
+          <strong>Cannot Start Application:</strong>
+          <p>{{ errorMessage() }}</p>
+        </div>
+      </div>
+    }
+
+    <!-- Shortages warning if any -->
+    @if (shortages().length > 0) {
+      <div class="alert alert--warn">
+        <mat-icon class="alert-icon">inventory_2</mat-icon>
+        <div class="alert-body">
+          <strong>Insufficient Stock Detected:</strong>
+          <p>The following planned lines cannot be fulfilled by current inventory at the selected locations:</p>
+          <ul class="shortage-list">
+            @for (s of shortages(); track s) {
+              <li>{{ s }}</li>
+            }
+          </ul>
+          <span class="sub-text">Please replenish stock or adjust storage locations in the draft editor before starting.</span>
+        </div>
+      </div>
+    }
+
+    <!-- Products to start -->
+    <h3 class="section-title">Planned Products & Locations</h3>
+    <div class="table-container">
+      <table class="products-table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Storage Location</th>
+            <th class="text-right">Planned Qty</th>
+            <th>Unit</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of app.products; track p.id) {
+            <tr>
+              <td>
+                <span class="product-name">{{ p.inventoryItemName }}</span>
+                @if (p.inventoryItemSku) {
+                  <span class="product-sku">({{ p.inventoryItemSku }})</span>
+                }
+              </td>
+              <td>{{ p.storageLocationName || 'None assigned' }}</td>
+              <td class="text-right font-mono">{{ p.plannedQuantity }}</td>
+              <td>{{ p.stockUnitSymbol || p.stockUnitName || '-' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end" class="dialog-actions">
+    <button mat-button (click)="onCancel()" [disabled]="isSubmitting()">
+      Cancel
+    </button>
+    <button
+      mat-flat-button
+      color="primary"
+      (click)="onConfirmStart()"
+      [disabled]="isSubmitting()"
+    >
+      @if (isSubmitting()) {
+        <mat-spinner diameter="18" class="inline-spinner"></mat-spinner>
+        <span>Starting...</span>
+      } @else {
+        <ng-container>
+          <mat-icon>play_arrow</mat-icon>
+          <span>Start Application</span>
+        </ng-container>
+      }
+    </button>
+  </mat-dialog-actions>
+</div>

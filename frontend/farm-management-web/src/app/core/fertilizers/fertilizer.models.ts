@@ -231,10 +231,10 @@ export interface UpdateFertilizerDraftRequest {
 }
 
 export interface PlanFertilizerApplicationRequest {
-  plannedDate: string;
+  plannedDate?: string | null;
   plannedArea?: number | null;
   plannedAreaUnitId?: string | null;
-  version: number;
+  version?: number;
 }
 
 export interface ScheduleFertilizerApplicationRequest {
@@ -249,12 +249,12 @@ export interface RescheduleFertilizerApplicationRequest {
 }
 
 export interface StartFertilizerApplicationRequest {
-  version: number;
+  version?: number;
+  idempotencyKey?: string | null;
 }
 
-export interface FertilizerActualProductLineRequest {
+export interface CompleteFertilizerApplicationProductLineRequest {
   inventoryItemId: string;
-  storageLocationId: string;
   actualQuantity: number;
 }
 
@@ -262,17 +262,27 @@ export interface CompleteFertilizerApplicationRequest {
   actualApplicationDate: string;
   actualArea?: number | null;
   actualAreaUnitId?: string | null;
-  products: readonly FertilizerActualProductLineRequest[];
-  varianceReason?: string | null;
-  version: number;
+  products?: readonly CompleteFertilizerApplicationProductLineRequest[];
+  acknowledgeVariance?: boolean;
+  version?: number;
+  idempotencyKey?: string | null;
+}
+
+export interface CancelFertilizerApplicationProductLineRequest {
+  inventoryItemId: string;
+  actualQuantity: number;
+  storageLocationId?: string | null;
 }
 
 export interface CancelFertilizerApplicationRequest {
   cancellationReason: string;
-  version: number;
+  actualApplicationDate?: string | null;
+  version?: number;
+  idempotencyKey?: string | null;
+  products?: readonly CancelFertilizerApplicationProductLineRequest[];
 }
 
-export interface FertilizerDirectProductLineRequest {
+export interface RecordCompletedFertilizerProductLineRequest {
   inventoryItemId: string;
   storageLocationId: string;
   actualQuantity: number;
@@ -291,7 +301,21 @@ export interface RecordCompletedFertilizerApplicationRequest {
   actualArea?: number | null;
   actualAreaUnitId?: string | null;
   purposeReason?: string | null;
-  products: readonly FertilizerDirectProductLineRequest[];
+  products: readonly RecordCompletedFertilizerProductLineRequest[];
+  acknowledgeRetrospectiveStockDeduction?: boolean;
+  idempotencyKey?: string | null;
+}
+
+export interface FertilizerStockShortageDto {
+  readonly inventoryItemId: string;
+  readonly itemName: string;
+  readonly sku?: string | null;
+  readonly storageLocationId: string;
+  readonly storageLocationName: string;
+  readonly requiredQuantity: number;
+  readonly availableQuantity: number;
+  readonly shortageQuantity: number;
+  readonly unitSymbol: string;
 }
 
 export function getFertilizerStatusBadgeClass(status: FertilizerApplicationStatus): string {

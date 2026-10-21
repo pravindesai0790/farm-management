@@ -1,0 +1,202 @@
+<div class="cancel-dialog">
+  <div mat-dialog-title class="dialog-header">
+    <div class="header-left">
+      <mat-icon class="header-icon" color="warn">cancel</mat-icon>
+      <span class="dialog-title-text">Cancel Fertilizer Application</span>
+    </div>
+    <span class="ref-badge">{{ app.referenceNumber }}</span>
+  </div>
+
+  <mat-dialog-content class="dialog-content">
+    <form [formGroup]="form" id="cancelFertilizerForm" (ngSubmit)="onSubmit()">
+      <!-- Operational summary -->
+      <div class="summary-box">
+        <div class="summary-item">
+          <span class="summary-label">Farm / Area:</span>
+          <span class="summary-value">{{ app.farmName }} &bull; {{ app.farmAreaName }}</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Current Status:</span>
+          <span class="summary-value status-text">{{ app.statusName }}</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Method:</span>
+          <span class="summary-value">{{ app.applicationMethodName }}</span>
+        </div>
+      </div>
+
+      <!-- Mandatory Cancellation Reason -->
+      <mat-form-field appearance="outline" class="form-field full-width">
+        <mat-label>Cancellation Reason *</mat-label>
+        <textarea
+          matInput
+          rows="3"
+          formControlName="cancellationReason"
+          placeholder="State the operational reason for cancelling this application..."
+        ></textarea>
+        @if (form.get('cancellationReason')?.hasError('required')) {
+          <mat-error>A non-empty cancellation reason is mandatory.</mat-error>
+        }
+      </mat-form-field>
+
+      <!-- Error message banner -->
+      @if (errorMessage()) {
+        <div class="alert alert--danger">
+          <mat-icon class="alert-icon">error</mat-icon>
+          <div class="alert-body">
+            <strong>Cancellation Failed:</strong>
+            <p>{{ errorMessage() }}</p>
+          </div>
+        </div>
+      }
+
+      <!-- Shortages alert -->
+      @if (shortages().length > 0) {
+        <div class="alert alert--warn">
+          <mat-icon class="alert-icon">inventory_2</mat-icon>
+          <div class="alert-body">
+            <strong>Insufficient Inventory for Reported Usage:</strong>
+            <p>Application remains in its previous state. The following lines exceeded on-hand balance:</p>
+            <ul class="shortage-list">
+              @for (s of shortages(); track s) {
+                <li>{{ s }}</li>
+              }
+            </ul>
+          </div>
+        </div>
+      }
+
+      <!-- Consumption reporting section -->
+      <div class="consumption-header">
+        <h3 class="section-title">Actual Product Usage Prior to Cancellation</h3>
+        <p class="section-hint">
+          If no fertilizer was applied, leave all quantities as 0. If partial fertilizer was already applied, enter the actual quantities consumed.
+        </p>
+      </div>
+
+      <!-- Products table -->
+      <div class="table-container" formArrayName="products">
+        <table class="products-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Location</th>
+              <th class="text-right">Planned Qty</th>
+              <th class="qty-col text-right">Actual Used</th>
+              <th>Unit</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (pCtrl of productsArray.controls; track $index) {
+              <tr [formGroupName]="$index">
+                @let orig = getProductOrig(pCtrl.value.inventoryItemId!);
+                <td>
+                  <span class="product-name">{{ orig?.inventoryItemName }}</span>
+                  @if (orig?.inventoryItemSku) {
+                    <span class="product-sku">({{ orig?.inventoryItemSku }})</span>
+                  }
+                </td>
+                <td>
+                  @if (isPostStart()) {
+                    <span>{{ orig?.storageLocationName || 'None assigned' }}</span>
+                  } @else {
+                    <mat-form-field appearance="outline" class="table-select" subscriptSizing="dynamic">
+                      <mat-select formControlName="storageLocationId" placeholder="Select location">
+                        <mat-option value="">-- None --</mat-option>
+                        @for (loc of storageLocations(); track loc.storageLocationId) {
+                          <mat-option [value]="loc.storageLocationId">
+                            {{ loc.storageLocationName }} ({{ loc.currentStock }} in stock)
+                          </mat-option>
+                        }
+                      </mat-select>
+                    </mat-form-field>
+                    @if (pCtrl.get('storageLocationId')?.hasError('required')) {
+                      <div class="table-error">Location required for positive usage</div>
+                    }
+                  }
+                </td>
+                <td class="text-right font-mono">{{ orig?.plannedQuantity ?? 0 }}</td>
+                <td class="qty-col text-right">
+                  <mat-form-field appearance="outline" class="table-input" subscriptSizing="dynamic">
+                    <input
+                      matInput
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      formControlName="actualQuantity"
+                      class="text-right font-mono"
+                    />
+                  </mat-form-field>
+                  @if (pCtrl.get('actualQuantity')?.hasError('min')) {
+                    <div class="table-error">&ge; 0 required</div>
+                  }
+                </td>
+                <td>{{ orig?.stockUnitSymbol || orig?.stockUnitName || '-' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Conditional positive usage datepicker & alerts -->
+      @if (hasPositiveUsage()) {
+        <div class="alert alert--warn">
+          <mat-icon class="alert-icon">info</mat-icon>
+          <div class="alert-body">
+            <strong>Positive Consumption Reported:</strong>
+            <p>
+              Reported quantities will be deducted from warehouse inventory. Please specify the date the fertilizer was applied.
+            </p>
+          </div>
+        </div>
+
+        <mat-form-field appearance="outline" class="form-field date-field">
+          <mat-label>Actual Application Date *</mat-label>
+          <input
+            matInput
+            [matDatepicker]="cancelDatePicker"
+            [max]="today"
+            formControlName="actualApplicationDate"
+            placeholder="Select date"
+          />
+          <mat-datepicker-toggle matIconSuffix [for]="cancelDatePicker"></mat-datepicker-toggle>
+          <mat-datepicker #cancelDatePicker></mat-datepicker>
+          @if (form.get('actualApplicationDate')?.hasError('required')) {
+            <mat-error>Actual application date is required when positive usage is reported.</mat-error>
+          }
+          @if (form.get('actualApplicationDate')?.hasError('futureDate')) {
+            <mat-error>Application date cannot be in the future.</mat-error>
+          }
+        </mat-form-field>
+      } @else {
+        <div class="alert alert--info">
+          <mat-icon class="alert-icon">check</mat-icon>
+          <div class="alert-body">
+            <span>Zero consumption reported: No inventory movements or deductions will be generated.</span>
+          </div>
+        </div>
+      }
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end" class="dialog-actions">
+    <button mat-button (click)="onCancel()" [disabled]="isSubmitting()">
+      Back
+    </button>
+    <button
+      mat-flat-button
+      color="warn"
+      type="submit"
+      form="cancelFertilizerForm"
+      [disabled]="isSubmitting() || form.invalid"
+    >
+      @if (isSubmitting()) {
+        <mat-spinner diameter="18" class="inline-spinner"></mat-spinner>
+        <span>Cancelling...</span>
+      } @else {
+        <mat-icon>cancel</mat-icon>
+        <span>Confirm Cancellation</span>
+      }
+    </button>
+  </mat-dialog-actions>
+</div>

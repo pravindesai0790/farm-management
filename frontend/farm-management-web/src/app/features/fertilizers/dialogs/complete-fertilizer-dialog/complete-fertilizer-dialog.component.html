@@ -1,0 +1,206 @@
+<div class="complete-dialog">
+  <div mat-dialog-title class="dialog-header">
+    <div class="header-left">
+      <mat-icon class="header-icon" color="primary">check_circle</mat-icon>
+      <span class="dialog-title-text">Complete Fertilizer Application</span>
+    </div>
+    <span class="ref-badge">{{ app.referenceNumber }}</span>
+  </div>
+
+  <mat-dialog-content class="dialog-content">
+    <form [formGroup]="form" id="completeFertilizerForm" (ngSubmit)="onSubmit()">
+      <!-- Operational summary -->
+      <div class="summary-box">
+        <div class="summary-item">
+          <span class="summary-label">Farm / Area:</span>
+          <span class="summary-value">{{ app.farmName }} &bull; {{ app.farmAreaName }}</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Method:</span>
+          <span class="summary-value">{{ app.applicationMethodName }}</span>
+        </div>
+        @if (app.cropCycleName) {
+          <div class="summary-item">
+            <span class="summary-label">Crop Cycle:</span>
+            <span class="summary-value">{{ app.cropCycleName }}</span>
+          </div>
+        }
+      </div>
+
+      <!-- Execution Date & Area row -->
+      <div class="form-row">
+        <!-- Actual Application Date Picker -->
+        <mat-form-field appearance="outline" class="form-field">
+          <mat-label>Actual Application Date</mat-label>
+          <input
+            matInput
+            [matDatepicker]="datePicker"
+            [max]="today"
+            formControlName="actualApplicationDate"
+            placeholder="Select date"
+          />
+          <mat-datepicker-toggle matIconSuffix [for]="datePicker"></mat-datepicker-toggle>
+          <mat-datepicker #datePicker></mat-datepicker>
+          @if (form.get('actualApplicationDate')?.hasError('required')) {
+            <mat-error>Actual application date is required.</mat-error>
+          }
+          @if (form.get('actualApplicationDate')?.hasError('futureDate')) {
+            <mat-error>Application date cannot be in the future.</mat-error>
+          }
+        </mat-form-field>
+
+        <!-- Actual Area -->
+        <mat-form-field appearance="outline" class="form-field">
+          <mat-label>Actual Area (Optional)</mat-label>
+          <input
+            matInput
+            type="number"
+            step="0.01"
+            min="0.0001"
+            formControlName="actualArea"
+            placeholder="e.g. 5.0"
+          />
+        </mat-form-field>
+
+        <!-- Actual Area Unit -->
+        <mat-form-field appearance="outline" class="form-field">
+          <mat-label>Area Unit</mat-label>
+          <mat-select formControlName="actualAreaUnitId">
+            <mat-option value="">-- None --</mat-option>
+            @for (u of areaUnits(); track u.id) {
+              <mat-option [value]="u.id">{{ u.name }} ({{ u.symbol }})</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <!-- Error message banner -->
+      @if (errorMessage()) {
+        <div class="alert alert--danger">
+          <mat-icon class="alert-icon">error</mat-icon>
+          <div class="alert-body">
+            <strong>Completion Blocked:</strong>
+            <p>{{ errorMessage() }}</p>
+          </div>
+        </div>
+      }
+
+      <!-- Shortages alert -->
+      @if (shortages().length > 0) {
+        <div class="alert alert--warn">
+          <mat-icon class="alert-icon">inventory_2</mat-icon>
+          <div class="alert-body">
+            <strong>Insufficient Inventory to Issue:</strong>
+            <p>Application remains In Progress. The following lines exceeded on-hand balance:</p>
+            <ul class="shortage-list">
+              @for (s of shortages(); track s) {
+                <li>{{ s }}</li>
+              }
+            </ul>
+          </div>
+        </div>
+      }
+
+      <!-- Product Lines & Actuals -->
+      <h3 class="section-title">Actual Fertilizer Applied</h3>
+      <div class="table-container" formArrayName="products">
+        <table class="products-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Location</th>
+              <th class="text-right">Planned Qty</th>
+              <th class="qty-col text-right">Actual Qty *</th>
+              <th class="text-center">Variance</th>
+              <th>Unit</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (pCtrl of productsArray.controls; track $index) {
+              <tr [formGroupName]="$index">
+                @let orig = getProductOrig(pCtrl.value.inventoryItemId!);
+                <td>
+                  <span class="product-name">{{ orig?.inventoryItemName }}</span>
+                  @if (orig?.inventoryItemSku) {
+                    <span class="product-sku">({{ orig?.inventoryItemSku }})</span>
+                  }
+                </td>
+                <td>{{ orig?.storageLocationName || 'None assigned' }}</td>
+                <td class="text-right font-mono">{{ orig?.plannedQuantity ?? 0 }}</td>
+                <td class="qty-col text-right">
+                  <mat-form-field appearance="outline" class="table-input" subscriptSizing="dynamic">
+                    <input
+                      matInput
+                      type="number"
+                      step="0.01"
+                      min="0.0001"
+                      formControlName="actualQuantity"
+                      class="text-right font-mono"
+                    />
+                  </mat-form-field>
+                  @if (pCtrl.get('actualQuantity')?.hasError('required')) {
+                    <div class="table-error">Required</div>
+                  } @else if (pCtrl.get('actualQuantity')?.hasError('min')) {
+                    <div class="table-error">&gt; 0 required</div>
+                  }
+                </td>
+                <td class="text-center font-mono">
+                  @let v = getLineVariance(pCtrl.value.inventoryItemId!);
+                  <span
+                    class="variance-badge"
+                    [class.variance-badge--over]="v > 0.0001"
+                    [class.variance-badge--under]="v < -0.0001"
+                    [class.variance-badge--exact]="v >= -0.0001 && v <= 0.0001"
+                  >
+                    {{ v > 0 ? '+' : '' }}{{ v | number: '1.2-2' }}
+                  </span>
+                </td>
+                <td>{{ orig?.stockUnitSymbol || orig?.stockUnitName || '-' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Variance Confirmation Callout & Checkbox -->
+      @if (hasAnyVariance()) {
+        <div class="alert alert--warn variance-alert">
+          <mat-icon class="alert-icon">difference</mat-icon>
+          <div class="alert-body">
+            <strong>Variance Detected:</strong>
+            <p>
+              One or more actual quantities differ from planned quantities.
+              Inventory will be deducted based on the <em>actual quantities</em> entered above.
+            </p>
+            <mat-checkbox formControlName="acknowledgeVariance" color="primary" class="acknowledge-check">
+              <strong>I confirm and acknowledge the variances between planned and actual quantities.</strong>
+            </mat-checkbox>
+          </div>
+        </div>
+      }
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end" class="dialog-actions">
+    <button mat-button (click)="onCancel()" [disabled]="isSubmitting()">
+      Cancel
+    </button>
+    <button
+      mat-flat-button
+      color="primary"
+      type="submit"
+      form="completeFertilizerForm"
+      [disabled]="isSubmitting() || form.invalid || (hasAnyVariance() && !form.value.acknowledgeVariance)"
+    >
+      @if (isSubmitting()) {
+        <mat-spinner diameter="18" class="inline-spinner"></mat-spinner>
+        <span>Completing...</span>
+      } @else {
+        <ng-container>
+          <mat-icon>check_circle</mat-icon>
+          <span>Complete Application & Deduct Stock</span>
+        </ng-container>
+      }
+    </button>
+  </mat-dialog-actions>
+</div>

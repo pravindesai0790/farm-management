@@ -18,9 +18,29 @@ export const FERTILIZER_ROUTES: Routes = [
     canActivate: [permissionGuard],
     data: { permission: 'Fertilizer.Create' },
     loadComponent: () =>
-      import('./fertilizer-list/fertilizer-list-page.component').then(
-        (m) => m.FertilizerListPageComponent,
+      import('./fertilizer-editor/fertilizer-editor-page.component').then(
+        (m) => m.FertilizerEditorPageComponent,
       ),
+  },
+  {
+    path: ':id/edit',
+    title: 'Edit Fertilizer Application',
+    canActivate: [permissionGuard],
+    data: { permission: 'Fertilizer.Update' },
+    loadComponent: () =>
+      import('./fertilizer-editor/fertilizer-editor-page.component').then(
+        (m) => m.FertilizerEditorPageComponent,
+      ),
+  },
+  {
+    path: 'record-completed',
+    title: 'Record Completed Fertilizer Application',
+    canActivate: [permissionGuard],
+    data: { permission: 'Fertilizer.RecordCompleted' },
+    loadComponent: () =>
+      import(
+        './fertilizer-record-completed/fertilizer-record-completed-page.component'
+      ).then((m) => m.FertilizerRecordCompletedPageComponent),
   },
   {
     path: ':id',

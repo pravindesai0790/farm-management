@@ -434,10 +434,31 @@
       </a>
     }
 
+    @if ((app.status === 'Planned' || app.status === 'Scheduled') && permissionService.has("Fertilizer.Start")) {
+      <button mat-menu-item (click)="startApplication(app)">
+        <mat-icon color="primary">play_arrow</mat-icon>
+        <span>Start Application</span>
+      </button>
+    }
+
+    @if (app.status === 'InProgress' && permissionService.has("Fertilizer.Complete")) {
+      <button mat-menu-item (click)="completeApplication(app)">
+        <mat-icon color="primary">check_circle</mat-icon>
+        <span>Complete Application</span>
+      </button>
+    }
+
     @if (permissionService.has("Fertilizer.Create")) {
       <button mat-menu-item (click)="copyAsNewDraft(app)">
         <mat-icon>content_copy</mat-icon>
         <span>Copy as New Draft</span>
+      </button>
+    }
+
+    @if ((app.status === 'Draft' || app.status === 'Planned' || app.status === 'Scheduled' || app.status === 'InProgress') && permissionService.has("Fertilizer.Cancel")) {
+      <button mat-menu-item (click)="cancelApplication(app)" class="danger-menu-item">
+        <mat-icon color="warn">cancel</mat-icon>
+        <span class="text-warn">Cancel Application</span>
       </button>
     }
 
