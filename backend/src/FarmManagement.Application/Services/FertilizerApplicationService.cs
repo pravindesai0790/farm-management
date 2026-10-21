@@ -1,4 +1,6 @@
+using System.Text;
 using System.Text.Json;
+using FarmManagement.Application.Common.Helpers;
 using FarmManagement.Application.Common.Exceptions;
 using FarmManagement.Application.Common.Models;
 using FarmManagement.Application.DTOs.Fertilizer;
@@ -47,6 +49,141 @@ public sealed class FertilizerApplicationService(
         }).ToArray();
 
         return new PagedResponse<FertilizerApplicationListItemResponse>(responses, page, pageSize, totalCount);
+    }
+
+    public async Task<byte[]> ExportCsvAsync(
+        FertilizerActor actor,
+        FertilizerApplicationListQuery query,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateActor(actor);
+
+        var items = await store.ListForExportAsync(actor.OrganizationId, query, cancellationToken);
+
+        var userIds = items.Select(a => a.CreatedBy)
+            .Concat(items.Where(a => a.StartedBy.HasValue).Select(a => a.StartedBy!.Value))
+            .Concat(items.Where(a => a.CompletedBy.HasValue).Select(a => a.CompletedBy!.Value))
+            .Concat(items.Where(a => a.CancelledBy.HasValue).Select(a => a.CancelledBy!.Value))
+            .Distinct()
+            .ToList();
+
+        var userNames = await store.GetUserNamesAsync(userIds, cancellationToken);
+
+        var sb = new StringBuilder();
+        sb.AppendLine(string.Join(",", [
+            "Reference Number",
+            "Status",
+            "Farm",
+            "Farm Area",
+            "Plantation",
+            "Crop Cycle",
+            "Crop Cycle Stage",
+            "Application Method",
+            "Other Method Description",
+            "Irrigation Event ID",
+            "Purpose / Reason",
+            "Planned Date",
+            "Scheduled Date",
+            "Actual Application Date",
+            "Planned Area",
+            "Planned Area Unit",
+            "Actual Area",
+            "Actual Area Unit",
+            "Product Name",
+            "Product SKU",
+            "Stock Unit",
+            "Storage Location",
+            "Planned Quantity",
+            "Actual Quantity",
+            "Variance Quantity",
+            "Stock Movement Reference",
+            "Cancellation Reason",
+            "Created At",
+            "Created By",
+            "Started At",
+            "Started By",
+            "Completed At",
+            "Completed By",
+            "Cancelled At",
+            "Cancelled By"
+        ]));
+
+        foreach (var app in items)
+        {
+            var refNum = CsvExportHelper.EscapeText(app.ReferenceNumber);
+            var status = CsvExportHelper.EscapeText(app.Status.ToString().ToUpperInvariant());
+            var farmName = CsvExportHelper.EscapeText(app.Farm?.Name);
+            var areaName = CsvExportHelper.EscapeText(app.FarmArea?.Name);
+            var plantationName = CsvExportHelper.EscapeText(app.Plantation?.PlantationName);
+            var cycleName = CsvExportHelper.EscapeText(app.CropCycle?.CycleName);
+            var stageName = CsvExportHelper.EscapeText(app.CropCycleStage?.StageName);
+            var methodName = CsvExportHelper.EscapeText(app.ApplicationMethod?.Name);
+            var otherMethodDesc = CsvExportHelper.EscapeText(app.OtherMethodDescription);
+            var irrigationId = CsvExportHelper.EscapeText(app.IrrigationEventId?.ToString());
+            var purpose = CsvExportHelper.EscapeText(app.PurposeReason);
+            var plannedDate = CsvExportHelper.EscapeDate(app.PlannedDate);
+            var scheduledDate = CsvExportHelper.EscapeDate(app.ScheduledDate);
+            var actualDate = CsvExportHelper.EscapeDate(app.ActualApplicationDate);
+            var plannedArea = CsvExportHelper.EscapeNumber(app.PlannedArea);
+            var plannedAreaUnit = CsvExportHelper.EscapeText(app.PlannedAreaUnit?.Symbol ?? app.PlannedAreaUnit?.Name);
+            var actualArea = CsvExportHelper.EscapeNumber(app.ActualArea);
+            var actualAreaUnit = CsvExportHelper.EscapeText(app.ActualAreaUnit?.Symbol ?? app.ActualAreaUnit?.Name);
+            var cancelReason = CsvExportHelper.EscapeText(app.CancellationReason);
+            var createdAt = CsvExportHelper.EscapeDateTime(app.CreatedAt);
+            var createdByName = CsvExportHelper.EscapeText(userNames.TryGetValue(app.CreatedBy, out var cb) ? cb : null);
+            var startedAt = CsvExportHelper.EscapeDateTime(app.StartedAt);
+            var startedByName = CsvExportHelper.EscapeText(app.StartedBy.HasValue && userNames.TryGetValue(app.StartedBy.Value, out var sbUser) ? sbUser : null);
+            var completedAt = CsvExportHelper.EscapeDateTime(app.CompletedAt);
+            var completedByName = CsvExportHelper.EscapeText(app.CompletedBy.HasValue && userNames.TryGetValue(app.CompletedBy.Value, out var cbUser) ? cbUser : null);
+            var cancelledAt = CsvExportHelper.EscapeDateTime(app.CancelledAt);
+            var cancelledByName = CsvExportHelper.EscapeText(app.CancelledBy.HasValue && userNames.TryGetValue(app.CancelledBy.Value, out var canUser) ? canUser : null);
+
+            if (app.Products.Count == 0)
+            {
+                sb.AppendLine(string.Join(",", [
+                    refNum, status, farmName, areaName, plantationName, cycleName, stageName,
+                    methodName, otherMethodDesc, irrigationId, purpose,
+                    plannedDate, scheduledDate, actualDate,
+                    plannedArea, plannedAreaUnit, actualArea, actualAreaUnit,
+                    "", "", "", "", "", "", "", "",
+                    cancelReason, createdAt, createdByName,
+                    startedAt, startedByName, completedAt, completedByName,
+                    cancelledAt, cancelledByName
+                ]));
+            }
+            else
+            {
+                foreach (var p in app.Products)
+                {
+                    var prodName = CsvExportHelper.EscapeText(p.InventoryItem?.Name);
+                    var prodSku = CsvExportHelper.EscapeText(p.InventoryItem?.Sku);
+                    var unitName = CsvExportHelper.EscapeText(p.InventoryItem?.StockUnit?.Symbol ?? p.InventoryItem?.StockUnit?.Name);
+                    var locName = CsvExportHelper.EscapeText(p.StorageLocation?.Name);
+
+                    var isDirectCompletedLine = app.Status == FertilizerApplicationStatus.Completed && !app.PlannedDate.HasValue && p.PlannedQuantity == 0m;
+                    var plannedQty = isDirectCompletedLine ? "" : CsvExportHelper.EscapeNumber(p.PlannedQuantity);
+                    var actualQty = CsvExportHelper.EscapeNumber(p.ActualQuantity);
+                    var varianceQty = !isDirectCompletedLine && p.ActualQuantity.HasValue
+                        ? CsvExportHelper.EscapeNumber(p.ActualQuantity.Value - p.PlannedQuantity)
+                        : "";
+                    var movRef = CsvExportHelper.EscapeText(p.StockMovement?.ReferenceNumber ?? (p.StockMovementId.HasValue ? p.StockMovementId.Value.ToString() : null));
+
+                    sb.AppendLine(string.Join(",", [
+                        refNum, status, farmName, areaName, plantationName, cycleName, stageName,
+                        methodName, otherMethodDesc, irrigationId, purpose,
+                        plannedDate, scheduledDate, actualDate,
+                        plannedArea, plannedAreaUnit, actualArea, actualAreaUnit,
+                        prodName, prodSku, unitName, locName,
+                        plannedQty, actualQty, varianceQty, movRef,
+                        cancelReason, createdAt, createdByName,
+                        startedAt, startedByName, completedAt, completedByName,
+                        cancelledAt, cancelledByName
+                    ]));
+                }
+            }
+        }
+
+        return CsvExportHelper.CreateCsvBytes(sb.ToString());
     }
 
     public async Task<FertilizerApplicationDetailsResponse> GetAsync(

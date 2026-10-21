@@ -95,6 +95,66 @@ public sealed class FertilizerApplicationStore(ApplicationDbContext dbContext) :
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<FertilizerApplication>> ListForExportAsync(
+        Guid organizationId,
+        FertilizerApplicationListQuery query,
+        CancellationToken cancellationToken = default)
+    {
+        var baseQuery = BuildQuery(organizationId, query)
+            .AsNoTracking()
+            .Include(a => a.Farm)
+            .Include(a => a.FarmArea)
+            .Include(a => a.Plantation)
+            .Include(a => a.CropCycle)
+            .Include(a => a.CropCycleStage)
+            .Include(a => a.PlannedAreaUnit)
+            .Include(a => a.ActualAreaUnit)
+            .Include(a => a.ApplicationMethod)
+            .Include(a => a.IrrigationEvent)
+            .Include(a => a.Products)
+                .ThenInclude(p => p.InventoryItem)
+                    .ThenInclude(i => i!.StockUnit)
+            .Include(a => a.Products)
+                .ThenInclude(p => p.StorageLocation)
+            .Include(a => a.Products)
+                .ThenInclude(p => p.StockMovement);
+
+        var isAscending = string.Equals(query.SortDirection, "asc", StringComparison.OrdinalIgnoreCase);
+
+        var sortedQuery = (query.SortBy?.Trim().ToLowerInvariant()) switch
+        {
+            "planneddate" => isAscending
+                ? baseQuery.OrderBy(a => a.PlannedDate).ThenByDescending(a => a.CreatedAt)
+                : baseQuery.OrderByDescending(a => a.PlannedDate).ThenByDescending(a => a.CreatedAt),
+
+            "scheduleddate" => isAscending
+                ? baseQuery.OrderBy(a => a.ScheduledDate).ThenByDescending(a => a.CreatedAt)
+                : baseQuery.OrderByDescending(a => a.ScheduledDate).ThenByDescending(a => a.CreatedAt),
+
+            "actualapplicationdate" or "actualdate" => isAscending
+                ? baseQuery.OrderBy(a => a.ActualApplicationDate).ThenByDescending(a => a.CreatedAt)
+                : baseQuery.OrderByDescending(a => a.ActualApplicationDate).ThenByDescending(a => a.CreatedAt),
+
+            "status" => isAscending
+                ? baseQuery.OrderBy(a => a.Status).ThenByDescending(a => a.CreatedAt)
+                : baseQuery.OrderByDescending(a => a.Status).ThenByDescending(a => a.CreatedAt),
+
+            "referencenumber" => isAscending
+                ? baseQuery.OrderBy(a => a.ReferenceNumber).ThenByDescending(a => a.CreatedAt)
+                : baseQuery.OrderByDescending(a => a.ReferenceNumber).ThenByDescending(a => a.CreatedAt),
+
+            "farmname" => isAscending
+                ? baseQuery.OrderBy(a => a.Farm != null ? a.Farm.Name : string.Empty).ThenByDescending(a => a.CreatedAt)
+                : baseQuery.OrderByDescending(a => a.Farm != null ? a.Farm.Name : string.Empty).ThenByDescending(a => a.CreatedAt),
+
+            _ => isAscending
+                ? baseQuery.OrderBy(a => a.CreatedAt)
+                : baseQuery.OrderByDescending(a => a.CreatedAt)
+        };
+
+        return await sortedQuery.ToListAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<FertilizerProductLookupResponse>> ListProductsLookupAsync(
         Guid organizationId,
         CancellationToken cancellationToken = default)

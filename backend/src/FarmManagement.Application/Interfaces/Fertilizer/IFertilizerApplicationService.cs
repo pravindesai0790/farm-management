@@ -10,6 +10,11 @@ public interface IFertilizerApplicationService
         FertilizerApplicationListQuery query,
         CancellationToken cancellationToken = default);
 
+    Task<byte[]> ExportCsvAsync(
+        FertilizerActor actor,
+        FertilizerApplicationListQuery query,
+        CancellationToken cancellationToken = default);
+
     Task<FertilizerApplicationDetailsResponse> GetAsync(
         FertilizerActor actor,
         Guid id,

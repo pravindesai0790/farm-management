@@ -19,6 +19,11 @@ public interface IFertilizerApplicationStore
         int take,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<FertilizerApplication>> ListForExportAsync(
+        Guid organizationId,
+        FertilizerApplicationListQuery query,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<FertilizerProductLookupResponse>> ListProductsLookupAsync(
         Guid organizationId,
         CancellationToken cancellationToken = default);

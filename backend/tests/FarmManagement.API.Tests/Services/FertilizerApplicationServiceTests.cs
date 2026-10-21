@@ -430,6 +430,15 @@ public class FertilizerApplicationServiceTests
             return Task.FromResult<IReadOnlyList<FertilizerApplication>>(items);
         }
 
+        public Task<IReadOnlyList<FertilizerApplication>> ListForExportAsync(
+            Guid organizationId,
+            FertilizerApplicationListQuery query,
+            CancellationToken cancellationToken = default)
+        {
+            var filtered = ApplyFilters(organizationId, query).ToList();
+            return Task.FromResult<IReadOnlyList<FertilizerApplication>>(filtered);
+        }
+
         public Task<IReadOnlyList<FertilizerProductLookupResponse>> ListProductsLookupAsync(Guid organizationId, CancellationToken cancellationToken = default) =>
             Task.FromResult(ProductsLookup);
 

@@ -64,6 +64,7 @@ public class FertilizerAuthorizationSecurityTests
         AssertActionPolicy(controllerType, nameof(FertilizerApplicationsController.Complete), "Permission:Fertilizer.Complete");
         AssertActionPolicy(controllerType, nameof(FertilizerApplicationsController.Cancel), "Permission:Fertilizer.Cancel");
         AssertActionPolicy(controllerType, nameof(FertilizerApplicationsController.RecordCompleted), "Permission:Fertilizer.RecordCompleted");
+        AssertActionPolicy(controllerType, nameof(FertilizerApplicationsController.ExportCsv), "Permission:Fertilizer.Export");
     }
 
     private static void AssertActionPolicy(Type controllerType, string methodName, string expectedPolicy)
@@ -807,6 +808,9 @@ public class FertilizerAuthorizationSecurityTests
 
         public Task<IReadOnlyList<FertilizerApplication>> ListAsync(Guid organizationId, FertilizerApplicationListQuery query, int skip, int take, CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<FertilizerApplication>>(Applications.Where(a => a.OrganizationId == organizationId).Skip(skip).Take(take).ToArray());
+
+        public Task<IReadOnlyList<FertilizerApplication>> ListForExportAsync(Guid organizationId, FertilizerApplicationListQuery query, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<FertilizerApplication>>(Applications.Where(a => a.OrganizationId == organizationId).ToArray());
 
         public void AddAuditLog(AuditLog auditLog) => AuditLogs.Add(auditLog);
 

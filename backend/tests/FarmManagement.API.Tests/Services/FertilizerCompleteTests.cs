@@ -777,6 +777,12 @@ public class FertilizerCompleteTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<FertilizerApplication>>(Applications.Where(a => a.OrganizationId == organizationId).Skip(skip).Take(take).ToList());
 
+        public Task<IReadOnlyList<FertilizerApplication>> ListForExportAsync(
+            Guid organizationId,
+            FertilizerApplicationListQuery query,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<FertilizerApplication>>(Applications.Where(a => a.OrganizationId == organizationId).ToList());
+
         public Task<IReadOnlyList<FertilizerProductLookupResponse>> ListProductsLookupAsync(Guid organizationId, CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<FertilizerProductLookupResponse>>([]);
 

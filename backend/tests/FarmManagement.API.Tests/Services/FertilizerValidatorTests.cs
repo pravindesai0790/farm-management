@@ -545,6 +545,9 @@ public class FertilizerValidatorTests
         public Task<IReadOnlyList<FertilizerApplication>> ListAsync(Guid organizationId, FertilizerApplicationListQuery query, int skip, int take, CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<FertilizerApplication>>([]);
 
+        public Task<IReadOnlyList<FertilizerApplication>> ListForExportAsync(Guid organizationId, FertilizerApplicationListQuery query, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<FertilizerApplication>>([]);
+
         public Task<IReadOnlyList<FertilizerProductLookupResponse>> ListProductsLookupAsync(Guid organizationId, CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<FertilizerProductLookupResponse>>([]);
 

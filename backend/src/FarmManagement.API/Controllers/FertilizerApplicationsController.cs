@@ -220,4 +220,17 @@ public sealed class FertilizerApplicationsController(IFertilizerApplicationServi
         var result = await service.RecordCompletedAsync(actor, request, ipAddress, cancellationToken);
         return CreatedAtAction(nameof(Get), new { id = result.Id }, result);
     }
+
+    [HttpGet("export")]
+    [HttpGet("export/csv")]
+    [Authorize(Policy = "Permission:Fertilizer.Export")]
+    public async Task<IActionResult> ExportCsv(
+        [FromQuery] FertilizerApplicationListQuery query,
+        CancellationToken cancellationToken = default)
+    {
+        var actor = UserContextHelper.GetUserContext<FertilizerActor>(User);
+        var bytes = await service.ExportCsvAsync(actor, query, cancellationToken);
+        var filename = $"fertilizer-applications-{DateTime.UtcNow:yyyyMMdd-HHmmss}.csv";
+        return File(bytes, "text/csv; charset=utf-8", filename);
+    }
 }

@@ -356,6 +356,25 @@ public class FertilizerApplicationsControllerTests
         Assert.Equal("COMPLETED", result.StatusName);
     }
 
+    [Fact]
+    public async Task ExportCsv_ReturnsFileResult_WithCsvContentTypeAndFileName()
+    {
+        // Arrange
+        var fakeService = new FakeFertilizerApplicationService();
+        var controller = CreateController(fakeService);
+        var query = new FertilizerApplicationListQuery();
+
+        // Act
+        var actionResult = await controller.ExportCsv(query);
+
+        // Assert
+        var fileResult = Assert.IsType<FileContentResult>(actionResult);
+        Assert.Equal("text/csv; charset=utf-8", fileResult.ContentType);
+        Assert.StartsWith("fertilizer-applications-", fileResult.FileDownloadName);
+        Assert.EndsWith(".csv", fileResult.FileDownloadName);
+        Assert.NotEmpty(fileResult.FileContents);
+    }
+
     private sealed class FakeFertilizerApplicationService : IFertilizerApplicationService
     {
         public Task<PagedResponse<FertilizerApplicationListItemResponse>> ListAsync(
@@ -382,6 +401,14 @@ public class FertilizerApplicationsControllerTests
 
             var response = new PagedResponse<FertilizerApplicationListItemResponse>([item], 1, 20, 1);
             return Task.FromResult(response);
+        }
+
+        public Task<byte[]> ExportCsvAsync(
+            FertilizerActor actor,
+            FertilizerApplicationListQuery query,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(System.Text.Encoding.UTF8.GetBytes("Reference Number,Status\n"));
         }
 
         public Task<FertilizerApplicationDetailsResponse> GetAsync(
