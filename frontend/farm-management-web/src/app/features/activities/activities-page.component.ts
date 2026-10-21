@@ -87,7 +87,11 @@ export class ActivitiesPageComponent {
       description:
         "Record fertilizer applications, dosage formulations, and nutritional management across plantations.",
       icon: "science",
-      status: "UPCOMING",
+      route: "/fertilizer-applications",
+      status: "AVAILABLE",
+      requiredPermission: "Fertilizer.View",
+      createPermission: "Fertilizer.Create",
+      createRoute: "/fertilizer-applications/new",
       highlights: [
         "Basal & fertigation",
         "NPK formulations",

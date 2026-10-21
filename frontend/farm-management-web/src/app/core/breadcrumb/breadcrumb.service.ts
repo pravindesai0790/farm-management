@@ -372,6 +372,25 @@ export class BreadcrumbService {
         }
         break;
 
+      case "fertilizer-applications":
+        items.push({ label: "Activities", route: "/activities" });
+        items.push({ label: "Fertilizer Applications", route: "/fertilizer-applications" });
+        if (segments[1] === "new") {
+          items.push({ label: "Plan Fertilizer Application" });
+        } else if (segments[1] === "record-completed") {
+          items.push({ label: "Record Completed" });
+        } else if (segments[1]) {
+          const fertId = segments[1];
+          const fertName = this.labelCache.get(fertId) ?? "Fertilizer details";
+          if (segments[2] === "edit") {
+            items.push({ label: fertName, route: ["/fertilizer-applications", fertId] });
+            items.push({ label: "Edit" });
+          } else {
+            items.push({ label: fertName });
+          }
+        }
+        break;
+
       default: {
         const readable = section.charAt(0).toUpperCase() + section.slice(1).replace(/-/g, " ");
         items.push({ label: readable });

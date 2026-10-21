@@ -217,6 +217,13 @@ export class MainLayoutComponent {
               route: "/irrigations",
               permissions: ["Irrigation.View"],
             },
+            {
+              id: "fertilizer-applications",
+              label: "Fertilizer",
+              icon: "science",
+              route: "/fertilizer-applications",
+              permissions: ["Fertilizer.View"],
+            },
           ],
         },
       ],

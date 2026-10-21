@@ -629,6 +629,16 @@ export const routes: Routes = [
           import("./features/irrigations/irrigation.routes").then((m) => m.IRRIGATION_ROUTES),
       },
       {
+        path: "fertilizer-applications",
+        loadChildren: () =>
+          import("./features/fertilizers/fertilizer.routes").then((m) => m.FERTILIZER_ROUTES),
+      },
+      {
+        path: "activities/fertilizers",
+        redirectTo: "fertilizer-applications",
+        pathMatch: "full",
+      },
+      {
         path: "labor",
         children: [
           {
