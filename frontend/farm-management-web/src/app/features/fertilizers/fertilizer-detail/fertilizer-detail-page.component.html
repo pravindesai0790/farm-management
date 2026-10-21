@@ -1,0 +1,552 @@
+<div class="detail-container">
+  @if (isLoading()) {
+    <div class="loading-state">
+      <mat-spinner diameter="40" />
+      <p>Loading fertilizer application details...</p>
+    </div>
+  } @else if (errorMessage()) {
+    <div class="error-banner">
+      <mat-icon>error_outline</mat-icon>
+      <div class="error-text">
+        <h4>Error Loading Details</h4>
+        <p>{{ errorMessage() }}</p>
+      </div>
+      <a mat-stroked-button routerLink="/fertilizer-applications">Return to List</a>
+    </div>
+  } @else if (application(); as app) {
+    <!-- Page Header -->
+    <header class="page-header">
+      <div class="header-left">
+        <span class="eyebrow">PLANT PROTECTION / FERTILIZER APPLICATIONS</span>
+        <div class="title-row">
+          <h1>{{ app.referenceNumber || 'Draft Fertilizer Application' }}</h1>
+          <span class="status-badge" [ngClass]="getStatusBadgeClass(app.status)">
+            {{ getStatusDisplayName(app.status) }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Action Buttons Context Bar -->
+      <div class="header-actions">
+        <a mat-stroked-button routerLink="/fertilizer-applications">
+          <mat-icon>arrow_back</mat-icon>
+          <span>Applications List</span>
+        </a>
+
+        <!-- Draft Actions -->
+        @if (app.status === 'Draft') {
+          @if (permissionService.has('Fertilizer.Update')) {
+            <button mat-stroked-button type="button" (click)="onEdit()">
+              <mat-icon>edit</mat-icon>
+              <span>Edit Draft</span>
+            </button>
+            <button mat-stroked-button color="primary" type="button" (click)="onSchedule(false)">
+              <mat-icon>event</mat-icon>
+              <span>Schedule</span>
+            </button>
+          }
+          @if (permissionService.has('Fertilizer.DeleteDraft')) {
+            <button
+              mat-stroked-button
+              color="warn"
+              type="button"
+              (click)="onDeleteDraft()"
+              [disabled]="isActionLoading()"
+            >
+              <mat-icon>delete</mat-icon>
+              <span>Delete Draft</span>
+            </button>
+          }
+        }
+
+        <!-- Planned Actions -->
+        @if (app.status === 'Planned') {
+          @if (permissionService.has('Fertilizer.Update')) {
+            <button mat-stroked-button type="button" (click)="onEdit()">
+              <mat-icon>edit</mat-icon>
+              <span>Edit Plan</span>
+            </button>
+            <button mat-stroked-button type="button" (click)="onSchedule(false)">
+              <mat-icon>event</mat-icon>
+              <span>Schedule</span>
+            </button>
+          }
+          @if (permissionService.has('Fertilizer.Start')) {
+            <button mat-flat-button color="primary" type="button" (click)="onStart()">
+              <mat-icon>play_arrow</mat-icon>
+              <span>Start Application</span>
+            </button>
+          }
+          @if (permissionService.has('Fertilizer.Cancel')) {
+            <button mat-stroked-button color="warn" type="button" (click)="onCancel()">
+              <mat-icon>cancel</mat-icon>
+              <span>Cancel</span>
+            </button>
+          }
+        }
+
+        <!-- Scheduled Actions -->
+        @if (app.status === 'Scheduled') {
+          @if (permissionService.has('Fertilizer.Start')) {
+            <button mat-flat-button color="primary" type="button" (click)="onStart()">
+              <mat-icon>play_arrow</mat-icon>
+              <span>Start Application</span>
+            </button>
+          }
+          @if (permissionService.has('Fertilizer.Update')) {
+            <button mat-stroked-button type="button" (click)="onSchedule(true)">
+              <mat-icon>update</mat-icon>
+              <span>Reschedule</span>
+            </button>
+          }
+          @if (permissionService.has('Fertilizer.Cancel')) {
+            <button mat-stroked-button color="warn" type="button" (click)="onCancel()">
+              <mat-icon>cancel</mat-icon>
+              <span>Cancel</span>
+            </button>
+          }
+        }
+
+        <!-- InProgress Actions -->
+        @if (app.status === 'InProgress') {
+          @if (permissionService.has('Fertilizer.Complete')) {
+            <button mat-flat-button color="primary" type="button" (click)="onComplete()">
+              <mat-icon>check_circle</mat-icon>
+              <span>Complete & Deduct Stock</span>
+            </button>
+          }
+          @if (permissionService.has('Fertilizer.Cancel')) {
+            <button mat-stroked-button color="warn" type="button" (click)="onCancel()">
+              <mat-icon>cancel</mat-icon>
+              <span>Cancel</span>
+            </button>
+          }
+        }
+
+        <!-- Copy as New Draft (Available from EVERY status) -->
+        @if (permissionService.has('Fertilizer.Create')) {
+          <button
+            mat-stroked-button
+            type="button"
+            (click)="onCopyAsNewDraft()"
+            [disabled]="isActionLoading()"
+            matTooltip="Create a new Draft copy of this application"
+          >
+            <mat-icon>content_copy</mat-icon>
+            <span>Copy as New Draft</span>
+          </button>
+        }
+      </div>
+    </header>
+
+    <!-- Cancellation Alert Banner -->
+    @if (app.status === 'Cancelled') {
+      <div class="cancellation-alert">
+        <mat-icon class="cancel-icon">cancel</mat-icon>
+        <div class="cancel-content">
+          <strong>This fertilizer application was cancelled</strong>
+          <p><strong>Reason:</strong> {{ app.cancellationReason || 'No reason specified' }}</p>
+          @if (hasPositiveActualUsage()) {
+            <p class="partial-stock-note">
+              <mat-icon>info</mat-icon>
+              <span>Partial product usage was recorded for this cancellation; inventory was deducted accordingly.</span>
+            </p>
+          } @else {
+            <p class="zero-stock-note">
+              <mat-icon>check</mat-icon>
+              <span>No product inventory was consumed or deducted.</span>
+            </p>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- In Progress Notification Banner -->
+    @if (app.status === 'InProgress') {
+      <div class="in-progress-alert">
+        <mat-icon>pending_actions</mat-icon>
+        <div class="alert-content">
+          <strong>Fertilizer Application is Currently In Progress</strong>
+          <p>
+            Field application is underway. Source storage locations are locked. Complete the application to finalize actual quantities and atomically deduct inventory.
+          </p>
+        </div>
+        @if (permissionService.has('Fertilizer.Complete')) {
+          <button mat-flat-button color="primary" (click)="onComplete()">
+            <mat-icon>check_circle</mat-icon>
+            <span>Complete Now</span>
+          </button>
+        }
+      </div>
+    }
+
+    <!-- KPI Metrics Strip -->
+    <section class="kpi-strip">
+      <!-- Metric: Treated Area -->
+      <div class="kpi-card">
+        <div class="kpi-icon-wrap area-bg">
+          <mat-icon>crop_square</mat-icon>
+        </div>
+        <div class="kpi-data">
+          <span class="kpi-label">Treated Area</span>
+          <div class="kpi-val-row">
+            <span class="kpi-value">
+              @if (app.actualArea !== null) {
+                {{ app.actualArea }} <span class="kpi-unit">{{ app.actualAreaUnitName || '' }}</span>
+              } @else if (app.plannedArea !== null) {
+                {{ app.plannedArea }} <span class="kpi-unit">{{ app.plannedAreaUnitName || '' }}</span>
+                <span class="kpi-tag-planned">(Planned)</span>
+              } @else {
+                —
+              }
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Metric: Products Count -->
+      <div class="kpi-card">
+        <div class="kpi-icon-wrap products-bg">
+          <mat-icon>science</mat-icon>
+        </div>
+        <div class="kpi-data">
+          <span class="kpi-label">Fertilizer Products</span>
+          <div class="kpi-val-row">
+            <span class="kpi-value">{{ app.products.length }}</span>
+            <span class="kpi-unit">item{{ app.products.length === 1 ? '' : 's' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Metric: Application Method -->
+      <div class="kpi-card">
+        <div class="kpi-icon-wrap method-bg">
+          <mat-icon>agriculture</mat-icon>
+        </div>
+        <div class="kpi-data">
+          <span class="kpi-label">Method</span>
+          <div class="kpi-val-row">
+            <span class="kpi-value method-val">
+              {{ app.applicationMethodName || 'Unassigned' }}
+            </span>
+          </div>
+          @if (app.irrigationEventId) {
+            <span class="fertigation-chip">
+              <mat-icon>water_drop</mat-icon> Fertigation
+            </span>
+          }
+        </div>
+      </div>
+
+      <!-- Metric: Timing -->
+      <div class="kpi-card">
+        <div class="kpi-icon-wrap date-bg">
+          <mat-icon>schedule</mat-icon>
+        </div>
+        <div class="kpi-data">
+          <span class="kpi-label">
+            @if (app.status === 'Completed' || app.status === 'InProgress') {
+              Actual Timing
+            } @else if (app.scheduledDate) {
+              Scheduled Date
+            } @else {
+              Planned Date
+            }
+          </span>
+          <div class="kpi-val-row">
+            <span class="kpi-value date-val">
+              @if (app.actualApplicationDate) {
+                {{ app.actualApplicationDate | date:'mediumDate' }}
+              } @else if (app.scheduledDate) {
+                {{ app.scheduledDate | date:'mediumDate' }}
+              } @else if (app.plannedDate) {
+                {{ app.plannedDate | date:'mediumDate' }}
+              } @else {
+                Not scheduled
+              }
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Detail Grid -->
+    <div class="detail-grid">
+      <!-- 1. Agronomic & Location Context Card -->
+      <mat-card class="content-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon class="card-icon">location_on</mat-icon>
+            <span>Location & Crop Context</span>
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="info-list">
+            <div class="info-row">
+              <span class="info-label">Farm</span>
+              <span class="info-val font-medium">{{ app.farmName || '—' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Area / Block</span>
+              <span class="info-val">{{ app.farmAreaName || 'Entire Farm' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Plantation</span>
+              <span class="info-val">{{ app.plantationName || '—' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Crop Cycle</span>
+              <span class="info-val">{{ app.cropCycleName || '—' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Lifecycle Stage</span>
+              <span class="info-val">{{ app.cropCycleStageName || '—' }}</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- 2. Operational Parameters & Fertigation Card -->
+      <mat-card class="content-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon class="card-icon">assignment</mat-icon>
+            <span>Application Parameters</span>
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="info-list">
+            <div class="info-row">
+              <span class="info-label">Application Method</span>
+              <span class="info-val font-medium">
+                {{ app.applicationMethodName || '—' }}
+                @if (app.otherMethodDescription) {
+                  <span class="other-method-desc">({{ app.otherMethodDescription }})</span>
+                }
+              </span>
+            </div>
+            @if (app.irrigationEventId || app.irrigationEventReference) {
+              <div class="info-row">
+                <span class="info-label">Fertigation Link</span>
+                <span class="info-val fertigation-val">
+                  <mat-icon>water_drop</mat-icon>
+                  <span>{{ app.irrigationEventReference || 'Irrigation Event Linked' }}</span>
+                </span>
+              </div>
+            }
+            <div class="info-row">
+              <span class="info-label">Planned Date</span>
+              <span class="info-val">{{ (app.plannedDate | date:'mediumDate') || '—' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Scheduled Date</span>
+              <span class="info-val">{{ (app.scheduledDate | date:'mediumDate') || '—' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Actual Application</span>
+              <span class="info-val">{{ (app.actualApplicationDate | date:'mediumDate') || '—' }}</span>
+            </div>
+            @if (app.purposeReason) {
+              <div class="info-row notes-row">
+                <span class="info-label">Purpose / Notes</span>
+                <span class="info-val notes-val">{{ app.purposeReason }}</span>
+              </div>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- 3. Applied Products, Stock Ledger & Variance Card -->
+    <mat-card class="content-card products-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon class="card-icon">science</mat-icon>
+          <span>Fertilizer Products & Stock Ledger</span>
+        </mat-card-title>
+        <span class="header-count">{{ app.products.length }} product{{ app.products.length === 1 ? '' : 's' }}</span>
+      </mat-card-header>
+      <mat-card-content>
+        @if (app.products.length === 0) {
+          <!-- Empty DRAFT Support -->
+          <div class="empty-products">
+            <mat-icon class="empty-products-icon">inventory_2</mat-icon>
+            <h4>No Products Allocated</h4>
+            <p>This fertilizer application currently has no product lines allocated.</p>
+            @if (app.status === 'Draft' && permissionService.has('Fertilizer.Update')) {
+              <button mat-stroked-button color="primary" (click)="onEdit()">
+                <mat-icon>add</mat-icon>
+                <span>Add Products in Editor</span>
+              </button>
+            }
+          </div>
+        } @else {
+          <div class="table-wrap">
+            <table class="dense-table detail-products-table" aria-label="Fertilizer product lines table">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Source Location</th>
+                  <th>Planned Qty</th>
+                  <th>Actual Qty</th>
+                  <th>Variance</th>
+                  <th>Stock Movement</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (p of app.products; track p.id) {
+                  @let variance = calculateVariance(p);
+                  <tr>
+                    <!-- Product Info -->
+                    <td>
+                      <div class="prod-col">
+                        <span class="prod-name">{{ p.inventoryItemName }}</span>
+                        @if (p.inventoryItemSku) {
+                          <span class="prod-sku">SKU: {{ p.inventoryItemSku }}</span>
+                        }
+                      </div>
+                    </td>
+
+                    <!-- Storage Location -->
+                    <td>
+                      @if (p.storageLocationName) {
+                        <div class="storage-tag">
+                          <mat-icon>warehouse</mat-icon>
+                          <span>{{ p.storageLocationName }}</span>
+                        </div>
+                      } @else {
+                        <span class="unallocated">Deferred at start</span>
+                      }
+                    </td>
+
+                    <!-- Planned Qty -->
+                    <td>
+                      @if (p.plannedQuantity !== null) {
+                        <span class="qty-val">{{ p.plannedQuantity }} {{ p.stockUnitSymbol || p.stockUnitName }}</span>
+                      } @else {
+                        <span class="dash">—</span>
+                      }
+                    </td>
+
+                    <!-- Actual Qty -->
+                    <td>
+                      @if (p.actualQuantity !== null) {
+                        <span class="qty-val actual-qty font-medium">
+                          {{ p.actualQuantity }} {{ p.stockUnitSymbol || p.stockUnitName }}
+                        </span>
+                      } @else {
+                        <span class="dash">—</span>
+                      }
+                    </td>
+
+                    <!-- Variance -->
+                    <td>
+                      @if (variance.direction === 'none') {
+                        <span class="dash">—</span>
+                      } @else if (variance.direction === 'match') {
+                        <span class="variance-chip variance-match" matTooltip="Actual matches planned exactly">
+                          0.00 {{ p.stockUnitSymbol || p.stockUnitName }}
+                        </span>
+                      } @else if (variance.direction === 'over') {
+                        <span class="variance-chip variance-over" matTooltip="Over-application: +{{ variance.pct | number:'1.1-1' }}%">
+                          +{{ variance.val }} {{ p.stockUnitSymbol || p.stockUnitName }}
+                        </span>
+                      } @else if (variance.direction === 'under') {
+                        <span class="variance-chip variance-under" matTooltip="Under-application: {{ variance.pct | number:'1.1-1' }}%">
+                          {{ variance.val }} {{ p.stockUnitSymbol || p.stockUnitName }}
+                        </span>
+                      }
+                    </td>
+
+                    <!-- Stock Movement -->
+                    <td>
+                      @if (p.stockMovementReference) {
+                        <div class="movement-tag" matTooltip="Stock deduction ledger transaction">
+                          <mat-icon>receipt_long</mat-icon>
+                          <span>{{ p.stockMovementReference }}</span>
+                        </div>
+                      } @else if (app.status === 'Completed') {
+                        <span class="status-note">Movement recorded</span>
+                      } @else if (app.status === 'InProgress') {
+                        <span class="status-note pending">Pending completion</span>
+                      } @else if (app.status === 'Cancelled') {
+                        <span class="status-note">No stock issued</span>
+                      } @else {
+                        <span class="status-note pending">Pending execution</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </mat-card-content>
+    </mat-card>
+
+    <!-- 4. Lifecycle Timeline & Audit History Card -->
+    <mat-card class="content-card timeline-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon class="card-icon">history</mat-icon>
+          <span>Lifecycle Timeline & Audit</span>
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="timeline-container">
+          @for (step of timelineSteps(); track step.id; let last = $last) {
+            <div class="timeline-item" [ngClass]="'timeline-item--' + step.state">
+              <div class="timeline-marker">
+                <mat-icon class="timeline-icon">{{ step.icon }}</mat-icon>
+                @if (!last) {
+                  <div class="timeline-line"></div>
+                }
+              </div>
+              <div class="timeline-content">
+                <div class="timeline-header">
+                  <h4 class="timeline-title">{{ step.title }}</h4>
+                  @if (step.date) {
+                    <span class="timeline-date">{{ step.date | date:'medium' }}</span>
+                  }
+                </div>
+                @if (step.actor) {
+                  <p class="timeline-actor">
+                    <span>By:</span> <strong>{{ step.actor }}</strong>
+                  </p>
+                }
+                @if (step.note) {
+                  <p class="timeline-note">{{ step.note }}</p>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        <mat-divider class="timeline-divider" />
+
+        <footer class="audit-footer">
+          <div class="audit-item">
+            <span>Created:</span>
+            <strong>{{ app.createdAt | date:'medium' }}</strong>
+            @if (app.createdByName || app.createdBy) {
+              <span>by {{ app.createdByName || app.createdBy }}</span>
+            }
+          </div>
+          @if (app.updatedAt) {
+            <div class="audit-item">
+              <span>Last Updated:</span>
+              <strong>{{ app.updatedAt | date:'medium' }}</strong>
+              @if (app.updatedByName || app.updatedBy) {
+                <span>by {{ app.updatedByName || app.updatedBy }}</span>
+              }
+            </div>
+          }
+          <div class="audit-item version-item">
+            <span>Concurrency Version:</span>
+            <strong>v{{ app.version }}</strong>
+          </div>
+        </footer>
+      </mat-card-content>
+    </mat-card>
+  }
+</div>

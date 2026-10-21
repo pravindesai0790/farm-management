@@ -48,8 +48,8 @@ export const FERTILIZER_ROUTES: Routes = [
     canActivate: [permissionGuard],
     data: { permission: 'Fertilizer.View' },
     loadComponent: () =>
-      import('./fertilizer-list/fertilizer-list-page.component').then(
-        (m) => m.FertilizerListPageComponent,
+      import('./fertilizer-detail/fertilizer-detail-page.component').then(
+        (m) => m.FertilizerDetailPageComponent,
       ),
   },
 ];

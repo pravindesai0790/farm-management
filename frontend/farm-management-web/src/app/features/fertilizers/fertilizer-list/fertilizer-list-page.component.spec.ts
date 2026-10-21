@@ -319,10 +319,11 @@ describe('FertilizerListPageComponent', () => {
     );
   });
 
-  it('should show error snackbar when CSV export fails', () => {
+  it('should show error snackbar when CSV export fails', async () => {
     mockFertilizerService.exportCsv.and.returnValue(throwError(() => new Error('Network error')));
 
     component.exportCsv();
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(component.isExporting()).toBeFalse();
     expect(mockSnackBar.open).toHaveBeenCalledWith(
@@ -332,8 +333,24 @@ describe('FertilizerListPageComponent', () => {
     );
   });
 
+  it('should extract error message from Blob when CSV export fails with ProblemDetails Blob', (done: DoneFn) => {
+    const errorJson = JSON.stringify({ detail: 'Organization scope mismatch for export.' });
+    const errorBlob = new Blob([errorJson], { type: 'application/problem+json' });
+    const httpError = { error: errorBlob };
+
+    mockFertilizerService.exportCsv.and.returnValue(throwError(() => httpError));
+    mockSnackBar.open.and.callFake((msg: string) => {
+      expect(msg).toBe('Organization scope mismatch for export.');
+      expect(component.isExporting()).toBeFalse();
+      done();
+      return {} as any;
+    });
+
+    component.exportCsv();
+  });
+
   it('should copy as draft on confirm and show snackbar action', () => {
-    spyOn(window, 'confirm').and.returnValue(true);
+    mockDialog.open.and.returnValue(jasmine.createSpyObj({ afterClosed: of(true) }));
     const snackRefSpy = jasmine.createSpyObj('MatSnackBarRef', ['onAction']);
     snackRefSpy.onAction.and.returnValue(of(void 0));
     mockSnackBar.open.and.returnValue(snackRefSpy);
@@ -344,19 +361,21 @@ describe('FertilizerListPageComponent', () => {
 
     component.copyAsNewDraft(sampleFertilizerItem);
 
+    expect(mockDialog.open).toHaveBeenCalled();
     expect(mockFertilizerService.copyAsNewDraft).toHaveBeenCalledWith(sampleFertilizerItem.id);
     expect(mockSnackBar.open).toHaveBeenCalled();
     expect(router.navigate).toHaveBeenCalledWith(['/fertilizer-applications', 'app-copied', 'edit']);
   });
 
   it('should delete draft on confirm and reload list', () => {
-    spyOn(window, 'confirm').and.returnValue(true);
+    mockDialog.open.and.returnValue(jasmine.createSpyObj({ afterClosed: of(true) }));
     const draftItem: FertilizerApplicationListItem = { ...sampleFertilizerItem, status: 'Draft' };
     mockFertilizerService.deleteDraft.and.returnValue(of(void 0));
     mockFertilizerService.list.calls.reset();
 
     component.deleteDraft(draftItem);
 
+    expect(mockDialog.open).toHaveBeenCalled();
     expect(mockFertilizerService.deleteDraft).toHaveBeenCalledWith(draftItem.id);
     expect(mockSnackBar.open).toHaveBeenCalledWith(
       `Draft '${draftItem.referenceNumber}' deleted successfully.`,

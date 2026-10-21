@@ -48,6 +48,8 @@ import {
 import { FertilizerService } from '../../../core/fertilizers/fertilizer.service';
 import { getApiErrorMessage } from '../../../core/models/api-error.model';
 import { formatDateOnly, parseDateOnly } from '../../../core/utils/date.utils';
+import { downloadFileBlob, extractBlobErrorMessage } from '../../../core/utils/download.utils';
+import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { StartFertilizerDialogComponent } from '../dialogs/start-fertilizer-dialog/start-fertilizer-dialog.component';
 import { CompleteFertilizerDialogComponent } from '../dialogs/complete-fertilizer-dialog/complete-fertilizer-dialog.component';
 import { CancelFertilizerDialogComponent } from '../dialogs/cancel-fertilizer-dialog/cancel-fertilizer-dialog.component';
@@ -438,81 +440,96 @@ export class FertilizerListPageComponent implements OnInit {
           const timestamp = now.toISOString().replace(/[-:T]/g, '').slice(0, 14);
           const filename = `fertilizer_applications_${timestamp}.csv`;
 
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = filename;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          window.URL.revokeObjectURL(url);
+          downloadFileBlob(blob, filename);
 
           this.snack.open('Fertilizer applications exported successfully.', 'Dismiss', {
             duration: 3500,
           });
         },
-        error: (err) => {
-          this.snack.open(
-            getApiErrorMessage(err, 'Failed to export fertilizer applications.'),
-            'Dismiss',
-            { duration: 4000 },
-          );
+        error: async (err) => {
+          const msg = await extractBlobErrorMessage(err, 'Failed to export fertilizer applications.');
+          this.snack.open(msg, 'Dismiss', { duration: 4000 });
         },
       });
   }
 
   copyAsNewDraft(app: FertilizerApplicationListItem): void {
-    if (!confirm(`Create a new Draft copy of application '${app.referenceNumber}'?`)) {
-      return;
-    }
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Copy as New Draft',
+        message: `Create a new Draft copy of application '${app.referenceNumber}'? Operational context, method, purpose, and planned products will be duplicated into a separate Draft record.`,
+        confirmText: 'Create Copy',
+        cancelText: 'Cancel',
+        color: 'primary',
+        icon: 'content_copy',
+      },
+    });
 
-    this.fertilizerService
-      .copyAsNewDraft(app.id)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (newDraft) => {
-          this.snack.open(
-            `New draft '${newDraft.referenceNumber}' created from '${app.referenceNumber}'.`,
-            'Open',
-            { duration: 5000 },
-          ).onAction().subscribe(() => {
-            this.router.navigate(['/fertilizer-applications', newDraft.id, 'edit']);
-          });
-          this.loadApplications();
-        },
-        error: (err) => {
-          this.snack.open(
-            getApiErrorMessage(err, 'Failed to copy application as draft.'),
-            'Dismiss',
-            { duration: 4000 },
-          );
-        },
-      });
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (!confirmed) return;
+
+      this.fertilizerService
+        .copyAsNewDraft(app.id)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (newDraft) => {
+            this.snack
+              .open(
+                `New draft '${newDraft.referenceNumber}' created from '${app.referenceNumber}'.`,
+                'Open',
+                { duration: 5000 },
+              )
+              .onAction()
+              .subscribe(() => {
+                this.router.navigate(['/fertilizer-applications', newDraft.id, 'edit']);
+              });
+            this.loadApplications();
+          },
+          error: (err) => {
+            this.snack.open(
+              getApiErrorMessage(err, 'Failed to copy application as draft.'),
+              'Dismiss',
+              { duration: 4000 },
+            );
+          },
+        });
+    });
   }
 
   deleteDraft(app: FertilizerApplicationListItem): void {
-    if (!confirm(`Are you sure you want to permanently delete draft '${app.referenceNumber}'? This action cannot be undone.`)) {
-      return;
-    }
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Delete Fertilizer Draft',
+        message: `Are you sure you want to permanently delete draft '${app.referenceNumber}'? This action cannot be undone.`,
+        confirmText: 'Delete Draft',
+        cancelText: 'Keep Draft',
+        color: 'warn',
+        icon: 'delete_forever',
+      },
+    });
 
-    this.fertilizerService
-      .deleteDraft(app.id)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => {
-          this.snack.open(`Draft '${app.referenceNumber}' deleted successfully.`, 'Dismiss', {
-            duration: 3500,
-          });
-          this.loadApplications();
-        },
-        error: (err) => {
-          this.snack.open(
-            getApiErrorMessage(err, 'Failed to delete draft application.'),
-            'Dismiss',
-            { duration: 4000 },
-          );
-        },
-      });
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (!confirmed) return;
+
+      this.fertilizerService
+        .deleteDraft(app.id)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: () => {
+            this.snack.open(`Draft '${app.referenceNumber}' deleted successfully.`, 'Dismiss', {
+              duration: 3500,
+            });
+            this.loadApplications();
+          },
+          error: (err) => {
+            this.snack.open(
+              getApiErrorMessage(err, 'Failed to delete draft application.'),
+              'Dismiss',
+              { duration: 4000 },
+            );
+          },
+        });
+    });
   }
 
   startApplication(app: FertilizerApplicationListItem): void {

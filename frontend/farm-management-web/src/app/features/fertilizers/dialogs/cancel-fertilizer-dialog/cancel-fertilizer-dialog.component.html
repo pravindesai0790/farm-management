@@ -194,8 +194,10 @@
         <mat-spinner diameter="18" class="inline-spinner"></mat-spinner>
         <span>Cancelling...</span>
       } @else {
-        <mat-icon>cancel</mat-icon>
-        <span>Confirm Cancellation</span>
+        <ng-container>
+          <mat-icon>cancel</mat-icon>
+          <span>Confirm Cancellation</span>
+        </ng-container>
       }
     </button>
   </mat-dialog-actions>
