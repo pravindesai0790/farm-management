@@ -233,11 +233,18 @@ public sealed class FertilizerApplicationService(
 
     public Task<IReadOnlyList<FertilizerProductLookupResponse>> ListProductsLookupAsync(
         FertilizerActor actor,
+        Guid? storageLocationId,
+        Guid? farmId,
         CancellationToken cancellationToken = default)
     {
         ValidateActor(actor);
-        return store.ListProductsLookupAsync(actor.OrganizationId, cancellationToken);
+        return store.ListProductsLookupAsync(actor.OrganizationId, storageLocationId, farmId, cancellationToken);
     }
+
+    public Task<IReadOnlyList<FertilizerProductLookupResponse>> ListProductsLookupAsync(
+        FertilizerActor actor,
+        CancellationToken cancellationToken = default)
+        => ListProductsLookupAsync(actor, null, null, cancellationToken);
 
     public Task<IReadOnlyList<FertilizerStorageLocationLookupResponse>> ListStorageLocationsLookupAsync(
         FertilizerActor actor,
@@ -844,8 +851,8 @@ public sealed class FertilizerApplicationService(
             throw Validation("plannedDate", "A planned date is required to plan a fertilizer application.");
         }
 
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        if (app.PlannedDate.Value < today)
+        var today = DateTimeOffset.UtcNow.Date;
+        if (app.PlannedDate.Value.Date < today)
         {
             throw Validation("plannedDate", "Planned date must be today or in the future.");
         }
@@ -978,8 +985,8 @@ public sealed class FertilizerApplicationService(
             throw new ConflictException("The fertilizer application has been modified by another user. Please reload and try again.");
         }
 
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        if (request.ScheduledDate < today)
+        var today = DateTimeOffset.UtcNow.Date;
+        if (request.ScheduledDate.Date < today)
         {
             throw Validation("scheduledDate", "Scheduled date must be today or in the future.");
         }
@@ -1051,8 +1058,8 @@ public sealed class FertilizerApplicationService(
             throw new ConflictException("The fertilizer application has been modified by another user. Please reload and try again.");
         }
 
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        if (request.ScheduledDate < today)
+        var today = DateTimeOffset.UtcNow.Date;
+        if (request.ScheduledDate.Date < today)
         {
             throw Validation("scheduledDate", "Scheduled date must be today or in the future.");
         }
@@ -1311,8 +1318,8 @@ public sealed class FertilizerApplicationService(
             throw Validation("actualApplicationDate", "Actual application date is required.");
         }
 
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        if (request.ActualApplicationDate > today)
+        var now = DateTimeOffset.UtcNow;
+        if (request.ActualApplicationDate > now.AddMinutes(15))
         {
             throw Validation("actualApplicationDate", "Actual application date cannot be in the future.");
         }
@@ -1413,7 +1420,7 @@ public sealed class FertilizerApplicationService(
             actor,
             app,
             consumptionItems,
-            request.ActualApplicationDate,
+            DateOnly.FromDateTime(request.ActualApplicationDate.UtcDateTime),
             "Complete",
             request.IdempotencyKey,
             request,
@@ -1611,7 +1618,7 @@ public sealed class FertilizerApplicationService(
         }
 
         // 6. Date validation for positive usage
-        DateOnly? actualDate = null;
+        DateTimeOffset? actualDate = null;
         if (hasPositiveUsage)
         {
             if (!request.ActualApplicationDate.HasValue || request.ActualApplicationDate.Value == default)
@@ -1619,8 +1626,8 @@ public sealed class FertilizerApplicationService(
                 throw Validation("actualApplicationDate", "Actual application date is required when fertilizer usage is recorded.");
             }
 
-            var today = DateOnly.FromDateTime(DateTime.UtcNow);
-            if (request.ActualApplicationDate.Value > today)
+            var now = DateTimeOffset.UtcNow;
+            if (request.ActualApplicationDate.Value > now.AddMinutes(15))
             {
                 throw Validation("actualApplicationDate", "Actual application date cannot be in the future.");
             }
@@ -1634,7 +1641,7 @@ public sealed class FertilizerApplicationService(
             actor,
             app,
             consumptionItems,
-            actualDate ?? DateOnly.FromDateTime(DateTime.UtcNow),
+            DateOnly.FromDateTime((actualDate ?? DateTimeOffset.UtcNow).UtcDateTime),
             "Cancel",
             request.IdempotencyKey,
             request,
@@ -1766,13 +1773,13 @@ public sealed class FertilizerApplicationService(
             cancellationToken: cancellationToken);
 
         // 7. Date validation & retrospective warning check
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        if (request.ActualApplicationDate > today)
+        var now = DateTimeOffset.UtcNow;
+        if (request.ActualApplicationDate > now.AddMinutes(15))
         {
             throw Validation("actualApplicationDate", "Actual application date cannot be in the future.");
         }
 
-        if (request.ActualApplicationDate < today && !request.AcknowledgeRetrospectiveStockDeduction)
+        if (request.ActualApplicationDate.Date < now.Date && !request.AcknowledgeRetrospectiveStockDeduction)
         {
             throw Validation("actualApplicationDate", "Application date is in the past. Inventory will be deducted from current on-hand stock rather than reconstructed historical stock. Explicit acknowledgement is required to proceed.");
         }
@@ -1910,7 +1917,7 @@ public sealed class FertilizerApplicationService(
                 request.IdempotencyKey);
 
             var now = DateTimeOffset.UtcNow;
-            var movementDate = request.ActualApplicationDate;
+            var movementDate = DateOnly.FromDateTime(request.ActualApplicationDate.UtcDateTime);
 
             foreach (var (balance, quantity, itemEntity, _, line) in lockedBalances)
             {

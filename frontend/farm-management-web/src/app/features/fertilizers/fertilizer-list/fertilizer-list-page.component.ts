@@ -53,6 +53,7 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
 import { StartFertilizerDialogComponent } from '../dialogs/start-fertilizer-dialog/start-fertilizer-dialog.component';
 import { CompleteFertilizerDialogComponent } from '../dialogs/complete-fertilizer-dialog/complete-fertilizer-dialog.component';
 import { CancelFertilizerDialogComponent } from '../dialogs/cancel-fertilizer-dialog/cancel-fertilizer-dialog.component';
+import { ScheduleFertilizerDialogComponent } from '../dialogs/schedule-fertilizer-dialog/schedule-fertilizer-dialog.component';
 
 export interface StatusTabOption {
   readonly key: string;
@@ -529,6 +530,46 @@ export class FertilizerListPageComponent implements OnInit {
             );
           },
         });
+    });
+  }
+
+  scheduleApplication(app: FertilizerApplicationListItem): void {
+    const dialogRef = this.dialog.open(ScheduleFertilizerDialogComponent, {
+      width: '500px',
+      data: {
+        applicationId: app.id,
+        referenceNumber: app.referenceNumber,
+        farmName: app.farmName,
+        status: app.status,
+        currentScheduledDate: app.scheduledDate,
+        isReschedule: false,
+        version: 1,
+      },
+    });
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) {
+        this.loadApplications();
+      }
+    });
+  }
+
+  rescheduleApplication(app: FertilizerApplicationListItem): void {
+    const dialogRef = this.dialog.open(ScheduleFertilizerDialogComponent, {
+      width: '500px',
+      data: {
+        applicationId: app.id,
+        referenceNumber: app.referenceNumber,
+        farmName: app.farmName,
+        status: app.status,
+        currentScheduledDate: app.scheduledDate,
+        isReschedule: true,
+        version: 1,
+      },
+    });
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) {
+        this.loadApplications();
+      }
     });
   }
 

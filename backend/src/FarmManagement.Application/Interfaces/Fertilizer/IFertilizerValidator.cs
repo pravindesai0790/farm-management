@@ -59,8 +59,8 @@ public interface IFertilizerValidator
         Guid? newApplicationMethodId,
         string? newOtherMethodDescription,
         Guid? newIrrigationEventId,
-        DateOnly? newPlannedDate,
-        DateOnly? newScheduledDate,
+        DateTimeOffset? newPlannedDate,
+        DateTimeOffset? newScheduledDate,
         decimal? newPlannedArea,
         Guid? newPlannedAreaUnitId,
         string? newPurposeReason);

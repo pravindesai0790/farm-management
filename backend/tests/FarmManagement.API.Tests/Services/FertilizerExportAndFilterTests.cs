@@ -121,7 +121,7 @@ public class FertilizerExportAndFilterTests
         var loc = CreateStorageLocation(farm.Id, "Barn 1");
 
         var app = new FertilizerApplication(_orgId, "FA-2026-00001", _userId, farmId: farm.Id, farmAreaId: area.Id, applicationMethodId: method.Id, purposeReason: "Pre-season fertilization");
-        SetPrivateProperty(app, nameof(FertilizerApplication.PlannedDate), new DateOnly(2026, 6, 1));
+        SetPrivateProperty(app, nameof(FertilizerApplication.PlannedDate), new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero));
         SetPrivateProperty(app, nameof(FertilizerApplication.PlannedArea), 10.5m);
         SetPrivateProperty(app, nameof(FertilizerApplication.Farm), farm);
         SetPrivateProperty(app, nameof(FertilizerApplication.FarmArea), area);
@@ -209,7 +209,7 @@ public class FertilizerExportAndFilterTests
         var app = new FertilizerApplication(_orgId, "FA-2026-00003", _userId, farmId: farm.Id, applicationMethodId: method.Id, purposeReason: "Direct field broadcast");
         SetPrivateProperty(app, nameof(FertilizerApplication.Status), FertilizerApplicationStatus.Completed);
         SetPrivateProperty(app, nameof(FertilizerApplication.PlannedDate), null); // Direct Completed has no planned date
-        SetPrivateProperty(app, nameof(FertilizerApplication.ActualApplicationDate), new DateOnly(2026, 6, 15));
+        SetPrivateProperty(app, nameof(FertilizerApplication.ActualApplicationDate), new DateTimeOffset(2026, 6, 15, 8, 0, 0, TimeSpan.Zero));
         SetPrivateProperty(app, nameof(FertilizerApplication.Farm), farm);
         SetPrivateProperty(app, nameof(FertilizerApplication.ApplicationMethod), method);
 
@@ -253,8 +253,8 @@ public class FertilizerExportAndFilterTests
         var stockMovementId = Guid.NewGuid();
 
         var app = new FertilizerApplication(_orgId, "FA-2026-00004", _userId, farmId: farm.Id, applicationMethodId: method.Id, purposeReason: "Standard cycle completion");
-        SetPrivateProperty(app, nameof(FertilizerApplication.PlannedDate), new DateOnly(2026, 6, 10));
-        SetPrivateProperty(app, nameof(FertilizerApplication.ActualApplicationDate), new DateOnly(2026, 6, 12));
+        SetPrivateProperty(app, nameof(FertilizerApplication.PlannedDate), new DateTimeOffset(2026, 6, 10, 8, 0, 0, TimeSpan.Zero));
+        SetPrivateProperty(app, nameof(FertilizerApplication.ActualApplicationDate), new DateTimeOffset(2026, 6, 12, 8, 0, 0, TimeSpan.Zero));
         SetPrivateProperty(app, nameof(FertilizerApplication.Farm), farm);
         SetPrivateProperty(app, nameof(FertilizerApplication.ApplicationMethod), method);
 
@@ -296,8 +296,8 @@ public class FertilizerExportAndFilterTests
         var movementId = Guid.NewGuid();
 
         var app = new FertilizerApplication(_orgId, "FA-2026-00005", _userId, farmId: farm.Id, applicationMethodId: method.Id, purposeReason: "Mid-season boost");
-        SetPrivateProperty(app, nameof(FertilizerApplication.PlannedDate), new DateOnly(2026, 6, 1));
-        SetPrivateProperty(app, nameof(FertilizerApplication.ActualApplicationDate), new DateOnly(2026, 6, 2));
+        SetPrivateProperty(app, nameof(FertilizerApplication.PlannedDate), new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero));
+        SetPrivateProperty(app, nameof(FertilizerApplication.ActualApplicationDate), new DateTimeOffset(2026, 6, 2, 8, 0, 0, TimeSpan.Zero));
         SetPrivateProperty(app, nameof(FertilizerApplication.CancellationReason), "Equipment broke down mid-application");
         SetPrivateProperty(app, nameof(FertilizerApplication.CancelledAt), new DateTimeOffset(2026, 6, 2, 14, 30, 0, TimeSpan.Zero));
         SetPrivateProperty(app, nameof(FertilizerApplication.CancelledBy), cancelUserId);

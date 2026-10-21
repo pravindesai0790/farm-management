@@ -299,19 +299,19 @@
               <div class="date-cell">
                 @if (a.status === 'Completed' && a.actualApplicationDate) {
                   <span class="date-row">
-                    <strong class="date-label">Applied:</strong> {{ a.actualApplicationDate | date:'mediumDate' }}
+                    <strong class="date-label">Applied:</strong> {{ a.actualApplicationDate | date:'short' }}
                   </span>
                 } @else if (a.status === 'Scheduled' && a.scheduledDate) {
                   <span class="date-row">
-                    <strong class="date-label">Sched:</strong> {{ a.scheduledDate | date:'mediumDate' }}
+                    <strong class="date-label">Sched:</strong> {{ a.scheduledDate | date:'short' }}
                   </span>
                 } @else if (a.plannedDate) {
                   <span class="date-row">
-                    <strong class="date-label">Planned:</strong> {{ a.plannedDate | date:'mediumDate' }}
+                    <strong class="date-label">Planned:</strong> {{ a.plannedDate | date:'short' }}
                   </span>
                 } @else {
                   <span class="date-row text-muted">
-                    <strong class="date-label">Created:</strong> {{ a.createdAt | date:'mediumDate' }}
+                    <strong class="date-label">Created:</strong> {{ a.createdAt | date:'shortDate' }}
                   </span>
                 }
               </div>
@@ -432,6 +432,20 @@
         <mat-icon>edit</mat-icon>
         <span>Edit Draft</span>
       </a>
+    }
+
+    @if ((app.status === 'Draft' || app.status === 'Planned') && permissionService.has("Fertilizer.Schedule")) {
+      <button mat-menu-item (click)="scheduleApplication(app)">
+        <mat-icon>event</mat-icon>
+        <span>Schedule</span>
+      </button>
+    }
+
+    @if (app.status === 'Scheduled' && permissionService.has("Fertilizer.Schedule")) {
+      <button mat-menu-item (click)="rescheduleApplication(app)">
+        <mat-icon>edit_calendar</mat-icon>
+        <span>Reschedule</span>
+      </button>
     }
 
     @if ((app.status === 'Planned' || app.status === 'Scheduled') && permissionService.has("Fertilizer.Start")) {

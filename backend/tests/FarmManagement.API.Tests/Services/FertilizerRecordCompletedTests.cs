@@ -49,7 +49,7 @@ public class FertilizerRecordCompletedTests
             FarmId: farm.Id,
             FarmAreaId: area.Id,
             ApplicationMethodId: method.Id,
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             Products: [new(item.Id, loc.Id, 30m)],
             PurposeReason: "Post-planting boost");
 
@@ -97,7 +97,7 @@ public class FertilizerRecordCompletedTests
             FarmId: farm.Id,
             FarmAreaId: area.Id,
             ApplicationMethodId: method.Id,
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             Products: [new(item.Id, loc.Id, 25m)]);
 
         // Act
@@ -131,7 +131,7 @@ public class FertilizerRecordCompletedTests
             FarmId: Guid.Empty,
             FarmAreaId: Guid.Empty,
             ApplicationMethodId: method.Id,
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             Products: [new(item.Id, Guid.NewGuid(), 10m)]);
 
         // Act & Assert
@@ -157,7 +157,7 @@ public class FertilizerRecordCompletedTests
             FarmId: farm1.Id,
             FarmAreaId: areaOfFarm2.Id, // Area belongs to farm2, not farm1
             ApplicationMethodId: method.Id,
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             Products: [new(item.Id, loc.Id, 10m)]);
 
         // Act & Assert
@@ -186,7 +186,7 @@ public class FertilizerRecordCompletedTests
             FarmAreaId: area.Id,
             ApplicationMethodId: otherMethod.Id,
             OtherMethodDescription: null, // missing required description
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             Products: [new(item.Id, loc.Id, 10m)]);
 
         // Act & Assert
@@ -211,7 +211,7 @@ public class FertilizerRecordCompletedTests
             FarmAreaId: area.Id,
             ApplicationMethodId: broadcastMethod.Id,
             IrrigationEventId: Guid.NewGuid(), // not allowed for Broadcasting
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             Products: [new(item.Id, loc.Id, 10m)]);
 
         // Act & Assert
@@ -240,7 +240,7 @@ public class FertilizerRecordCompletedTests
             FarmAreaId: area.Id,
             ApplicationMethodId: fertigationMethod.Id,
             IrrigationEventId: irrigation.Id,
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             Products: [new(item.Id, loc.Id, 15m)]);
 
         // Act
@@ -266,7 +266,7 @@ public class FertilizerRecordCompletedTests
         var loc = CreateStorageLocation(farm.Id);
         CreateStockBalance(farm.Id, loc.Id, item.Id, 100m);
 
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = DateTimeOffset.UtcNow;
         var request = new RecordCompletedFertilizerApplicationRequest(
             FarmId: farm.Id,
             FarmAreaId: area.Id,
@@ -293,7 +293,7 @@ public class FertilizerRecordCompletedTests
         var item = CreateInventoryItem(FarmInventoryCategories.FertilizersSoilId);
         var loc = CreateStorageLocation(farm.Id);
 
-        var futureDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(2));
+        var futureDate = DateTimeOffset.UtcNow.AddDays(2);
         var request = new RecordCompletedFertilizerApplicationRequest(
             FarmId: farm.Id,
             FarmAreaId: area.Id,
@@ -320,7 +320,7 @@ public class FertilizerRecordCompletedTests
         var loc = CreateStorageLocation(farm.Id);
         CreateStockBalance(farm.Id, loc.Id, item.Id, 100m);
 
-        var pastDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-3));
+        var pastDate = DateTimeOffset.UtcNow.AddDays(-3);
         var request = new RecordCompletedFertilizerApplicationRequest(
             FarmId: farm.Id,
             FarmAreaId: area.Id,
@@ -348,7 +348,7 @@ public class FertilizerRecordCompletedTests
         var loc = CreateStorageLocation(farm.Id);
         CreateStockBalance(farm.Id, loc.Id, item.Id, 100m);
 
-        var pastDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-3));
+        var pastDate = DateTimeOffset.UtcNow.AddDays(-3);
         var request = new RecordCompletedFertilizerApplicationRequest(
             FarmId: farm.Id,
             FarmAreaId: area.Id,
@@ -384,7 +384,7 @@ public class FertilizerRecordCompletedTests
             FarmId: farm.Id,
             FarmAreaId: area.Id,
             ApplicationMethodId: method.Id,
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             ActualArea: 10m,
             ActualAreaUnitId: null, // missing unit
             Products: [new(item.Id, loc.Id, 20m)]);
@@ -408,7 +408,7 @@ public class FertilizerRecordCompletedTests
             FarmId: farm.Id,
             FarmAreaId: area.Id,
             ApplicationMethodId: method.Id,
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             Products: []);
 
         // Act & Assert
@@ -432,7 +432,7 @@ public class FertilizerRecordCompletedTests
             FarmId: farm.Id,
             FarmAreaId: area.Id,
             ApplicationMethodId: method.Id,
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             Products:
             [
                 new(item.Id, loc.Id, 10m),
@@ -463,7 +463,7 @@ public class FertilizerRecordCompletedTests
             FarmId: farm.Id,
             FarmAreaId: area.Id,
             ApplicationMethodId: method.Id,
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             Products: [new(item.Id, loc.Id, invalidQuantity)]);
 
         // Act & Assert
@@ -489,7 +489,7 @@ public class FertilizerRecordCompletedTests
             FarmId: farm.Id,
             FarmAreaId: area.Id,
             ApplicationMethodId: method.Id,
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             Products: [new(item.Id, foreignLoc.Id, 10m)]);
 
         // Act & Assert
@@ -514,7 +514,7 @@ public class FertilizerRecordCompletedTests
             FarmId: farm.Id,
             FarmAreaId: area.Id,
             ApplicationMethodId: method.Id,
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             Products: [new(item.Id, loc.Id, 10m)]);
 
         // Act & Assert
@@ -544,7 +544,7 @@ public class FertilizerRecordCompletedTests
             FarmId: farm.Id,
             FarmAreaId: area.Id,
             ApplicationMethodId: method.Id,
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             Products: [new(item.Id, loc.Id, 40m)]); // Shortage of 25m
 
         // Act & Assert
@@ -587,7 +587,7 @@ public class FertilizerRecordCompletedTests
             FarmId: farm.Id,
             FarmAreaId: area.Id,
             ApplicationMethodId: method.Id,
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             Products: [new(item.Id, loc.Id, 20m)],
             IdempotencyKey: idempotencyKey);
 
@@ -625,7 +625,7 @@ public class FertilizerRecordCompletedTests
             FarmId: farm.Id,
             FarmAreaId: area.Id,
             ApplicationMethodId: method.Id,
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             Products: [new(item.Id, loc.Id, 20m)],
             IdempotencyKey: idempotencyKey);
 
@@ -635,7 +635,7 @@ public class FertilizerRecordCompletedTests
             FarmId: farm.Id,
             FarmAreaId: area.Id,
             ApplicationMethodId: method.Id,
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             Products: [new(item.Id, loc.Id, 35m)], // mutated quantity
             IdempotencyKey: idempotencyKey);
 
@@ -669,7 +669,7 @@ public class FertilizerRecordCompletedTests
             FarmId: farm.Id,
             FarmAreaId: area.Id,
             ApplicationMethodId: method.Id,
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             Products: [new(item.Id, loc.Id, 10m)]);
 
         // Act & Assert
@@ -696,7 +696,7 @@ public class FertilizerRecordCompletedTests
             FarmId: farm.Id,
             FarmAreaId: area.Id,
             ApplicationMethodId: method.Id,
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             Products: [new(item.Id, loc.Id, 25m)],
             PurposeReason: "Spring dressing");
 

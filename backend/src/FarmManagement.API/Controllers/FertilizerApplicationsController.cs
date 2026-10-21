@@ -36,10 +36,13 @@ public sealed class FertilizerApplicationsController(IFertilizerApplicationServi
     [HttpGet("lookups/products")]
     [HttpGet("lookup/products")]
     [Authorize(Policy = "Permission:Fertilizer.View")]
-    public async Task<IActionResult> ListProductsLookup(CancellationToken cancellationToken = default)
+    public async Task<IActionResult> ListProductsLookup(
+        [FromQuery] Guid? storageLocationId = null,
+        [FromQuery] Guid? farmId = null,
+        CancellationToken cancellationToken = default)
     {
         var actor = UserContextHelper.GetUserContext<FertilizerActor>(User);
-        var result = await service.ListProductsLookupAsync(actor, cancellationToken);
+        var result = await service.ListProductsLookupAsync(actor, storageLocationId, farmId, cancellationToken);
         return Ok(result);
     }
 

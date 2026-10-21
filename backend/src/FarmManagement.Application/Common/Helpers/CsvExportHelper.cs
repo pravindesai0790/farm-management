@@ -34,7 +34,7 @@ public static class CsvExportHelper
         return value.Value.ToString("0.##", CultureInfo.InvariantCulture);
     }
 
-    public static string EscapeDate(DateOnly? date) =>
+    public static string EscapeDate(DateTimeOffset? date) =>
         date?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? string.Empty;
 
     public static string EscapeDateTime(DateTimeOffset? dateTime) =>

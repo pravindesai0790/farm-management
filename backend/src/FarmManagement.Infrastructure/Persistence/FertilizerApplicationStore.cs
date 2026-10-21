@@ -157,18 +157,44 @@ public sealed class FertilizerApplicationStore(ApplicationDbContext dbContext) :
 
     public async Task<IReadOnlyList<FertilizerProductLookupResponse>> ListProductsLookupAsync(
         Guid organizationId,
+        Guid? storageLocationId,
+        Guid? farmId,
         CancellationToken cancellationToken = default)
     {
-        var items = await dbContext.InventoryItems.AsNoTracking()
+        var baseQuery = dbContext.InventoryItems.AsNoTracking()
             .Include(i => i.StockUnit)
             .Include(i => i.Category)
             .Where(i => i.OrganizationId == organizationId
                      && i.IsActive
                      && (i.CategoryId == FarmInventoryCategories.FertilizersSoilId || (i.Category != null && i.Category.Code == "FERTILIZERS_SOIL"))
-                     && !dbContext.PlantProtectionProducts.Any(ppp => ppp.OrganizationId == organizationId && ppp.InventoryItemId == i.Id && ppp.IsActive))
-            .OrderBy(i => i.Name)
-            .ToListAsync(cancellationToken);
+                     && !dbContext.PlantProtectionProducts.Any(ppp => ppp.OrganizationId == organizationId && ppp.InventoryItemId == i.Id && ppp.IsActive));
 
+        if (storageLocationId.HasValue && storageLocationId.Value != Guid.Empty)
+        {
+            var locId = storageLocationId.Value;
+            var query = from item in baseQuery
+                        join sb in dbContext.StockBalances.AsNoTracking()
+                            .Where(b => b.OrganizationId == organizationId && b.StorageLocationId == locId)
+                            on item.Id equals sb.InventoryItemId into balances
+                        from sb in balances.DefaultIfEmpty()
+                        orderby item.Name
+                        select new FertilizerProductLookupResponse(
+                            item.Id,
+                            item.Name,
+                            item.Sku,
+                            item.StockUnitId,
+                            item.StockUnit != null ? item.StockUnit.Name : string.Empty,
+                            item.StockUnit != null ? item.StockUnit.Code : null,
+                            item.StockUnit != null ? item.StockUnit.Symbol : null,
+                            item.CategoryId,
+                            item.Category != null ? item.Category.Name : null,
+                            sb != null ? sb.QuantityOnHand : 0m,
+                            sb != null && sb.QuantityOnHand > 0m);
+
+            return await query.ToListAsync(cancellationToken);
+        }
+
+        var items = await baseQuery.OrderBy(i => i.Name).ToListAsync(cancellationToken);
         return items.Select(i => new FertilizerProductLookupResponse(
             i.Id,
             i.Name,
@@ -178,8 +204,15 @@ public sealed class FertilizerApplicationStore(ApplicationDbContext dbContext) :
             i.StockUnit?.Code,
             i.StockUnit?.Symbol,
             i.CategoryId,
-            i.Category?.Name)).ToArray();
+            i.Category?.Name,
+            0m,
+            false)).ToArray();
     }
+
+    public Task<IReadOnlyList<FertilizerProductLookupResponse>> ListProductsLookupAsync(
+        Guid organizationId,
+        CancellationToken cancellationToken = default)
+        => ListProductsLookupAsync(organizationId, null, null, cancellationToken);
 
     public async Task<IReadOnlyList<FertilizerStorageLocationLookupResponse>> ListStorageLocationsLookupAsync(
         Guid organizationId,
@@ -420,14 +453,21 @@ public sealed class FertilizerApplicationStore(ApplicationDbContext dbContext) :
         var hasRange = query.FromDate.HasValue || query.ToDate.HasValue;
         var dateType = query.DateType?.Trim().ToLowerInvariant();
 
+        DateTimeOffset? fromOffset = query.FromDate.HasValue
+            ? new DateTimeOffset(query.FromDate.Value.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc))
+            : null;
+        DateTimeOffset? toOffset = query.ToDate.HasValue
+            ? new DateTimeOffset(query.ToDate.Value.ToDateTime(TimeOnly.MaxValue, DateTimeKind.Utc))
+            : null;
+
         switch (dateType)
         {
             case "planneddate":
                 if (hasRange)
                 {
                     q = q.Where(a => a.PlannedDate != null);
-                    if (query.FromDate.HasValue) q = q.Where(a => a.PlannedDate >= query.FromDate.Value);
-                    if (query.ToDate.HasValue) q = q.Where(a => a.PlannedDate <= query.ToDate.Value);
+                    if (fromOffset.HasValue) q = q.Where(a => a.PlannedDate >= fromOffset.Value);
+                    if (toOffset.HasValue) q = q.Where(a => a.PlannedDate <= toOffset.Value);
                 }
                 break;
 
@@ -435,8 +475,8 @@ public sealed class FertilizerApplicationStore(ApplicationDbContext dbContext) :
                 if (hasRange)
                 {
                     q = q.Where(a => a.ScheduledDate != null);
-                    if (query.FromDate.HasValue) q = q.Where(a => a.ScheduledDate >= query.FromDate.Value);
-                    if (query.ToDate.HasValue) q = q.Where(a => a.ScheduledDate <= query.ToDate.Value);
+                    if (fromOffset.HasValue) q = q.Where(a => a.ScheduledDate >= fromOffset.Value);
+                    if (toOffset.HasValue) q = q.Where(a => a.ScheduledDate <= toOffset.Value);
                 }
                 break;
 
@@ -444,8 +484,8 @@ public sealed class FertilizerApplicationStore(ApplicationDbContext dbContext) :
                 if (hasRange)
                 {
                     q = q.Where(a => a.ActualApplicationDate != null);
-                    if (query.FromDate.HasValue) q = q.Where(a => a.ActualApplicationDate >= query.FromDate.Value);
-                    if (query.ToDate.HasValue) q = q.Where(a => a.ActualApplicationDate <= query.ToDate.Value);
+                    if (fromOffset.HasValue) q = q.Where(a => a.ActualApplicationDate >= fromOffset.Value);
+                    if (toOffset.HasValue) q = q.Where(a => a.ActualApplicationDate <= toOffset.Value);
                 }
                 break;
 
@@ -453,19 +493,8 @@ public sealed class FertilizerApplicationStore(ApplicationDbContext dbContext) :
             default:
                 if (hasRange)
                 {
-                    if (query.FromDate.HasValue)
-                    {
-                        var fromUtc = query.FromDate.Value.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
-                        var fromOffset = new DateTimeOffset(fromUtc);
-                        q = q.Where(a => a.CreatedAt >= fromOffset);
-                    }
-
-                    if (query.ToDate.HasValue)
-                    {
-                        var toUtc = query.ToDate.Value.ToDateTime(TimeOnly.MaxValue, DateTimeKind.Utc);
-                        var toOffset = new DateTimeOffset(toUtc);
-                        q = q.Where(a => a.CreatedAt <= toOffset);
-                    }
+                    if (fromOffset.HasValue) q = q.Where(a => a.CreatedAt >= fromOffset.Value);
+                    if (toOffset.HasValue) q = q.Where(a => a.CreatedAt <= toOffset.Value);
                 }
                 break;
         }

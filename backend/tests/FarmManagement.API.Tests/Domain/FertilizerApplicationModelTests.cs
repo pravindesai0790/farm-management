@@ -67,7 +67,7 @@ public sealed class FertilizerApplicationModelTests
     {
         var app = FertilizerApplication.CreateEmptyDraft(_organizationId, "FA-2026-0001", _userId);
         var now = DateTimeOffset.UtcNow;
-        var plannedDate = new DateOnly(2026, 11, 15);
+        var plannedDate = new DateTimeOffset(2026, 11, 15, 8, 0, 0, TimeSpan.Zero);
 
         app.UpdateDraft(
             _farmId,
@@ -104,7 +104,7 @@ public sealed class FertilizerApplicationModelTests
     public void Plan_WhenValid_TransitionsToPlanned()
     {
         var app = FertilizerApplication.CreateEmptyDraft(_organizationId, "FA-2026-0001", _userId);
-        var plannedDate = new DateOnly(2026, 11, 15);
+        var plannedDate = new DateTimeOffset(2026, 11, 15, 8, 0, 0, TimeSpan.Zero);
         var now = DateTimeOffset.UtcNow;
 
         app.UpdateDraft(
@@ -146,7 +146,7 @@ public sealed class FertilizerApplicationModelTests
             _methodId,
             null,
             null,
-            new DateOnly(2026, 11, 15),
+            new DateTimeOffset(2026, 11, 15, 8, 0, 0, TimeSpan.Zero),
             null,
             null,
             null,
@@ -171,8 +171,8 @@ public sealed class FertilizerApplicationModelTests
     public void Schedule_WhenPlanned_TransitionsToScheduled()
     {
         var app = FertilizerApplication.CreateEmptyDraft(_organizationId, "FA-2026-0001", _userId);
-        var plannedDate = new DateOnly(2026, 11, 15);
-        var scheduledDate = new DateOnly(2026, 11, 16);
+        var plannedDate = new DateTimeOffset(2026, 11, 15, 8, 0, 0, TimeSpan.Zero);
+        var scheduledDate = new DateTimeOffset(2026, 11, 16, 8, 0, 0, TimeSpan.Zero);
         var now = DateTimeOffset.UtcNow;
 
         app.UpdateDraft(_farmId, _farmAreaId, null, null, null, _methodId, null, null, plannedDate, null, null, null, null, now, _userId);
@@ -190,12 +190,12 @@ public sealed class FertilizerApplicationModelTests
     {
         var app = FertilizerApplication.CreateEmptyDraft(_organizationId, "FA-2026-0001", _userId);
         var now = DateTimeOffset.UtcNow;
-        app.UpdateDraft(_farmId, _farmAreaId, null, null, null, _methodId, null, null, new DateOnly(2026, 11, 15), null, null, null, null, now, _userId);
+        app.UpdateDraft(_farmId, _farmAreaId, null, null, null, _methodId, null, null, new DateTimeOffset(2026, 11, 15, 8, 0, 0, TimeSpan.Zero), null, null, null, null, now, _userId);
         app.AddProduct(Guid.NewGuid(), 20m, _userId, Guid.NewGuid());
         app.Plan(now, _userId);
-        app.Schedule(new DateOnly(2026, 11, 16), now, _userId);
+        app.Schedule(new DateTimeOffset(2026, 11, 16, 8, 0, 0, TimeSpan.Zero), now, _userId);
 
-        var newDate = new DateOnly(2026, 11, 18);
+        var newDate = new DateTimeOffset(2026, 11, 18, 8, 0, 0, TimeSpan.Zero);
         app.Reschedule(newDate, now.AddHours(1), _userId);
 
         Assert.Equal(newDate, app.ScheduledDate);
@@ -206,10 +206,10 @@ public sealed class FertilizerApplicationModelTests
     {
         var app = FertilizerApplication.CreateEmptyDraft(_organizationId, "FA-2026-0001", _userId);
         var now = DateTimeOffset.UtcNow;
-        app.UpdateDraft(_farmId, _farmAreaId, null, null, null, _methodId, null, null, new DateOnly(2026, 11, 15), null, null, null, null, now, _userId);
+        app.UpdateDraft(_farmId, _farmAreaId, null, null, null, _methodId, null, null, new DateTimeOffset(2026, 11, 15, 8, 0, 0, TimeSpan.Zero), null, null, null, null, now, _userId);
         var product = app.AddProduct(Guid.NewGuid(), 20m, _userId, Guid.NewGuid());
         app.Plan(now, _userId);
-        app.Schedule(new DateOnly(2026, 11, 16), now, _userId);
+        app.Schedule(new DateTimeOffset(2026, 11, 16, 8, 0, 0, TimeSpan.Zero), now, _userId);
 
         var startNow = now.AddHours(2);
         app.Start(startNow, _userId);
@@ -224,7 +224,7 @@ public sealed class FertilizerApplicationModelTests
     {
         var app = FertilizerApplication.CreateEmptyDraft(_organizationId, "FA-2026-0001", _userId);
         var now = DateTimeOffset.UtcNow;
-        app.UpdateDraft(_farmId, _farmAreaId, null, null, null, _methodId, null, null, new DateOnly(2026, 11, 15), null, null, null, null, now, _userId);
+        app.UpdateDraft(_farmId, _farmAreaId, null, null, null, _methodId, null, null, new DateTimeOffset(2026, 11, 15, 8, 0, 0, TimeSpan.Zero), null, null, null, null, now, _userId);
         app.AddProduct(Guid.NewGuid(), 20m, _userId); // no storage location
 
         Assert.Throws<InvalidOperationException>(() => app.Plan(now, _userId));
@@ -245,15 +245,15 @@ public sealed class FertilizerApplicationModelTests
         var app = FertilizerApplication.CreateEmptyDraft(_organizationId, "FA-2026-0001", _userId);
         var now = DateTimeOffset.UtcNow;
         var locationId = Guid.NewGuid();
-        app.UpdateDraft(_farmId, _farmAreaId, null, null, null, _methodId, null, null, new DateOnly(2026, 11, 15), null, null, null, null, now, _userId);
+        app.UpdateDraft(_farmId, _farmAreaId, null, null, null, _methodId, null, null, new DateTimeOffset(2026, 11, 15, 8, 0, 0, TimeSpan.Zero), null, null, null, null, now, _userId);
         var product = app.AddProduct(Guid.NewGuid(), 20m, _userId, locationId);
         app.Plan(now, _userId);
-        app.Schedule(new DateOnly(2026, 11, 16), now, _userId);
+        app.Schedule(new DateTimeOffset(2026, 11, 16, 8, 0, 0, TimeSpan.Zero), now, _userId);
         app.Start(now.AddHours(1), _userId);
 
         product.RecordActual(18.5m, Guid.NewGuid(), now, _userId);
 
-        var completionDate = new DateOnly(2026, 11, 16);
+        var completionDate = new DateTimeOffset(2026, 11, 16, 8, 0, 0, TimeSpan.Zero);
         var completionTime = now.AddHours(3);
         app.Complete(completionDate, 5.0m, _areaUnitId, completionTime, _userId);
 
@@ -271,16 +271,16 @@ public sealed class FertilizerApplicationModelTests
         var app = FertilizerApplication.CreateEmptyDraft(_organizationId, "FA-2026-0001", _userId);
         var now = DateTimeOffset.UtcNow;
         var locationId = Guid.NewGuid();
-        app.UpdateDraft(_farmId, _farmAreaId, null, null, null, _methodId, null, null, new DateOnly(2026, 11, 15), null, null, null, null, now, _userId);
+        app.UpdateDraft(_farmId, _farmAreaId, null, null, null, _methodId, null, null, new DateTimeOffset(2026, 11, 15, 8, 0, 0, TimeSpan.Zero), null, null, null, null, now, _userId);
         var product = app.AddProduct(Guid.NewGuid(), 20m, _userId, locationId);
         app.Plan(now, _userId);
-        app.Schedule(new DateOnly(2026, 11, 16), now, _userId);
+        app.Schedule(new DateTimeOffset(2026, 11, 16, 8, 0, 0, TimeSpan.Zero), now, _userId);
         app.Start(now.AddHours(1), _userId);
 
         // Actual NOT recorded
 
         Assert.Throws<InvalidOperationException>(() =>
-            app.Complete(new DateOnly(2026, 11, 16), null, null, now.AddHours(3), _userId));
+            app.Complete(new DateTimeOffset(2026, 11, 16, 8, 0, 0, TimeSpan.Zero), null, null, now.AddHours(3), _userId));
     }
 
     [Fact]
@@ -309,7 +309,7 @@ public sealed class FertilizerApplicationModelTests
     [Fact]
     public void RecordCompletedDirect_WithValidInputs_CreatesDirectCompletedApplication()
     {
-        var appDate = new DateOnly(2026, 11, 14);
+        var appDate = new DateTimeOffset(2026, 11, 14, 8, 0, 0, TimeSpan.Zero);
 
         var app = FertilizerApplication.RecordCompletedDirect(
             _organizationId,

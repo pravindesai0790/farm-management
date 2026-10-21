@@ -105,7 +105,7 @@
                         <mat-option value="">-- None --</mat-option>
                         @for (loc of storageLocations(); track loc.storageLocationId) {
                           <mat-option [value]="loc.storageLocationId">
-                            {{ loc.storageLocationName }} ({{ loc.currentStock }} in stock)
+                            {{ loc.storageLocationName }}
                           </mat-option>
                         }
                       </mat-select>
@@ -150,24 +150,12 @@
           </div>
         </div>
 
-        <mat-form-field appearance="outline" class="form-field date-field">
-          <mat-label>Actual Application Date *</mat-label>
-          <input
-            matInput
-            [matDatepicker]="cancelDatePicker"
-            [max]="today"
-            formControlName="actualApplicationDate"
-            placeholder="Select date"
-          />
-          <mat-datepicker-toggle matIconSuffix [for]="cancelDatePicker"></mat-datepicker-toggle>
-          <mat-datepicker #cancelDatePicker></mat-datepicker>
-          @if (form.get('actualApplicationDate')?.hasError('required')) {
-            <mat-error>Actual application date is required when positive usage is reported.</mat-error>
-          }
-          @if (form.get('actualApplicationDate')?.hasError('futureDate')) {
-            <mat-error>Application date cannot be in the future.</mat-error>
-          }
-        </mat-form-field>
+        <app-date-time-picker
+          formControlName="actualApplicationDate"
+          label="Actual Application Date & Time"
+          [maxDate]="today"
+          [required]="true"
+        ></app-date-time-picker>
       } @else {
         <div class="alert alert--info">
           <mat-icon class="alert-icon">check</mat-icon>

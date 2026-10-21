@@ -48,7 +48,7 @@ public class FertilizerLifecycleTransitionTests
             farmId: farm.Id, farmAreaId: area.Id, plantationId: plantation.Id,
             cropCycleId: cycle.Id, cropCycleStageId: stage.Id,
             applicationMethodId: method.Id,
-            plannedDate: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)));
+            plannedDate: DateTimeOffset.UtcNow.AddDays(1));
         draft.AddProduct(item.Id, 100m, _userId, location.Id);
         _store.Applications.Add(draft);
 
@@ -85,7 +85,7 @@ public class FertilizerLifecycleTransitionTests
         _store.Applications.Add(draft);
 
         var request = new PlanFertilizerApplicationRequest(
-            PlannedDate: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(2)),
+            PlannedDate: DateTimeOffset.UtcNow.AddDays(2),
             FarmId: farm.Id,
             FarmAreaId: area.Id,
             PlantationId: plantation.Id,
@@ -171,7 +171,7 @@ public class FertilizerLifecycleTransitionTests
         var draft = new FertilizerApplication(
             _orgId, "FERT-2026-000001", _userId,
             farmId: farm.Id, farmAreaId: area.Id, applicationMethodId: otherMethod.Id,
-            plannedDate: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)));
+            plannedDate: DateTimeOffset.UtcNow.AddDays(1));
         draft.AddProduct(item.Id, 50m, _userId, location.Id);
         _store.Applications.Add(draft);
 
@@ -193,7 +193,7 @@ public class FertilizerLifecycleTransitionTests
         var item = CreateInventoryItem(FarmInventoryCategories.FertilizersSoilId);
         var location = CreateStorageLocation(farm.Id);
 
-        var pastDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-2));
+        var pastDate = DateTimeOffset.UtcNow.AddDays(-2);
         var draft = new FertilizerApplication(
             _orgId, "FERT-2026-000001", _userId,
             farmId: farm.Id, farmAreaId: area.Id, applicationMethodId: method.Id,
@@ -220,7 +220,7 @@ public class FertilizerLifecycleTransitionTests
         var draft = new FertilizerApplication(
             _orgId, "FERT-2026-000001", _userId,
             farmId: farm.Id, farmAreaId: area.Id, applicationMethodId: method.Id,
-            plannedDate: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)));
+            plannedDate: DateTimeOffset.UtcNow.AddDays(1));
         _store.Applications.Add(draft);
 
         // Act & Assert
@@ -244,7 +244,7 @@ public class FertilizerLifecycleTransitionTests
         var draft = new FertilizerApplication(
             _orgId, "FERT-2026-000001", _userId,
             farmId: farm.Id, farmAreaId: area.Id, applicationMethodId: method.Id,
-            plannedDate: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)));
+            plannedDate: DateTimeOffset.UtcNow.AddDays(1));
         draft.AddProduct(item.Id, 0m, _userId, location.Id);
         _store.Applications.Add(draft);
 
@@ -268,7 +268,7 @@ public class FertilizerLifecycleTransitionTests
         var draft = new FertilizerApplication(
             _orgId, "FERT-2026-000001", _userId,
             farmId: farm.Id, farmAreaId: area.Id, applicationMethodId: method.Id,
-            plannedDate: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)));
+            plannedDate: DateTimeOffset.UtcNow.AddDays(1));
         draft.AddProduct(item.Id, 50m, _userId, storageLocationId: null);
         _store.Applications.Add(draft);
 
@@ -294,7 +294,7 @@ public class FertilizerLifecycleTransitionTests
         var draft = new FertilizerApplication(
             _orgId, "FERT-2026-000001", _userId,
             farmId: farmA.Id, farmAreaId: areaA.Id, applicationMethodId: method.Id,
-            plannedDate: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)));
+            plannedDate: DateTimeOffset.UtcNow.AddDays(1));
         draft.AddProduct(item.Id, 50m, _userId, locB.Id);
         _store.Applications.Add(draft);
 
@@ -319,7 +319,7 @@ public class FertilizerLifecycleTransitionTests
         var app = new FertilizerApplication(
             _orgId, "FERT-2026-000001", _userId,
             farmId: farm.Id, farmAreaId: area.Id, applicationMethodId: method.Id,
-            plannedDate: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)));
+            plannedDate: DateTimeOffset.UtcNow.AddDays(1));
         app.AddProduct(item.Id, 50m, _userId, location.Id);
         SetPrivateProperty(app, nameof(FertilizerApplication.Status), FertilizerApplicationStatus.Planned);
         _store.Applications.Add(app);
@@ -345,7 +345,7 @@ public class FertilizerLifecycleTransitionTests
         var draft = new FertilizerApplication(
             _orgId, "FERT-2026-000001", _userId,
             farmId: farm.Id, farmAreaId: area.Id, applicationMethodId: method.Id,
-            plannedDate: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)));
+            plannedDate: DateTimeOffset.UtcNow.AddDays(1));
         draft.AddProduct(item.Id, 50m, _userId, location.Id);
         _store.Applications.Add(draft);
 
@@ -374,12 +374,12 @@ public class FertilizerLifecycleTransitionTests
         var app = new FertilizerApplication(
             _orgId, "FERT-2026-000001", _userId,
             farmId: farm.Id, farmAreaId: area.Id, applicationMethodId: method.Id,
-            plannedDate: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)));
+            plannedDate: DateTimeOffset.UtcNow.AddDays(1));
         app.AddProduct(item.Id, 50m, _userId, location.Id);
         SetPrivateProperty(app, nameof(FertilizerApplication.Status), FertilizerApplicationStatus.Planned);
         _store.Applications.Add(app);
 
-        var scheduledDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(3));
+        var scheduledDate = DateTimeOffset.UtcNow.AddDays(3);
         var request = new ScheduleFertilizerApplicationRequest(scheduledDate);
 
         // Act
@@ -409,11 +409,11 @@ public class FertilizerLifecycleTransitionTests
         var draft = new FertilizerApplication(
             _orgId, "FERT-2026-000001", _userId,
             farmId: farm.Id, farmAreaId: area.Id, applicationMethodId: method.Id,
-            plannedDate: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(2)));
+            plannedDate: DateTimeOffset.UtcNow.AddDays(2));
         draft.AddProduct(item.Id, 50m, _userId, location.Id);
         _store.Applications.Add(draft);
 
-        var scheduledDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(2));
+        var scheduledDate = DateTimeOffset.UtcNow.AddDays(2);
         var request = new ScheduleFertilizerApplicationRequest(scheduledDate);
 
         // Act
@@ -443,12 +443,12 @@ public class FertilizerLifecycleTransitionTests
         var app = new FertilizerApplication(
             _orgId, "FERT-2026-000001", _userId,
             farmId: farm.Id, farmAreaId: area.Id, applicationMethodId: method.Id,
-            plannedDate: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)));
+            plannedDate: DateTimeOffset.UtcNow.AddDays(1));
         app.AddProduct(item.Id, 50m, _userId, location.Id);
         SetPrivateProperty(app, nameof(FertilizerApplication.Status), FertilizerApplicationStatus.Planned);
         _store.Applications.Add(app);
 
-        var pastDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1));
+        var pastDate = DateTimeOffset.UtcNow.AddDays(-1);
         var request = new ScheduleFertilizerApplicationRequest(pastDate);
 
         // Act & Assert
@@ -467,7 +467,7 @@ public class FertilizerLifecycleTransitionTests
         SetPrivateProperty(app, nameof(FertilizerApplication.Status), FertilizerApplicationStatus.InProgress);
         _store.Applications.Add(app);
 
-        var request = new ScheduleFertilizerApplicationRequest(DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)));
+        var request = new ScheduleFertilizerApplicationRequest(DateTimeOffset.UtcNow.AddDays(1));
 
         // Act & Assert
         var ex = await Assert.ThrowsAsync<ConflictException>(() =>
@@ -491,17 +491,17 @@ public class FertilizerLifecycleTransitionTests
         var item = CreateInventoryItem(FarmInventoryCategories.FertilizersSoilId);
         var location = CreateStorageLocation(farm.Id);
 
-        var oldScheduledDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(2));
+        var oldScheduledDate = DateTimeOffset.UtcNow.AddDays(2);
         var app = new FertilizerApplication(
             _orgId, "FERT-2026-000001", _userId,
             farmId: farm.Id, farmAreaId: area.Id, applicationMethodId: method.Id,
-            plannedDate: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)),
+            plannedDate: DateTimeOffset.UtcNow.AddDays(1),
             scheduledDate: oldScheduledDate);
         app.AddProduct(item.Id, 50m, _userId, location.Id);
         SetPrivateProperty(app, nameof(FertilizerApplication.Status), FertilizerApplicationStatus.Scheduled);
         _store.Applications.Add(app);
 
-        var newScheduledDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(5));
+        var newScheduledDate = DateTimeOffset.UtcNow.AddDays(5);
         var request = new RescheduleFertilizerApplicationRequest(newScheduledDate);
 
         // Act
@@ -532,13 +532,13 @@ public class FertilizerLifecycleTransitionTests
         var app = new FertilizerApplication(
             _orgId, "FERT-2026-000001", _userId,
             farmId: farm.Id, farmAreaId: area.Id, applicationMethodId: method.Id,
-            plannedDate: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)),
-            scheduledDate: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(2)));
+            plannedDate: DateTimeOffset.UtcNow.AddDays(1),
+            scheduledDate: DateTimeOffset.UtcNow.AddDays(2));
         app.AddProduct(item.Id, 50m, _userId, location.Id);
         SetPrivateProperty(app, nameof(FertilizerApplication.Status), FertilizerApplicationStatus.Scheduled);
         _store.Applications.Add(app);
 
-        var pastDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1));
+        var pastDate = DateTimeOffset.UtcNow.AddDays(-1);
         var request = new RescheduleFertilizerApplicationRequest(pastDate);
 
         // Act & Assert
@@ -557,7 +557,7 @@ public class FertilizerLifecycleTransitionTests
         SetPrivateProperty(app, nameof(FertilizerApplication.Status), FertilizerApplicationStatus.InProgress);
         _store.Applications.Add(app);
 
-        var request = new RescheduleFertilizerApplicationRequest(DateOnly.FromDateTime(DateTime.UtcNow.AddDays(2)));
+        var request = new RescheduleFertilizerApplicationRequest(DateTimeOffset.UtcNow.AddDays(2));
 
         // Act & Assert
         var ex = await Assert.ThrowsAsync<ConflictException>(() =>
@@ -589,7 +589,7 @@ public class FertilizerLifecycleTransitionTests
             farmId: farm.Id, farmAreaId: area.Id, plantationId: plantation.Id,
             cropCycleId: cycle.Id, cropCycleStageId: stage.Id,
             applicationMethodId: method.Id,
-            plannedDate: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)));
+            plannedDate: DateTimeOffset.UtcNow.AddDays(1));
         app.AddProduct(item.Id, 100m, _userId, location.Id);
         SetPrivateProperty(app, nameof(FertilizerApplication.Status), FertilizerApplicationStatus.Planned);
         _store.Applications.Add(app);
@@ -631,7 +631,7 @@ public class FertilizerLifecycleTransitionTests
             farmId: farm.Id, farmAreaId: area.Id, plantationId: plantation.Id,
             cropCycleId: cycle.Id, cropCycleStageId: stage.Id,
             applicationMethodId: method.Id,
-            plannedDate: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)));
+            plannedDate: DateTimeOffset.UtcNow.AddDays(1));
         app.AddProduct(item.Id, 100m, _userId, location.Id);
         SetPrivateProperty(app, nameof(FertilizerApplication.Status), FertilizerApplicationStatus.Planned);
         _store.Applications.Add(app);
@@ -676,7 +676,7 @@ public class FertilizerLifecycleTransitionTests
             farmId: farm.Id, farmAreaId: area.Id, plantationId: plantation.Id,
             cropCycleId: cycle.Id, cropCycleStageId: stage.Id,
             applicationMethodId: method.Id,
-            plannedDate: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)));
+            plannedDate: DateTimeOffset.UtcNow.AddDays(1));
         app.AddProduct(item1.Id, 100m, _userId, location.Id);
         app.AddProduct(item2.Id, 50m, _userId, location.Id);
         SetPrivateProperty(app, nameof(FertilizerApplication.Status), FertilizerApplicationStatus.Planned);
@@ -713,7 +713,7 @@ public class FertilizerLifecycleTransitionTests
             farmId: farm.Id, farmAreaId: area.Id, plantationId: plantation.Id,
             cropCycleId: cycle.Id, cropCycleStageId: stage.Id,
             applicationMethodId: method.Id,
-            plannedDate: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)));
+            plannedDate: DateTimeOffset.UtcNow.AddDays(1));
         app.AddProduct(item.Id, 50m, _userId, location.Id);
         SetPrivateProperty(app, nameof(FertilizerApplication.Status), FertilizerApplicationStatus.Planned);
         _store.Applications.Add(app);
@@ -745,7 +745,7 @@ public class FertilizerLifecycleTransitionTests
             farmId: farm.Id, farmAreaId: area.Id, plantationId: plantation.Id,
             cropCycleId: cycle.Id, cropCycleStageId: stage.Id,
             applicationMethodId: method.Id,
-            plannedDate: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)));
+            plannedDate: DateTimeOffset.UtcNow.AddDays(1));
         app.AddProduct(item.Id, 50m, _userId, location.Id);
         SetPrivateProperty(app, nameof(FertilizerApplication.Status), FertilizerApplicationStatus.Planned);
         _store.Applications.Add(app);
@@ -777,7 +777,7 @@ public class FertilizerLifecycleTransitionTests
             farmId: farm.Id, farmAreaId: area.Id, plantationId: plantation.Id,
             cropCycleId: cycle.Id, cropCycleStageId: stage.Id,
             applicationMethodId: method.Id,
-            plannedDate: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)));
+            plannedDate: DateTimeOffset.UtcNow.AddDays(1));
         app.AddProduct(item.Id, 50m, _userId, location.Id);
         SetPrivateProperty(app, nameof(FertilizerApplication.Status), FertilizerApplicationStatus.Planned);
         _store.Applications.Add(app);
@@ -822,7 +822,7 @@ public class FertilizerLifecycleTransitionTests
             farmId: farm.Id, farmAreaId: area.Id, plantationId: plantation.Id,
             cropCycleId: cycle.Id, cropCycleStageId: stage.Id,
             applicationMethodId: method.Id,
-            plannedDate: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)));
+            plannedDate: DateTimeOffset.UtcNow.AddDays(1));
         app.AddProduct(item.Id, 50m, _userId, location.Id);
         SetPrivateProperty(app, nameof(FertilizerApplication.Status), FertilizerApplicationStatus.Planned);
         _store.Applications.Add(app);

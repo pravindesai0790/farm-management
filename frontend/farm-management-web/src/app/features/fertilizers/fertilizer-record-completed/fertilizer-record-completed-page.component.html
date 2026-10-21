@@ -3,7 +3,7 @@
   <header class="page-header">
     <div class="breadcrumbs">
       <a routerLink="/fertilizer-applications" class="crumb-link">Fertilizer Applications</a>
-      <span class="crumb-sep">/</span>
+      <mat-icon class="crumb-sep">chevron_right</mat-icon>
       <span class="crumb-current">Record Completed</span>
     </div>
     <div class="title-row">
@@ -12,6 +12,12 @@
         <p class="page-subtitle">
           Log an immediate completed application with actual product consumption and warehouse inventory deduction.
         </p>
+      </div>
+      <div class="header-actions">
+        <a mat-stroked-button class="action-btn-compact" routerLink="/fertilizer-applications">
+          <mat-icon>arrow_back</mat-icon>
+          <span>Back to List</span>
+        </a>
       </div>
     </div>
   </header>
@@ -47,16 +53,18 @@
     <!-- Card 1: Operational & Land Context -->
     <mat-card class="editor-card">
       <mat-card-header>
-        <mat-icon mat-card-avatar color="primary">landscape</mat-icon>
-        <mat-card-title>Operational & Land Context</mat-card-title>
-        <mat-card-subtitle>Specify farm, zone/area, and optional crop cycle linkages</mat-card-subtitle>
+        <mat-icon class="card-header-icon" color="primary">landscape</mat-icon>
+        <div class="header-titles">
+          <mat-card-title>Operational & Land Context</mat-card-title>
+          <mat-card-subtitle>Specify farm, zone/area, and optional crop cycle linkages</mat-card-subtitle>
+        </div>
       </mat-card-header>
 
       <mat-card-content class="card-grid">
         <!-- Farm Selector -->
-        <mat-form-field appearance="outline" class="form-field">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="form-field">
           <mat-label>Farm *</mat-label>
-          <mat-select formControlName="farmId" (valueChange)="onFarmChange($event)">
+          <mat-select formControlName="farmId" (selectionChange)="onFarmChange($event.value)">
             <mat-option value="">-- Select Farm --</mat-option>
             @for (f of farms(); track f.id) {
               <mat-option [value]="f.id">{{ f.name }}</mat-option>
@@ -68,9 +76,9 @@
         </mat-form-field>
 
         <!-- Farm Area Selector -->
-        <mat-form-field appearance="outline" class="form-field">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="form-field">
           <mat-label>Farm Area / Zone *</mat-label>
-          <mat-select formControlName="farmAreaId" (valueChange)="onAreaChange($event)">
+          <mat-select formControlName="farmAreaId" (selectionChange)="onAreaChange($event.value)">
             <mat-option value="">-- Select Area --</mat-option>
             @for (a of areas(); track a.id) {
               <mat-option [value]="a.id">{{ a.name }}</mat-option>
@@ -82,9 +90,9 @@
         </mat-form-field>
 
         <!-- Plantation Selector -->
-        <mat-form-field appearance="outline" class="form-field">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="form-field">
           <mat-label>Plantation (Optional)</mat-label>
-          <mat-select formControlName="plantationId" (valueChange)="onPlantationChange($event)">
+          <mat-select formControlName="plantationId" (selectionChange)="onPlantationChange($event.value)">
             <mat-option value="">-- None --</mat-option>
             @for (p of plantations(); track p.id) {
               <mat-option [value]="p.id">{{ p.plantationName }}</mat-option>
@@ -93,9 +101,9 @@
         </mat-form-field>
 
         <!-- Crop Cycle Selector -->
-        <mat-form-field appearance="outline" class="form-field">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="form-field">
           <mat-label>Crop Cycle (Optional)</mat-label>
-          <mat-select formControlName="cropCycleId" (valueChange)="onCropCycleChange($event)">
+          <mat-select formControlName="cropCycleId" (selectionChange)="onCropCycleChange($event.value)">
             <mat-option value="">-- None --</mat-option>
             @for (c of cropCycles(); track c.id) {
               <mat-option [value]="c.id">{{ c.cycleName }}</mat-option>
@@ -104,7 +112,7 @@
         </mat-form-field>
 
         <!-- Crop Cycle Stage Selector -->
-        <mat-form-field appearance="outline" class="form-field">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="form-field">
           <mat-label>Stage (Optional)</mat-label>
           <mat-select formControlName="cropCycleStageId">
             <mat-option value="">-- None --</mat-option>
@@ -119,16 +127,18 @@
     <!-- Card 2: Method & Fertigation -->
     <mat-card class="editor-card">
       <mat-card-header>
-        <mat-icon mat-card-avatar color="primary">science</mat-icon>
-        <mat-card-title>Application Method & Fertigation</mat-card-title>
-        <mat-card-subtitle>Select fertilizer application method</mat-card-subtitle>
+        <mat-icon class="card-header-icon" color="primary">science</mat-icon>
+        <div class="header-titles">
+          <mat-card-title>Application Method & Fertigation</mat-card-title>
+          <mat-card-subtitle>Select fertilizer application method</mat-card-subtitle>
+        </div>
       </mat-card-header>
 
       <mat-card-content class="card-grid">
         <!-- Application Method Selector -->
-        <mat-form-field appearance="outline" class="form-field">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="form-field">
           <mat-label>Application Method *</mat-label>
-          <mat-select formControlName="applicationMethodId" (valueChange)="onMethodChange()">
+          <mat-select formControlName="applicationMethodId" (selectionChange)="onMethodChange($event.value)">
             <mat-option value="">-- Select Method --</mat-option>
             @for (m of applicationMethods(); track m.id) {
               <mat-option [value]="m.id">{{ m.name }}</mat-option>
@@ -141,7 +151,7 @@
 
         <!-- Other Method Description -->
         @if (requiresOtherDescription()) {
-          <mat-form-field appearance="outline" class="form-field">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="form-field">
             <mat-label>Other Method Description *</mat-label>
             <input
               matInput
@@ -155,7 +165,7 @@
 
         <!-- Compatible Irrigation Event -->
         @if (isFertigation()) {
-          <mat-form-field appearance="outline" class="form-field">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="form-field">
             <mat-label>Compatible Irrigation Event (Optional)</mat-label>
             <mat-select formControlName="irrigationEventId">
               <mat-option value="">-- None --</mat-option>
@@ -174,34 +184,25 @@
     <!-- Card 3: Execution Details & Date -->
     <mat-card class="editor-card">
       <mat-card-header>
-        <mat-icon mat-card-avatar color="primary">event_available</mat-icon>
-        <mat-card-title>Execution Details & Date</mat-card-title>
-        <mat-card-subtitle>Record date of completion and treated area</mat-card-subtitle>
+        <mat-icon class="card-header-icon" color="primary">event_available</mat-icon>
+        <div class="header-titles">
+          <mat-card-title>Execution Details & Date</mat-card-title>
+          <mat-card-subtitle>Record date/time of completion and treated area</mat-card-subtitle>
+        </div>
       </mat-card-header>
 
       <mat-card-content class="card-grid">
-        <!-- Actual Application Date -->
-        <mat-form-field appearance="outline" class="form-field">
-          <mat-label>Actual Application Date *</mat-label>
-          <input
-            matInput
-            [matDatepicker]="directDatePicker"
-            [max]="today"
-            formControlName="actualApplicationDate"
-            placeholder="Select date"
-          />
-          <mat-datepicker-toggle matIconSuffix [for]="directDatePicker"></mat-datepicker-toggle>
-          <mat-datepicker #directDatePicker></mat-datepicker>
-          @if (form.get('actualApplicationDate')?.hasError('required')) {
-            <mat-error>Actual application date is required.</mat-error>
-          }
-          @if (form.get('actualApplicationDate')?.hasError('futureDate')) {
-            <mat-error>Application date cannot be in the future.</mat-error>
-          }
-        </mat-form-field>
+        <!-- Actual Application Date & Time -->
+        <app-date-time-picker
+          label="Actual Application Date & Time *"
+          formControlName="actualApplicationDate"
+          [maxDate]="maxDate"
+          hint="Date and time fertilizer was actually applied"
+          class="form-field"
+        />
 
         <!-- Actual Area -->
-        <mat-form-field appearance="outline" class="form-field">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="form-field">
           <mat-label>Actual Area (Optional)</mat-label>
           <input
             matInput
@@ -211,10 +212,11 @@
             formControlName="actualArea"
             placeholder="e.g. 5.0"
           />
+          <mat-hint>Auto-loaded from area; user editable</mat-hint>
         </mat-form-field>
 
         <!-- Actual Area Unit -->
-        <mat-form-field appearance="outline" class="form-field">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="form-field">
           <mat-label>Area Unit</mat-label>
           <mat-select formControlName="actualAreaUnitId">
             <mat-option value="">-- None --</mat-option>
@@ -225,7 +227,7 @@
         </mat-form-field>
 
         <!-- Purpose Reason -->
-        <mat-form-field appearance="outline" class="form-field full-width">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="form-field span-2">
           <mat-label>Purpose / Reason (Optional)</mat-label>
           <textarea
             matInput
@@ -264,45 +266,28 @@
     <!-- Card 4: Products & Actual Quantities -->
     <mat-card class="editor-card">
       <mat-card-header>
-        <mat-icon mat-card-avatar color="primary">inventory</mat-icon>
-        <mat-card-title>Applied Fertilizer Products *</mat-card-title>
-        <mat-card-subtitle>Specify fertilizer products, storage locations, and positive actual consumption</mat-card-subtitle>
+        <mat-icon class="card-header-icon" color="primary">inventory</mat-icon>
+        <div class="header-titles">
+          <mat-card-title>Applied Fertilizer Products *</mat-card-title>
+          <mat-card-subtitle>Specify fertilizer products, storage locations, and positive actual consumption</mat-card-subtitle>
+        </div>
       </mat-card-header>
 
       <mat-card-content>
         <div class="products-container" formArrayName="products">
           @for (pRow of productsArray.controls; track $index) {
             <div class="product-row" [formGroupName]="$index">
-              <!-- Item Selector -->
-              <mat-form-field appearance="outline" class="prod-item-field">
-                <mat-label>Fertilizer Product *</mat-label>
-                <mat-select formControlName="inventoryItemId">
-                  <mat-option value="">-- Select Product --</mat-option>
-                  @for (prod of products(); track prod.inventoryItemId) {
-                    <mat-option
-                      [value]="prod.inventoryItemId"
-                      [disabled]="isProductOptionDisabled(prod.inventoryItemId, $index)"
-                    >
-                      {{ prod.itemName }}
-                      @if (prod.sku) {
-                        ({{ prod.sku }})
-                      }
-                    </mat-option>
-                  }
-                </mat-select>
-                @if (pRow.get('inventoryItemId')?.hasError('required')) {
-                  <mat-error>Product is required.</mat-error>
-                }
-              </mat-form-field>
-
-              <!-- Storage Location Selector -->
-              <mat-form-field appearance="outline" class="prod-loc-field">
+              <!-- Storage Location Selector (No stock shown in dropdown) -->
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="prod-loc-field">
                 <mat-label>Storage Location *</mat-label>
-                <mat-select formControlName="storageLocationId">
+                <mat-select
+                  formControlName="storageLocationId"
+                  (selectionChange)="onStorageLocationChange($index, $event.value)"
+                >
                   <mat-option value="">-- Select Location --</mat-option>
                   @for (loc of storageLocations(); track loc.storageLocationId) {
                     <mat-option [value]="loc.storageLocationId">
-                      {{ loc.storageLocationName }} ({{ loc.currentStock }} in stock)
+                      {{ loc.storageLocationName }}
                     </mat-option>
                   }
                 </mat-select>
@@ -311,8 +296,48 @@
                 }
               </mat-form-field>
 
+              <!-- Product Selector & Stock Badge -->
+              <div class="prod-item-wrapper">
+                <mat-form-field appearance="outline" subscriptSizing="dynamic" class="prod-item-field">
+                  <mat-label>Fertilizer Product *</mat-label>
+                  <mat-select formControlName="inventoryItemId">
+                    <mat-option value="" disabled>
+                      {{ pRow.value.storageLocationId ? '-- Select Product --' : '-- Select Storage Location First --' }}
+                    </mat-option>
+                    @for (prod of getRowProducts($index); track prod.inventoryItemId) {
+                      <mat-option
+                        [value]="prod.inventoryItemId"
+                        [disabled]="isProductOptionDisabled(prod.inventoryItemId, $index)"
+                      >
+                        {{ prod.itemName }}
+                        @if (prod.sku) {
+                          ({{ prod.sku }})
+                        }
+                        @if (pRow.value.storageLocationId && prod.availableQuantity !== undefined) {
+                          - Avail: {{ prod.availableQuantity }} {{ prod.stockUnitSymbol || prod.stockUnitName }}
+                        }
+                      </mat-option>
+                    }
+                  </mat-select>
+                  @if (pRow.get('inventoryItemId')?.hasError('required')) {
+                    <mat-error>Product is required.</mat-error>
+                  }
+                </mat-form-field>
+
+                @if (getSelectedProduct($index); as selProd) {
+                  @if (pRow.value.storageLocationId && selProd.availableQuantity !== undefined) {
+                    <div class="stock-pill" [class.stock-pill--shortage]="isStockShortage($index)">
+                      <span class="stock-text">Avail: {{ selProd.availableQuantity }} {{ selProd.stockUnitSymbol || selProd.stockUnitName }}</span>
+                      @if (isStockShortage($index)) {
+                        <mat-icon class="stock-warn-icon" matTooltip="Actual quantity exceeds available stock in this storage location">warning</mat-icon>
+                      }
+                    </div>
+                  }
+                }
+              </div>
+
               <!-- Actual Quantity -->
-              <mat-form-field appearance="outline" class="prod-qty-field">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="prod-qty-field">
                 <mat-label>Actual Quantity *</mat-label>
                 <input
                   matInput
@@ -322,16 +347,22 @@
                   formControlName="actualQuantity"
                   placeholder="0.00"
                 />
-                @let info = getProductInfo(pRow.value.inventoryItemId);
-                @if (info?.stockUnitSymbol || info?.stockUnitName) {
-                  <span matTextSuffix class="unit-suffix">{{ info?.stockUnitSymbol || info?.stockUnitName }}</span>
-                }
                 @if (pRow.get('actualQuantity')?.hasError('required')) {
                   <mat-error>Quantity required</mat-error>
                 } @else if (pRow.get('actualQuantity')?.hasError('min')) {
                   <mat-error>&gt; 0 required</mat-error>
                 }
               </mat-form-field>
+
+              <!-- Read-only Unit -->
+              <div class="prod-unit-cell">
+                @let info = getProductInfo(pRow.value.inventoryItemId);
+                @if (info?.stockUnitSymbol || info?.stockUnitName) {
+                  <span class="unit-badge">{{ info?.stockUnitSymbol || info?.stockUnitName }}</span>
+                } @else {
+                  <span class="text-muted">—</span>
+                }
+              </div>
 
               <!-- Delete row button -->
               <div class="prod-actions">
@@ -342,6 +373,7 @@
                   (click)="removeProduct($index)"
                   [disabled]="productsArray.length <= 1"
                   matTooltip="Remove product line"
+                  class="compact-icon-btn"
                 >
                   <mat-icon>delete_outline</mat-icon>
                 </button>
@@ -351,7 +383,7 @@
         </div>
 
         <div class="add-line-row">
-          <button mat-stroked-button type="button" (click)="addProduct()">
+          <button mat-stroked-button type="button" class="action-btn-compact" (click)="addProduct()">
             <mat-icon>add</mat-icon>
             <span>Add Product Line</span>
           </button>

@@ -498,7 +498,7 @@ public class FertilizerStockIssueAndIdempotencyTests
             farmId: farm.Id, farmAreaId: area.Id, plantationId: plantation.Id,
             cropCycleId: cycle.Id, cropCycleStageId: stage.Id,
             applicationMethodId: method.Id,
-            plannedDate: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)));
+            plannedDate: DateTimeOffset.UtcNow.AddDays(1));
         app.AddProduct(item.Id, 50m, _userId, loc.Id);
         SetPrivateProperty(app, nameof(FertilizerApplication.Status), FertilizerApplicationStatus.Planned);
         _store.Applications.Add(app);
@@ -532,7 +532,7 @@ public class FertilizerStockIssueAndIdempotencyTests
             farmId: farm.Id, farmAreaId: area.Id, plantationId: plantation.Id,
             cropCycleId: cycle.Id, cropCycleStageId: stage.Id,
             applicationMethodId: method.Id,
-            plannedDate: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)));
+            plannedDate: DateTimeOffset.UtcNow.AddDays(1));
         app.AddProduct(item.Id, 50m, _userId, loc.Id);
         SetPrivateProperty(app, nameof(FertilizerApplication.Status), FertilizerApplicationStatus.Planned);
         _store.Applications.Add(app);

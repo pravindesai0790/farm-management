@@ -21,8 +21,6 @@ import {
 } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
-import { provideNativeDateAdapter } from '@angular/material/core';
-import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatDialog } from '@angular/material/dialog';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -32,6 +30,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router, RouterModule } from '@angular/router';
 import { finalize, forkJoin } from 'rxjs';
 import {
@@ -45,7 +44,6 @@ import {
 } from '../../../core/farm-management/farm-management.models';
 import { FarmManagementService } from '../../../core/farm-management/farm-management.service';
 import { getApiErrorMessage } from '../../../core/models/api-error.model';
-import { formatDateOnly } from '../../../core/utils/date.utils';
 import {
   FertilizerApplicationMethodLookup,
   FertilizerIrrigationLookup,
@@ -56,14 +54,15 @@ import {
 } from '../../../core/fertilizers/fertilizer.models';
 import { FertilizerService } from '../../../core/fertilizers/fertilizer.service';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { DateTimePickerComponent } from '../../../shared/components/date-time-picker/date-time-picker.component';
 
 export function notFutureDateValidator(control: AbstractControl): ValidationErrors | null {
   const val = control.value;
   if (!val) return null;
   const selectedDate = new Date(val);
-  const today = new Date();
-  today.setHours(23, 59, 59, 999);
-  if (selectedDate.getTime() > today.getTime()) {
+  const now = new Date();
+  // Allow 1 minute clock tolerance
+  if (selectedDate.getTime() > now.getTime() + 60000) {
     return { futureDate: true };
   }
   return null;
@@ -88,12 +87,12 @@ export interface DirectProductRowForm {
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
-    MatDatepickerModule,
     MatCheckboxModule,
     MatIconModule,
     MatProgressSpinnerModule,
+    MatTooltipModule,
+    DateTimePickerComponent,
   ],
-  providers: [provideNativeDateAdapter()],
   templateUrl: './fertilizer-record-completed-page.component.html',
   styleUrl: './fertilizer-record-completed-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -123,6 +122,7 @@ export class FertilizerRecordCompletedPageComponent implements OnInit {
   readonly products = signal<readonly FertilizerProductLookup[]>([]);
   readonly storageLocations = signal<readonly FertilizerStorageLocationLookup[]>([]);
   readonly areaUnits = signal<readonly Unit[]>([]);
+  readonly rowProducts = signal<{ [rowIndex: number]: readonly FertilizerProductLookup[] }>({});
 
   readonly selectedMethodId = signal<string>('');
   readonly selectedMethod = computed(() => {
@@ -137,7 +137,7 @@ export class FertilizerRecordCompletedPageComponent implements OnInit {
     return !!m?.requiresDescription || m?.code?.toUpperCase() === 'OTHER';
   });
 
-  readonly today: Date = new Date();
+  readonly maxDate: Date = new Date();
   readonly isRetrospective = signal(false);
 
   readonly form = this.fb.group({
@@ -150,7 +150,7 @@ export class FertilizerRecordCompletedPageComponent implements OnInit {
     otherMethodDescription: ['', [Validators.maxLength(200)]],
     irrigationEventId: [''],
     actualApplicationDate: [
-      new Date(),
+      new Date().toISOString() as string | Date | null,
       [Validators.required, notFutureDateValidator],
     ],
     actualArea: [null as number | null, [Validators.min(0.0001)]],
@@ -185,7 +185,7 @@ export class FertilizerRecordCompletedPageComponent implements OnInit {
     this.addProduct(); // Start with 1 empty line
   }
 
-  private checkIfRetrospective(dateVal: Date | null | undefined): void {
+  private checkIfRetrospective(dateVal: string | Date | null | undefined): void {
     if (!dateVal) {
       this.isRetrospective.set(false);
       return;
@@ -214,6 +214,15 @@ export class FertilizerRecordCompletedPageComponent implements OnInit {
           this.applicationMethods.set(res.methods);
           this.products.set(res.products);
           this.areaUnits.set(res.units);
+
+          const currentMethodId = this.form.value.applicationMethodId;
+          if (currentMethodId) {
+            this.selectedMethodId.set(currentMethodId);
+            const m = res.methods.find((x) => x.id === currentMethodId);
+            if (m?.code?.toUpperCase() === 'FERTIGATION' && this.form.value.farmId) {
+              this.loadIrrigations(this.form.value.farmId, this.form.value.farmAreaId || undefined);
+            }
+          }
         },
         error: (err) => {
           this.errorMessage.set(getApiErrorMessage(err, 'Failed to load initial lookups.'));
@@ -237,6 +246,14 @@ export class FertilizerRecordCompletedPageComponent implements OnInit {
     this.irrigations.set([]);
 
     if (selectedFarmId) {
+      const selectedFarm = this.farms().find((f) => f.id === selectedFarmId);
+      if (selectedFarm && selectedFarm.totalArea) {
+        this.form.patchValue({
+          actualArea: selectedFarm.totalArea,
+          actualAreaUnitId: selectedFarm.areaUnitId || '',
+        });
+      }
+
       forkJoin({
         areas: this.farmService.listFarmAreas(1, 100, selectedFarmId),
         plantations: this.farmService.listPlantations(1, 100, selectedFarmId),
@@ -248,6 +265,7 @@ export class FertilizerRecordCompletedPageComponent implements OnInit {
             this.areas.set(res.areas.items);
             this.plantations.set(res.plantations.items);
             this.storageLocations.set(res.locations);
+            this.reloadAllRowProducts();
           },
         });
 
@@ -269,6 +287,24 @@ export class FertilizerRecordCompletedPageComponent implements OnInit {
     this.stages.set([]);
 
     if (farmId) {
+      if (selectedAreaId) {
+        const selectedArea = this.areas().find((a) => a.id === selectedAreaId);
+        if (selectedArea && selectedArea.totalArea) {
+          this.form.patchValue({
+            actualArea: selectedArea.totalArea,
+            actualAreaUnitId: selectedArea.areaUnitId || '',
+          });
+        }
+      } else {
+        const selectedFarm = this.farms().find((f) => f.id === farmId);
+        if (selectedFarm && selectedFarm.totalArea) {
+          this.form.patchValue({
+            actualArea: selectedFarm.totalArea,
+            actualAreaUnitId: selectedFarm.areaUnitId || '',
+          });
+        }
+      }
+
       this.farmService
         .listPlantations(1, 100, farmId, selectedAreaId || undefined)
         .pipe(takeUntilDestroyed(this.destroyRef))
@@ -314,8 +350,8 @@ export class FertilizerRecordCompletedPageComponent implements OnInit {
     }
   }
 
-  onMethodChange(): void {
-    const methodId = this.form.value.applicationMethodId || '';
+  onMethodChange(selectedMethodId?: string): void {
+    const methodId = selectedMethodId || this.form.value.applicationMethodId || '';
     this.selectedMethodId.set(methodId);
     const method = this.selectedMethod();
 
@@ -341,17 +377,86 @@ export class FertilizerRecordCompletedPageComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (irrs) => this.irrigations.set(irrs),
+        error: () => this.irrigations.set([]),
       });
   }
 
-  // Dynamic Product Lines
+  // Stock Tracking & Dynamic Product Lines
+  loadRowProducts(rowIndex: number, storageLocationId: string): void {
+    const farmId = this.form.value.farmId;
+    if (!storageLocationId) {
+      const current = { ...this.rowProducts() };
+      current[rowIndex] = this.products();
+      this.rowProducts.set(current);
+      return;
+    }
+
+    this.fertilizerService
+      .getProductsLookup(storageLocationId, farmId || undefined)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (prods) => {
+          const current = { ...this.rowProducts() };
+          current[rowIndex] = prods;
+          this.rowProducts.set(current);
+        },
+        error: () => {
+          const current = { ...this.rowProducts() };
+          current[rowIndex] = this.products();
+          this.rowProducts.set(current);
+        },
+      });
+  }
+
+  reloadAllRowProducts(): void {
+    this.productsArray.controls.forEach((ctrl, idx) => {
+      const locId = ctrl.value.storageLocationId;
+      if (locId) {
+        this.loadRowProducts(idx, locId);
+      }
+    });
+  }
+
+  getRowProducts(rowIndex: number): readonly FertilizerProductLookup[] {
+    const rowProds = this.rowProducts()[rowIndex];
+    return rowProds && rowProds.length > 0 ? rowProds : this.products();
+  }
+
+  getSelectedProduct(rowIndex: number): FertilizerProductLookup | undefined {
+    const row = this.productsArray.at(rowIndex);
+    if (!row) return undefined;
+    const itemId = row.value.inventoryItemId;
+    if (!itemId) return undefined;
+    return this.getRowProducts(rowIndex).find((p) => p.inventoryItemId === itemId);
+  }
+
+  isStockShortage(rowIndex: number): boolean {
+    const row = this.productsArray.at(rowIndex);
+    if (!row) return false;
+    const qty = Number(row.value.actualQuantity || 0);
+    if (qty <= 0) return false;
+    const prod = this.getSelectedProduct(rowIndex);
+    if (!prod || prod.availableQuantity === undefined) return false;
+    return qty > prod.availableQuantity;
+  }
+
+  onStorageLocationChange(rowIndex: number, selectedLocId: string): void {
+    if (selectedLocId) {
+      this.loadRowProducts(rowIndex, selectedLocId);
+    } else {
+      const current = { ...this.rowProducts() };
+      delete current[rowIndex];
+      this.rowProducts.set(current);
+    }
+  }
+
   addProduct(): void {
     const row = this.fb.group<DirectProductRowForm>({
-      inventoryItemId: new FormControl('', {
+      storageLocationId: new FormControl('', {
         nonNullable: true,
         validators: [Validators.required],
       }),
-      storageLocationId: new FormControl('', {
+      inventoryItemId: new FormControl('', {
         nonNullable: true,
         validators: [Validators.required],
       }),
@@ -366,6 +471,16 @@ export class FertilizerRecordCompletedPageComponent implements OnInit {
   removeProduct(index: number): void {
     if (this.productsArray.length > 1) {
       this.productsArray.removeAt(index);
+      const current = this.rowProducts();
+      const updated: { [key: number]: readonly FertilizerProductLookup[] } = {};
+      let newIdx = 0;
+      for (let i = 0; i < this.productsArray.length + 1; i++) {
+        if (i !== index && current[i]) {
+          updated[newIdx] = current[i];
+          newIdx++;
+        }
+      }
+      this.rowProducts.set(updated);
     }
   }
 
@@ -417,7 +532,8 @@ export class FertilizerRecordCompletedPageComponent implements OnInit {
     // Exactly one confirmation dialog
     const farmName = this.farms().find((f) => f.id === this.form.value.farmId)?.name || 'Farm';
     const areaName = this.areas().find((a) => a.id === this.form.value.farmAreaId)?.name || 'Area';
-    const dateStr = formatDateOnly(this.form.value.actualApplicationDate!)!;
+    const rawDate = this.form.value.actualApplicationDate;
+    const dateFormatted = rawDate ? new Date(rawDate).toLocaleString() : '';
     const productCount = this.productsArray.length;
 
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
@@ -433,7 +549,7 @@ export class FertilizerRecordCompletedPageComponent implements OnInit {
         details: [
           { label: 'Farm', value: farmName },
           { label: 'Area', value: areaName },
-          { label: 'Actual Date', value: dateStr },
+          { label: 'Actual Date & Time', value: dateFormatted },
           { label: 'Products', value: `${productCount} item(s)` },
           ...(this.isRetrospective()
             ? [{ label: 'Stock Deductions', value: 'Deducted from CURRENT warehouse balances' }]
@@ -462,6 +578,13 @@ export class FertilizerRecordCompletedPageComponent implements OnInit {
         actualQuantity: Number(p.actualQuantity),
       }));
 
+    const rawDate = formVal.actualApplicationDate;
+    const actualIsoDate = rawDate
+      ? typeof rawDate === 'string'
+        ? rawDate
+        : (rawDate as Date).toISOString()
+      : new Date().toISOString();
+
     const req: RecordCompletedFertilizerApplicationRequest = {
       farmId: formVal.farmId!,
       farmAreaId: formVal.farmAreaId!,
@@ -471,7 +594,7 @@ export class FertilizerRecordCompletedPageComponent implements OnInit {
       applicationMethodId: formVal.applicationMethodId!,
       otherMethodDescription: formVal.otherMethodDescription || undefined,
       irrigationEventId: formVal.irrigationEventId || undefined,
-      actualApplicationDate: formatDateOnly(formVal.actualApplicationDate!)!,
+      actualApplicationDate: actualIsoDate,
       actualArea: formVal.actualArea ? Number(formVal.actualArea) : undefined,
       actualAreaUnitId: formVal.actualAreaUnitId || undefined,
       purposeReason: formVal.purposeReason || undefined,

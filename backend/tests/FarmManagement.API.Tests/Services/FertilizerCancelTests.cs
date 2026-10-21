@@ -229,7 +229,7 @@ public class FertilizerCancelTests
 
         var request = new CancelFertilizerApplicationRequest(
             CancellationReason: "Partial usage",
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(2)),
+            ActualApplicationDate: DateTimeOffset.UtcNow.AddDays(2),
             Products: [new(item.Id, ActualQuantity: 20m, StorageLocationId: loc.Id)]);
 
         // Act & Assert
@@ -253,7 +253,7 @@ public class FertilizerCancelTests
 
         var request = new CancelFertilizerApplicationRequest(
             CancellationReason: "Partial usage",
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             Products: [new(item.Id, ActualQuantity: 20m, StorageLocationId: null)]);
 
         // Act & Assert
@@ -279,7 +279,7 @@ public class FertilizerCancelTests
 
         var request = new CancelFertilizerApplicationRequest(
             CancellationReason: "Partial usage",
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             Products: [new(item.Id, ActualQuantity: 20m, StorageLocationId: foreignLoc.Id)]);
 
         // Act & Assert
@@ -307,7 +307,7 @@ public class FertilizerCancelTests
         app.AddProduct(item.Id, plannedQuantity: 50m, createdBy: _userId);
         _store.Applications.Add(app);
 
-        var applyDate = DateOnly.FromDateTime(DateTime.UtcNow);
+        var applyDate = DateTimeOffset.UtcNow;
         var request = new CancelFertilizerApplicationRequest(
             CancellationReason: "Tank leaked after spreading 25kg",
             ActualApplicationDate: applyDate,
@@ -346,7 +346,7 @@ public class FertilizerCancelTests
         var app = CreateInProgressApplication(farm.Id, area.Id, item.Id, loc.Id, 60m);
         _store.Applications.Add(app);
 
-        var applyDate = DateOnly.FromDateTime(DateTime.UtcNow);
+        var applyDate = DateTimeOffset.UtcNow;
         var request = new CancelFertilizerApplicationRequest(
             CancellationReason: "Tractor broke down after applying 15kg",
             ActualApplicationDate: applyDate,
@@ -382,7 +382,7 @@ public class FertilizerCancelTests
 
         var request = new CancelFertilizerApplicationRequest(
             CancellationReason: "Abort",
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             Products: [new(item.Id, ActualQuantity: 25m)]); // Shortage of 15m
 
         // Act & Assert
@@ -420,7 +420,7 @@ public class FertilizerCancelTests
         _store.Applications.Add(app);
 
         var idempotencyKey = Guid.NewGuid().ToString("N");
-        var applyDate = DateOnly.FromDateTime(DateTime.UtcNow);
+        var applyDate = DateTimeOffset.UtcNow;
         var request = new CancelFertilizerApplicationRequest(
             CancellationReason: "Idempotent cancellation",
             ActualApplicationDate: applyDate,
@@ -457,7 +457,7 @@ public class FertilizerCancelTests
         _store.Applications.Add(app);
 
         var idempotencyKey = Guid.NewGuid().ToString("N");
-        var applyDate = DateOnly.FromDateTime(DateTime.UtcNow);
+        var applyDate = DateTimeOffset.UtcNow;
         var request1 = new CancelFertilizerApplicationRequest(
             CancellationReason: "Initial payload",
             ActualApplicationDate: applyDate,
@@ -498,7 +498,7 @@ public class FertilizerCancelTests
 
         var request = new CancelFertilizerApplicationRequest(
             CancellationReason: "Wind speed exceeded safe threshold after spreading 10kg",
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             Products: [new(item.Id, ActualQuantity: 10m)]);
 
         // Act
@@ -580,7 +580,7 @@ public class FertilizerCancelTests
             _orgId, "FERT-2026-000001", _userId,
             farmId: farmId, farmAreaId: farmAreaId,
             applicationMethodId: method.Id,
-            plannedDate: DateOnly.FromDateTime(DateTime.UtcNow));
+            plannedDate: DateTimeOffset.UtcNow);
         app.AddProduct(inventoryItemId, plannedQty, _userId, storageLocationId);
 
         SetPrivateProperty(app, nameof(FertilizerApplication.Status), FertilizerApplicationStatus.InProgress);

@@ -132,6 +132,8 @@ export interface FertilizerProductLookup {
   readonly stockUnitSymbol: string | null;
   readonly categoryId: string | null;
   readonly categoryName: string | null;
+  readonly availableQuantity?: number;
+  readonly hasStock?: boolean;
 }
 
 export interface FertilizerStorageLocationLookup {

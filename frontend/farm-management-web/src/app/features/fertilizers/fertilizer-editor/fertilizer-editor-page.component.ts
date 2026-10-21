@@ -59,6 +59,7 @@ import {
 } from '../../../core/fertilizers/fertilizer.models';
 import { FertilizerService } from '../../../core/fertilizers/fertilizer.service';
 import { formatDateOnly, parseDateOnly } from '../../../core/utils/date.utils';
+import { DateTimePickerComponent } from '../../../shared/components/date-time-picker/date-time-picker.component';
 import {
   ScheduleFertilizerDialogComponent,
   ScheduleFertilizerDialogData,
@@ -84,6 +85,7 @@ import { CancelFertilizerDialogComponent } from '../dialogs/cancel-fertilizer-di
     MatSelectModule,
     MatTableModule,
     MatTooltipModule,
+    DateTimePickerComponent,
     RouterLink,
   ],
   templateUrl: './fertilizer-editor-page.component.html',
@@ -124,6 +126,7 @@ export class FertilizerEditorPageComponent implements OnInit {
   readonly products = signal<readonly FertilizerProductLookup[]>([]);
   readonly storageLocations = signal<readonly FertilizerStorageLocationLookup[]>([]);
   readonly areaUnits = signal<readonly Unit[]>([]);
+  readonly rowProducts = signal<{ [rowIndex: number]: readonly FertilizerProductLookup[] }>({});
 
   // Computed state
   readonly currentStatus = computed<FertilizerApplicationStatus>(
@@ -171,8 +174,8 @@ export class FertilizerEditorPageComponent implements OnInit {
     applicationMethodId: [''],
     otherMethodDescription: ['', [Validators.maxLength(200)]],
     irrigationEventId: [''],
-    plannedDate: [null as Date | null],
-    scheduledDate: [null as Date | null],
+    plannedDate: [null as string | Date | null],
+    scheduledDate: [null as string | Date | null],
     plannedArea: [null as number | null, [Validators.min(0)]],
     plannedAreaUnitId: [''],
     purposeReason: ['', [Validators.maxLength(500)]],
@@ -214,6 +217,15 @@ export class FertilizerEditorPageComponent implements OnInit {
           this.applicationMethods.set(res.methods);
           this.products.set(res.products);
           this.areaUnits.set(res.units);
+
+          const currentMethodId = this.form.value.applicationMethodId;
+          if (currentMethodId) {
+            this.selectedMethodId.set(currentMethodId);
+            const m = res.methods.find((x) => x.id === currentMethodId);
+            if (m?.code?.toUpperCase() === 'FERTIGATION' && this.form.value.farmId) {
+              this.loadIrrigations(this.form.value.farmId, this.form.value.farmAreaId || undefined);
+            }
+          }
         },
         error: (err) => {
           this.errorMessage.set(getApiErrorMessage(err, 'Failed to load initial master lookups.'));
@@ -283,8 +295,8 @@ export class FertilizerEditorPageComponent implements OnInit {
       applicationMethodId: app.applicationMethodId || '',
       otherMethodDescription: app.otherMethodDescription || '',
       irrigationEventId: app.irrigationEventId || '',
-      plannedDate: isCopy ? null : parseDateOnly(app.plannedDate),
-      scheduledDate: isCopy ? null : parseDateOnly(app.scheduledDate),
+      plannedDate: isCopy ? null : app.plannedDate,
+      scheduledDate: isCopy ? null : app.scheduledDate,
       plannedArea: app.plannedArea,
       plannedAreaUnitId: app.plannedAreaUnitId || '',
       purposeReason: app.purposeReason || '',
@@ -328,7 +340,15 @@ export class FertilizerEditorPageComponent implements OnInit {
     this.irrigations.set([]);
 
     if (selectedFarmId) {
+      const selectedFarm = this.farms().find((f) => f.id === selectedFarmId);
+      if (selectedFarm && selectedFarm.totalArea) {
+        this.form.patchValue({
+          plannedArea: selectedFarm.totalArea,
+          plannedAreaUnitId: selectedFarm.areaUnitId || '',
+        });
+      }
       this.loadFarmDependents(selectedFarmId);
+      this.reloadAllRowProducts();
     }
   }
 
@@ -345,6 +365,24 @@ export class FertilizerEditorPageComponent implements OnInit {
     this.stages.set([]);
 
     if (farmId) {
+      if (selectedAreaId) {
+        const selectedArea = this.areas().find((a) => a.id === selectedAreaId);
+        if (selectedArea && selectedArea.totalArea) {
+          this.form.patchValue({
+            plannedArea: selectedArea.totalArea,
+            plannedAreaUnitId: selectedArea.areaUnitId || '',
+          });
+        }
+      } else {
+        const selectedFarm = this.farms().find((f) => f.id === farmId);
+        if (selectedFarm && selectedFarm.totalArea) {
+          this.form.patchValue({
+            plannedArea: selectedFarm.totalArea,
+            plannedAreaUnitId: selectedFarm.areaUnitId || '',
+          });
+        }
+      }
+
       this.farmService
         .listPlantations(1, 100, farmId, selectedAreaId || undefined)
         .pipe(takeUntilDestroyed(this.destroyRef))
@@ -353,12 +391,7 @@ export class FertilizerEditorPageComponent implements OnInit {
         });
 
       if (this.isFertigation()) {
-        this.fertilizerService
-          .getIrrigationsLookup(farmId, selectedAreaId || undefined)
-          .pipe(takeUntilDestroyed(this.destroyRef))
-          .subscribe({
-            next: (irrs) => this.irrigations.set(irrs),
-          });
+        this.loadIrrigations(farmId, selectedAreaId || undefined);
       }
     }
   }
@@ -387,8 +420,8 @@ export class FertilizerEditorPageComponent implements OnInit {
     }
   }
 
-  onMethodChange(): void {
-    const methodId = this.form.value.applicationMethodId || '';
+  onMethodChange(selectedMethodId?: string): void {
+    const methodId = selectedMethodId || this.form.value.applicationMethodId || '';
     this.selectedMethodId.set(methodId);
     const method = this.selectedMethod();
     if (!method?.requiresDescription && method?.code?.toUpperCase() !== 'OTHER') {
@@ -399,17 +432,22 @@ export class FertilizerEditorPageComponent implements OnInit {
       const farmId = this.form.value.farmId;
       const areaId = this.form.value.farmAreaId;
       if (farmId) {
-        this.fertilizerService
-          .getIrrigationsLookup(farmId, areaId || undefined)
-          .pipe(takeUntilDestroyed(this.destroyRef))
-          .subscribe({
-            next: (irrs) => this.irrigations.set(irrs),
-          });
+        this.loadIrrigations(farmId, areaId || undefined);
       }
     } else {
       this.form.patchValue({ irrigationEventId: '' });
       this.irrigations.set([]);
     }
+  }
+
+  loadIrrigations(farmId: string, areaId?: string): void {
+    this.fertilizerService
+      .getIrrigationsLookup(farmId, areaId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (irrs) => this.irrigations.set(irrs),
+        error: () => this.irrigations.set([]),
+      });
   }
 
   private loadFarmDependents(farmId: string, areaId?: string): void {
@@ -455,22 +493,105 @@ export class FertilizerEditorPageComponent implements OnInit {
       });
   }
 
-  // --- Dynamic Product Lines ---
+  // --- Dynamic Product Lines & Stock Tracking ---
+  loadRowProducts(rowIndex: number, storageLocationId: string): void {
+    const farmId = this.form.value.farmId;
+    if (!storageLocationId) {
+      const current = { ...this.rowProducts() };
+      current[rowIndex] = this.products();
+      this.rowProducts.set(current);
+      return;
+    }
+
+    this.fertilizerService
+      .getProductsLookup(storageLocationId, farmId || undefined)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (prods) => {
+          const current = { ...this.rowProducts() };
+          current[rowIndex] = prods;
+          this.rowProducts.set(current);
+        },
+        error: () => {
+          const current = { ...this.rowProducts() };
+          current[rowIndex] = this.products();
+          this.rowProducts.set(current);
+        },
+      });
+  }
+
+  reloadAllRowProducts(): void {
+    this.productsArray.controls.forEach((ctrl, idx) => {
+      const locId = ctrl.value.storageLocationId;
+      if (locId) {
+        this.loadRowProducts(idx, locId);
+      }
+    });
+  }
+
+  getRowProducts(rowIndex: number): readonly FertilizerProductLookup[] {
+    const rowProds = this.rowProducts()[rowIndex];
+    return rowProds && rowProds.length > 0 ? rowProds : this.products();
+  }
+
+  getSelectedProduct(rowIndex: number): FertilizerProductLookup | undefined {
+    const row = this.productsArray.at(rowIndex);
+    if (!row) return undefined;
+    const itemId = row.value.inventoryItemId;
+    if (!itemId) return undefined;
+    return this.getRowProducts(rowIndex).find((p) => p.inventoryItemId === itemId);
+  }
+
+  isStockShortage(rowIndex: number): boolean {
+    const row = this.productsArray.at(rowIndex);
+    if (!row) return false;
+    const qty = Number(row.value.plannedQuantity || 0);
+    if (qty <= 0) return false;
+    const prod = this.getSelectedProduct(rowIndex);
+    if (!prod || prod.availableQuantity === undefined) return false;
+    return qty > prod.availableQuantity;
+  }
+
+  onStorageLocationChange(rowIndex: number, selectedLocId: string): void {
+    if (selectedLocId) {
+      this.loadRowProducts(rowIndex, selectedLocId);
+    } else {
+      const current = { ...this.rowProducts() };
+      delete current[rowIndex];
+      this.rowProducts.set(current);
+    }
+  }
+
   addProduct(item?: Partial<FertilizerDraftProductLineRequest>): void {
     const row = this.fb.group({
+      storageLocationId: [item?.storageLocationId || ''],
       inventoryItemId: [item?.inventoryItemId || '', [Validators.required]],
       plannedQuantity: [
         item?.plannedQuantity !== undefined ? item.plannedQuantity : null,
         [Validators.min(0)],
       ],
-      storageLocationId: [item?.storageLocationId || ''],
     });
 
+    const index = this.productsArray.length;
     this.productsArray.push(row);
+
+    if (item?.storageLocationId) {
+      this.loadRowProducts(index, item.storageLocationId);
+    }
   }
 
   removeProduct(index: number): void {
     this.productsArray.removeAt(index);
+    const current = this.rowProducts();
+    const updated: { [key: number]: readonly FertilizerProductLookup[] } = {};
+    let newIdx = 0;
+    for (let i = 0; i < this.productsArray.length + 1; i++) {
+      if (i !== index && current[i]) {
+        updated[newIdx] = current[i];
+        newIdx++;
+      }
+    }
+    this.rowProducts.set(updated);
   }
 
   getProductInfo(inventoryItemId: string | null | undefined): FertilizerProductLookup | undefined {
@@ -575,7 +696,11 @@ export class FertilizerEditorPageComponent implements OnInit {
           this.applicationDetails.set(savedApp);
           this.fertilizerService
             .plan(savedApp.id, {
-              plannedDate: formatDateOnly(this.form.value.plannedDate) || undefined,
+              plannedDate: this.form.value.plannedDate
+              ? (typeof this.form.value.plannedDate === 'string'
+                ? this.form.value.plannedDate
+                : new Date(this.form.value.plannedDate).toISOString())
+              : undefined,
               version: savedApp.version,
             })
             .pipe(
@@ -836,6 +961,13 @@ export class FertilizerEditorPageComponent implements OnInit {
       }))
       .filter((p) => !!p.inventoryItemId);
 
+    const toIso = (v: any) => {
+      if (!v) return null;
+      if (typeof v === 'string') return v;
+      if (v instanceof Date && !isNaN(v.getTime())) return v.toISOString();
+      return null;
+    };
+
     const basePayload = {
       farmId: val.farmId || null,
       farmAreaId: val.farmAreaId || null,
@@ -845,8 +977,8 @@ export class FertilizerEditorPageComponent implements OnInit {
       applicationMethodId: val.applicationMethodId || null,
       otherMethodDescription: val.otherMethodDescription?.trim() || null,
       irrigationEventId: val.irrigationEventId || null,
-      plannedDate: formatDateOnly(val.plannedDate) || null,
-      scheduledDate: formatDateOnly(val.scheduledDate) || null,
+      plannedDate: toIso(val.plannedDate),
+      scheduledDate: toIso(val.scheduledDate),
       plannedArea: val.plannedArea != null ? Number(val.plannedArea) : null,
       plannedAreaUnitId: val.plannedAreaUnitId || null,
       purposeReason: val.purposeReason?.trim() || null,

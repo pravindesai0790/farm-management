@@ -48,8 +48,20 @@ export class FertilizerService {
     });
   }
 
-  getProductsLookup(): Observable<readonly FertilizerProductLookup[]> {
-    return this.http.get<readonly FertilizerProductLookup[]>(`${this.api}/lookups/products`);
+  getProductsLookup(
+    storageLocationId?: string,
+    farmId?: string,
+  ): Observable<readonly FertilizerProductLookup[]> {
+    let params = new HttpParams();
+    if (storageLocationId) {
+      params = params.set('storageLocationId', storageLocationId);
+    }
+    if (farmId) {
+      params = params.set('farmId', farmId);
+    }
+    return this.http.get<readonly FertilizerProductLookup[]>(`${this.api}/lookups/products`, {
+      params,
+    });
   }
 
   getStorageLocationsLookup(

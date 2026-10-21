@@ -30,27 +30,15 @@
       <!-- Execution Date & Area row -->
       <div class="form-row">
         <!-- Actual Application Date Picker -->
-        <mat-form-field appearance="outline" class="form-field">
-          <mat-label>Actual Application Date</mat-label>
-          <input
-            matInput
-            [matDatepicker]="datePicker"
-            [max]="today"
-            formControlName="actualApplicationDate"
-            placeholder="Select date"
-          />
-          <mat-datepicker-toggle matIconSuffix [for]="datePicker"></mat-datepicker-toggle>
-          <mat-datepicker #datePicker></mat-datepicker>
-          @if (form.get('actualApplicationDate')?.hasError('required')) {
-            <mat-error>Actual application date is required.</mat-error>
-          }
-          @if (form.get('actualApplicationDate')?.hasError('futureDate')) {
-            <mat-error>Application date cannot be in the future.</mat-error>
-          }
-        </mat-form-field>
+        <app-date-time-picker
+          formControlName="actualApplicationDate"
+          label="Actual Application Date & Time"
+          [maxDate]="today"
+          [required]="true"
+        ></app-date-time-picker>
 
         <!-- Actual Area -->
-        <mat-form-field appearance="outline" class="form-field">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="form-field">
           <mat-label>Actual Area (Optional)</mat-label>
           <input
             matInput
@@ -63,7 +51,7 @@
         </mat-form-field>
 
         <!-- Actual Area Unit -->
-        <mat-form-field appearance="outline" class="form-field">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="form-field">
           <mat-label>Area Unit</mat-label>
           <mat-select formControlName="actualAreaUnitId">
             <mat-option value="">-- None --</mat-option>

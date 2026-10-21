@@ -34,7 +34,7 @@ import { finalize } from 'rxjs';
 import { Unit } from '../../../../core/farm-management/farm-management.models';
 import { FarmManagementService } from '../../../../core/farm-management/farm-management.service';
 import { getApiErrorMessage } from '../../../../core/models/api-error.model';
-import { formatDateOnly } from '../../../../core/utils/date.utils';
+import { DateTimePickerComponent } from '../../../../shared/components/date-time-picker/date-time-picker.component';
 import {
   CompleteFertilizerApplicationProductLineRequest,
   CompleteFertilizerApplicationRequest,
@@ -79,6 +79,7 @@ export interface CompleteProductRowForm {
     MatCheckboxModule,
     MatIconModule,
     MatProgressSpinnerModule,
+    DateTimePickerComponent,
   ],
   providers: [provideNativeDateAdapter()],
   templateUrl: './complete-fertilizer-dialog.component.html',
@@ -110,7 +111,7 @@ export class CompleteFertilizerDialogComponent implements OnInit {
 
   readonly form = this.fb.group({
     actualApplicationDate: [
-      new Date(),
+      new Date().toISOString() as string | Date | null,
       [Validators.required, notFutureDateValidator],
     ],
     actualArea: [
@@ -208,6 +209,12 @@ export class CompleteFertilizerDialogComponent implements OnInit {
     this.shortages.set([]);
 
     const formVal = this.form.value;
+    const appDateStr = typeof formVal.actualApplicationDate === 'string'
+      ? formVal.actualApplicationDate
+      : formVal.actualApplicationDate
+        ? new Date(formVal.actualApplicationDate).toISOString()
+        : '';
+
     const productRequests: CompleteFertilizerApplicationProductLineRequest[] =
       (formVal.products || []).map((p) => ({
         inventoryItemId: p.inventoryItemId!,
@@ -215,7 +222,7 @@ export class CompleteFertilizerDialogComponent implements OnInit {
       }));
 
     const req: CompleteFertilizerApplicationRequest = {
-      actualApplicationDate: formatDateOnly(formVal.actualApplicationDate!)!,
+      actualApplicationDate: appDateStr,
       actualArea: formVal.actualArea ? Number(formVal.actualArea) : undefined,
       actualAreaUnitId: formVal.actualAreaUnitId || undefined,
       acknowledgeVariance: !!formVal.acknowledgeVariance,

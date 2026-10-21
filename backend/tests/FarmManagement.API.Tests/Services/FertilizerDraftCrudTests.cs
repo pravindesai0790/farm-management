@@ -75,7 +75,7 @@ public class FertilizerDraftCrudTests
             CropCycleId: cycle.Id,
             CropCycleStageId: stage.Id,
             ApplicationMethodId: method.Id,
-            PlannedDate: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(2)),
+            PlannedDate: DateTimeOffset.UtcNow.AddDays(2),
             PlannedArea: 15.5m,
             PlannedAreaUnitId: unit.Id,
             PurposeReason: "Spring dressing",
@@ -307,7 +307,7 @@ public class FertilizerDraftCrudTests
         var app = new FertilizerApplication(
             _orgId, "FERT-2026-000001", _userId,
             farmId: farm.Id, farmAreaId: area.Id, applicationMethodId: method.Id,
-            plannedDate: DateOnly.FromDateTime(DateTime.UtcNow));
+            plannedDate: DateTimeOffset.UtcNow);
         var item = CreateInventoryItem(FarmInventoryCategories.FertilizersSoilId);
         var loc = CreateStorageLocation(farm.Id);
         app.AddProduct(item.Id, 100m, _userId, loc.Id);
@@ -399,7 +399,7 @@ public class FertilizerDraftCrudTests
             CropCycleId: cycle.Id,
             CropCycleStageId: stage.Id,
             ApplicationMethodId: method.Id,
-            PlannedDate: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(3)),
+            PlannedDate: DateTimeOffset.UtcNow.AddDays(3),
             PlannedArea: 20m,
             PlannedAreaUnitId: unit.Id,
             PurposeReason: "Base copy test",
@@ -460,14 +460,14 @@ public class FertilizerDraftCrudTests
         var completedApp = new FertilizerApplication(
             _orgId, "FERT-2026-000001", _userId,
             farmId: farm.Id, farmAreaId: area.Id, applicationMethodId: method.Id,
-            plannedDate: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-5)));
+            plannedDate: DateTimeOffset.UtcNow.AddDays(-5));
         var prod = completedApp.AddProduct(item.Id, 100m, _userId, loc.Id);
         prod.RecordActual(105m, Guid.NewGuid(), DateTimeOffset.UtcNow, _userId);
 
         completedApp.Plan(DateTimeOffset.UtcNow, _userId);
-        completedApp.Schedule(DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-5)), DateTimeOffset.UtcNow, _userId);
+        completedApp.Schedule(DateTimeOffset.UtcNow.AddDays(-5), DateTimeOffset.UtcNow, _userId);
         completedApp.Start(DateTimeOffset.UtcNow, _userId);
-        completedApp.Complete(DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-5)), null, null, DateTimeOffset.UtcNow, _userId);
+        completedApp.Complete(DateTimeOffset.UtcNow.AddDays(-5), null, null, DateTimeOffset.UtcNow, _userId);
         _store.Applications.Add(completedApp);
 
         // Act

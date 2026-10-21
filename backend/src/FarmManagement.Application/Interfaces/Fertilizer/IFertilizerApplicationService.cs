@@ -22,6 +22,12 @@ public interface IFertilizerApplicationService
 
     Task<IReadOnlyList<FertilizerProductLookupResponse>> ListProductsLookupAsync(
         FertilizerActor actor,
+        Guid? storageLocationId,
+        Guid? farmId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<FertilizerProductLookupResponse>> ListProductsLookupAsync(
+        FertilizerActor actor,
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<FertilizerStorageLocationLookupResponse>> ListStorageLocationsLookupAsync(

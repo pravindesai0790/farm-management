@@ -1341,8 +1341,8 @@ namespace FarmManagement.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<DateOnly?>("ActualApplicationDate")
-                        .HasColumnType("date")
+                    b.Property<DateTimeOffset?>("ActualApplicationDate")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("actual_application_date");
 
                     b.Property<decimal?>("ActualArea")
@@ -1430,8 +1430,8 @@ namespace FarmManagement.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("planned_area_unit_id");
 
-                    b.Property<DateOnly?>("PlannedDate")
-                        .HasColumnType("date")
+                    b.Property<DateTimeOffset?>("PlannedDate")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("planned_date");
 
                     b.Property<Guid?>("PlantationId")
@@ -1449,8 +1449,8 @@ namespace FarmManagement.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("reference_number");
 
-                    b.Property<DateOnly?>("ScheduledDate")
-                        .HasColumnType("date")
+                    b.Property<DateTimeOffset?>("ScheduledDate")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("scheduled_date");
 
                     b.Property<DateTimeOffset?>("StartedAt")

@@ -49,7 +49,7 @@ public class FertilizerCompleteTests
         _store.Applications.Add(app);
 
         var request = new CompleteFertilizerApplicationRequest(
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow));
+            ActualApplicationDate: DateTimeOffset.UtcNow);
 
         // Act & Assert
         var ex = await Assert.ThrowsAsync<ConflictException>(() =>
@@ -72,7 +72,7 @@ public class FertilizerCompleteTests
         _store.Applications.Add(app);
 
         var request = new CompleteFertilizerApplicationRequest(
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             Version: 2, // stale version
             Products: [new(item.Id, 50m)]);
 
@@ -99,7 +99,7 @@ public class FertilizerCompleteTests
         var app = CreateInProgressApplication(farm.Id, area.Id, item.Id, loc.Id, 50m);
         _store.Applications.Add(app);
 
-        var futureDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1));
+        var futureDate = DateTimeOffset.UtcNow.AddDays(1);
         var request = new CompleteFertilizerApplicationRequest(
             ActualApplicationDate: futureDate,
             Products: [new(item.Id, 50m)]);
@@ -128,7 +128,7 @@ public class FertilizerCompleteTests
         var app = CreateInProgressApplication(farm.Id, area.Id, item.Id, loc.Id, 50m);
         _store.Applications.Add(app);
 
-        var targetDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(dayOffset));
+        var targetDate = DateTimeOffset.UtcNow.AddDays(dayOffset);
         var request = new CompleteFertilizerApplicationRequest(
             ActualApplicationDate: targetDate,
             Products: [new(item.Id, 50m)]);
@@ -158,7 +158,7 @@ public class FertilizerCompleteTests
         _store.Applications.Add(app);
 
         var request = new CompleteFertilizerApplicationRequest(
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             Products: null);
 
         // Act & Assert
@@ -184,7 +184,7 @@ public class FertilizerCompleteTests
             _orgId, "FERT-2026-000001", _userId,
             farmId: farm.Id, farmAreaId: area.Id,
             applicationMethodId: method.Id,
-            plannedDate: DateOnly.FromDateTime(DateTime.UtcNow));
+            plannedDate: DateTimeOffset.UtcNow);
         app.AddProduct(item1.Id, 50m, _userId, loc.Id);
         app.AddProduct(item2.Id, 30m, _userId, loc.Id);
         SetPrivateProperty(app, nameof(FertilizerApplication.Status), FertilizerApplicationStatus.InProgress);
@@ -194,7 +194,7 @@ public class FertilizerCompleteTests
 
         // Request only has item1
         var request = new CompleteFertilizerApplicationRequest(
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             Products: [new(item1.Id, 50m)]);
 
         // Act & Assert
@@ -219,7 +219,7 @@ public class FertilizerCompleteTests
         _store.Applications.Add(app);
 
         var request = new CompleteFertilizerApplicationRequest(
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             Products: [new(foreignItem.Id, 50m)]);
 
         // Act & Assert
@@ -245,7 +245,7 @@ public class FertilizerCompleteTests
         _store.Applications.Add(app);
 
         var request = new CompleteFertilizerApplicationRequest(
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             Products: [new(item.Id, invalidQuantity)]);
 
         // Act & Assert
@@ -276,7 +276,7 @@ public class FertilizerCompleteTests
 
         // Planned is 50, Actual is 65 (variance +15) but AcknowledgeVariance is false
         var request = new CompleteFertilizerApplicationRequest(
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             AcknowledgeVariance: false,
             Products: [new(item.Id, 65m)]);
 
@@ -314,7 +314,7 @@ public class FertilizerCompleteTests
 
         // Actual is 42 (planned 50, variance -8), acknowledged
         var request = new CompleteFertilizerApplicationRequest(
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             AcknowledgeVariance: true,
             Products: [new(item.Id, 42m)]);
 
@@ -359,7 +359,7 @@ public class FertilizerCompleteTests
 
         // Actual matches planned exactly (variance 0), AcknowledgeVariance is false
         var request = new CompleteFertilizerApplicationRequest(
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             AcknowledgeVariance: false,
             Products: [new(item.Id, 50m)]);
 
@@ -396,7 +396,7 @@ public class FertilizerCompleteTests
         _store.Applications.Add(app);
 
         var request = new CompleteFertilizerApplicationRequest(
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             Products: [new(item.Id, 50m)]);
 
         // Act & Assert
@@ -440,7 +440,7 @@ public class FertilizerCompleteTests
         _store.Applications.Add(app);
 
         var request = new CompleteFertilizerApplicationRequest(
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             IdempotencyKey: "complete-key-999",
             Products: [new(item.Id, 50m)]);
 
@@ -475,7 +475,7 @@ public class FertilizerCompleteTests
         _store.Applications.Add(app);
 
         var request1 = new CompleteFertilizerApplicationRequest(
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             IdempotencyKey: "complete-key-999",
             Products: [new(item.Id, 50m)]);
 
@@ -483,7 +483,7 @@ public class FertilizerCompleteTests
 
         // Different request: different actual date
         var request2 = new CompleteFertilizerApplicationRequest(
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-2)),
+            ActualApplicationDate: DateTimeOffset.UtcNow.AddDays(-2),
             IdempotencyKey: "complete-key-999",
             Products: [new(item.Id, 50m)]);
 
@@ -516,7 +516,7 @@ public class FertilizerCompleteTests
         _store.Units.Add(areaUnit);
 
         var request = new CompleteFertilizerApplicationRequest(
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             ActualArea: 12.5m,
             ActualAreaUnitId: areaUnit.Id,
             Products: [new(item.Id, 50m)]);
@@ -543,7 +543,7 @@ public class FertilizerCompleteTests
         _store.Applications.Add(app);
 
         var request = new CompleteFertilizerApplicationRequest(
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             ActualArea: 12.5m,
             ActualAreaUnitId: null, // missing unit
             Products: [new(item.Id, 50m)]);
@@ -571,7 +571,7 @@ public class FertilizerCompleteTests
         _store.Applications.Add(app);
 
         var request = new CompleteFertilizerApplicationRequest(
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             ActualArea: invalidArea,
             ActualAreaUnitId: Guid.NewGuid(),
             Products: [new(item.Id, 50m)]);
@@ -603,7 +603,7 @@ public class FertilizerCompleteTests
         _store.Applications.Add(app);
 
         var request = new CompleteFertilizerApplicationRequest(
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             Products: [new(item.Id, 50m)]);
 
         // Act
@@ -629,7 +629,7 @@ public class FertilizerCompleteTests
             _orgId, "FERT-2026-000001", _userId,
             farmId: farmId, farmAreaId: farmAreaId,
             applicationMethodId: method.Id,
-            plannedDate: DateOnly.FromDateTime(DateTime.UtcNow));
+            plannedDate: DateTimeOffset.UtcNow);
         app.AddProduct(inventoryItemId, plannedQuantity, _userId, storageLocationId);
         SetPrivateProperty(app, nameof(FertilizerApplication.Status), FertilizerApplicationStatus.InProgress);
         SetPrivateProperty(app, nameof(FertilizerApplication.StartedAt), DateTimeOffset.UtcNow);

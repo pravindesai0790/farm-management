@@ -23,8 +23,8 @@ public sealed class FertilizerApplication
         Guid? applicationMethodId = null,
         string? otherMethodDescription = null,
         Guid? irrigationEventId = null,
-        DateOnly? plannedDate = null,
-        DateOnly? scheduledDate = null,
+        DateTimeOffset? plannedDate = null,
+        DateTimeOffset? scheduledDate = null,
         decimal? plannedArea = null,
         Guid? plannedAreaUnitId = null,
         string? purposeReason = null,
@@ -83,9 +83,9 @@ public sealed class FertilizerApplication
     public string? OtherMethodDescription { get; private set; }
     public Guid? IrrigationEventId { get; private set; }
     public string? PurposeReason { get; private set; }
-    public DateOnly? PlannedDate { get; private set; }
-    public DateOnly? ScheduledDate { get; private set; }
-    public DateOnly? ActualApplicationDate { get; private set; }
+    public DateTimeOffset? PlannedDate { get; private set; }
+    public DateTimeOffset? ScheduledDate { get; private set; }
+    public DateTimeOffset? ActualApplicationDate { get; private set; }
     public decimal? PlannedArea { get; private set; }
     public Guid? PlannedAreaUnitId { get; private set; }
     public decimal? ActualArea { get; private set; }
@@ -196,8 +196,8 @@ public sealed class FertilizerApplication
         Guid? applicationMethodId,
         string? otherMethodDescription,
         Guid? irrigationEventId,
-        DateOnly? plannedDate,
-        DateOnly? scheduledDate,
+        DateTimeOffset? plannedDate,
+        DateTimeOffset? scheduledDate,
         decimal? plannedArea,
         Guid? plannedAreaUnitId,
         string? purposeReason,
@@ -285,7 +285,7 @@ public sealed class FertilizerApplication
         Version++;
     }
 
-    public void Schedule(DateOnly scheduledDate, DateTimeOffset now, Guid updatedBy)
+    public void Schedule(DateTimeOffset scheduledDate, DateTimeOffset now, Guid updatedBy)
     {
         if (Status != FertilizerApplicationStatus.Planned && Status != FertilizerApplicationStatus.Draft)
         {
@@ -304,7 +304,7 @@ public sealed class FertilizerApplication
         Version++;
     }
 
-    public void Reschedule(DateOnly scheduledDate, DateTimeOffset now, Guid updatedBy)
+    public void Reschedule(DateTimeOffset scheduledDate, DateTimeOffset now, Guid updatedBy)
     {
         if (Status != FertilizerApplicationStatus.Planned && Status != FertilizerApplicationStatus.Scheduled)
         {
@@ -362,7 +362,7 @@ public sealed class FertilizerApplication
     }
 
     public void Complete(
-        DateOnly actualApplicationDate,
+        DateTimeOffset actualApplicationDate,
         decimal? actualArea,
         Guid? actualAreaUnitId,
         DateTimeOffset now,
@@ -413,7 +413,7 @@ public sealed class FertilizerApplication
         string reason,
         DateTimeOffset now,
         Guid userId,
-        DateOnly? actualApplicationDate = null)
+        DateTimeOffset? actualApplicationDate = null)
     {
         if (Status == FertilizerApplicationStatus.Completed || Status == FertilizerApplicationStatus.Cancelled)
         {
@@ -446,7 +446,7 @@ public sealed class FertilizerApplication
         Guid farmId,
         Guid farmAreaId,
         Guid applicationMethodId,
-        DateOnly actualApplicationDate,
+        DateTimeOffset actualApplicationDate,
         Guid createdBy,
         Guid? plantationId = null,
         Guid? cropCycleId = null,

@@ -275,7 +275,7 @@ public class FertilizerAuthorizationSecurityTests
         var app = new FertilizerApplication(_otherOrgId, "FERT-2026-999999", _userId, farm.Id, area.Id);
         _store.Applications.Add(app);
 
-        var request = new ScheduleFertilizerApplicationRequest(DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)));
+        var request = new ScheduleFertilizerApplicationRequest(DateTimeOffset.UtcNow.AddDays(1));
 
         await Assert.ThrowsAsync<ResourceNotFoundException>(() =>
             _service.ScheduleAsync(CreateActor(), app.Id, request, null));
@@ -290,7 +290,7 @@ public class FertilizerAuthorizationSecurityTests
         SetPrivateProperty(app, nameof(FertilizerApplication.Status), FertilizerApplicationStatus.Scheduled);
         _store.Applications.Add(app);
 
-        var request = new RescheduleFertilizerApplicationRequest(DateOnly.FromDateTime(DateTime.UtcNow.AddDays(2)));
+        var request = new RescheduleFertilizerApplicationRequest(DateTimeOffset.UtcNow.AddDays(2));
 
         await Assert.ThrowsAsync<ResourceNotFoundException>(() =>
             _service.RescheduleAsync(CreateActor(), app.Id, request, null));
@@ -320,7 +320,7 @@ public class FertilizerAuthorizationSecurityTests
         SetPrivateProperty(app, nameof(FertilizerApplication.Status), FertilizerApplicationStatus.InProgress);
         _store.Applications.Add(app);
 
-        var request = new CompleteFertilizerApplicationRequest(DateOnly.FromDateTime(DateTime.UtcNow), Products: []);
+        var request = new CompleteFertilizerApplicationRequest(DateTimeOffset.UtcNow, Products: []);
 
         await Assert.ThrowsAsync<ResourceNotFoundException>(() =>
             _service.CompleteAsync(CreateActor(), app.Id, request, null));
@@ -456,11 +456,11 @@ public class FertilizerAuthorizationSecurityTests
 
         // 4. ScheduleAsync
         await Assert.ThrowsAsync<ConflictException>(() =>
-            _service.ScheduleAsync(actor, app.Id, new ScheduleFertilizerApplicationRequest(DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1))), null));
+            _service.ScheduleAsync(actor, app.Id, new ScheduleFertilizerApplicationRequest(DateTimeOffset.UtcNow.AddDays(1)), null));
 
         // 5. RescheduleAsync
         await Assert.ThrowsAsync<ConflictException>(() =>
-            _service.RescheduleAsync(actor, app.Id, new RescheduleFertilizerApplicationRequest(DateOnly.FromDateTime(DateTime.UtcNow.AddDays(2))), null));
+            _service.RescheduleAsync(actor, app.Id, new RescheduleFertilizerApplicationRequest(DateTimeOffset.UtcNow.AddDays(2)), null));
 
         // 6. StartAsync
         await Assert.ThrowsAsync<ConflictException>(() =>
@@ -468,7 +468,7 @@ public class FertilizerAuthorizationSecurityTests
 
         // 7. CompleteAsync
         await Assert.ThrowsAsync<ConflictException>(() =>
-            _service.CompleteAsync(actor, app.Id, new CompleteFertilizerApplicationRequest(DateOnly.FromDateTime(DateTime.UtcNow), Products: []), null));
+            _service.CompleteAsync(actor, app.Id, new CompleteFertilizerApplicationRequest(DateTimeOffset.UtcNow, Products: []), null));
 
         // 8. CancelAsync
         await Assert.ThrowsAsync<ConflictException>(() =>
@@ -476,10 +476,10 @@ public class FertilizerAuthorizationSecurityTests
 
         // 9. Direct domain mutation methods throw InvalidOperationException
         Assert.Throws<InvalidOperationException>(() => app.Plan(DateTimeOffset.UtcNow, _userId));
-        Assert.Throws<InvalidOperationException>(() => app.Schedule(DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)), DateTimeOffset.UtcNow, _userId));
-        Assert.Throws<InvalidOperationException>(() => app.Reschedule(DateOnly.FromDateTime(DateTime.UtcNow.AddDays(2)), DateTimeOffset.UtcNow, _userId));
+        Assert.Throws<InvalidOperationException>(() => app.Schedule(DateTimeOffset.UtcNow.AddDays(1), DateTimeOffset.UtcNow, _userId));
+        Assert.Throws<InvalidOperationException>(() => app.Reschedule(DateTimeOffset.UtcNow.AddDays(2), DateTimeOffset.UtcNow, _userId));
         Assert.Throws<InvalidOperationException>(() => app.Start(DateTimeOffset.UtcNow, _userId));
-        Assert.Throws<InvalidOperationException>(() => app.Complete(DateOnly.FromDateTime(DateTime.UtcNow), null, null, DateTimeOffset.UtcNow, _userId));
+        Assert.Throws<InvalidOperationException>(() => app.Complete(DateTimeOffset.UtcNow, null, null, DateTimeOffset.UtcNow, _userId));
         Assert.Throws<InvalidOperationException>(() => app.Cancel("Reason", DateTimeOffset.UtcNow, _userId));
         Assert.Throws<InvalidOperationException>(() => app.AddProduct(new FertilizerApplicationProduct(app.Id, Guid.NewGuid(), 10m, _userId)));
         Assert.Throws<InvalidOperationException>(() => app.RemoveProduct(Guid.NewGuid()));
@@ -510,11 +510,11 @@ public class FertilizerAuthorizationSecurityTests
 
         // 4. ScheduleAsync
         await Assert.ThrowsAsync<ConflictException>(() =>
-            _service.ScheduleAsync(actor, app.Id, new ScheduleFertilizerApplicationRequest(DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1))), null));
+            _service.ScheduleAsync(actor, app.Id, new ScheduleFertilizerApplicationRequest(DateTimeOffset.UtcNow.AddDays(1)), null));
 
         // 5. RescheduleAsync
         await Assert.ThrowsAsync<ConflictException>(() =>
-            _service.RescheduleAsync(actor, app.Id, new RescheduleFertilizerApplicationRequest(DateOnly.FromDateTime(DateTime.UtcNow.AddDays(2))), null));
+            _service.RescheduleAsync(actor, app.Id, new RescheduleFertilizerApplicationRequest(DateTimeOffset.UtcNow.AddDays(2)), null));
 
         // 6. StartAsync
         await Assert.ThrowsAsync<ConflictException>(() =>
@@ -522,7 +522,7 @@ public class FertilizerAuthorizationSecurityTests
 
         // 7. CompleteAsync
         await Assert.ThrowsAsync<ConflictException>(() =>
-            _service.CompleteAsync(actor, app.Id, new CompleteFertilizerApplicationRequest(DateOnly.FromDateTime(DateTime.UtcNow), Products: []), null));
+            _service.CompleteAsync(actor, app.Id, new CompleteFertilizerApplicationRequest(DateTimeOffset.UtcNow, Products: []), null));
 
         // 8. CancelAsync
         await Assert.ThrowsAsync<ConflictException>(() =>
@@ -530,10 +530,10 @@ public class FertilizerAuthorizationSecurityTests
 
         // 9. Direct domain mutation methods throw InvalidOperationException
         Assert.Throws<InvalidOperationException>(() => app.Plan(DateTimeOffset.UtcNow, _userId));
-        Assert.Throws<InvalidOperationException>(() => app.Schedule(DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)), DateTimeOffset.UtcNow, _userId));
-        Assert.Throws<InvalidOperationException>(() => app.Reschedule(DateOnly.FromDateTime(DateTime.UtcNow.AddDays(2)), DateTimeOffset.UtcNow, _userId));
+        Assert.Throws<InvalidOperationException>(() => app.Schedule(DateTimeOffset.UtcNow.AddDays(1), DateTimeOffset.UtcNow, _userId));
+        Assert.Throws<InvalidOperationException>(() => app.Reschedule(DateTimeOffset.UtcNow.AddDays(2), DateTimeOffset.UtcNow, _userId));
         Assert.Throws<InvalidOperationException>(() => app.Start(DateTimeOffset.UtcNow, _userId));
-        Assert.Throws<InvalidOperationException>(() => app.Complete(DateOnly.FromDateTime(DateTime.UtcNow), null, null, DateTimeOffset.UtcNow, _userId));
+        Assert.Throws<InvalidOperationException>(() => app.Complete(DateTimeOffset.UtcNow, null, null, DateTimeOffset.UtcNow, _userId));
         Assert.Throws<InvalidOperationException>(() => app.Cancel("Reason", DateTimeOffset.UtcNow, _userId));
         Assert.Throws<InvalidOperationException>(() => app.AddProduct(new FertilizerApplicationProduct(app.Id, Guid.NewGuid(), 10m, _userId)));
         Assert.Throws<InvalidOperationException>(() => app.RemoveProduct(Guid.NewGuid()));
@@ -560,10 +560,10 @@ public class FertilizerAuthorizationSecurityTests
             _service.PlanAsync(actor, app.Id, new PlanFertilizerApplicationRequest(), null));
 
         await Assert.ThrowsAsync<ConflictException>(() =>
-            _service.ScheduleAsync(actor, app.Id, new ScheduleFertilizerApplicationRequest(DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1))), null));
+            _service.ScheduleAsync(actor, app.Id, new ScheduleFertilizerApplicationRequest(DateTimeOffset.UtcNow.AddDays(1)), null));
 
         await Assert.ThrowsAsync<ConflictException>(() =>
-            _service.RescheduleAsync(actor, app.Id, new RescheduleFertilizerApplicationRequest(DateOnly.FromDateTime(DateTime.UtcNow.AddDays(2))), null));
+            _service.RescheduleAsync(actor, app.Id, new RescheduleFertilizerApplicationRequest(DateTimeOffset.UtcNow.AddDays(2)), null));
 
         await Assert.ThrowsAsync<ConflictException>(() =>
             _service.StartAsync(actor, app.Id, new StartFertilizerApplicationRequest(), null));
@@ -585,7 +585,7 @@ public class FertilizerAuthorizationSecurityTests
         CreateStockBalance(farm.Id, loc.Id, item.Id, 100m);
 
         // 1. Create Draft
-        var plannedDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(2));
+        var plannedDate = DateTimeOffset.UtcNow.AddDays(2);
         var draft = await _service.CreateDraftAsync(actor, new CreateFertilizerDraftRequest(
             farm.Id, area.Id, ApplicationMethodId: method.Id,
             PlannedDate: plannedDate,
@@ -616,14 +616,14 @@ public class FertilizerAuthorizationSecurityTests
         Assert.Equal("10.0.0.3", audit3.IpAddress);
 
         // 4. Schedule
-        var schedDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(2));
+        var schedDate = DateTimeOffset.UtcNow.AddDays(2);
         var scheduled = await _service.ScheduleAsync(actor, draft.Id, new ScheduleFertilizerApplicationRequest(schedDate, Version: planned.Version), "10.0.0.4");
         var audit4 = _store.AuditLogs.Last();
         Assert.Equal("Fertilizer.Scheduled", audit4.Action);
         Assert.Equal("10.0.0.4", audit4.IpAddress);
 
         // 5. Reschedule
-        var newSchedDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(3));
+        var newSchedDate = DateTimeOffset.UtcNow.AddDays(3);
         var rescheduled = await _service.RescheduleAsync(actor, draft.Id, new RescheduleFertilizerApplicationRequest(newSchedDate, Version: scheduled.Version), "10.0.0.5");
         var audit5 = _store.AuditLogs.Last();
         Assert.Equal("Fertilizer.Rescheduled", audit5.Action);
@@ -636,7 +636,7 @@ public class FertilizerAuthorizationSecurityTests
         Assert.Equal("10.0.0.6", audit6.IpAddress);
 
         // 7. Complete
-        var actualDate = DateOnly.FromDateTime(DateTime.UtcNow);
+        var actualDate = DateTimeOffset.UtcNow;
         var completed = await _service.CompleteAsync(actor, draft.Id, new CompleteFertilizerApplicationRequest(
             actualDate,
             Products: [new(item.Id, 22m)],

@@ -256,11 +256,11 @@
           <div class="kpi-val-row">
             <span class="kpi-value date-val">
               @if (app.actualApplicationDate) {
-                {{ app.actualApplicationDate | date:'mediumDate' }}
+                {{ app.actualApplicationDate | date:'medium' }}
               } @else if (app.scheduledDate) {
-                {{ app.scheduledDate | date:'mediumDate' }}
+                {{ app.scheduledDate | date:'medium' }}
               } @else if (app.plannedDate) {
-                {{ app.plannedDate | date:'mediumDate' }}
+                {{ app.plannedDate | date:'medium' }}
               } @else {
                 Not scheduled
               }
@@ -335,16 +335,16 @@
               </div>
             }
             <div class="info-row">
-              <span class="info-label">Planned Date</span>
-              <span class="info-val">{{ (app.plannedDate | date:'mediumDate') || '—' }}</span>
+              <span class="info-label">Planned Date & Time</span>
+              <span class="info-val">{{ (app.plannedDate | date:'medium') || '—' }}</span>
             </div>
             <div class="info-row">
-              <span class="info-label">Scheduled Date</span>
-              <span class="info-val">{{ (app.scheduledDate | date:'mediumDate') || '—' }}</span>
+              <span class="info-label">Scheduled Date & Time</span>
+              <span class="info-val">{{ (app.scheduledDate | date:'medium') || '—' }}</span>
             </div>
             <div class="info-row">
               <span class="info-label">Actual Application</span>
-              <span class="info-val">{{ (app.actualApplicationDate | date:'mediumDate') || '—' }}</span>
+              <span class="info-val">{{ (app.actualApplicationDate | date:'medium') || '—' }}</span>
             </div>
             @if (app.purposeReason) {
               <div class="info-row notes-row">

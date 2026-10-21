@@ -220,7 +220,7 @@ public class FertilizerApplicationsControllerTests
         var fakeService = new FakeFertilizerApplicationService();
         var controller = CreateController(fakeService);
         var id = Guid.NewGuid();
-        var request = new PlanFertilizerApplicationRequest(PlannedDate: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)));
+        var request = new PlanFertilizerApplicationRequest(PlannedDate: DateTimeOffset.UtcNow.AddDays(1));
 
         // Act
         var actionResult = await controller.Plan(id, request);
@@ -239,7 +239,7 @@ public class FertilizerApplicationsControllerTests
         var fakeService = new FakeFertilizerApplicationService();
         var controller = CreateController(fakeService);
         var id = Guid.NewGuid();
-        var request = new ScheduleFertilizerApplicationRequest(DateOnly.FromDateTime(DateTime.UtcNow.AddDays(2)));
+        var request = new ScheduleFertilizerApplicationRequest(DateTimeOffset.UtcNow.AddDays(2));
 
         // Act
         var actionResult = await controller.Schedule(id, request);
@@ -258,7 +258,7 @@ public class FertilizerApplicationsControllerTests
         var fakeService = new FakeFertilizerApplicationService();
         var controller = CreateController(fakeService);
         var id = Guid.NewGuid();
-        var request = new RescheduleFertilizerApplicationRequest(DateOnly.FromDateTime(DateTime.UtcNow.AddDays(5)));
+        var request = new RescheduleFertilizerApplicationRequest(DateTimeOffset.UtcNow.AddDays(5));
 
         // Act
         var actionResult = await controller.Reschedule(id, request);
@@ -296,7 +296,7 @@ public class FertilizerApplicationsControllerTests
         var fakeService = new FakeFertilizerApplicationService();
         var controller = CreateController(fakeService);
         var id = Guid.NewGuid();
-        var request = new CompleteFertilizerApplicationRequest(DateOnly.FromDateTime(DateTime.UtcNow));
+        var request = new CompleteFertilizerApplicationRequest(DateTimeOffset.UtcNow);
 
         // Act
         var actionResult = await controller.Complete(id, request);
@@ -343,7 +343,7 @@ public class FertilizerApplicationsControllerTests
             FarmId: farmId,
             FarmAreaId: areaId,
             ApplicationMethodId: methodId,
-            ActualApplicationDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            ActualApplicationDate: DateTimeOffset.UtcNow,
             Products: [new(itemId, locId, 50m)]);
 
         // Act
@@ -442,6 +442,8 @@ public class FertilizerApplicationsControllerTests
 
         public Task<IReadOnlyList<FertilizerProductLookupResponse>> ListProductsLookupAsync(
             FertilizerActor actor,
+            Guid? storageLocationId = null,
+            Guid? farmId = null,
             CancellationToken cancellationToken = default)
         {
             var item = new FertilizerProductLookupResponse(
@@ -453,10 +455,17 @@ public class FertilizerApplicationsControllerTests
                 "KG",
                 "kg",
                 Guid.NewGuid(),
-                "Fertilizers");
+                "Fertilizers",
+                storageLocationId.HasValue ? 100m : 0m,
+                storageLocationId.HasValue);
 
             return Task.FromResult<IReadOnlyList<FertilizerProductLookupResponse>>([item]);
         }
+
+        public Task<IReadOnlyList<FertilizerProductLookupResponse>> ListProductsLookupAsync(
+            FertilizerActor actor,
+            CancellationToken cancellationToken = default)
+            => ListProductsLookupAsync(actor, null, null, cancellationToken);
 
         public Task<IReadOnlyList<FertilizerStorageLocationLookupResponse>> ListStorageLocationsLookupAsync(
             FertilizerActor actor,
@@ -664,7 +673,7 @@ public class FertilizerApplicationsControllerTests
                 "PLANNED",
                 Guid.NewGuid(), null, Guid.NewGuid(), null, null, null, null, null, null, null,
                 Guid.NewGuid(), null, null, null, null,
-                DateOnly.FromDateTime(DateTime.UtcNow), null, null,
+                DateTimeOffset.UtcNow, null, null,
                 null, null, null, null, null, null,
                 "Planned application",
                 null,
@@ -693,7 +702,7 @@ public class FertilizerApplicationsControllerTests
                 "SCHEDULED",
                 Guid.NewGuid(), null, Guid.NewGuid(), null, null, null, null, null, null, null,
                 Guid.NewGuid(), null, null, null, null,
-                DateOnly.FromDateTime(DateTime.UtcNow), request.ScheduledDate, null,
+                DateTimeOffset.UtcNow, request.ScheduledDate, null,
                 null, null, null, null, null, null,
                 "Scheduled application",
                 null,
@@ -722,7 +731,7 @@ public class FertilizerApplicationsControllerTests
                 "SCHEDULED",
                 Guid.NewGuid(), null, Guid.NewGuid(), null, null, null, null, null, null, null,
                 Guid.NewGuid(), null, null, null, null,
-                DateOnly.FromDateTime(DateTime.UtcNow), request.ScheduledDate, null,
+                DateTimeOffset.UtcNow, request.ScheduledDate, null,
                 null, null, null, null, null, null,
                 "Rescheduled application",
                 null,
@@ -751,7 +760,7 @@ public class FertilizerApplicationsControllerTests
                 "IN_PROGRESS",
                 Guid.NewGuid(), null, Guid.NewGuid(), null, null, null, null, null, null, null,
                 Guid.NewGuid(), null, null, null, null,
-                DateOnly.FromDateTime(DateTime.UtcNow), null, null,
+                DateTimeOffset.UtcNow, null, null,
                 null, null, null, null, null, null,
                 "Started application",
                 null,

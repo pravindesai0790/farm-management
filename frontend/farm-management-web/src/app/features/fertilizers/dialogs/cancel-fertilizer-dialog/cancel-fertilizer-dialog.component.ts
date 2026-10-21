@@ -31,7 +31,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { finalize } from 'rxjs';
 import { getApiErrorMessage } from '../../../../core/models/api-error.model';
-import { formatDateOnly } from '../../../../core/utils/date.utils';
+import { DateTimePickerComponent } from '../../../../shared/components/date-time-picker/date-time-picker.component';
 import {
   CancelFertilizerApplicationProductLineRequest,
   CancelFertilizerApplicationRequest,
@@ -77,6 +77,7 @@ export interface CancelProductRowForm {
     MatDatepickerModule,
     MatIconModule,
     MatProgressSpinnerModule,
+    DateTimePickerComponent,
   ],
   providers: [provideNativeDateAdapter()],
   templateUrl: './cancel-fertilizer-dialog.component.html',
@@ -108,7 +109,7 @@ export class CancelFertilizerDialogComponent implements OnInit {
       [Validators.required, Validators.maxLength(1000)],
     ],
     actualApplicationDate: [
-      new Date(),
+      new Date().toISOString() as string | Date | null,
       [notFutureDateValidator],
     ],
     products: this.fb.array<FormGroup<CancelProductRowForm>>([]),
@@ -221,6 +222,11 @@ export class CancelFertilizerDialogComponent implements OnInit {
 
     const formVal = this.form.value;
     const hasPos = this.hasPositiveUsage();
+    const appDateStr = typeof formVal.actualApplicationDate === 'string'
+      ? formVal.actualApplicationDate
+      : formVal.actualApplicationDate
+        ? new Date(formVal.actualApplicationDate).toISOString()
+        : undefined;
 
     const productRequests: CancelFertilizerApplicationProductLineRequest[] =
       (formVal.products || []).map((p) => ({
@@ -231,9 +237,7 @@ export class CancelFertilizerDialogComponent implements OnInit {
 
     const req: CancelFertilizerApplicationRequest = {
       cancellationReason: reason,
-      actualApplicationDate: hasPos
-        ? formatDateOnly(formVal.actualApplicationDate!)
-        : undefined,
+      actualApplicationDate: hasPos ? appDateStr : undefined,
       version: this.app.version,
       idempotencyKey: crypto.randomUUID(),
       products: productRequests,

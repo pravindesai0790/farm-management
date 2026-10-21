@@ -24,7 +24,7 @@ import {
 } from '../../../../core/fertilizers/fertilizer.models';
 import { FertilizerService } from '../../../../core/fertilizers/fertilizer.service';
 import { getApiErrorMessage } from '../../../../core/models/api-error.model';
-import { formatDateOnly, parseDateOnly } from '../../../../core/utils/date.utils';
+import { DateTimePickerComponent } from '../../../../shared/components/date-time-picker/date-time-picker.component';
 
 export interface ScheduleFertilizerDialogData {
   readonly applicationId: string;
@@ -48,6 +48,7 @@ export interface ScheduleFertilizerDialogData {
     MatIconModule,
     MatDatepickerModule,
     MatProgressSpinnerModule,
+    DateTimePickerComponent,
   ],
   templateUrl: './schedule-fertilizer-dialog.component.html',
   styleUrl: './schedule-fertilizer-dialog.component.scss',
@@ -68,7 +69,7 @@ export class ScheduleFertilizerDialogComponent {
 
   readonly form = this.fb.group({
     scheduledDate: [
-      this.data.currentScheduledDate ? parseDateOnly(this.data.currentScheduledDate) : new Date(),
+      (this.data.currentScheduledDate || new Date().toISOString()) as string | Date | null,
       [Validators.required],
     ],
   });
@@ -80,7 +81,7 @@ export class ScheduleFertilizerDialogComponent {
     }
 
     const dateVal = this.form.value.scheduledDate;
-    const formattedDate = formatDateOnly(dateVal);
+    const formattedDate = typeof dateVal === 'string' ? dateVal : dateVal ? new Date(dateVal).toISOString() : '';
     if (!formattedDate) {
       this.errorMessage.set('Please select a valid scheduled date.');
       return;

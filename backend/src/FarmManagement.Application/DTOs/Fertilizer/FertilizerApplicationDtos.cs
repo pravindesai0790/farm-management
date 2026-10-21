@@ -38,9 +38,9 @@ public sealed record FertilizerApplicationListItemResponse(
     string? ApplicationMethodName,
     string? OtherMethodDescription,
     Guid? IrrigationEventId,
-    DateOnly? PlannedDate,
-    DateOnly? ScheduledDate,
-    DateOnly? ActualApplicationDate,
+    DateTimeOffset? PlannedDate,
+    DateTimeOffset? ScheduledDate,
+    DateTimeOffset? ActualApplicationDate,
     decimal? PlannedArea,
     Guid? PlannedAreaUnitId,
     string? PlannedAreaUnitName,
@@ -101,9 +101,9 @@ public sealed record FertilizerApplicationDetailsResponse(
     string? OtherMethodDescription,
     Guid? IrrigationEventId,
     string? IrrigationEventReference,
-    DateOnly? PlannedDate,
-    DateOnly? ScheduledDate,
-    DateOnly? ActualApplicationDate,
+    DateTimeOffset? PlannedDate,
+    DateTimeOffset? ScheduledDate,
+    DateTimeOffset? ActualApplicationDate,
     decimal? PlannedArea,
     Guid? PlannedAreaUnitId,
     string? PlannedAreaUnitName,
@@ -140,7 +140,9 @@ public sealed record FertilizerProductLookupResponse(
     string? StockUnitCode,
     string? StockUnitSymbol,
     Guid? CategoryId,
-    string? CategoryName);
+    string? CategoryName,
+    decimal AvailableQuantity = 0m,
+    bool HasStock = false);
 
 public sealed record FertilizerStorageLocationLookupResponse(
     Guid StorageLocationId,
@@ -184,8 +186,8 @@ public sealed record CreateFertilizerDraftRequest(
     Guid? ApplicationMethodId = null,
     string? OtherMethodDescription = null,
     Guid? IrrigationEventId = null,
-    DateOnly? PlannedDate = null,
-    DateOnly? ScheduledDate = null,
+    DateTimeOffset? PlannedDate = null,
+    DateTimeOffset? ScheduledDate = null,
     decimal? PlannedArea = null,
     Guid? PlannedAreaUnitId = null,
     string? PurposeReason = null,
@@ -200,8 +202,8 @@ public sealed record UpdateFertilizerDraftRequest(
     Guid? ApplicationMethodId = null,
     string? OtherMethodDescription = null,
     Guid? IrrigationEventId = null,
-    DateOnly? PlannedDate = null,
-    DateOnly? ScheduledDate = null,
+    DateTimeOffset? PlannedDate = null,
+    DateTimeOffset? ScheduledDate = null,
     decimal? PlannedArea = null,
     Guid? PlannedAreaUnitId = null,
     string? PurposeReason = null,
@@ -214,8 +216,8 @@ public sealed record FertilizerDraftProductLineRequest(
     Guid? StorageLocationId = null);
 
 public sealed record PlanFertilizerApplicationRequest(
-    DateOnly? PlannedDate = null,
-    DateOnly? ScheduledDate = null,
+    DateTimeOffset? PlannedDate = null,
+    DateTimeOffset? ScheduledDate = null,
     Guid? FarmId = null,
     Guid? FarmAreaId = null,
     Guid? PlantationId = null,
@@ -231,11 +233,11 @@ public sealed record PlanFertilizerApplicationRequest(
     IReadOnlyList<FertilizerDraftProductLineRequest>? Products = null);
 
 public sealed record ScheduleFertilizerApplicationRequest(
-    DateOnly ScheduledDate,
+    DateTimeOffset ScheduledDate,
     uint? Version = null);
 
 public sealed record RescheduleFertilizerApplicationRequest(
-    DateOnly ScheduledDate,
+    DateTimeOffset ScheduledDate,
     uint? Version = null);
 
 public sealed record StartFertilizerApplicationRequest(
@@ -243,7 +245,7 @@ public sealed record StartFertilizerApplicationRequest(
     string? IdempotencyKey = null);
 
 public sealed record CompleteFertilizerApplicationRequest(
-    DateOnly ActualApplicationDate,
+    DateTimeOffset ActualApplicationDate,
     decimal? ActualArea = null,
     Guid? ActualAreaUnitId = null,
     uint? Version = null,
@@ -257,7 +259,7 @@ public sealed record CompleteFertilizerApplicationProductLineRequest(
 
 public sealed record CancelFertilizerApplicationRequest(
     string CancellationReason,
-    DateOnly? ActualApplicationDate = null,
+    DateTimeOffset? ActualApplicationDate = null,
     uint? Version = null,
     string? IdempotencyKey = null,
     IReadOnlyList<CancelFertilizerApplicationProductLineRequest>? Products = null);
@@ -282,7 +284,7 @@ public sealed record RecordCompletedFertilizerApplicationRequest(
     Guid FarmId,
     Guid FarmAreaId,
     Guid ApplicationMethodId,
-    DateOnly ActualApplicationDate,
+    DateTimeOffset ActualApplicationDate,
     IReadOnlyList<RecordCompletedFertilizerProductLineRequest> Products,
     Guid? PlantationId = null,
     Guid? CropCycleId = null,

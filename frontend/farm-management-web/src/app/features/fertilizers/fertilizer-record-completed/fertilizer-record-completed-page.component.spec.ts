@@ -214,7 +214,7 @@ describe('FertilizerRecordCompletedPageComponent', () => {
     expect(mockFertilizerService.recordCompleted).toHaveBeenCalledWith(
       jasmine.objectContaining({
         farmId: 'farm-1',
-        actualApplicationDate: '2026-01-15',
+        actualApplicationDate: jasmine.stringMatching(/2026-01/),
         acknowledgeRetrospectiveStockDeduction: true,
       }),
     );

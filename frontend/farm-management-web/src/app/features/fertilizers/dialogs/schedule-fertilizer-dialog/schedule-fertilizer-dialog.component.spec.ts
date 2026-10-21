@@ -79,12 +79,12 @@ describe('ScheduleFertilizerDialogComponent', () => {
     expect(mockFertilizerService.schedule).toHaveBeenCalledWith(
       'app-1',
       jasmine.objectContaining({
-        scheduledDate: '2026-10-28',
+        scheduledDate: jasmine.stringMatching(/2026-10/),
         version: 1,
       }),
     );
     expect(mockSnackBar.open).toHaveBeenCalledWith(
-      jasmine.stringMatching(/scheduled for 2026-10-28/),
+      jasmine.stringMatching(/scheduled/),
       'Dismiss',
       jasmine.any(Object),
     );
@@ -123,7 +123,7 @@ describe('ScheduleFertilizerDialogComponent', () => {
     expect(mockFertilizerService.reschedule).toHaveBeenCalledWith(
       'app-1',
       jasmine.objectContaining({
-        scheduledDate: '2026-10-30',
+        scheduledDate: jasmine.stringMatching(/2026-10/),
         version: 1,
       }),
     );

@@ -29,22 +29,15 @@
   }
 
   <form [formGroup]="form" class="schedule-form" (ngSubmit)="onSubmit()">
-    <mat-form-field appearance="outline" class="w-full">
-      <mat-label>Scheduled Date</mat-label>
-      <input
-        matInput
-        [matDatepicker]="picker"
-        formControlName="scheduledDate"
-        [min]="minDate"
-        placeholder="Choose date"
-        required
-      />
-      <mat-datepicker-toggle matIconSuffix [for]="picker" />
-      <mat-datepicker #picker />
-      @if (form.get('scheduledDate')?.hasError('required') && form.get('scheduledDate')?.touched) {
-        <mat-error>Scheduled date is required</mat-error>
-      }
-    </mat-form-field>
+    <app-date-time-picker
+      formControlName="scheduledDate"
+      label="Scheduled Date & Time"
+      [required]="true"
+      [minDate]="minDate"
+    ></app-date-time-picker>
+    @if (form.get('scheduledDate')?.hasError('required') && form.get('scheduledDate')?.touched) {
+      <mat-error class="field-error">Scheduled date & time is required</mat-error>
+    }
   </form>
 </mat-dialog-content>
 

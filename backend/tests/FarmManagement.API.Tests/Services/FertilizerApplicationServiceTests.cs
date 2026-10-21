@@ -141,8 +141,8 @@ public class FertilizerApplicationServiceTests
         var toDate = new DateOnly(2026, 5, 31);
 
         var appWithNullPlannedDate = new FertilizerApplication(_orgId, "FERT-2026-000001", _userId, plannedDate: null);
-        var appInRange = new FertilizerApplication(_orgId, "FERT-2026-000002", _userId, plannedDate: new DateOnly(2026, 5, 15));
-        var appOutOfRange = new FertilizerApplication(_orgId, "FERT-2026-000003", _userId, plannedDate: new DateOnly(2026, 6, 1));
+        var appInRange = new FertilizerApplication(_orgId, "FERT-2026-000002", _userId, plannedDate: new DateTimeOffset(2026, 5, 15, 8, 0, 0, TimeSpan.Zero));
+        var appOutOfRange = new FertilizerApplication(_orgId, "FERT-2026-000003", _userId, plannedDate: new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero));
 
         _store.Applications.AddRange([appWithNullPlannedDate, appInRange, appOutOfRange]);
 
@@ -173,7 +173,7 @@ public class FertilizerApplicationServiceTests
 
         var appNullActual = new FertilizerApplication(_orgId, "FERT-2026-000001", _userId);
         var appMatchingActual = new FertilizerApplication(_orgId, "FERT-2026-000002", _userId);
-        SetPrivateProperty(appMatchingActual, nameof(FertilizerApplication.ActualApplicationDate), new DateOnly(2026, 4, 10));
+        SetPrivateProperty(appMatchingActual, nameof(FertilizerApplication.ActualApplicationDate), new DateTimeOffset(2026, 4, 10, 8, 0, 0, TimeSpan.Zero));
 
         _store.Applications.AddRange([appNullActual, appMatchingActual]);
 
@@ -527,14 +527,21 @@ public class FertilizerApplicationServiceTests
             var hasRange = query.FromDate.HasValue || query.ToDate.HasValue;
             var dateType = query.DateType?.Trim().ToLowerInvariant();
 
+            DateTimeOffset? fromOffset = query.FromDate.HasValue
+                ? new DateTimeOffset(query.FromDate.Value.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc))
+                : null;
+            DateTimeOffset? toOffset = query.ToDate.HasValue
+                ? new DateTimeOffset(query.ToDate.Value.ToDateTime(TimeOnly.MaxValue, DateTimeKind.Utc))
+                : null;
+
             switch (dateType)
             {
                 case "planneddate":
                     if (hasRange)
                     {
                         q = q.Where(a => a.PlannedDate != null);
-                        if (query.FromDate.HasValue) q = q.Where(a => a.PlannedDate >= query.FromDate.Value);
-                        if (query.ToDate.HasValue) q = q.Where(a => a.PlannedDate <= query.ToDate.Value);
+                        if (fromOffset.HasValue) q = q.Where(a => a.PlannedDate >= fromOffset.Value);
+                        if (toOffset.HasValue) q = q.Where(a => a.PlannedDate <= toOffset.Value);
                     }
                     break;
 
@@ -542,8 +549,8 @@ public class FertilizerApplicationServiceTests
                     if (hasRange)
                     {
                         q = q.Where(a => a.ScheduledDate != null);
-                        if (query.FromDate.HasValue) q = q.Where(a => a.ScheduledDate >= query.FromDate.Value);
-                        if (query.ToDate.HasValue) q = q.Where(a => a.ScheduledDate <= query.ToDate.Value);
+                        if (fromOffset.HasValue) q = q.Where(a => a.ScheduledDate >= fromOffset.Value);
+                        if (toOffset.HasValue) q = q.Where(a => a.ScheduledDate <= toOffset.Value);
                     }
                     break;
 
@@ -551,8 +558,8 @@ public class FertilizerApplicationServiceTests
                     if (hasRange)
                     {
                         q = q.Where(a => a.ActualApplicationDate != null);
-                        if (query.FromDate.HasValue) q = q.Where(a => a.ActualApplicationDate >= query.FromDate.Value);
-                        if (query.ToDate.HasValue) q = q.Where(a => a.ActualApplicationDate <= query.ToDate.Value);
+                        if (fromOffset.HasValue) q = q.Where(a => a.ActualApplicationDate >= fromOffset.Value);
+                        if (toOffset.HasValue) q = q.Where(a => a.ActualApplicationDate <= toOffset.Value);
                     }
                     break;
             }
