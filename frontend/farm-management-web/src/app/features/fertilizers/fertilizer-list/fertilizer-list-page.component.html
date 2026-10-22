@@ -433,14 +433,14 @@
       </a>
     }
 
-    @if ((app.status === 'Draft' || app.status === 'Planned') && permissionService.has("Fertilizer.Schedule")) {
+    @if ((app.status === 'Draft' || app.status === 'Planned') && permissionService.has("Fertilizer.Update")) {
       <button mat-menu-item (click)="scheduleApplication(app)">
         <mat-icon>event</mat-icon>
         <span>Schedule</span>
       </button>
     }
 
-    @if (app.status === 'Scheduled' && permissionService.has("Fertilizer.Schedule")) {
+    @if (app.status === 'Scheduled' && permissionService.has("Fertilizer.Update")) {
       <button mat-menu-item (click)="rescheduleApplication(app)">
         <mat-icon>edit_calendar</mat-icon>
         <span>Reschedule</span>

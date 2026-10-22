@@ -253,6 +253,28 @@ public class FertilizerApplicationServiceTests
     }
 
     [Fact]
+    public async Task GetAsync_WithIrrigationEvent_ReturnsFormattedIrrigationEventReference()
+    {
+        // Arrange
+        var actor = CreateActor();
+        var farmId = Guid.NewGuid();
+        var areaId = Guid.NewGuid();
+        var app = new FertilizerApplication(_orgId, "FERT-2026-000002", _userId, farmId: farmId, farmAreaId: areaId);
+        var irrigationEvent = new IrrigationEvent(_orgId, farmId, areaId, _userId);
+        var method = new IrrigationMethod(_orgId, "DRIP", "Drip Irrigation", isSystem: false);
+        SetPrivateProperty(irrigationEvent, nameof(IrrigationEvent.IrrigationMethod), method);
+        SetPrivateProperty(app, nameof(FertilizerApplication.IrrigationEvent), irrigationEvent);
+        _store.Applications.Add(app);
+
+        // Act
+        var details = await _sut.GetAsync(actor, app.Id);
+
+        // Assert
+        Assert.NotNull(details);
+        Assert.Equal("Drip Irrigation (Draft)", details.IrrigationEventReference);
+    }
+
+    [Fact]
     public async Task GetAsync_CrossOrganization_ThrowsResourceNotFoundException()
     {
         // Arrange

@@ -111,6 +111,7 @@ export class FertilizerListPageComponent implements OnInit {
 
   readonly statusTabs: readonly StatusTabOption[] = [
     { key: 'all', label: 'All', status: '' },
+    { key: 'draft', label: 'Draft', status: 'Draft' },
     { key: 'planned', label: 'Planned', status: 'Planned' },
     { key: 'scheduled', label: 'Scheduled', status: 'Scheduled' },
     { key: 'in_progress', label: 'In Progress', status: 'InProgress' },

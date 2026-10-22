@@ -303,6 +303,14 @@ export class FertilizerEditorPageComponent implements OnInit {
 
     if (app.farmId) {
       this.loadFarmDependents(app.farmId, app.farmAreaId || undefined);
+      if (app.irrigationEventId) {
+        this.loadIrrigations(
+          app.farmId,
+          app.farmAreaId || undefined,
+          app.irrigationEventId,
+          app.irrigationEventReference || undefined,
+        );
+      }
     }
     if (app.plantationId) {
       this.loadPlantationCycles(app.plantationId);
@@ -439,12 +447,42 @@ export class FertilizerEditorPageComponent implements OnInit {
     }
   }
 
-  loadIrrigations(farmId: string, areaId?: string): void {
+  loadIrrigations(
+    farmId: string,
+    areaId?: string,
+    currentEventId?: string,
+    currentEventRef?: string,
+  ): void {
     this.fertilizerService
       .getIrrigationsLookup(farmId, areaId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (irrs) => this.irrigations.set(irrs),
+        next: (irrs) => {
+          const list = [...irrs];
+          const targetId = currentEventId || this.form.value.irrigationEventId;
+          if (targetId && !list.some((x) => x.id === targetId)) {
+            list.unshift({
+              id: targetId,
+              farmId,
+              farmAreaId: areaId || '',
+              farmAreaName: this.applicationDetails()?.farmAreaName || 'Selected Area',
+              cropCycleId: null,
+              cropCycleName: null,
+              status: 'Linked',
+              plannedAt: null,
+              scheduledAt: null,
+              actualStartedAt: null,
+              actualEndedAt: null,
+              irrigationMethodName:
+                currentEventRef ||
+                this.applicationDetails()?.irrigationEventReference ||
+                'Linked Irrigation',
+              actualWaterQuantity: null,
+              waterUnitSymbol: null,
+            });
+          }
+          this.irrigations.set(list);
+        },
         error: () => this.irrigations.set([]),
       });
   }

@@ -2158,7 +2158,9 @@ public sealed class FertilizerApplicationService(
             app.ApplicationMethod?.Name,
             app.OtherMethodDescription,
             app.IrrigationEventId,
-            null, // Irrigation event reference if loaded
+            app.IrrigationEvent != null
+                ? $"{app.IrrigationEvent.IrrigationMethod?.Name ?? "Irrigation"} ({app.IrrigationEvent.Status})"
+                : null,
             app.PlannedDate,
             app.ScheduledDate,
             app.ActualApplicationDate,
