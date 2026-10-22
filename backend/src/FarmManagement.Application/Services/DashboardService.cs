@@ -150,25 +150,25 @@ public sealed class DashboardService(IDashboardStore store) : IDashboardService
             {
                 var daysOverdue = CalculateDaysOverdue(s.ScheduledDateTime, s.PlannedDate, today);
                 overdueList.Add(new PriorityActivityItemDto(
-                    s.Id, "SPRAY", title, s.FarmId, s.FarmName, s.FarmAreaName, s.CropCycleName, schedDisplay, daysOverdue, s.Status, $"/activities/sprays/{s.Id}"));
+                    s.Id, "SPRAY", title, s.FarmId, s.FarmName, s.FarmAreaName, s.CropCycleName, schedDisplay, daysOverdue, s.Status, ResolveActivityRoute("SPRAY", s.Id)));
             }
             else if (IsToday(s.ScheduledDateTime, s.PlannedDate, today) && !string.Equals(s.Status, "COMPLETED", StringComparison.OrdinalIgnoreCase) && !string.Equals(s.Status, "CANCELLED", StringComparison.OrdinalIgnoreCase))
             {
                 todayList.Add(new PriorityActivityItemDto(
-                    s.Id, "SPRAY", title, s.FarmId, s.FarmName, s.FarmAreaName, s.CropCycleName, schedDisplay, null, s.Status, $"/activities/sprays/{s.Id}"));
+                    s.Id, "SPRAY", title, s.FarmId, s.FarmName, s.FarmAreaName, s.CropCycleName, schedDisplay, null, s.Status, ResolveActivityRoute("SPRAY", s.Id)));
             }
 
             if (string.Equals(s.Status, "IN_PROGRESS", StringComparison.OrdinalIgnoreCase))
             {
                 inProgressList.Add(new PriorityActivityItemDto(
-                    s.Id, "SPRAY", title, s.FarmId, s.FarmName, s.FarmAreaName, s.CropCycleName, schedDisplay, null, s.Status, $"/activities/sprays/{s.Id}"));
+                    s.Id, "SPRAY", title, s.FarmId, s.FarmName, s.FarmAreaName, s.CropCycleName, schedDisplay, null, s.Status, ResolveActivityRoute("SPRAY", s.Id)));
             }
 
             if (s.ReEntryIntervalExpiresAt.HasValue && s.ReEntryIntervalExpiresAt.Value > now)
             {
                 var remainingMinutes = Math.Max(1, (int)(s.ReEntryIntervalExpiresAt.Value - now).TotalMinutes);
                 reiAlerts.Add(new ReiSafetyAlertDto(
-                    s.Id, s.TargetName ?? "General Pest/Disease", s.FarmId, s.FarmName, s.FarmAreaName, s.ReEntryIntervalExpiresAt.Value, remainingMinutes, $"/activities/sprays/{s.Id}"));
+                    s.Id, s.TargetName ?? "General Pest/Disease", s.FarmId, s.FarmName, s.FarmAreaName, s.ReEntryIntervalExpiresAt.Value, remainingMinutes, ResolveActivityRoute("SPRAY", s.Id)));
             }
         }
 
@@ -184,18 +184,18 @@ public sealed class DashboardService(IDashboardStore store) : IDashboardService
             {
                 var daysOverdue = CalculateDaysOverdue(i.ScheduledAt, i.PlannedAt, today);
                 overdueList.Add(new PriorityActivityItemDto(
-                    i.Id, "IRRIGATION", title, i.FarmId, i.FarmName, i.FarmAreaName, i.CropCycleName, schedDisplay, daysOverdue, i.Status, $"/activities/irrigations"));
+                    i.Id, "IRRIGATION", title, i.FarmId, i.FarmName, i.FarmAreaName, i.CropCycleName, schedDisplay, daysOverdue, i.Status, ResolveActivityRoute("IRRIGATION", i.Id)));
             }
             else if (IsToday(i.ScheduledAt, i.PlannedAt, today) && !string.Equals(i.Status, "COMPLETED", StringComparison.OrdinalIgnoreCase) && !string.Equals(i.Status, "CANCELLED", StringComparison.OrdinalIgnoreCase))
             {
                 todayList.Add(new PriorityActivityItemDto(
-                    i.Id, "IRRIGATION", title, i.FarmId, i.FarmName, i.FarmAreaName, i.CropCycleName, schedDisplay, null, i.Status, $"/activities/irrigations"));
+                    i.Id, "IRRIGATION", title, i.FarmId, i.FarmName, i.FarmAreaName, i.CropCycleName, schedDisplay, null, i.Status, ResolveActivityRoute("IRRIGATION", i.Id)));
             }
 
             if (string.Equals(i.Status, "IN_PROGRESS", StringComparison.OrdinalIgnoreCase))
             {
                 inProgressList.Add(new PriorityActivityItemDto(
-                    i.Id, "IRRIGATION", title, i.FarmId, i.FarmName, i.FarmAreaName, i.CropCycleName, schedDisplay, null, i.Status, $"/activities/irrigations"));
+                    i.Id, "IRRIGATION", title, i.FarmId, i.FarmName, i.FarmAreaName, i.CropCycleName, schedDisplay, null, i.Status, ResolveActivityRoute("IRRIGATION", i.Id)));
             }
         }
 
@@ -211,18 +211,18 @@ public sealed class DashboardService(IDashboardStore store) : IDashboardService
             {
                 var daysOverdue = CalculateDaysOverdue(f.ScheduledDate, f.PlannedDate, today);
                 overdueList.Add(new PriorityActivityItemDto(
-                    f.Id, "FERTILIZER", title, f.FarmId, f.FarmName, f.FarmAreaName, f.CropCycleName, schedDisplay, daysOverdue, f.Status, $"/activities/fertilizers"));
+                    f.Id, "FERTILIZER", title, f.FarmId, f.FarmName, f.FarmAreaName, f.CropCycleName, schedDisplay, daysOverdue, f.Status, ResolveActivityRoute("FERTILIZER", f.Id)));
             }
             else if (IsToday(f.ScheduledDate, f.PlannedDate, today) && !string.Equals(f.Status, "COMPLETED", StringComparison.OrdinalIgnoreCase) && !string.Equals(f.Status, "CANCELLED", StringComparison.OrdinalIgnoreCase))
             {
                 todayList.Add(new PriorityActivityItemDto(
-                    f.Id, "FERTILIZER", title, f.FarmId, f.FarmName, f.FarmAreaName, f.CropCycleName, schedDisplay, null, f.Status, $"/activities/fertilizers"));
+                    f.Id, "FERTILIZER", title, f.FarmId, f.FarmName, f.FarmAreaName, f.CropCycleName, schedDisplay, null, f.Status, ResolveActivityRoute("FERTILIZER", f.Id)));
             }
 
             if (string.Equals(f.Status, "IN_PROGRESS", StringComparison.OrdinalIgnoreCase))
             {
                 inProgressList.Add(new PriorityActivityItemDto(
-                    f.Id, "FERTILIZER", title, f.FarmId, f.FarmName, f.FarmAreaName, f.CropCycleName, schedDisplay, null, f.Status, $"/activities/fertilizers"));
+                    f.Id, "FERTILIZER", title, f.FarmId, f.FarmName, f.FarmAreaName, f.CropCycleName, schedDisplay, null, f.Status, ResolveActivityRoute("FERTILIZER", f.Id)));
             }
         }
 
@@ -236,12 +236,12 @@ public sealed class DashboardService(IDashboardStore store) : IDashboardService
             {
                 var daysOverdue = today.DayNumber - l.ActivityDate.DayNumber;
                 overdueList.Add(new PriorityActivityItemDto(
-                    l.Id, "LABOR", title, l.FarmId, l.FarmName, l.FarmAreaName, l.CropCycleName, schedDisplay, daysOverdue, l.Status, $"/activities/labor-activities"));
+                    l.Id, "LABOR", title, l.FarmId, l.FarmName, l.FarmAreaName, l.CropCycleName, schedDisplay, daysOverdue, l.Status, ResolveActivityRoute("LABOR", l.Id)));
             }
             else if (l.ActivityDate == today)
             {
                 todayList.Add(new PriorityActivityItemDto(
-                    l.Id, "LABOR", title, l.FarmId, l.FarmName, l.FarmAreaName, l.CropCycleName, schedDisplay, null, l.Status, $"/activities/labor-activities"));
+                    l.Id, "LABOR", title, l.FarmId, l.FarmName, l.FarmAreaName, l.CropCycleName, schedDisplay, null, l.Status, ResolveActivityRoute("LABOR", l.Id)));
             }
         }
 
@@ -454,18 +454,18 @@ public sealed class DashboardService(IDashboardStore store) : IDashboardService
 
     private static string ResolveActivityRoute(string activityType, Guid id) => activityType.ToUpperInvariant() switch
     {
-        "SPRAY" => $"/activities/sprays/{id}",
-        "IRRIGATION" => $"/activities/irrigations",
-        "FERTILIZER" => $"/activities/fertilizers",
-        "LABOR" => $"/activities/labor-activities",
+        "SPRAY" => $"/sprays/{id}",
+        "IRRIGATION" => $"/irrigations/{id}",
+        "FERTILIZER" => $"/fertilizer-applications/{id}",
+        "LABOR" => $"/activities/labor-activities/{id}",
         _ => "/activities"
     };
 
     private static string ResolveRecentActivityRoute(string eventType, Guid id) => eventType switch
     {
-        "SPRAY_COMPLETED" => $"/activities/sprays/{id}",
-        "IRRIGATION_COMPLETED" => $"/activities/irrigations",
-        "FERTILIZER_COMPLETED" => $"/activities/fertilizers",
+        "SPRAY_COMPLETED" => $"/sprays/{id}",
+        "IRRIGATION_COMPLETED" => $"/irrigations/{id}",
+        "FERTILIZER_COMPLETED" => $"/fertilizer-applications/{id}",
         "ATTENDANCE_FINALIZED" => "/labor/attendance",
         "STOCK_RECEIVED" => "/inventory/ledger",
         _ => "/dashboard"

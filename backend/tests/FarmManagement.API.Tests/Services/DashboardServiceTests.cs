@@ -88,6 +88,18 @@ public sealed class DashboardServiceTests
         Assert.Equal(3000m, result.OverdueInvoicesTotalAmount);
         Assert.NotNull(result.AttendanceAlert);
         Assert.Equal("NOT_RECORDED", result.AttendanceAlert.Status);
+
+        var sprayOverdue = result.OverdueActivities.First(a => a.ActivityType == "SPRAY");
+        Assert.Equal($"/sprays/{sprays[0].Id}", sprayOverdue.RouteUrl);
+
+        var irrigationOverdue = result.OverdueActivities.First(a => a.ActivityType == "IRRIGATION");
+        Assert.Equal($"/irrigations/{irrigations[0].Id}", irrigationOverdue.RouteUrl);
+
+        var laborOverdue = result.OverdueActivities.First(a => a.ActivityType == "LABOR");
+        Assert.Equal($"/activities/labor-activities/{laborActivities[0].Id}", laborOverdue.RouteUrl);
+
+        var fertilizerToday = result.TodayActivities.First(a => a.ActivityType == "FERTILIZER");
+        Assert.Equal($"/fertilizer-applications/{fertilizers[0].Id}", fertilizerToday.RouteUrl);
     }
 
     [Fact]
@@ -119,6 +131,7 @@ public sealed class DashboardServiceTests
         Assert.Single(result.ActiveReiAlerts);
         Assert.Equal("Downy Mildew", result.ActiveReiAlerts[0].TargetPest);
         Assert.True(result.ActiveReiAlerts[0].RemainingMinutes > 0);
+        Assert.Equal($"/sprays/{sprays[0].Id}", result.ActiveReiAlerts[0].RouteUrl);
     }
 
     [Fact]
@@ -138,7 +151,9 @@ public sealed class DashboardServiceTests
         Assert.NotNull(result);
         Assert.Equal(2, result.Items.Count);
         Assert.Equal("IRRIGATION", result.Items[0].ActivityType);
+        Assert.Equal($"/irrigations/{_store.UpcomingActivities[1].Id}", result.Items[0].RouteUrl);
         Assert.Equal("SPRAY", result.Items[1].ActivityType);
+        Assert.Equal($"/sprays/{_store.UpcomingActivities[0].Id}", result.Items[1].RouteUrl);
     }
 
     [Fact]

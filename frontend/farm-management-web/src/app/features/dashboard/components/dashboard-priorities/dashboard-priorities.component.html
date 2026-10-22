@@ -115,14 +115,14 @@
                       {{ item.daysOverdue }}d overdue
                     </span>
                   </div>
-                  <strong class="task-title">{{ item.title }}</strong>
+                  <a class="task-title" [routerLink]="item.routeUrl">{{ item.title }}</a>
                   <p class="task-meta">
                     <span>{{ item.farmName }}</span>
                     @if (item.farmAreaName) { <span> · {{ item.farmAreaName }}</span> }
                   </p>
                   <div class="task-actions">
                     <a mat-stroked-button color="warn" [routerLink]="item.routeUrl">
-                      Execute <mat-icon>arrow_forward</mat-icon>
+                      View Details <mat-icon>arrow_forward</mat-icon>
                     </a>
                   </div>
                 </div>
@@ -160,14 +160,14 @@
                       {{ item.scheduledDisplay || "Today" }}
                     </span>
                   </div>
-                  <strong class="task-title">{{ item.title }}</strong>
+                  <a class="task-title" [routerLink]="item.routeUrl">{{ item.title }}</a>
                   <p class="task-meta">
                     <span>{{ item.farmName }}</span>
                     @if (item.farmAreaName) { <span> · {{ item.farmAreaName }}</span> }
                   </p>
                   <div class="task-actions">
                     <a mat-stroked-button color="primary" [routerLink]="item.routeUrl">
-                      Start Task <mat-icon>play_arrow</mat-icon>
+                      View Details <mat-icon>arrow_forward</mat-icon>
                     </a>
                   </div>
                 </div>
@@ -203,11 +203,11 @@
                     </span>
                     <span class="pulse-tag">Active in field</span>
                   </div>
-                  <strong class="task-title">{{ item.title }}</strong>
+                  <a class="task-title" [routerLink]="item.routeUrl">{{ item.title }}</a>
                   <p class="task-meta">{{ item.farmName }} · Running now</p>
                   <div class="task-actions">
                     <a mat-flat-button color="primary" [routerLink]="item.routeUrl">
-                      Complete <mat-icon>check</mat-icon>
+                      View Details <mat-icon>arrow_forward</mat-icon>
                     </a>
                   </div>
                 </div>

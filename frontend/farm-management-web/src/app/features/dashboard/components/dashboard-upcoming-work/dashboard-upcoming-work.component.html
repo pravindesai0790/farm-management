@@ -102,7 +102,7 @@
                 <span class="status-pill">{{ item.status }}</span>
               </div>
 
-              <strong class="item-title">{{ item.title }}</strong>
+              <a class="item-title" [routerLink]="item.routeUrl">{{ item.title }}</a>
 
               <p class="item-location">
                 <span>{{ item.farmName }}</span>

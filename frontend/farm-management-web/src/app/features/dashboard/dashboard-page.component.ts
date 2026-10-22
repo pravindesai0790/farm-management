@@ -37,6 +37,8 @@ import { DashboardInventorySummaryComponent } from "./components/dashboard-inven
 import { DashboardFinancialSummaryComponent } from "./components/dashboard-financial-summary/dashboard-financial-summary.component";
 import { DashboardActivityFeedComponent } from "./components/dashboard-activity-feed/dashboard-activity-feed.component";
 
+const SELECTED_FARM_STORAGE_KEY = "fm_dashboard_selected_farm_id";
+
 @Component({
   selector: "app-dashboard-page",
   standalone: true,
@@ -82,8 +84,12 @@ export class DashboardPageComponent implements OnInit {
   readonly currentUser = this.authService.user;
 
   ngOnInit(): void {
+    const savedFarmId = localStorage.getItem(SELECTED_FARM_STORAGE_KEY) || "";
+    if (savedFarmId) {
+      this.selectedFarmId.set(savedFarmId);
+    }
     this.loadFarms();
-    this.loadDashboardData();
+    this.loadDashboardData(savedFarmId || undefined);
   }
 
   loadFarms(): void {
@@ -93,6 +99,16 @@ export class DashboardPageComponent implements OnInit {
       .subscribe({
         next: (response) => {
           this.farms.set(response.items);
+          const currentSelected = this.selectedFarmId();
+          if (
+            currentSelected &&
+            !response.items.some((f) => f.id === currentSelected)
+          ) {
+            // Saved farm is no longer valid or accessible in this organization
+            this.selectedFarmId.set("");
+            localStorage.removeItem(SELECTED_FARM_STORAGE_KEY);
+            this.loadDashboardData();
+          }
         },
         error: () => {
           // Non-blocking: summary endpoint still functions for organization scope
@@ -144,6 +160,11 @@ export class DashboardPageComponent implements OnInit {
 
   onFarmChange(farmId: string): void {
     this.selectedFarmId.set(farmId);
+    if (farmId) {
+      localStorage.setItem(SELECTED_FARM_STORAGE_KEY, farmId);
+    } else {
+      localStorage.removeItem(SELECTED_FARM_STORAGE_KEY);
+    }
     this.loadDashboardData(farmId);
   }
 

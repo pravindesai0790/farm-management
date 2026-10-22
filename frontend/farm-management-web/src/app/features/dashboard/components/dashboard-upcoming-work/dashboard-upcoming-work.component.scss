@@ -188,6 +188,13 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      text-decoration: none;
+      cursor: pointer;
+
+      &:hover {
+        color: var(--app-primary, #1b5e20);
+        text-decoration: underline;
+      }
     }
 
     .item-location {

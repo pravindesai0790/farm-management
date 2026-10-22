@@ -172,6 +172,7 @@ export class MainLayoutComponent {
             {
               id: "labor-activities",
               label: "Labor activities",
+              icon: "engineering",
               route: "/activities/labor-activities",
               permissions: ["LaborActivity.View"],
             },

@@ -81,6 +81,8 @@
       <app-dashboard-priorities
         [priorities]="priorities()"
         [isLoading]="isLoadingPriorities()"
+        [selectedFarmName]="getSelectedFarmName()"
+        (refresh)="refresh()"
       />
 
       <!-- Section C: Operations Grid (Crop Cycles + Acreage Mix) -->

@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  effect,
   inject,
   input,
   OnInit,
@@ -50,14 +51,24 @@ export class DashboardUpcomingWorkComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly farmService = inject(FarmManagementService);
 
-  ngOnInit(): void {
-    this.loadUpcoming();
+  constructor() {
+    effect(() => {
+      const fId = this.farmId();
+      const horizon = this.daysHorizon();
+      this.loadUpcoming(fId, horizon);
+    });
   }
 
-  loadUpcoming(): void {
+  ngOnInit(): void {
+    // Initial fetch handled by effect
+  }
+
+  loadUpcoming(farmId?: string, horizon?: number): void {
     this.isLoading.set(true);
+    const fId = farmId !== undefined ? farmId : this.farmId();
+    const days = horizon !== undefined ? horizon : this.daysHorizon();
     this.farmService
-      .getDashboardUpcomingWork(this.farmId() || undefined, this.daysHorizon())
+      .getDashboardUpcomingWork(fId || undefined, days)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res) => {
