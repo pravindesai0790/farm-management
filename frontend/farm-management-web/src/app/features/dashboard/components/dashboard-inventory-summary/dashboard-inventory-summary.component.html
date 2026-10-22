@@ -1,0 +1,129 @@
+<mat-card class="inventory-card">
+  <mat-card-content>
+    <div class="card-title-bar">
+      <div>
+        <p class="card-eyebrow">Warehouse & Input Stocks</p>
+        <h2>Inventory Operational Status</h2>
+      </div>
+      <div class="header-actions">
+        <a mat-stroked-button routerLink="/inventory" class="subtle-btn">
+          <mat-icon>inventory_2</mat-icon> Catalog
+        </a>
+        <a mat-stroked-button color="primary" routerLink="/inventory/operations" class="primary-btn">
+          <mat-icon>swap_horiz</mat-icon> Stock Operations
+        </a>
+      </div>
+    </div>
+
+    @if (isLoading()) {
+      <div class="loading-state">
+        <mat-spinner diameter="32"></mat-spinner>
+        <span>Checking warehouse stock balances...</span>
+      </div>
+    } @else if (inventoryData(); as inv) {
+      <div class="inventory-content-grid">
+        <!-- Out of stock section -->
+        <div class="inventory-panel stockout-panel">
+          <div class="panel-header">
+            <div class="panel-title-group">
+              <mat-icon class="panel-icon warn-icon">report_problem</mat-icon>
+              <h3>Depleted Stock Items</h3>
+            </div>
+            @if (inv.outOfStockCount > 0) {
+              <span class="count-badge count-badge-warn">{{ inv.outOfStockCount }} depleted</span>
+            } @else {
+              <span class="count-badge count-badge-ok">All Stocked</span>
+            }
+          </div>
+
+          @if (inv.outOfStockCount === 0) {
+            <div class="empty-status ok-status">
+              <mat-icon>check_circle</mat-icon>
+              <p>No inventory items are currently depleted in active storage locations.</p>
+            </div>
+          } @else {
+            <div class="stockout-list">
+              @for (item of inv.outOfStockItems; track item.inventoryItemId + item.storageLocationId) {
+                <div class="stockout-row">
+                  <div class="item-main">
+                    <strong class="item-name">{{ item.itemName }}</strong>
+                    <div class="item-meta">
+                      @if (item.categoryName) {
+                        <span class="category-tag">{{ item.categoryName }}</span>
+                      }
+                      <span class="location-name">
+                        <mat-icon>warehouse</mat-icon> {{ item.storageLocationName }} ({{ item.farmName }})
+                      </span>
+                    </div>
+                  </div>
+                  <div class="item-action">
+                    <span class="qty-zero">0 {{ item.stockUnitSymbol }}</span>
+                    <a
+                      mat-button
+                      color="primary"
+                      routerLink="/inventory/operations"
+                      [queryParams]="{ itemId: item.inventoryItemId }"
+                      class="restock-btn"
+                    >
+                      Receive
+                    </a>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- 7-Day Stock Consumption Section -->
+        <div class="inventory-panel consumption-panel">
+          <div class="panel-header">
+            <div class="panel-title-group">
+              <mat-icon class="panel-icon info-icon">trending_down</mat-icon>
+              <h3>Top Consumed Inputs (7 Days)</h3>
+            </div>
+            <a mat-button color="primary" routerLink="/inventory/ledger" class="ledger-link">
+              Ledger <mat-icon>chevron_right</mat-icon>
+            </a>
+          </div>
+
+          @if (!inv.recentConsumptions || inv.recentConsumptions.length === 0) {
+            <div class="empty-status">
+              <mat-icon>sync_alt</mat-icon>
+              <p>No input issues or spray deductions recorded in the last 7 days.</p>
+            </div>
+          } @else {
+            <div class="consumption-list">
+              @for (c of inv.recentConsumptions; track c.inventoryItemId) {
+                <div class="consumption-row">
+                  <div class="consumption-info">
+                    <strong class="item-name">{{ c.itemName }}</strong>
+                    @if (c.categoryName) {
+                      <span class="category-tag">{{ c.categoryName }}</span>
+                    }
+                  </div>
+                  <div class="consumption-qty">
+                    <span class="qty-num">-{{ c.totalConsumedQuantity | number: "1.0-2" }}</span>
+                    <span class="qty-unit">{{ c.stockUnitSymbol }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Quick inventory footer strip -->
+      <div class="inventory-footer-strip">
+        <div class="footer-metric">
+          <span class="footer-label">Catalog Items:</span>
+          <strong>{{ inv.totalItemsCount }}</strong>
+        </div>
+        <span class="footer-divider">·</span>
+        <div class="footer-metric">
+          <span class="footer-label">Active Storage Locations:</span>
+          <strong>{{ inv.totalLocationsCount }}</strong>
+        </div>
+      </div>
+    }
+  </mat-card-content>
+</mat-card>

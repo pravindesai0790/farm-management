@@ -1,0 +1,195 @@
+<mat-card class="labor-card">
+  <mat-card-content>
+    <div class="card-title-bar">
+      <div>
+        <p class="card-eyebrow">Workforce Operations</p>
+        <div class="title-with-badge">
+          <h2>Today's Labor Pulse</h2>
+          @if (labor(); as l) {
+            <span
+              class="status-tag"
+              [class.status-tag-active]="l.todayStatus === 'FINALIZED'"
+              [class.status-tag-draft]="l.todayStatus === 'DRAFT'"
+              [class.status-tag-empty]="l.todayStatus === 'NOT_RECORDED' || l.todayStatus === 'NOT_STARTED'"
+            >
+              {{ l.todayStatus }}
+              @if (l.finalizedAt) {
+                · {{ l.finalizedAt | date: "shortTime" }}
+              }
+            </span>
+          }
+        </div>
+      </div>
+      <a
+        mat-stroked-button
+        color="primary"
+        routerLink="/labor/attendance"
+        [queryParams]="selectedFarmId() ? { farmId: selectedFarmId() } : {}"
+        class="roster-link"
+      >
+        <mat-icon>checklist</mat-icon> Daily Roster
+      </a>
+    </div>
+
+    @if (!labor()) {
+      <div class="empty-panel">
+        <mat-icon>groups</mat-icon>
+        <p>No labor data recorded for today.</p>
+        <a mat-button color="primary" routerLink="/labor/attendance">
+          Take Attendance
+        </a>
+      </div>
+    } @else {
+      @let l = labor()!;
+
+      <!-- KPI metrics row -->
+      <div class="labor-metrics-grid">
+        <div class="mini-stat-card">
+          <div class="mini-stat-header">
+            <span class="mini-stat-label">Turnout</span>
+            <span class="mini-stat-icon turnout-icon"><mat-icon>how_to_reg</mat-icon></span>
+          </div>
+          <div class="mini-stat-value">
+            {{ l.workedWorkersCount }} <span class="mini-stat-sub">/ {{ l.assignedWorkersCount }}</span>
+          </div>
+          <div class="turnout-bar-container">
+            <div class="turnout-bar" [style.width.%]="turnoutPercentage()"></div>
+          </div>
+          <span class="turnout-subtext">{{ turnoutPercentage() }}% crew present</span>
+        </div>
+
+        <div class="mini-stat-card">
+          <div class="mini-stat-header">
+            <span class="mini-stat-label">Not Worked</span>
+            <span class="mini-stat-icon absent-icon"><mat-icon>person_off</mat-icon></span>
+          </div>
+          <div class="mini-stat-value">{{ l.notWorkedCount }}</div>
+          <span class="mini-stat-caption">Absent / Unassigned</span>
+        </div>
+
+        <div class="mini-stat-card">
+          <div class="mini-stat-header">
+            <span class="mini-stat-label">Hours Logged</span>
+            <span class="mini-stat-icon hours-icon"><mat-icon>schedule</mat-icon></span>
+          </div>
+          <div class="mini-stat-value">{{ l.totalWorkingHours | number: "1.0-1" }} <span class="mini-stat-sub">hrs</span></div>
+          <span class="mini-stat-caption">Full: {{ l.fullDayCount }} · Half: {{ l.halfDayCount }} · Hr: {{ l.hourlyCount }}</span>
+        </div>
+
+        <div class="mini-stat-card highlight-card">
+          <div class="mini-stat-header">
+            <span class="mini-stat-label">Today's Wage Expense</span>
+            <span class="mini-stat-icon wage-icon"><mat-icon>payments</mat-icon></span>
+          </div>
+          <div class="mini-stat-value wage-value">
+            {{ l.currencySymbol }}{{ l.todayWageExpense | number: "1.2-2" }}
+          </div>
+          <span class="mini-stat-caption">Accrued to earnings ledger</span>
+        </div>
+      </div>
+
+      <!-- Skill Mix and 7-Day Trend Row -->
+      <div class="labor-details-row">
+        <!-- Skill Mix Chips -->
+        @if (l.skillMix && l.skillMix.length > 0) {
+          <div class="skill-mix-panel">
+            <span class="detail-subtitle">Category Distribution</span>
+            <div class="chips-list">
+              @for (item of l.skillMix; track item.categoryName) {
+                <span class="mix-chip">
+                  <span class="mix-name">{{ item.categoryName }}</span>
+                  <span class="mix-count">{{ item.workerCount }}</span>
+                </span>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- 7-Day Wage & Attendance Trend -->
+        @if (l.recentDaysTrend && l.recentDaysTrend.length > 0) {
+          <div class="trend-panel">
+            <span class="detail-subtitle">7-Day Wage & Workforce Trend</span>
+            <div class="trend-bars">
+              @for (day of l.recentDaysTrend; track day.date) {
+                <div
+                  class="trend-bar-col"
+                  [matTooltip]="(day.date | date: 'EEE, MMM d') + ': ' + day.workedCount + ' workers · ' + l.currencySymbol + (day.wageExpense | number: '1.2-2') + ' (' + day.status + ')'"
+                >
+                  <div class="bar-track">
+                    <div
+                      class="bar-fill"
+                      [style.height.%]="(day.wageExpense / maxTrendExpense()) * 100"
+                      [class.bar-finalized]="day.status === 'FINALIZED'"
+                    ></div>
+                  </div>
+                  <span class="bar-day">{{ day.date | date: "EEE" }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Farm-wise Attendance Breakdown (Organization View) -->
+      @if (l.farmSummaries && l.farmSummaries.length > 1) {
+        <div class="farm-attendance-section">
+          <span class="detail-subtitle">Attendance by Farm</span>
+          <div class="farm-table-wrapper">
+            <table class="compact-table">
+              <thead>
+                <tr>
+                  <th>Farm</th>
+                  <th>Assigned Crew</th>
+                  <th>Worked Today</th>
+                  <th>Today's Wage</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (fs of l.farmSummaries; track fs.farmId) {
+                  <tr>
+                    <td class="farm-name-cell">
+                      <strong>{{ fs.farmName }}</strong>
+                    </td>
+                    <td>{{ fs.assignedCount }}</td>
+                    <td>
+                      <span class="present-num">{{ fs.workedCount }}</span>
+                      @if (fs.assignedCount > 0) {
+                        <span class="pct-num">({{ (fs.workedCount / fs.assignedCount) * 100 | number: "1.0-0" }}%)</span>
+                      }
+                    </td>
+                    <td class="wage-cell">
+                      {{ l.currencySymbol }}{{ fs.todayWageExpense | number: "1.2-2" }}
+                    </td>
+                    <td>
+                      <span
+                        class="status-tag"
+                        [class.status-tag-active]="fs.status === 'FINALIZED'"
+                        [class.status-tag-draft]="fs.status === 'DRAFT'"
+                        [class.status-tag-empty]="fs.status === 'NOT_RECORDED'"
+                      >
+                        {{ fs.status }}
+                      </span>
+                    </td>
+                    <td>
+                      <a
+                        mat-button
+                        color="primary"
+                        routerLink="/labor/attendance"
+                        [queryParams]="{ farmId: fs.farmId }"
+                        class="table-action-btn"
+                      >
+                        Roster <mat-icon>chevron_right</mat-icon>
+                      </a>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      }
+    }
+  </mat-card-content>
+</mat-card>

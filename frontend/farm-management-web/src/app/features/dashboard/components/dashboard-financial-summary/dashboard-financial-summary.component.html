@@ -1,0 +1,113 @@
+@if (hasAccess()) {
+  <mat-card class="financial-card">
+    <mat-card-content>
+      <div class="card-title-bar">
+        <div>
+          <p class="card-eyebrow">Financial Accounting & Payables</p>
+          <h2>Operational Expenses & Payables</h2>
+        </div>
+        <div class="header-actions">
+          <a mat-stroked-button routerLink="/expenses/direct" class="subtle-btn">
+            <mat-icon>receipt</mat-icon> Expenses
+          </a>
+          <a mat-stroked-button routerLink="/expenses/invoices" class="subtle-btn">
+            <mat-icon>description</mat-icon> Invoices
+          </a>
+          <a mat-stroked-button color="primary" routerLink="/expenses/balances" class="primary-btn">
+            <mat-icon>account_balance</mat-icon> Balances
+          </a>
+        </div>
+      </div>
+
+      @if (isLoading()) {
+        <div class="loading-state">
+          <mat-spinner diameter="32"></mat-spinner>
+          <span>Aggregating financial ledger balances...</span>
+        </div>
+      } @else if (!financialData() || financialData()!.currencySummaries.length === 0) {
+        <div class="empty-status">
+          <mat-icon>account_balance_wallet</mat-icon>
+          <p>No expense or invoice records logged for this scope.</p>
+        </div>
+      } @else {
+        <!-- Currency selector if more than 1 currency -->
+        @if (financialData()!.currencySummaries.length > 1) {
+          <div class="currency-tabs">
+            @for (c of financialData()!.currencySummaries; track c.currencyId; let idx = $index) {
+              <button
+                type="button"
+                class="currency-chip"
+                [class.active]="idx === selectedCurrencyIndex()"
+                (click)="selectCurrency(idx)"
+              >
+                {{ c.currencyCode }} ({{ c.currencySymbol }})
+              </button>
+            }
+          </div>
+        }
+
+        @if (selectedCurrency(); as cur) {
+          <div class="financial-grid">
+            <!-- Current Month Direct Expenses -->
+            <div class="fin-stat-card">
+              <div class="fin-stat-header">
+                <span class="fin-stat-label">Month Direct Expenses</span>
+                <span class="fin-icon expense-icon"><mat-icon>receipt_long</mat-icon></span>
+              </div>
+              <div class="fin-stat-value">
+                {{ cur.currencySymbol }}{{ cur.currentMonthDirectExpenses | number: "1.2-2" }}
+              </div>
+              <span class="fin-stat-caption">Fuel, maintenance, supplies</span>
+            </div>
+
+            <!-- Current Month Procurement Invoiced -->
+            <div class="fin-stat-card">
+              <div class="fin-stat-header">
+                <span class="fin-stat-label">Month Invoiced (Procurement)</span>
+                <span class="fin-icon invoice-icon"><mat-icon>local_shipping</mat-icon></span>
+              </div>
+              <div class="fin-stat-value">
+                {{ cur.currencySymbol }}{{ cur.currentMonthInvoiced | number: "1.2-2" }}
+              </div>
+              <span class="fin-stat-caption">Posted purchase invoices</span>
+            </div>
+
+            <!-- Total Outstanding Supplier Payables -->
+            <div class="fin-stat-card">
+              <div class="fin-stat-header">
+                <span class="fin-stat-label">Total Supplier Payables</span>
+                <span class="fin-icon payables-icon"><mat-icon>account_balance_wallet</mat-icon></span>
+              </div>
+              <div class="fin-stat-value">
+                {{ cur.currencySymbol }}{{ cur.totalOutstandingPayables | number: "1.2-2" }}
+              </div>
+              <span class="fin-stat-caption">Unpaid & partially paid invoices</span>
+            </div>
+
+            <!-- Overdue Invoices Alert -->
+            <div class="fin-stat-card" [class.alert-card]="cur.overdueInvoicesCount > 0">
+              <div class="fin-stat-header">
+                <span class="fin-stat-label">Overdue Payables</span>
+                <span class="fin-icon overdue-icon"><mat-icon>warning</mat-icon></span>
+              </div>
+              <div class="fin-stat-value" [class.alert-value]="cur.overdueInvoicesCount > 0">
+                @if (cur.overdueInvoicesCount > 0) {
+                  {{ cur.currencySymbol }}{{ cur.overdueInvoicesAmount | number: "1.2-2" }}
+                } @else {
+                  {{ cur.currencySymbol }}0.00
+                }
+              </div>
+              <span class="fin-stat-caption">
+                @if (cur.overdueInvoicesCount > 0) {
+                  <strong>{{ cur.overdueInvoicesCount }}</strong> invoices past due date
+                } @else {
+                  No overdue supplier payments
+                }
+              </span>
+            </div>
+          </div>
+        }
+      }
+    </mat-card-content>
+  </mat-card>
+}

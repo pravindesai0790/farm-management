@@ -14,7 +14,12 @@ import {
   CropVariety,
   CycleCancellationReason,
   CycleList,
+  DashboardFinancialSummaryResponse,
+  DashboardInventorySummaryResponse,
+  DashboardPrioritiesResponse,
+  DashboardRecentActivityResponse,
   DashboardSummaryResponse,
+  DashboardUpcomingWorkResponse,
   Farm,
   FarmArea,
   FarmAreaAvailability,
@@ -361,6 +366,61 @@ export class FarmManagementService {
     }
     return this.http.get<DashboardSummaryResponse>(
       `${this.api}/dashboard/summary`,
+      { params },
+    );
+  }
+
+  getDashboardPriorities(farmId?: string): Observable<DashboardPrioritiesResponse> {
+    let params = new HttpParams();
+    if (farmId) {
+      params = params.set("farmId", farmId);
+    }
+    return this.http.get<DashboardPrioritiesResponse>(
+      `${this.api}/dashboard/priorities`,
+      { params },
+    );
+  }
+
+  getDashboardUpcomingWork(farmId?: string, days = 7): Observable<DashboardUpcomingWorkResponse> {
+    let params = new HttpParams().set("days", days);
+    if (farmId) {
+      params = params.set("farmId", farmId);
+    }
+    return this.http.get<DashboardUpcomingWorkResponse>(
+      `${this.api}/dashboard/upcoming-work`,
+      { params },
+    );
+  }
+
+  getDashboardInventorySummary(farmId?: string): Observable<DashboardInventorySummaryResponse> {
+    let params = new HttpParams();
+    if (farmId) {
+      params = params.set("farmId", farmId);
+    }
+    return this.http.get<DashboardInventorySummaryResponse>(
+      `${this.api}/dashboard/inventory-summary`,
+      { params },
+    );
+  }
+
+  getDashboardFinancialSummary(farmId?: string): Observable<DashboardFinancialSummaryResponse> {
+    let params = new HttpParams();
+    if (farmId) {
+      params = params.set("farmId", farmId);
+    }
+    return this.http.get<DashboardFinancialSummaryResponse>(
+      `${this.api}/dashboard/financial-summary`,
+      { params },
+    );
+  }
+
+  getDashboardRecentActivity(farmId?: string, limit = 15): Observable<DashboardRecentActivityResponse> {
+    let params = new HttpParams().set("limit", limit);
+    if (farmId) {
+      params = params.set("farmId", farmId);
+    }
+    return this.http.get<DashboardRecentActivityResponse>(
+      `${this.api}/dashboard/recent-activity`,
       { params },
     );
   }

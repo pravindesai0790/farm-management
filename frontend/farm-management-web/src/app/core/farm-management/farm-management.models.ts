@@ -390,5 +390,139 @@ export interface DashboardSummaryResponse {
   farmUtilizations: readonly FarmUtilizationSummary[];
   currentSeason: string | null;
   labor?: FarmLaborDashboard | null;
+  alertCounts?: DashboardAlertCounts | null;
+}
+
+export interface DashboardAlertCounts {
+  overdueActivitiesCount: number;
+  todayActivitiesCount: number;
+  inProgressActivitiesCount: number;
+  activeReiAlertsCount: number;
+  overdueInvoicesCount: number;
+  outOfStockItemsCount: number;
+  attendanceStatus?: string | null;
+}
+
+export interface PriorityActivityItem {
+  id: string;
+  activityType: "SPRAY" | "IRRIGATION" | "FERTILIZER" | "LABOR" | string;
+  title: string;
+  farmId: string;
+  farmName: string;
+  farmAreaName: string | null;
+  cropCycleName: string | null;
+  scheduledDisplay: string | null;
+  daysOverdue: number | null;
+  status: string;
+  routeUrl: string;
+}
+
+export interface ReiSafetyAlert {
+  sprayId: string;
+  targetPest: string;
+  farmId: string;
+  farmName: string;
+  farmAreaName: string | null;
+  expiresAt: string;
+  remainingMinutes: number;
+  routeUrl: string;
+}
+
+export interface LaborAttendanceAlert {
+  status: "NOT_RECORDED" | "DRAFT" | "FINALIZED" | string;
+  workedCount: number;
+  assignedCount: number;
+  wageExpense: number;
+  currencySymbol: string;
+}
+
+export interface DashboardPrioritiesResponse {
+  totalAlertsCount: number;
+  overdueActivities: readonly PriorityActivityItem[];
+  todayActivities: readonly PriorityActivityItem[];
+  inProgressActivities: readonly PriorityActivityItem[];
+  activeReiAlerts: readonly ReiSafetyAlert[];
+  attendanceAlert: LaborAttendanceAlert | null;
+  overdueInvoicesCount: number;
+  overdueInvoicesTotalAmount: number;
+  overdueInvoicesCurrencySymbol: string | null;
+}
+
+export interface UpcomingWorkItem {
+  id: string;
+  activityType: "SPRAY" | "IRRIGATION" | "FERTILIZER" | "LABOR" | string;
+  title: string;
+  farmId: string;
+  farmName: string;
+  farmAreaName: string | null;
+  cropCycleName: string | null;
+  scheduledDate: string;
+  scheduledTime: string | null;
+  status: string;
+  details: string | null;
+  routeUrl: string;
+}
+
+export interface DashboardUpcomingWorkResponse {
+  items: readonly UpcomingWorkItem[];
+}
+
+export interface OutOfStockItem {
+  inventoryItemId: string;
+  itemName: string;
+  sku: string | null;
+  categoryName: string | null;
+  storageLocationId: string;
+  storageLocationName: string;
+  farmId: string;
+  farmName: string;
+  stockUnitSymbol: string;
+}
+
+export interface RecentStockConsumption {
+  inventoryItemId: string;
+  itemName: string;
+  categoryName: string | null;
+  totalConsumedQuantity: number;
+  stockUnitSymbol: string;
+}
+
+export interface DashboardInventorySummaryResponse {
+  outOfStockCount: number;
+  outOfStockItems: readonly OutOfStockItem[];
+  recentConsumptions: readonly RecentStockConsumption[];
+  totalItemsCount: number;
+  totalLocationsCount: number;
+}
+
+export interface CurrencyFinancialSummary {
+  currencyId: string;
+  currencyCode: string;
+  currencySymbol: string;
+  currentMonthDirectExpenses: number;
+  currentMonthInvoiced: number;
+  totalOutstandingPayables: number;
+  overdueInvoicesCount: number;
+  overdueInvoicesAmount: number;
+}
+
+export interface DashboardFinancialSummaryResponse {
+  currencySummaries: readonly CurrencyFinancialSummary[];
+}
+
+export interface RecentActivityItem {
+  id: string;
+  eventType: string;
+  title: string;
+  description: string;
+  timestamp: string;
+  farmId: string;
+  farmName: string;
+  performedBy: string | null;
+  routeUrl: string;
+}
+
+export interface DashboardRecentActivityResponse {
+  items: readonly RecentActivityItem[];
 }
 

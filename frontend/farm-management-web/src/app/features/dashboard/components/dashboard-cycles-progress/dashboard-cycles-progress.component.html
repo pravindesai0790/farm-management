@@ -1,0 +1,83 @@
+<mat-card class="cycles-card">
+  <mat-card-content>
+    <div class="card-title-bar">
+      <div>
+        <p class="card-eyebrow">Season Lifecycle</p>
+        <h2>Active Crop Cycles Progress</h2>
+      </div>
+      <a mat-stroked-button routerLink="/crop-cycles" class="view-all-link">
+        All Cycles <mat-icon>arrow_forward</mat-icon>
+      </a>
+    </div>
+
+    @if (cycles().length === 0) {
+      <div class="empty-panel">
+        <mat-icon>event_available</mat-icon>
+        <p>No active crop cycles currently running.</p>
+        <a mat-button color="primary" routerLink="/crop-cycles/new">
+          + Start a Crop Cycle
+        </a>
+      </div>
+    } @else {
+      <div class="cycles-list">
+        @for (cycle of cycles(); track cycle.cycleId) {
+          <div class="cycle-item">
+            <div class="cycle-top">
+              <div class="cycle-info">
+                <div class="title-row">
+                  <strong class="cycle-name">{{ cycle.cycleName }}</strong>
+                  <span class="status-tag" [class.status-tag-active]="cycle.status === 'ACTIVE'">
+                    {{ cycle.status }}
+                  </span>
+                </div>
+                <p class="cycle-meta">
+                  <span><strong>{{ cycle.cropName }}</strong>@if (cycle.varietyName) { · {{ cycle.varietyName }} }</span>
+                  <span class="meta-dot">·</span>
+                  <span>{{ cycle.farmName }} ({{ cycle.farmAreaName }})</span>
+                  <span class="meta-dot">·</span>
+                  <span>{{ cycle.allocatedArea }} {{ cycle.areaUnitSymbol }}</span>
+                </p>
+              </div>
+
+              @if (cycle.currentStageName) {
+                <div class="stage-badge">
+                  <span class="stage-prefix">Stage:</span>
+                  <span class="stage-name">{{ cycle.currentStageName }}</span>
+                  @if (cycle.totalStagesCount) {
+                    <span class="stage-count">({{ cycle.completedStagesCount }}/{{ cycle.totalStagesCount }})</span>
+                  }
+                </div>
+              }
+            </div>
+
+            <!-- Progress Timeline Bar -->
+            @if (cycle.progressPercentage !== null) {
+              <div class="cycle-timeline">
+                <div class="timeline-bar">
+                  <div class="timeline-fill" [style.width.%]="cycle.progressPercentage"></div>
+                </div>
+                <div class="timeline-labels">
+                  <span>Planted: {{ cycle.startDate | date: "mediumDate" }}</span>
+                  <span class="timeline-pct">{{ cycle.progressPercentage }}% elapsed</span>
+                  <span>
+                    @if (cycle.expectedEndDate) {
+                      Est. Harvest: {{ cycle.expectedEndDate | date: "mediumDate" }}
+                    } @else {
+                      Open-ended
+                    }
+                  </span>
+                </div>
+              </div>
+            }
+
+            <div class="cycle-footer">
+              <a mat-button color="primary" [routerLink]="['/crop-cycles', cycle.cycleId]">
+                View Lifecycle Timeline <mat-icon>chevron_right</mat-icon>
+              </a>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </mat-card-content>
+</mat-card>

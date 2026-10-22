@@ -1,0 +1,242 @@
+<section class="priorities-section" aria-label="Today's Priorities & Action Center">
+  <!-- Section Title Bar -->
+  <div class="priorities-header">
+    <div class="header-text">
+      <div class="title-with-badge">
+        <h2>Today's Priorities & Action Center</h2>
+        @if (priorities()?.totalAlertsCount; as count) {
+          @if (count > 0) {
+            <span class="count-badge count-badge-alert">{{ count }} Urgent</span>
+          }
+        }
+      </div>
+      <p class="subtitle">Real-time triage of pending tasks, overdue work, and field safety warnings for {{ selectedFarmName() }}.</p>
+    </div>
+
+    <button
+      mat-icon-button
+      type="button"
+      (click)="refresh.emit()"
+      matTooltip="Refresh priorities"
+      aria-label="Refresh priorities"
+      class="refresh-icon-btn"
+    >
+      <mat-icon>refresh</mat-icon>
+    </button>
+  </div>
+
+  @if (isLoading()) {
+    <div class="loading-state">
+      <mat-spinner diameter="32"></mat-spinner>
+      <span>Scanning field operations and pending tasks…</span>
+    </div>
+  } @else if (priorities(); as p) {
+    <!-- 1. Agronomic Safety Hazard (REI Alerts) -->
+    @if (p.activeReiAlerts.length > 0) {
+      <div class="safety-alert-banner">
+        <div class="banner-icon-wrap" aria-hidden="true">
+          <mat-icon>warning</mat-icon>
+        </div>
+        <div class="banner-details">
+          <strong>Restricted Entry Interval (REI) Active — Field Hazard</strong>
+          <div class="rei-items-list">
+            @for (rei of p.activeReiAlerts; track rei.sprayId) {
+              <div class="rei-item">
+                <span class="rei-target">{{ rei.farmName }} ({{ rei.farmAreaName || "All Plots" }}):</span>
+                <span class="rei-pest">Target: {{ rei.targetPest }}</span>
+                <span class="rei-countdown">
+                  <mat-icon>timer</mat-icon> {{ rei.remainingMinutes }} min remaining
+                </span>
+                <a mat-button color="accent" [routerLink]="rei.routeUrl">View Spray</a>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- 2. Attendance Status Alert Banner -->
+    @if (p.attendanceAlert; as att) {
+      @if (att.status !== 'FINALIZED') {
+        <div
+          class="labor-triage-banner"
+          [class.banner-warning]="att.status === 'NOT_RECORDED'"
+          [class.banner-info]="att.status === 'DRAFT'"
+        >
+          <mat-icon class="banner-icon">
+            {{ att.status === 'NOT_RECORDED' ? 'event_busy' : 'edit_note' }}
+          </mat-icon>
+          <div class="banner-msg">
+            <strong>
+              {{ att.status === 'NOT_RECORDED' ? "Today's Attendance Not Recorded" : "Today's Attendance in Draft" }}
+            </strong>
+            <p>
+              @if (att.status === 'NOT_RECORDED') {
+                {{ selectedFarmName() }} has no attendance submitted today. Record roster to compute worker wages.
+              } @else {
+                {{ att.workedCount }} of {{ att.assignedCount }} workers active. Estimated wages: {{ att.currencySymbol }}{{ att.wageExpense | number: "1.2-2" }}.
+              }
+            </p>
+          </div>
+          <a mat-flat-button color="primary" routerLink="/labor/attendance">
+            {{ att.status === 'NOT_RECORDED' ? 'Record Attendance' : 'Review & Finalize' }}
+          </a>
+        </div>
+      }
+    }
+
+    <!-- 3. Priorities 3-Column Triage Grid -->
+    <div class="triage-grid">
+      <!-- Column A: Overdue Tasks -->
+      <mat-card class="triage-column col-overdue">
+        <mat-card-header>
+          <div class="col-title-wrap">
+            <span class="col-indicator indicator-overdue"></span>
+            <h3>Overdue Work</h3>
+            <span class="col-count">{{ p.overdueActivities.length }}</span>
+          </div>
+        </mat-card-header>
+        <mat-card-content>
+          @if (p.overdueActivities.length === 0) {
+            <div class="col-empty">
+              <mat-icon>check_circle_outline</mat-icon>
+              <span>No overdue activities</span>
+            </div>
+          } @else {
+            <div class="task-list">
+              @for (item of p.overdueActivities; track item.id) {
+                <div class="task-item">
+                  <div class="task-top">
+                    <span class="type-badge" [class]="getActivityTypeClass(item.activityType)">
+                      <mat-icon>{{ getActivityIcon(item.activityType) }}</mat-icon>
+                      {{ item.activityType }}
+                    </span>
+                    <span class="overdue-tag">
+                      {{ item.daysOverdue }}d overdue
+                    </span>
+                  </div>
+                  <strong class="task-title">{{ item.title }}</strong>
+                  <p class="task-meta">
+                    <span>{{ item.farmName }}</span>
+                    @if (item.farmAreaName) { <span> · {{ item.farmAreaName }}</span> }
+                  </p>
+                  <div class="task-actions">
+                    <a mat-stroked-button color="warn" [routerLink]="item.routeUrl">
+                      Execute <mat-icon>arrow_forward</mat-icon>
+                    </a>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Column B: Due Today -->
+      <mat-card class="triage-column col-today">
+        <mat-card-header>
+          <div class="col-title-wrap">
+            <span class="col-indicator indicator-today"></span>
+            <h3>Scheduled Today</h3>
+            <span class="col-count">{{ p.todayActivities.length }}</span>
+          </div>
+        </mat-card-header>
+        <mat-card-content>
+          @if (p.todayActivities.length === 0) {
+            <div class="col-empty">
+              <mat-icon>event_available</mat-icon>
+              <span>No activities scheduled today</span>
+            </div>
+          } @else {
+            <div class="task-list">
+              @for (item of p.todayActivities; track item.id) {
+                <div class="task-item">
+                  <div class="task-top">
+                    <span class="type-badge" [class]="getActivityTypeClass(item.activityType)">
+                      <mat-icon>{{ getActivityIcon(item.activityType) }}</mat-icon>
+                      {{ item.activityType }}
+                    </span>
+                    <span class="sched-tag">
+                      {{ item.scheduledDisplay || "Today" }}
+                    </span>
+                  </div>
+                  <strong class="task-title">{{ item.title }}</strong>
+                  <p class="task-meta">
+                    <span>{{ item.farmName }}</span>
+                    @if (item.farmAreaName) { <span> · {{ item.farmAreaName }}</span> }
+                  </p>
+                  <div class="task-actions">
+                    <a mat-stroked-button color="primary" [routerLink]="item.routeUrl">
+                      Start Task <mat-icon>play_arrow</mat-icon>
+                    </a>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Column C: In Progress & Financial Attention -->
+      <mat-card class="triage-column col-progress">
+        <mat-card-header>
+          <div class="col-title-wrap">
+            <span class="col-indicator indicator-progress"></span>
+            <h3>In Progress & Attention</h3>
+            <span class="col-count">{{ p.inProgressActivities.length + (p.overdueInvoicesCount > 0 ? 1 : 0) }}</span>
+          </div>
+        </mat-card-header>
+        <mat-card-content>
+          @if (p.inProgressActivities.length === 0 && p.overdueInvoicesCount === 0) {
+            <div class="col-empty">
+              <mat-icon>task_alt</mat-icon>
+              <span>No in-progress tasks or payables issues</span>
+            </div>
+          } @else {
+            <div class="task-list">
+              @for (item of p.inProgressActivities; track item.id) {
+                <div class="task-item task-in-progress">
+                  <div class="task-top">
+                    <span class="type-badge" [class]="getActivityTypeClass(item.activityType)">
+                      <mat-icon>{{ getActivityIcon(item.activityType) }}</mat-icon>
+                      {{ item.activityType }}
+                    </span>
+                    <span class="pulse-tag">Active in field</span>
+                  </div>
+                  <strong class="task-title">{{ item.title }}</strong>
+                  <p class="task-meta">{{ item.farmName }} · Running now</p>
+                  <div class="task-actions">
+                    <a mat-flat-button color="primary" [routerLink]="item.routeUrl">
+                      Complete <mat-icon>check</mat-icon>
+                    </a>
+                  </div>
+                </div>
+              }
+
+              <!-- Overdue Invoices Alert Card -->
+              @if (p.overdueInvoicesCount > 0) {
+                <div class="task-item task-finance-alert">
+                  <div class="task-top">
+                    <span class="type-badge type-finance">
+                      <mat-icon>receipt_long</mat-icon> PAYABLES
+                    </span>
+                    <span class="overdue-tag">Overdue</span>
+                  </div>
+                  <strong class="task-title">{{ p.overdueInvoicesCount }} Overdue Supplier Invoices</strong>
+                  <p class="task-meta">
+                    Total: <strong>{{ p.overdueInvoicesCurrencySymbol }}{{ p.overdueInvoicesTotalAmount | number: "1.2-2" }}</strong>
+                  </p>
+                  <div class="task-actions">
+                    <a mat-stroked-button routerLink="/expenses/invoices">
+                      View Invoices <mat-icon>arrow_forward</mat-icon>
+                    </a>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+    </div>
+  }
+</section>

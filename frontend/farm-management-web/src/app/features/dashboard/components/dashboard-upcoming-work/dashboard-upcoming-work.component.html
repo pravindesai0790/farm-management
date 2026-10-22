@@ -1,0 +1,128 @@
+<mat-card class="upcoming-card">
+  <mat-card-content>
+    <!-- Header with Filters & Horizon Toggle -->
+    <div class="card-title-bar">
+      <div>
+        <p class="card-eyebrow">Operations Calendar</p>
+        <h2>Upcoming {{ daysHorizon() }}-Day Field Work Agenda</h2>
+      </div>
+
+      <div class="controls-wrap">
+        <button
+          mat-stroked-button
+          type="button"
+          (click)="toggleHorizon()"
+          class="horizon-toggle-btn"
+        >
+          <mat-icon>calendar_view_week</mat-icon>
+          {{ daysHorizon() === 7 ? "Show 14 Days" : "Show 7 Days" }}
+        </button>
+
+        <a mat-stroked-button routerLink="/activities/labor-activities" class="all-activities-link">
+          All Tasks <mat-icon>arrow_forward</mat-icon>
+        </a>
+      </div>
+    </div>
+
+    <!-- Activity Type Filter Chips -->
+    <div class="filter-chips">
+      <button
+        type="button"
+        class="chip-btn"
+        [class.active]="selectedFilter() === 'ALL'"
+        (click)="setFilter('ALL')"
+      >
+        All ({{ upcomingData()?.items?.length || 0 }})
+      </button>
+      <button
+        type="button"
+        class="chip-btn chip-spray"
+        [class.active]="selectedFilter() === 'SPRAY'"
+        (click)="setFilter('SPRAY')"
+      >
+        <mat-icon>science</mat-icon> Sprays
+      </button>
+      <button
+        type="button"
+        class="chip-btn chip-irrigation"
+        [class.active]="selectedFilter() === 'IRRIGATION'"
+        (click)="setFilter('IRRIGATION')"
+      >
+        <mat-icon>water_drop</mat-icon> Irrigations
+      </button>
+      <button
+        type="button"
+        class="chip-btn chip-fertilizer"
+        [class.active]="selectedFilter() === 'FERTILIZER'"
+        (click)="setFilter('FERTILIZER')"
+      >
+        <mat-icon>eco</mat-icon> Fertilizers
+      </button>
+      <button
+        type="button"
+        class="chip-btn chip-labor"
+        [class.active]="selectedFilter() === 'LABOR'"
+        (click)="setFilter('LABOR')"
+      >
+        <mat-icon>engineering</mat-icon> Labor
+      </button>
+    </div>
+
+    <!-- Content List -->
+    @if (isLoading()) {
+      <div class="loading-wrap">
+        <mat-spinner diameter="32"></mat-spinner>
+        <span>Loading operational schedule…</span>
+      </div>
+    } @else if (getFilteredItems().length === 0) {
+      <div class="empty-panel">
+        <mat-icon>event_note</mat-icon>
+        <p>No field activities scheduled for the selected filter in the next {{ daysHorizon() }} days.</p>
+      </div>
+    } @else {
+      <div class="agenda-list">
+        @for (item of getFilteredItems(); track item.id) {
+          <div class="agenda-item">
+            <div class="item-date-badge">
+              <span class="day-num">{{ item.scheduledDate | date: "dd" }}</span>
+              <span class="month-name">{{ item.scheduledDate | date: "MMM" }}</span>
+            </div>
+
+            <div class="item-content">
+              <div class="item-header">
+                <span class="type-pill" [class]="getActivityTypeClass(item.activityType)">
+                  <mat-icon>{{ getActivityIcon(item.activityType) }}</mat-icon>
+                  {{ item.activityType }}
+                </span>
+                @if (item.scheduledTime) {
+                  <span class="time-label">
+                    <mat-icon>schedule</mat-icon> {{ item.scheduledTime }}
+                  </span>
+                }
+                <span class="status-pill">{{ item.status }}</span>
+              </div>
+
+              <strong class="item-title">{{ item.title }}</strong>
+
+              <p class="item-location">
+                <span>{{ item.farmName }}</span>
+                @if (item.farmAreaName) { <span> · {{ item.farmAreaName }}</span> }
+                @if (item.cropCycleName) { <span> · {{ item.cropCycleName }}</span> }
+              </p>
+
+              @if (item.details) {
+                <p class="item-details">{{ item.details }}</p>
+              }
+            </div>
+
+            <div class="item-actions">
+              <a mat-stroked-button [routerLink]="item.routeUrl">
+                Details <mat-icon>chevron_right</mat-icon>
+              </a>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </mat-card-content>
+</mat-card>

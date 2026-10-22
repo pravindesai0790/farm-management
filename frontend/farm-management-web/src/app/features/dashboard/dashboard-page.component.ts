@@ -7,7 +7,7 @@ import {
   signal,
 } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { DatePipe, DecimalPipe } from "@angular/common";
+import { DecimalPipe } from "@angular/common";
 import { RouterLink } from "@angular/router";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
@@ -22,15 +22,25 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 import { AuthService } from "../../core/auth/auth.service";
 import { FarmManagementService } from "../../core/farm-management/farm-management.service";
 import {
+  DashboardPrioritiesResponse,
   DashboardSummaryResponse,
   Farm,
 } from "../../core/farm-management/farm-management.models";
+
+import { DashboardKpiStripComponent } from "./components/dashboard-kpi-strip/dashboard-kpi-strip.component";
+import { DashboardPrioritiesComponent } from "./components/dashboard-priorities/dashboard-priorities.component";
+import { DashboardCyclesProgressComponent } from "./components/dashboard-cycles-progress/dashboard-cycles-progress.component";
+import { DashboardCropDistributionComponent } from "./components/dashboard-crop-distribution/dashboard-crop-distribution.component";
+import { DashboardUpcomingWorkComponent } from "./components/dashboard-upcoming-work/dashboard-upcoming-work.component";
+import { DashboardLaborSummaryComponent } from "./components/dashboard-labor-summary/dashboard-labor-summary.component";
+import { DashboardInventorySummaryComponent } from "./components/dashboard-inventory-summary/dashboard-inventory-summary.component";
+import { DashboardFinancialSummaryComponent } from "./components/dashboard-financial-summary/dashboard-financial-summary.component";
+import { DashboardActivityFeedComponent } from "./components/dashboard-activity-feed/dashboard-activity-feed.component";
 
 @Component({
   selector: "app-dashboard-page",
   standalone: true,
   imports: [
-    DatePipe,
     DecimalPipe,
     RouterLink,
     FormsModule,
@@ -41,6 +51,15 @@ import {
     MatSelectModule,
     MatFormFieldModule,
     MatTooltipModule,
+    DashboardKpiStripComponent,
+    DashboardPrioritiesComponent,
+    DashboardCyclesProgressComponent,
+    DashboardCropDistributionComponent,
+    DashboardUpcomingWorkComponent,
+    DashboardLaborSummaryComponent,
+    DashboardInventorySummaryComponent,
+    DashboardFinancialSummaryComponent,
+    DashboardActivityFeedComponent,
   ],
   templateUrl: "./dashboard-page.component.html",
   styleUrl: "./dashboard-page.component.scss",
@@ -48,9 +67,11 @@ import {
 })
 export class DashboardPageComponent implements OnInit {
   readonly summary = signal<DashboardSummaryResponse | null>(null);
+  readonly priorities = signal<DashboardPrioritiesResponse | null>(null);
   readonly farms = signal<readonly Farm[]>([]);
   readonly selectedFarmId = signal<string>("");
   readonly isLoading = signal<boolean>(true);
+  readonly isLoadingPriorities = signal<boolean>(true);
   readonly error = signal<string | null>(null);
 
   private readonly destroyRef = inject(DestroyRef);
@@ -60,20 +81,9 @@ export class DashboardPageComponent implements OnInit {
 
   readonly currentUser = this.authService.user;
 
-  private readonly cropColors = [
-    "#2f6f4e",
-    "#d97706",
-    "#2563eb",
-    "#7c3aed",
-    "#dc2626",
-    "#0d9488",
-    "#ea580c",
-    "#4f46e5",
-  ];
-
   ngOnInit(): void {
     this.loadFarms();
-    this.loadSummary();
+    this.loadDashboardData();
   }
 
   loadFarms(): void {
@@ -90,12 +100,16 @@ export class DashboardPageComponent implements OnInit {
       });
   }
 
-  loadSummary(farmId?: string): void {
+  loadDashboardData(farmId?: string): void {
     this.isLoading.set(true);
+    this.isLoadingPriorities.set(true);
     this.error.set(null);
 
+    const fId = farmId || undefined;
+
+    // Load main summary
     this.farmService
-      .getDashboardSummary(farmId || undefined)
+      .getDashboardSummary(fId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (response) => {
@@ -111,19 +125,30 @@ export class DashboardPageComponent implements OnInit {
           });
         },
       });
+
+    // Load today's operational priorities
+    this.farmService
+      .getDashboardPriorities(fId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          this.priorities.set(response);
+          this.isLoadingPriorities.set(false);
+        },
+        error: () => {
+          this.priorities.set(null);
+          this.isLoadingPriorities.set(false);
+        },
+      });
   }
 
   onFarmChange(farmId: string): void {
     this.selectedFarmId.set(farmId);
-    this.loadSummary(farmId);
+    this.loadDashboardData(farmId);
   }
 
   refresh(): void {
-    this.loadSummary(this.selectedFarmId());
-  }
-
-  getCropColor(index: number): string {
-    return this.cropColors[index % this.cropColors.length];
+    this.loadDashboardData(this.selectedFarmId());
   }
 
   getSelectedFarmName(): string {
@@ -131,18 +156,5 @@ export class DashboardPageComponent implements OnInit {
     if (!id) return "All Farms";
     const farm = this.farms().find((f) => f.id === id);
     return farm ? farm.name : "Selected Farm";
-  }
-
-  getTurnoutPercentage(): number {
-    const l = this.summary()?.labor;
-    if (!l || l.assignedWorkersCount === 0) return 0;
-    return Math.round((l.workedWorkersCount / l.assignedWorkersCount) * 100);
-  }
-
-  getMaxTrendWages(): number {
-    const trend = this.summary()?.labor?.recentDaysTrend;
-    if (!trend || trend.length === 0) return 1;
-    const max = Math.max(...trend.map((t) => t.wageExpense));
-    return max > 0 ? max : 1;
   }
 }

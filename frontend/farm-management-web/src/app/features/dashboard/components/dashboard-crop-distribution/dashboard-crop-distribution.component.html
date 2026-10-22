@@ -1,0 +1,76 @@
+<mat-card class="crop-card">
+  <mat-card-content>
+    <div class="card-title-bar">
+      <div>
+        <p class="card-eyebrow">Acreage & Variety Mix</p>
+        <h2>Cultivated Crop Distribution</h2>
+      </div>
+      <a mat-stroked-button routerLink="/plantations" class="view-all-link">
+        Plantations <mat-icon>arrow_forward</mat-icon>
+      </a>
+    </div>
+
+    @if (cropAllocations().length === 0) {
+      <div class="empty-panel">
+        <mat-icon>yard</mat-icon>
+        <p>No active crop plantations found.</p>
+        <a mat-button color="primary" routerLink="/plantations/new">
+          + Add Plantation
+        </a>
+      </div>
+    } @else {
+      <!-- Segmented Distribution Bar -->
+      <div class="stacked-bar-container">
+        <div class="stacked-bar">
+          @for (crop of cropAllocations(); track crop.cropId; let i = $index) {
+            <div
+              class="bar-segment"
+              [style.width.%]="crop.percentageOfAllocated"
+              [style.background-color]="getCropColor(i)"
+              [matTooltip]="crop.cropName + ': ' + crop.totalAllocatedArea + ' ' + crop.areaUnitSymbol + ' (' + crop.percentageOfAllocated + '%)'"
+            ></div>
+          }
+        </div>
+      </div>
+
+      <!-- Crop Details List -->
+      <div class="crop-list">
+        @for (crop of cropAllocations(); track crop.cropId; let i = $index) {
+          <div class="crop-item">
+            <div class="crop-item-header">
+              <div class="crop-name-wrap">
+                <span
+                  class="crop-dot"
+                  [style.background-color]="getCropColor(i)"
+                  aria-hidden="true"
+                ></span>
+                <div>
+                  <strong class="crop-title">{{ crop.cropName }}</strong>
+                </div>
+              </div>
+              <div class="crop-area-stats">
+                <span class="crop-area-value">
+                  {{ crop.totalAllocatedArea | number: "1.1-2" }} {{ crop.areaUnitSymbol }}
+                </span>
+                <span class="crop-pct-pill">{{ crop.percentageOfAllocated }}% of cultivated</span>
+              </div>
+            </div>
+
+            <!-- Varieties Breakdown -->
+            @if (crop.varieties.length > 0) {
+              <div class="variety-chips">
+                @for (v of crop.varieties; track v.varietyName) {
+                  <div class="variety-chip">
+                    <span class="variety-name">{{ v.varietyName }}:</span>
+                    <span class="variety-area">{{ v.allocatedArea | number: "1.1-2" }} {{ v.areaUnitSymbol }}</span>
+                    <span class="variety-pct">({{ v.percentageOfCrop }}%)</span>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  </mat-card-content>
+</mat-card>

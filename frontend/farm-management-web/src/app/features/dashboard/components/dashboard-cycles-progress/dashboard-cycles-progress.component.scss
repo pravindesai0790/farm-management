@@ -1,0 +1,224 @@
+.cycles-card {
+  border: 1px solid var(--app-border, #e2e8f0);
+  border-radius: var(--app-radius-md, 8px);
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+
+  mat-card-content {
+    padding: 18px 20px;
+  }
+}
+
+.card-title-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  gap: 12px;
+
+  .card-eyebrow {
+    font-size: 0.725rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--app-muted, #64748b);
+    margin: 0 0 2px 0;
+  }
+
+  h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--app-text, #1e293b);
+    margin: 0;
+  }
+
+  .view-all-link {
+    font-size: 0.825rem;
+    height: 32px;
+    padding: 0 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+  }
+}
+
+.empty-panel {
+  text-align: center;
+  padding: 32px 16px;
+  background: var(--app-surface-variant, #f8fafc);
+  border-radius: var(--app-radius-sm, 6px);
+  border: 1px dashed var(--app-border, #e2e8f0);
+
+  mat-icon {
+    font-size: 36px;
+    width: 36px;
+    height: 36px;
+    color: var(--app-muted, #64748b);
+    margin-bottom: 8px;
+    opacity: 0.7;
+  }
+
+  p {
+    font-size: 0.85rem;
+    color: var(--app-muted, #64748b);
+    margin: 0 0 8px 0;
+  }
+}
+
+.cycles-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cycle-item {
+  border: 1px solid var(--app-border-light, #f1f5f9);
+  background: var(--app-surface-variant, #f8fafc);
+  border-radius: var(--app-radius-sm, 6px);
+  padding: 14px 16px;
+  transition: border-color 0.15s ease;
+
+  &:hover {
+    border-color: var(--app-border, #e2e8f0);
+  }
+}
+
+.cycle-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.cycle-info {
+  flex: 1;
+  min-width: 220px;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+
+  .cycle-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--app-text, #1e293b);
+  }
+}
+
+.status-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: #f1f5f9;
+  color: #475569;
+
+  &.status-tag-active {
+    background: #ecfdf5;
+    color: #047857;
+  }
+}
+
+.cycle-meta {
+  font-size: 0.8rem;
+  color: var(--app-muted, #64748b);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+
+  .meta-dot {
+    color: #cbd5e1;
+  }
+}
+
+.stage-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: #ffffff;
+  border: 1px solid var(--app-border, #e2e8f0);
+  border-radius: 6px;
+  font-size: 0.775rem;
+
+  .stage-prefix {
+    color: var(--app-muted, #64748b);
+  }
+
+  .stage-name {
+    font-weight: 600;
+    color: #7c3aed;
+  }
+
+  .stage-count {
+    color: var(--app-muted, #64748b);
+    font-size: 0.725rem;
+  }
+}
+
+.cycle-timeline {
+  margin: 12px 0 8px 0;
+
+  .timeline-bar {
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .timeline-fill {
+    height: 100%;
+    background: var(--app-primary, #15803d);
+    border-radius: 999px;
+    transition: width 0.3s ease;
+  }
+
+  .timeline-labels {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.725rem;
+    color: var(--app-muted, #64748b);
+    margin-top: 4px;
+
+    .timeline-pct {
+      font-weight: 600;
+      color: var(--app-text, #1e293b);
+    }
+  }
+}
+
+.cycle-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+
+  a {
+    font-size: 0.8rem;
+    height: 28px;
+    padding: 0 8px;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      margin-left: 2px;
+    }
+  }
+}

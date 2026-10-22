@@ -1,0 +1,120 @@
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.kpi-card {
+  border: 1px solid var(--app-border, #e2e8f0);
+  border-radius: var(--app-radius-md, 8px);
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+  }
+
+  mat-card-content {
+    padding: 16px;
+  }
+}
+
+.kpi-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.kpi-eyebrow {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--app-muted, #64748b);
+}
+
+.kpi-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+
+  &.kpi-icon-land { background: #ecfdf5; color: #047857; }
+  &.kpi-icon-utilization { background: #e0f2fe; color: #0369a1; }
+  &.kpi-icon-plantations { background: #fef3c7; color: #b45309; }
+  &.kpi-icon-cycles { background: #f3e8ff; color: #7c3aed; }
+  &.kpi-icon-workers { background: #e0e7ff; color: #4338ca; }
+  &.kpi-icon-wages { background: #f0fdf4; color: #15803d; }
+}
+
+.kpi-value {
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--app-text, #1e293b);
+  line-height: 1.2;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+
+  .kpi-unit {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--app-muted, #64748b);
+  }
+}
+
+.kpi-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 12px;
+  background: #ecfdf5;
+  color: #047857;
+  text-transform: uppercase;
+
+  &.kpi-badge-draft {
+    background: #fef3c7;
+    color: #b45309;
+  }
+
+  &.kpi-badge-notrecorded {
+    background: #fef2f2;
+    color: #b91c1c;
+  }
+}
+
+.mini-progress-bar {
+  height: 4px;
+  background: #f1f5f9;
+  border-radius: 2px;
+  overflow: hidden;
+  margin: 6px 0 8px;
+}
+
+.mini-progress-fill {
+  height: 100%;
+  background: var(--app-primary, #15803d);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.kpi-subtext {
+  font-size: 0.775rem;
+  color: var(--app-muted, #64748b);
+  margin: 0;
+  line-height: 1.35;
+}

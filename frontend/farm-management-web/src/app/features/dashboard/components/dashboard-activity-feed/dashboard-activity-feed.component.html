@@ -1,0 +1,60 @@
+<mat-card class="activity-card">
+  <mat-card-content>
+    <div class="card-title-bar">
+      <div>
+        <p class="card-eyebrow">Audit & Operations Stream</p>
+        <h2>Recent Farm Activity</h2>
+      </div>
+      <button mat-button color="primary" (click)="loadActivity(farmId())" class="refresh-btn">
+        <mat-icon>refresh</mat-icon> Refresh
+      </button>
+    </div>
+
+    @if (isLoading()) {
+      <div class="loading-state">
+        <mat-spinner diameter="32"></mat-spinner>
+        <span>Fetching recent activity stream...</span>
+      </div>
+    } @else if (!activityData() || activityData()!.items.length === 0) {
+      <div class="empty-status">
+        <mat-icon>history_toggle_off</mat-icon>
+        <p>No recent activity records found.</p>
+      </div>
+    } @else {
+      <div class="timeline-list">
+        @for (item of activityData()!.items; track item.id) {
+          <div class="timeline-item">
+            <div class="timeline-icon-col">
+              <span class="activity-icon-badge" [class]="getActivityTypeClass(item.eventType)">
+                <mat-icon>{{ getActivityIcon(item.eventType) }}</mat-icon>
+              </span>
+              <div class="timeline-connector"></div>
+            </div>
+
+            <div class="timeline-body">
+              <div class="timeline-header">
+                <a [routerLink]="item.routeUrl" class="activity-title">
+                  {{ item.title }}
+                </a>
+                <span class="activity-time">
+                  {{ item.timestamp | date: "MMM d, h:mm a" }}
+                </span>
+              </div>
+
+              @if (item.description) {
+                <p class="activity-desc">{{ item.description }}</p>
+              }
+
+              <div class="activity-meta">
+                <span class="farm-chip">{{ item.farmName }}</span>
+                @if (item.performedBy) {
+                  <span class="performer">by {{ item.performedBy }}</span>
+                }
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </mat-card-content>
+</mat-card>

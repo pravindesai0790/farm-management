@@ -1,0 +1,132 @@
+<div class="kpi-grid">
+  <!-- KPI 1: Total Land -->
+  <mat-card class="kpi-card">
+    <mat-card-content>
+      <div class="kpi-header">
+        <span class="kpi-eyebrow">Total Farm Land</span>
+        <div class="kpi-icon kpi-icon-land" aria-hidden="true">
+          <mat-icon>terrain</mat-icon>
+        </div>
+      </div>
+      <div class="kpi-value">
+        {{ kpi().totalArea | number: "1.1-2" }}
+        <span class="kpi-unit">{{ kpi().areaUnitSymbol }}</span>
+      </div>
+      <p class="kpi-subtext">
+        Across <strong>{{ kpi().totalFarms }}</strong> {{ kpi().totalFarms === 1 ? "Farm" : "Farms" }}
+        & <strong>{{ kpi().totalAreas }}</strong> {{ kpi().totalAreas === 1 ? "Plot" : "Plots" }}
+      </p>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- KPI 2: Land Utilization -->
+  <mat-card class="kpi-card">
+    <mat-card-content>
+      <div class="kpi-header">
+        <span class="kpi-eyebrow">Land Utilization</span>
+        <div class="kpi-icon kpi-icon-utilization" aria-hidden="true">
+          <mat-icon>pie_chart</mat-icon>
+        </div>
+      </div>
+      <div class="kpi-value">
+        {{ kpi().utilizationPercentage }}<span class="kpi-unit">%</span>
+      </div>
+      <div class="mini-progress-bar">
+        <div class="mini-progress-fill" [style.width.%]="kpi().utilizationPercentage"></div>
+      </div>
+      <p class="kpi-subtext">
+        <strong>{{ kpi().allocatedArea | number: "1.1-2" }}</strong> {{ kpi().areaUnitSymbol }} in use ·
+        <strong>{{ kpi().availableArea | number: "1.1-2" }}</strong> {{ kpi().areaUnitSymbol }} free
+      </p>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- KPI 3: Active Plantations -->
+  <mat-card class="kpi-card">
+    <mat-card-content>
+      <div class="kpi-header">
+        <span class="kpi-eyebrow">Active Plantations</span>
+        <div class="kpi-icon kpi-icon-plantations" aria-hidden="true">
+          <mat-icon>spa</mat-icon>
+        </div>
+      </div>
+      <div class="kpi-value">
+        {{ kpi().activePlantationsCount }}
+        <span class="kpi-badge">Active</span>
+      </div>
+      <p class="kpi-subtext">
+        +<strong>{{ kpi().plannedPlantationsCount }}</strong> planned plantations in pipeline
+      </p>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- KPI 4: Active Cycles -->
+  <mat-card class="kpi-card">
+    <mat-card-content>
+      <div class="kpi-header">
+        <span class="kpi-eyebrow">Growing Cycles</span>
+        <div class="kpi-icon kpi-icon-cycles" aria-hidden="true">
+          <mat-icon>event_repeat</mat-icon>
+        </div>
+      </div>
+      <div class="kpi-value">
+        {{ kpi().activeCyclesCount }}
+        <span class="kpi-unit">Running</span>
+      </div>
+      <p class="kpi-subtext">
+        Current season: <strong>{{ currentSeason() || "Active" }}</strong>
+      </p>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- KPI 5: Workforce Turnout -->
+  @if (labor(); as l) {
+    <mat-card class="kpi-card">
+      <mat-card-content>
+        <div class="kpi-header">
+          <span class="kpi-eyebrow">Workforce Turnout</span>
+          <div class="kpi-icon kpi-icon-workers" aria-hidden="true">
+            <mat-icon>badge</mat-icon>
+          </div>
+        </div>
+        <div class="kpi-value">
+          {{ l.workedWorkersCount }}
+          <span class="kpi-unit">/ {{ l.assignedWorkersCount }}</span>
+        </div>
+        <div class="mini-progress-bar">
+          <div class="mini-progress-fill" [style.width.%]="turnoutPercentage()"></div>
+        </div>
+        <p class="kpi-subtext">
+          <strong>{{ turnoutPercentage() }}% Turnout</strong> · {{ l.fullDayCount }} Full · {{ l.halfDayCount }} Half · {{ l.hourlyCount }} Hr
+        </p>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- KPI 6: Today's Wages -->
+    <mat-card class="kpi-card">
+      <mat-card-content>
+        <div class="kpi-header">
+          <span class="kpi-eyebrow">Today's Wages</span>
+          <div class="kpi-icon kpi-icon-wages" aria-hidden="true">
+            <mat-icon>payments</mat-icon>
+          </div>
+        </div>
+        <div class="kpi-value">
+          {{ l.currencySymbol }}{{ l.todayWageExpense | number: "1.0-2" }}
+          <span
+            class="kpi-badge"
+            [class.kpi-badge-draft]="l.todayStatus === 'DRAFT'"
+            [class.kpi-badge-notrecorded]="l.todayStatus === 'NOT_RECORDED'"
+          >
+            {{ l.todayStatus }}
+          </span>
+        </div>
+        <p class="kpi-subtext">
+          @if (l.todayStatus === 'FINALIZED') { Approved earnings locked }
+          @else if (l.todayStatus === 'DRAFT') { Estimated pending finalization }
+          @else { No attendance recorded today }
+        </p>
+      </mat-card-content>
+    </mat-card>
+  }
+</div>
