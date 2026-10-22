@@ -33,6 +33,29 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
+
+    button,
+    a {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 36px;
+      box-sizing: border-box;
+
+      ::ng-deep .mdc-button__label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+        margin: 0;
+        vertical-align: middle;
+      }
+    }
   }
 }
 

@@ -162,7 +162,6 @@ export class FertilizerEditorPageComponent implements OnInit {
     return !!m?.requiresDescription || m?.code?.toUpperCase() === 'OTHER';
   });
 
-  readonly minPlannedDate: Date = new Date();
 
   // Form definition
   readonly form = this.fb.group({
@@ -914,14 +913,6 @@ export class FertilizerEditorPageComponent implements OnInit {
 
     if (!val.plannedDate) {
       errors.push('Planned Date is required to plan.');
-    } else {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const planned = new Date(val.plannedDate);
-      planned.setHours(0, 0, 0, 0);
-      if (planned < today) {
-        errors.push('Planned Date must be today or in the future.');
-      }
     }
 
     if (this.productsArray.length === 0) {

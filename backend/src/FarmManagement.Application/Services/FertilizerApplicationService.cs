@@ -574,7 +574,8 @@ public sealed class FertilizerApplicationService(
             }
             else
             {
-                app.AddProduct(p.InventoryItemId, p.PlannedQuantity, actor.UserId, p.StorageLocationId);
+                var newProduct = app.AddProduct(p.InventoryItemId, p.PlannedQuantity, actor.UserId, p.StorageLocationId);
+                store.AddProduct(newProduct);
             }
         }
 
@@ -808,7 +809,8 @@ public sealed class FertilizerApplicationService(
                 }
                 else
                 {
-                    app.AddProduct(p.InventoryItemId, p.PlannedQuantity, actor.UserId, p.StorageLocationId);
+                    var newProduct = app.AddProduct(p.InventoryItemId, p.PlannedQuantity, actor.UserId, p.StorageLocationId);
+                    store.AddProduct(newProduct);
                 }
             }
         }
@@ -849,12 +851,6 @@ public sealed class FertilizerApplicationService(
         if (!app.PlannedDate.HasValue)
         {
             throw Validation("plannedDate", "A planned date is required to plan a fertilizer application.");
-        }
-
-        var today = DateTimeOffset.UtcNow.Date;
-        if (app.PlannedDate.Value.Date < today)
-        {
-            throw Validation("plannedDate", "Planned date must be today or in the future.");
         }
 
         if (app.Products.Count == 0)

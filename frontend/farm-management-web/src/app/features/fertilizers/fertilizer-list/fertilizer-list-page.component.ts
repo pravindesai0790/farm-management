@@ -100,12 +100,12 @@ export class FertilizerListPageComponent implements OnInit {
 
   readonly displayedColumns = [
     'reference',
-    'status',
     'context',
     'method',
     'dates',
     'products',
     'area',
+    'status',
     'actions',
   ];
 

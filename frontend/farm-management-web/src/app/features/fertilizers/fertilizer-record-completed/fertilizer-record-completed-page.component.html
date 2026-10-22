@@ -391,27 +391,32 @@
       </mat-card-content>
     </mat-card>
 
-    <!-- Bottom Actions Bar -->
-    <div class="form-actions-bar">
-      <a mat-button routerLink="/fertilizer-applications" [disabled]="isSubmitting()">
-        Cancel
-      </a>
-      <button
-        mat-flat-button
-        color="primary"
-        type="submit"
-        [disabled]="isSubmitting() || form.invalid || (isRetrospective() && !form.value.acknowledgeRetrospectiveStockDeduction)"
-      >
-        @if (isSubmitting()) {
-          <mat-spinner diameter="18" class="inline-spinner"></mat-spinner>
-          <span>Recording...</span>
-        } @else {
-          <ng-container>
-            <mat-icon>check_circle</mat-icon>
-            <span>Record Completed Application</span>
-          </ng-container>
-        }
-      </button>
-    </div>
+    <!-- Fixed Bottom Actions Bar -->
+    <footer class="editor-action-bar">
+      <div class="action-bar-left">
+        <span class="step-indicator">Direct Application Recording</span>
+      </div>
+      <div class="action-bar-right">
+        <a mat-button routerLink="/fertilizer-applications" [disabled]="isSubmitting()">
+          Cancel
+        </a>
+        <button
+          mat-flat-button
+          color="primary"
+          type="submit"
+          [disabled]="isSubmitting() || form.invalid || (isRetrospective() && !form.value.acknowledgeRetrospectiveStockDeduction)"
+        >
+          @if (isSubmitting()) {
+            <mat-spinner diameter="18" class="inline-spinner"></mat-spinner>
+            <span>Recording...</span>
+          } @else {
+            <ng-container>
+              <mat-icon>check_circle</mat-icon>
+              <span>Record Completed Application</span>
+            </ng-container>
+          }
+        </button>
+      </div>
+    </footer>
   </form>
 </div>

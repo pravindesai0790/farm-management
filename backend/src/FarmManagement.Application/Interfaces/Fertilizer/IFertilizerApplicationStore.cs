@@ -88,6 +88,8 @@ public interface IFertilizerApplicationStore
 
     void Remove(FertilizerApplication application);
 
+    void AddProduct(FertilizerApplicationProduct product);
+
     void RemoveProduct(FertilizerApplicationProduct product);
 
     void AddMovement(StockMovement movement);

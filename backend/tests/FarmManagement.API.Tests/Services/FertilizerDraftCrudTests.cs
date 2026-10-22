@@ -273,6 +273,11 @@ public class FertilizerDraftCrudTests
         var p2 = updated.Products.First(p => p.InventoryItemId == item2.Id);
         Assert.Equal(80m, p2.PlannedQuantity);
 
+        // Verify store.AddProduct was invoked for the newly added product
+        var addedProduct = Assert.Single(_store.AddedProducts);
+        Assert.Equal(item2.Id, addedProduct.InventoryItemId);
+        Assert.Equal(80m, addedProduct.PlannedQuantity);
+
         var lastAudit = _store.AuditLogs.Last();
         Assert.Equal("Fertilizer.DraftUpdated", lastAudit.Action);
     }
@@ -754,6 +759,13 @@ public class FertilizerDraftCrudTests
         public void Add(FertilizerApplication application) => Applications.Add(application);
 
         public void Remove(FertilizerApplication application) => Applications.Remove(application);
+
+        public List<FertilizerApplicationProduct> AddedProducts { get; } = [];
+
+        public void AddProduct(FertilizerApplicationProduct product)
+        {
+            AddedProducts.Add(product);
+        }
 
         public void RemoveProduct(FertilizerApplicationProduct product)
         {

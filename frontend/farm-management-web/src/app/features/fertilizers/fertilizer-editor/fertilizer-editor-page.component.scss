@@ -307,30 +307,24 @@
           gap: 4px;
         }
 
-        .stock-pill {
+        .stock-shortage-warn {
           display: inline-flex;
           align-items: center;
           gap: 4px;
           font-size: 0.725rem;
           padding: 1px 6px;
           border-radius: 4px;
-          background-color: #f0fdf4;
-          color: #166534;
-          border: 1px solid #bbf7d0;
+          background-color: #fef2f2;
+          color: #b91c1c;
+          border: 1px solid #fecaca;
+          font-weight: 600;
           align-self: flex-start;
 
-          &.stock-pill--shortage {
-            background-color: #fef2f2;
-            color: #b91c1c;
-            border-color: #fecaca;
-            font-weight: 600;
-
-            .stock-warn-icon {
-              font-size: 13px;
-              width: 13px;
-              height: 13px;
-              color: #dc2626;
-            }
+          .stock-warn-icon {
+            font-size: 13px;
+            width: 13px;
+            height: 13px;
+            color: #dc2626;
           }
         }
       }
@@ -410,6 +404,28 @@
     display: flex;
     align-items: center;
     gap: 10px;
+
+    button,
+    a {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 36px;
+
+      ::ng-deep .mdc-button__label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+        margin: 0;
+        vertical-align: middle;
+      }
+    }
 
     .btn-spinner {
       display: inline-block;

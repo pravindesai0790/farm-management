@@ -15,6 +15,26 @@
         <mat-icon>check_circle</mat-icon> Record Completed
       </a>
     }
+    @if (permissionService.has("Fertilizer.Export")) {
+          <button
+            mat-stroked-button
+            (click)="exportCsv()"
+            [disabled]="isExporting() || isLoading()"
+            matTooltip="Export all matching records to CSV"
+          >
+            @if (isExporting()) {
+              <ng-container>
+                <mat-spinner diameter="18" class="btn-spinner" />
+                <span>Exporting...</span>
+              </ng-container>
+            } @else {
+              <ng-container>
+                <mat-icon>download</mat-icon>
+                <span>Export CSV</span>
+              </ng-container>
+            }
+          </button>
+        }
   </div>
 </div>
 
@@ -164,27 +184,6 @@
             <mat-icon>clear</mat-icon> Reset Filters ({{ activeFilterCount() }})
           </button>
         }
-
-        @if (permissionService.has("Fertilizer.Export")) {
-          <button
-            mat-stroked-button
-            (click)="exportCsv()"
-            [disabled]="isExporting() || isLoading()"
-            matTooltip="Export all matching records to CSV"
-          >
-            @if (isExporting()) {
-              <ng-container>
-                <mat-spinner diameter="18" class="btn-spinner" />
-                <span>Exporting...</span>
-              </ng-container>
-            } @else {
-              <ng-container>
-                <mat-icon>download</mat-icon>
-                <span>Export CSV</span>
-              </ng-container>
-            }
-          </button>
-        }
       </div>
     </div>
 
@@ -238,16 +237,6 @@
                   <span class="cell-subtext" [title]="a.purposeReason">{{ a.purposeReason }}</span>
                 }
               </div>
-            </td>
-          </ng-container>
-
-          <!-- Status Column -->
-          <ng-container matColumnDef="status">
-            <th mat-header-cell *matHeaderCellDef>Status</th>
-            <td mat-cell *matCellDef="let a">
-              <span class="status-badge" [ngClass]="getStatusBadgeClass(a.status)">
-                {{ getStatusDisplayName(a.status) }}
-              </span>
             </td>
           </ng-container>
 
@@ -357,6 +346,16 @@
               } @else {
                 <span class="text-muted">—</span>
               }
+            </td>
+          </ng-container>
+
+          <!-- Status Column -->
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Status</th>
+            <td mat-cell *matCellDef="let a">
+              <span class="status-badge" [ngClass]="getStatusBadgeClass(a.status)">
+                {{ getStatusDisplayName(a.status) }}
+              </span>
             </td>
           </ng-container>
 

@@ -508,6 +508,9 @@ public sealed class FertilizerApplicationStore(ApplicationDbContext dbContext) :
     public void Remove(FertilizerApplication application) =>
         dbContext.FertilizerApplications.Remove(application);
 
+    public void AddProduct(FertilizerApplicationProduct product) =>
+        dbContext.FertilizerApplicationProducts.Add(product);
+
     public void RemoveProduct(FertilizerApplicationProduct product) =>
         dbContext.FertilizerApplicationProducts.Remove(product);
 

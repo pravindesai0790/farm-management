@@ -750,6 +750,10 @@ public class FertilizerCompleteTests
 
         public void Remove(FertilizerApplication application) => Applications.Remove(application);
 
+        public void AddProduct(FertilizerApplicationProduct product)
+        {
+        }
+
         public void RemoveProduct(FertilizerApplicationProduct product)
         {
             var app = Applications.FirstOrDefault(a => a.Id == product.FertilizerApplicationId);

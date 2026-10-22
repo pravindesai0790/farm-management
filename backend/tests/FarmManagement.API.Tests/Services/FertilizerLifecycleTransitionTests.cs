@@ -71,6 +71,34 @@ public class FertilizerLifecycleTransitionTests
     }
 
     [Fact]
+    public async Task PlanAsync_WithPastPlannedDate_SucceedsAndTransitionsToPlanned()
+    {
+        // Arrange - Draft was created in the past or user set a past planned date
+        var actor = CreateActor();
+        var (farm, area, plantation, cycle, stage) = CreateValidHierarchyChain();
+        var method = CreateMethod("BROADCASTING", "Broadcasting");
+        var item = CreateInventoryItem(FarmInventoryCategories.FertilizersSoilId);
+        var location = CreateStorageLocation(farm.Id);
+
+        var pastDate = DateTimeOffset.UtcNow.AddDays(-3);
+        var draft = new FertilizerApplication(
+            _orgId, "FERT-2026-000001", _userId,
+            farmId: farm.Id, farmAreaId: area.Id, plantationId: plantation.Id,
+            cropCycleId: cycle.Id, cropCycleStageId: stage.Id,
+            applicationMethodId: method.Id, plannedDate: pastDate);
+        draft.AddProduct(item.Id, 50m, _userId, location.Id);
+        _store.Applications.Add(draft);
+
+        // Act
+        var result = await _sut.PlanAsync(actor, draft.Id, new PlanFertilizerApplicationRequest(), "127.0.0.1");
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(FertilizerApplicationStatus.Planned, result.Status);
+        Assert.Equal(pastDate, result.PlannedDate);
+    }
+
+    [Fact]
     public async Task PlanAsync_FromDraft_SupplyingFieldsInRequest_UpdatesAndTransitionsToPlanned()
     {
         // Arrange
@@ -183,7 +211,7 @@ public class FertilizerLifecycleTransitionTests
     }
 
     [Fact]
-    public async Task PlanAsync_PlannedDateInPast_ThrowsValidationException()
+    public async Task PlanAsync_PlannedDateInPast_IsAllowedAndTransitionsToPlanned()
     {
         // Arrange
         var actor = CreateActor();
@@ -201,11 +229,13 @@ public class FertilizerLifecycleTransitionTests
         draft.AddProduct(item.Id, 50m, _userId, location.Id);
         _store.Applications.Add(draft);
 
-        // Act & Assert
-        var ex = await Assert.ThrowsAsync<ValidationException>(() =>
-            _sut.PlanAsync(actor, draft.Id, new PlanFertilizerApplicationRequest(), null));
+        // Act
+        var result = await _sut.PlanAsync(actor, draft.Id, new PlanFertilizerApplicationRequest(), null);
 
-        Assert.True(ex.Errors.ContainsKey("plannedDate"));
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(FertilizerApplicationStatus.Planned, result.Status);
+        Assert.Equal(pastDate, result.PlannedDate);
     }
 
     [Fact]
@@ -1072,6 +1102,10 @@ public class FertilizerLifecycleTransitionTests
         public void Add(FertilizerApplication application) => Applications.Add(application);
 
         public void Remove(FertilizerApplication application) => Applications.Remove(application);
+
+        public void AddProduct(FertilizerApplicationProduct product)
+        {
+        }
 
         public void RemoveProduct(FertilizerApplicationProduct product)
         {

@@ -241,8 +241,7 @@
         <app-date-time-picker
           label="Planned Date & Time"
           formControlName="plannedDate"
-          [minDate]="minPlannedDate"
-          hint="Must be today or future when planning"
+          hint="Target date and time for application"
           class="form-field"
         />
 
@@ -375,15 +374,11 @@
                           </mat-select>
                         </mat-form-field>
 
-                        @if (getSelectedProduct(idx); as selProd) {
-                          @if (row.value.storageLocationId && selProd.availableQuantity !== undefined) {
-                            <div class="stock-pill" [class.stock-pill--shortage]="isStockShortage(idx)">
-                              <span class="stock-text">Avail: {{ selProd.availableQuantity }} {{ selProd.stockUnitSymbol || selProd.stockUnitName }}</span>
-                              @if (isStockShortage(idx)) {
-                                <mat-icon class="stock-warn-icon" matTooltip="Planned quantity exceeds available stock in this storage location">warning</mat-icon>
-                              }
-                            </div>
-                          }
+                        @if (isStockShortage(idx)) {
+                          <div class="stock-shortage-warn" matTooltip="Planned quantity exceeds available stock in this storage location">
+                            <mat-icon class="stock-warn-icon">warning</mat-icon>
+                            <span>Stock shortage</span>
+                          </div>
                         }
                       </div>
                     </td>
