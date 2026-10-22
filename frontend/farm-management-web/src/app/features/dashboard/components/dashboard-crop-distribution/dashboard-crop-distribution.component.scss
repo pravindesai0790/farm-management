@@ -3,13 +3,22 @@
   border-radius: var(--app-radius-md, 8px);
   background: var(--app-surface, #ffffff);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  height: 435px;
+  display: flex;
+  flex-direction: column;
 
   mat-card-content {
     padding: 18px 20px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    overflow: hidden;
   }
 }
 
 .card-title-bar {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -73,6 +82,7 @@
 
 .stacked-bar-container {
   margin-bottom: 16px;
+  flex-shrink: 0;
 }
 
 .stacked-bar {
@@ -94,6 +104,24 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 999px;
+  }
 }
 
 .crop-item {

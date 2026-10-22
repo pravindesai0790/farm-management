@@ -586,12 +586,7 @@ public sealed class DashboardStore(ApplicationDbContext dbContext) : IDashboardS
     {
         // Out of stock
         var balanceQuery = dbContext.StockBalances
-            .Include(b => b.InventoryItem)
-                .ThenInclude(i => i!.Category)
-            .Include(b => b.InventoryItem)
-                .ThenInclude(i => i!.StockUnit)
-            .Include(b => b.StorageLocation)
-            .Include(b => b.Farm)
+            .AsNoTracking()
             .Where(b => b.OrganizationId == organizationId && b.QuantityOnHand <= 0m);
 
         if (farmId.HasValue)
@@ -599,28 +594,39 @@ public sealed class DashboardStore(ApplicationDbContext dbContext) : IDashboardS
             balanceQuery = balanceQuery.Where(b => b.FarmId == farmId.Value);
         }
 
-        var outOfStockList = await balanceQuery
-            .AsNoTracking()
-            .Take(15)
-            .Select(b => new RawOutOfStockItem(
+        var outOfStockRaw = await balanceQuery
+            .Select(b => new
+            {
                 b.InventoryItemId,
-                b.InventoryItem != null ? b.InventoryItem.Name : "Unknown Item",
-                b.InventoryItem != null ? b.InventoryItem.Sku : null,
-                b.InventoryItem != null && b.InventoryItem.Category != null ? b.InventoryItem.Category.Name : null,
+                ItemName = b.InventoryItem != null ? b.InventoryItem.Name : "Unknown Item",
+                Sku = b.InventoryItem != null ? b.InventoryItem.Sku : null,
+                CategoryName = b.InventoryItem != null && b.InventoryItem.Category != null ? b.InventoryItem.Category.Name : null,
                 b.StorageLocationId,
-                b.StorageLocation != null ? b.StorageLocation.Name : "Storage",
+                StorageLocationName = b.StorageLocation != null ? b.StorageLocation.Name : "Storage",
                 b.FarmId,
-                b.Farm != null ? b.Farm.Name : "Farm",
-                b.InventoryItem != null && b.InventoryItem.StockUnit != null ? b.InventoryItem.StockUnit.Symbol : "units",
+                FarmName = b.Farm != null ? b.Farm.Name : "Farm",
+                StockUnitSymbol = b.InventoryItem != null && b.InventoryItem.StockUnit != null ? b.InventoryItem.StockUnit.Symbol : "units",
                 b.QuantityOnHand
-            ))
+            })
+            .Take(15)
             .ToListAsync(cancellationToken);
+
+        var outOfStockList = outOfStockRaw.Select(b => new RawOutOfStockItem(
+            b.InventoryItemId,
+            b.ItemName,
+            b.Sku,
+            b.CategoryName,
+            b.StorageLocationId,
+            b.StorageLocationName,
+            b.FarmId,
+            b.FarmName,
+            b.StockUnitSymbol,
+            b.QuantityOnHand
+        )).ToList();
 
         // Recent consumption
         var movementQuery = dbContext.StockMovements
-            .Include(m => m.InventoryItem)
-                .ThenInclude(i => i!.Category)
-            .Include(m => m.StockUnit)
+            .AsNoTracking()
             .Where(m => m.OrganizationId == organizationId &&
                         m.MovementType == StockMovementType.Issue &&
                         m.MovementDate >= consumptionStartDate &&
@@ -631,25 +637,38 @@ public sealed class DashboardStore(ApplicationDbContext dbContext) : IDashboardS
             movementQuery = movementQuery.Where(m => m.FarmId == farmId.Value);
         }
 
-        var consumptionGroups = await movementQuery
-            .AsNoTracking()
-            .GroupBy(m => new
+        var topConsumed = await movementQuery
+            .GroupBy(m => m.InventoryItemId)
+            .Select(g => new
             {
-                m.InventoryItemId,
-                ItemName = m.InventoryItem != null ? m.InventoryItem.Name : "Unknown Item",
-                CategoryName = m.InventoryItem != null && m.InventoryItem.Category != null ? m.InventoryItem.Category.Name : null,
-                UnitSymbol = m.StockUnit != null ? m.StockUnit.Symbol : "units"
+                InventoryItemId = g.Key,
+                TotalQuantity = g.Sum(x => x.Quantity)
             })
-            .Select(g => new RawStockConsumption(
-                g.Key.InventoryItemId,
-                g.Key.ItemName,
-                g.Key.CategoryName,
-                g.Sum(x => x.Quantity),
-                g.Key.UnitSymbol
-            ))
-            .OrderByDescending(c => c.Quantity)
+            .OrderByDescending(x => x.TotalQuantity)
             .Take(5)
             .ToListAsync(cancellationToken);
+
+        var itemIds = topConsumed.Select(x => x.InventoryItemId).ToList();
+        var itemsDict = itemIds.Count == 0
+            ? new Dictionary<Guid, InventoryItem>()
+            : await dbContext.InventoryItems
+                .AsNoTracking()
+                .Include(i => i.Category)
+                .Include(i => i.StockUnit)
+                .Where(i => itemIds.Contains(i.Id))
+                .ToDictionaryAsync(i => i.Id, cancellationToken);
+
+        var consumptionGroups = topConsumed.Select(c =>
+        {
+            itemsDict.TryGetValue(c.InventoryItemId, out var item);
+            return new RawStockConsumption(
+                c.InventoryItemId,
+                item?.Name ?? "Unknown Item",
+                item?.Category?.Name,
+                c.TotalQuantity,
+                item?.StockUnit?.Symbol ?? "units"
+            );
+        }).ToList();
 
         var totalItems = await dbContext.InventoryItems
             .CountAsync(i => i.OrganizationId == organizationId && i.IsActive, cancellationToken);
