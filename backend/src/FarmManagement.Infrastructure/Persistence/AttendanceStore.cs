@@ -319,6 +319,36 @@ public sealed class AttendanceStore(ApplicationDbContext dbContext) : IAttendanc
     public void RemoveAttendance(LaborAttendance attendance) =>
         dbContext.LaborAttendances.Remove(attendance);
 
+    public Task<LaborAttendanceOperationIdempotencyRecord?> FindIdempotencyRecordAsync(
+        Guid organizationId,
+        string operationType,
+        string idempotencyKey,
+        CancellationToken cancellationToken = default) =>
+        dbContext.LaborAttendanceOperationIdempotencyRecords
+            .SingleOrDefaultAsync(
+                r => r.OrganizationId == organizationId &&
+                     r.OperationType == operationType &&
+                     r.IdempotencyKey == idempotencyKey,
+                cancellationToken);
+
+    public void AddIdempotencyRecord(LaborAttendanceOperationIdempotencyRecord record) =>
+        dbContext.LaborAttendanceOperationIdempotencyRecords.Add(record);
+
+    public async Task AcquireAttendanceLockAsync(
+        Guid farmId,
+        DateOnly attendanceDate,
+        CancellationToken cancellationToken = default)
+    {
+        if (dbContext.Database.ProviderName?.Contains("Npgsql", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            var farmStr = farmId.ToString();
+            var dateStr = attendanceDate.ToString("yyyy-MM-dd");
+            await dbContext.Database.ExecuteSqlInterpolatedAsync(
+                $"SELECT pg_advisory_xact_lock(hashtext({farmStr}), hashtext({dateStr}))",
+                cancellationToken);
+        }
+    }
+
     public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) =>
         dbContext.SaveChangesAsync(cancellationToken);
 
@@ -326,6 +356,11 @@ public sealed class AttendanceStore(ApplicationDbContext dbContext) : IAttendanc
         Func<CancellationToken, Task<T>> operation,
         CancellationToken cancellationToken = default)
     {
+        if (dbContext.Database.CurrentTransaction is not null)
+        {
+            return await operation(cancellationToken);
+        }
+
         await using var transaction = await dbContext.Database.BeginTransactionAsync(
             System.Data.IsolationLevel.ReadCommitted,
             cancellationToken);

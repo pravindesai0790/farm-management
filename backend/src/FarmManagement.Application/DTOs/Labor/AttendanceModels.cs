@@ -40,7 +40,8 @@ public sealed record CreateDraftAttendanceRequest(
     DateOnly AttendanceDate,
     string AttendanceType,
     decimal? WorkingHours = null,
-    string? Notes = null);
+    string? Notes = null,
+    string? IdempotencyKey = null);
 
 public sealed record UpdateDraftAttendanceRequest(
     string AttendanceType,
@@ -60,7 +61,8 @@ public sealed record SaveDailyDraftAttendanceBatchRequest(
     Guid FarmId,
     DateOnly AttendanceDate,
     IReadOnlyList<DailyDraftAttendanceItemRequest> Items,
-    bool RemoveOmittedDrafts = false);
+    bool RemoveOmittedDrafts = false,
+    string? IdempotencyKey = null);
 
 public sealed record AttendanceRecordResponse(
     Guid Id,
@@ -160,7 +162,8 @@ public sealed record AttendanceWagePreviewBatchResponse(
 public sealed record FinalizeAttendanceRequest(
     Guid FarmId,
     DateOnly AttendanceDate,
-    IReadOnlyList<Guid>? AttendanceIds = null);
+    IReadOnlyList<Guid>? AttendanceIds = null,
+    string? IdempotencyKey = null);
 
 public sealed record FinalizeAttendanceResponse(
     Guid FarmId,
@@ -216,7 +219,8 @@ public sealed record CopyPreviousDayAttendanceRequest(
     DateOnly TargetDate,
     DateOnly? SourceDate = null,
     IReadOnlyList<Guid>? WorkerIds = null,
-    bool OverwriteExistingDraft = false);
+    bool OverwriteExistingDraft = false,
+    string? IdempotencyKey = null);
 
 public sealed record CopyPreviousDayAttendanceResponse(
     Guid FarmId,
@@ -277,4 +281,3 @@ public sealed record AttendanceDetailResponse(
     DateTimeOffset? UpdatedAt,
     Guid? UpdatedBy,
     RelatedEarningsLedgerResponse? EarningsLedger);
-

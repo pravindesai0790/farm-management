@@ -791,6 +791,7 @@ export class AttendanceDailyPageComponent implements OnInit {
     this.errorMessage.set(null);
 
     const payload: SaveDailyDraftAttendanceBatchRequest = {
+      idempotencyKey: crypto.randomUUID(),
       farmId,
       attendanceDate: date,
       removeOmittedDrafts: true,
@@ -905,6 +906,7 @@ export class AttendanceDailyPageComponent implements OnInit {
     // If there are unsaved changes, save batch first then finalize
     const saveFirst$ = this.hasUnsavedChanges()
       ? this.attendanceService.saveDailyDraftBatch({
+          idempotencyKey: crypto.randomUUID(),
           farmId,
           attendanceDate: date,
           removeOmittedDrafts: true,
@@ -942,6 +944,7 @@ export class AttendanceDailyPageComponent implements OnInit {
   private callFinalizeEndpoint(farmId: string, date: string): void {
     this.attendanceService
       .finalizeAttendance({
+        idempotencyKey: crypto.randomUUID(),
         farmId,
         attendanceDate: date,
       })

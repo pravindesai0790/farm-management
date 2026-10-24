@@ -31,6 +31,7 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 import { finalize } from "rxjs";
 
 import {
+  CopyPreviousDayAttendanceRequest,
   CopyPreviousDayAttendanceResponse,
   CopyPreviousDayPreviewResponse,
   CopyPreviousDayPreviewWorkerItem,
@@ -740,7 +741,8 @@ export class AttendanceCopyPreviousDayDialogComponent implements OnInit {
     this.isCopying.set(true);
     this.errorMessage.set(null);
 
-    const request = {
+    const request: CopyPreviousDayAttendanceRequest = {
+      idempotencyKey: crypto.randomUUID(),
       farmId: this.data.farmId,
       targetDate: this.data.targetDate,
       sourceDate: p.sourceDate,

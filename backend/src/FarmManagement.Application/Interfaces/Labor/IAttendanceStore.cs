@@ -92,6 +92,19 @@ public interface IAttendanceStore
 
     void RemoveAttendance(LaborAttendance attendance);
 
+    Task<LaborAttendanceOperationIdempotencyRecord?> FindIdempotencyRecordAsync(
+        Guid organizationId,
+        string operationType,
+        string idempotencyKey,
+        CancellationToken cancellationToken = default);
+
+    void AddIdempotencyRecord(LaborAttendanceOperationIdempotencyRecord record);
+
+    Task AcquireAttendanceLockAsync(
+        Guid farmId,
+        DateOnly attendanceDate,
+        CancellationToken cancellationToken = default);
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 
     Task<T> ExecuteInTransactionAsync<T>(

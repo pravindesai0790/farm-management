@@ -1,3 +1,7 @@
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using FarmManagement.Application.Common.Exceptions;
 using FarmManagement.Application.Common.Models;
 using FarmManagement.Application.DTOs.Labor;
@@ -13,6 +17,86 @@ public sealed class AttendanceService(
 {
     private const int DefaultPageSize = 20;
     private const int MaximumPageSize = 100;
+
+    private static readonly JsonSerializerOptions IdempotencyJsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        WriteIndented = false
+    };
+
+    private static string ComputeRequestHash(object? payload)
+    {
+        if (payload is null)
+        {
+            return "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+        }
+
+        var json = JsonSerializer.Serialize(payload, IdempotencyJsonOptions);
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(json));
+        return Convert.ToHexString(bytes).ToLowerInvariant();
+    }
+
+    private async Task<TResponse?> CheckIdempotencyAsync<TResponse>(
+        Guid organizationId,
+        string operationType,
+        string? idempotencyKey,
+        object? requestPayload,
+        CancellationToken cancellationToken)
+        where TResponse : class
+    {
+        if (string.IsNullOrWhiteSpace(idempotencyKey))
+        {
+            return null;
+        }
+
+        var trimmedKey = idempotencyKey.Trim();
+        var existing = await store.FindIdempotencyRecordAsync(organizationId, operationType, trimmedKey, cancellationToken);
+        if (existing is null)
+        {
+            return null;
+        }
+
+        var requestHash = ComputeRequestHash(requestPayload);
+        if (string.Equals(existing.RequestHash, requestHash, StringComparison.OrdinalIgnoreCase))
+        {
+            if (string.IsNullOrWhiteSpace(existing.ResponsePayload))
+            {
+                return null;
+            }
+
+            return JsonSerializer.Deserialize<TResponse>(existing.ResponsePayload, IdempotencyJsonOptions);
+        }
+
+        throw new ConflictException($"An attendance operation '{operationType}' with idempotency key '{trimmedKey}' already exists with different request parameters.");
+    }
+
+    private void RecordIdempotency<TResponse>(
+        Guid organizationId,
+        string operationType,
+        string? idempotencyKey,
+        object? requestPayload,
+        TResponse response,
+        Guid userId)
+    {
+        if (string.IsNullOrWhiteSpace(idempotencyKey))
+        {
+            return;
+        }
+
+        var requestHash = ComputeRequestHash(requestPayload);
+        var responseJson = JsonSerializer.Serialize(response, IdempotencyJsonOptions);
+
+        var record = new LaborAttendanceOperationIdempotencyRecord(
+            organizationId,
+            operationType,
+            idempotencyKey.Trim(),
+            requestHash,
+            responseJson,
+            userId);
+
+        store.AddIdempotencyRecord(record);
+    }
 
     public async Task<PagedResponse<AttendanceEligibleWorkerResponse>> GetEligibleWorkersAsync(
         AttendanceActor actor,
@@ -296,6 +380,18 @@ public sealed class AttendanceService(
             throw Validation("attendanceDate", "Attendance date is required.");
         }
 
+        var cached = await CheckIdempotencyAsync<AttendanceRecordResponse>(
+            actor.OrganizationId,
+            "CREATE_DRAFT",
+            request.IdempotencyKey,
+            request,
+            cancellationToken);
+
+        if (cached is not null)
+        {
+            return cached;
+        }
+
         var attendanceType = ParseAttendanceType(request.AttendanceType);
         ValidateWorkingHours(attendanceType, request.WorkingHours);
 
@@ -371,7 +467,21 @@ public sealed class AttendanceService(
         await store.SaveChangesAsync(cancellationToken);
 
         var loaded = await store.FindAttendanceByIdAsync(attendance.Id, actor.OrganizationId, cancellationToken);
-        return MapToResponse(loaded ?? attendance, farm.Name);
+        var response = MapToResponse(loaded ?? attendance, farm.Name);
+
+        if (!string.IsNullOrWhiteSpace(request.IdempotencyKey))
+        {
+            RecordIdempotency(
+                actor.OrganizationId,
+                "CREATE_DRAFT",
+                request.IdempotencyKey,
+                request,
+                response,
+                actor.UserId);
+            await store.SaveChangesAsync(cancellationToken);
+        }
+
+        return response;
     }
 
     public async Task<AttendanceRecordResponse> UpdateDraftAsync(
@@ -562,6 +672,20 @@ public sealed class AttendanceService(
 
         return await store.ExecuteInTransactionAsync(async ct =>
         {
+            await store.AcquireAttendanceLockAsync(request.FarmId, request.AttendanceDate, ct);
+
+            var cached = await CheckIdempotencyAsync<DailyAttendanceResponse>(
+                actor.OrganizationId,
+                "SAVE_DRAFT_BATCH",
+                request.IdempotencyKey,
+                request,
+                ct);
+
+            if (cached is not null)
+            {
+                return cached;
+            }
+
             var existingDaily = await store.ListDailyAttendanceTrackedAsync(
                 actor.OrganizationId,
                 request.FarmId,
@@ -681,7 +805,21 @@ public sealed class AttendanceService(
 
             await store.SaveChangesAsync(ct);
 
-            return await GetDailyAttendanceAsync(actor, request.FarmId, request.AttendanceDate, ct);
+            var dailyResponse = await GetDailyAttendanceAsync(actor, request.FarmId, request.AttendanceDate, ct);
+
+            if (!string.IsNullOrWhiteSpace(request.IdempotencyKey))
+            {
+                RecordIdempotency(
+                    actor.OrganizationId,
+                    "SAVE_DRAFT_BATCH",
+                    request.IdempotencyKey,
+                    request,
+                    dailyResponse,
+                    actor.UserId);
+                await store.SaveChangesAsync(ct);
+            }
+
+            return dailyResponse;
         }, cancellationToken);
     }
 
@@ -870,6 +1008,20 @@ public sealed class AttendanceService(
 
         return await store.ExecuteInTransactionAsync(async ct =>
         {
+            await store.AcquireAttendanceLockAsync(request.FarmId, request.AttendanceDate, ct);
+
+            var cached = await CheckIdempotencyAsync<FinalizeAttendanceResponse>(
+                actor.OrganizationId,
+                "FINALIZE_ATTENDANCE",
+                request.IdempotencyKey,
+                request,
+                ct);
+
+            if (cached is not null)
+            {
+                return cached;
+            }
+
             // 2. Load the target draft attendance rows (tracked)
             var dailyRecords = await store.ListDailyAttendanceTrackedAsync(
                 actor.OrganizationId,
@@ -1063,7 +1215,7 @@ public sealed class AttendanceService(
             var summary = BuildDailyAttendanceSummary(updatedDaily);
             var records = updatedDaily.Select(a => MapToResponse(a, farm.Name)).ToList();
 
-            return new FinalizeAttendanceResponse(
+            var finalizeResponse = new FinalizeAttendanceResponse(
                 FarmId: farm.Id,
                 FarmName: farm.Name,
                 AttendanceDate: request.AttendanceDate,
@@ -1073,6 +1225,20 @@ public sealed class AttendanceService(
                 TotalEarnings: totalEarnings,
                 Summary: summary,
                 Records: records);
+
+            if (!string.IsNullOrWhiteSpace(request.IdempotencyKey))
+            {
+                RecordIdempotency(
+                    actor.OrganizationId,
+                    "FINALIZE_ATTENDANCE",
+                    request.IdempotencyKey,
+                    request,
+                    finalizeResponse,
+                    actor.UserId);
+                await store.SaveChangesAsync(ct);
+            }
+
+            return finalizeResponse;
         }, cancellationToken);
     }
 
@@ -1341,6 +1507,20 @@ public sealed class AttendanceService(
 
         return await store.ExecuteInTransactionAsync(async ct =>
         {
+            await store.AcquireAttendanceLockAsync(request.FarmId, request.TargetDate, ct);
+
+            var cached = await CheckIdempotencyAsync<CopyPreviousDayAttendanceResponse>(
+                actor.OrganizationId,
+                "COPY_PREVIOUS_DAY",
+                request.IdempotencyKey,
+                request,
+                ct);
+
+            if (cached is not null)
+            {
+                return cached;
+            }
+
             var existingTargetRecords = await store.ListDailyAttendanceTrackedAsync(
                 actor.OrganizationId,
                 request.FarmId,
@@ -1470,7 +1650,7 @@ public sealed class AttendanceService(
                 Summary: summary,
                 Records: mappedRecords);
 
-            return new CopyPreviousDayAttendanceResponse(
+            var copyResponse = new CopyPreviousDayAttendanceResponse(
                 FarmId: farm.Id,
                 FarmName: farm.Name,
                 SourceDate: resolvedSourceDate,
@@ -1480,6 +1660,20 @@ public sealed class AttendanceService(
                 ExcludedCount: excludedWorkers.Count,
                 ExcludedWorkers: excludedWorkers,
                 DailyAttendance: dailyAttendanceResponse);
+
+            if (!string.IsNullOrWhiteSpace(request.IdempotencyKey))
+            {
+                RecordIdempotency(
+                    actor.OrganizationId,
+                    "COPY_PREVIOUS_DAY",
+                    request.IdempotencyKey,
+                    request,
+                    copyResponse,
+                    actor.UserId);
+                await store.SaveChangesAsync(ct);
+            }
+
+            return copyResponse;
         }, cancellationToken);
     }
 

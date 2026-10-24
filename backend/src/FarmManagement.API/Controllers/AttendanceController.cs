@@ -159,11 +159,16 @@ public sealed class AttendanceController(
     [Authorize(Policy = "Permission:Attendance.Create")]
     public async Task<ActionResult<AttendanceRecordResponse>> CreateDraft(
         [FromBody] CreateDraftAttendanceRequest request,
+        [FromHeader(Name = "Idempotency-Key")] string? headerIdempotencyKey = null,
         CancellationToken cancellationToken = default)
     {
+        var effectiveRequest = string.IsNullOrWhiteSpace(request.IdempotencyKey) && !string.IsNullOrWhiteSpace(headerIdempotencyKey)
+            ? request with { IdempotencyKey = headerIdempotencyKey.Trim() }
+            : request;
+
         var result = await attendanceService.CreateDraftAsync(
             GetUserContext(),
-            request,
+            effectiveRequest,
             cancellationToken);
 
         return CreatedAtAction(
@@ -206,11 +211,16 @@ public sealed class AttendanceController(
     [Authorize(Policy = "Permission:Attendance.Create")]
     public async Task<ActionResult<DailyAttendanceResponse>> SaveDailyDraftBatch(
         [FromBody] SaveDailyDraftAttendanceBatchRequest request,
+        [FromHeader(Name = "Idempotency-Key")] string? headerIdempotencyKey = null,
         CancellationToken cancellationToken = default)
     {
+        var effectiveRequest = string.IsNullOrWhiteSpace(request.IdempotencyKey) && !string.IsNullOrWhiteSpace(headerIdempotencyKey)
+            ? request with { IdempotencyKey = headerIdempotencyKey.Trim() }
+            : request;
+
         var result = await attendanceService.SaveDailyDraftBatchAsync(
             GetUserContext(),
-            request,
+            effectiveRequest,
             cancellationToken);
 
         return Ok(result);
@@ -249,11 +259,16 @@ public sealed class AttendanceController(
     [Authorize(Policy = "Permission:Attendance.Finalize")]
     public async Task<ActionResult<FinalizeAttendanceResponse>> FinalizeAttendance(
         [FromBody] FinalizeAttendanceRequest request,
+        [FromHeader(Name = "Idempotency-Key")] string? headerIdempotencyKey = null,
         CancellationToken cancellationToken = default)
     {
+        var effectiveRequest = string.IsNullOrWhiteSpace(request.IdempotencyKey) && !string.IsNullOrWhiteSpace(headerIdempotencyKey)
+            ? request with { IdempotencyKey = headerIdempotencyKey.Trim() }
+            : request;
+
         var result = await attendanceService.FinalizeAttendanceAsync(
             GetUserContext(),
-            request,
+            effectiveRequest,
             cancellationToken);
 
         return Ok(result);
@@ -305,11 +320,16 @@ public sealed class AttendanceController(
     [Authorize(Policy = "Permission:Attendance.Create")]
     public async Task<ActionResult<CopyPreviousDayAttendanceResponse>> CopyPreviousDay(
         [FromBody] CopyPreviousDayAttendanceRequest request,
+        [FromHeader(Name = "Idempotency-Key")] string? headerIdempotencyKey = null,
         CancellationToken cancellationToken = default)
     {
+        var effectiveRequest = string.IsNullOrWhiteSpace(request.IdempotencyKey) && !string.IsNullOrWhiteSpace(headerIdempotencyKey)
+            ? request with { IdempotencyKey = headerIdempotencyKey.Trim() }
+            : request;
+
         var result = await attendanceService.CopyPreviousDayAsync(
             GetUserContext(),
-            request,
+            effectiveRequest,
             cancellationToken);
 
         return Ok(result);

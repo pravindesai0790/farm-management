@@ -372,6 +372,16 @@ public sealed class AttendanceVerificationTests
         public List<Worker> Workers { get; } = [];
         public List<Farm> Farms { get; } = [];
         public List<LaborAttendance> Attendances { get; } = [];
+        public List<LaborAttendanceOperationIdempotencyRecord> IdempotencyRecords { get; } = [];
+
+        public Task<LaborAttendanceOperationIdempotencyRecord?> FindIdempotencyRecordAsync(Guid organizationId, string operationType, string idempotencyKey, CancellationToken cancellationToken = default) =>
+            Task.FromResult(IdempotencyRecords.FirstOrDefault(r => r.OrganizationId == organizationId && r.OperationType == operationType && r.IdempotencyKey == idempotencyKey));
+
+        public void AddIdempotencyRecord(LaborAttendanceOperationIdempotencyRecord record) =>
+            IdempotencyRecords.Add(record);
+
+        public Task AcquireAttendanceLockAsync(Guid farmId, DateOnly attendanceDate, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
         public Task<Farm?> FindFarmAsync(Guid farmId, Guid organizationId, CancellationToken cancellationToken = default) =>
             Task.FromResult(Farms.FirstOrDefault(f => f.Id == farmId && f.OrganizationId == organizationId));

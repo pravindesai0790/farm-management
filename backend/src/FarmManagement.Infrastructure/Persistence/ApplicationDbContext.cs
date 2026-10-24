@@ -121,6 +121,8 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
 
     public DbSet<FertilizerOperationIdempotencyRecord> FertilizerOperationIdempotencyRecords => Set<FertilizerOperationIdempotencyRecord>();
 
+    public DbSet<LaborAttendanceOperationIdempotencyRecord> LaborAttendanceOperationIdempotencyRecords => Set<LaborAttendanceOperationIdempotencyRecord>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);

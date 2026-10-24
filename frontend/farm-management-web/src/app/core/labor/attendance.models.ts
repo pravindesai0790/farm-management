@@ -144,6 +144,7 @@ export interface SaveDailyDraftAttendanceBatchRequest {
   readonly attendanceDate: string;
   readonly items: readonly DailyDraftAttendanceItemRequest[];
   readonly removeOmittedDrafts?: boolean;
+  readonly idempotencyKey?: string | null;
 }
 
 export interface CreateDraftAttendanceRequest {
@@ -153,6 +154,7 @@ export interface CreateDraftAttendanceRequest {
   readonly attendanceType: AttendanceType | string;
   readonly workingHours?: number | null;
   readonly notes?: string | null;
+  readonly idempotencyKey?: string | null;
 }
 
 export interface UpdateDraftAttendanceRequest {
@@ -220,6 +222,7 @@ export interface FinalizeAttendanceRequest {
   readonly farmId: string;
   readonly attendanceDate: string;
   readonly attendanceIds?: readonly string[] | null;
+  readonly idempotencyKey?: string | null;
 }
 
 export interface FinalizeAttendanceResponse {
@@ -281,6 +284,7 @@ export interface CopyPreviousDayAttendanceRequest {
   readonly sourceDate?: string | null;
   readonly workerIds?: readonly string[] | null;
   readonly overwriteExistingDraft?: boolean;
+  readonly idempotencyKey?: string | null;
 }
 
 export interface CopyPreviousDayAttendanceResponse {

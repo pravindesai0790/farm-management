@@ -2375,6 +2375,60 @@ namespace FarmManagement.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("FarmManagement.Domain.Entities.LaborAttendanceOperationIdempotencyRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("idempotency_key");
+
+                    b.Property<string>("OperationType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("operation_type");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<string>("RequestHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("request_hash");
+
+                    b.Property<string>("ResponsePayload")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("response_payload");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId", "CreatedAt")
+                        .HasDatabaseName("ix_labor_attendance_operation_idempotency_created");
+
+                    b.HasIndex("OrganizationId", "OperationType", "IdempotencyKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_labor_attendance_operation_idempotency");
+
+                    b.ToTable("labor_attendance_idempotency_records", (string)null);
+                });
+
             modelBuilder.Entity("FarmManagement.Domain.Entities.LaborCategory", b =>
                 {
                     b.Property<Guid>("Id")
@@ -5652,6 +5706,17 @@ namespace FarmManagement.Infrastructure.Persistence.Migrations
                     b.Navigation("Organization");
 
                     b.Navigation("Worker");
+                });
+
+            modelBuilder.Entity("FarmManagement.Domain.Entities.LaborAttendanceOperationIdempotencyRecord", b =>
+                {
+                    b.HasOne("FarmManagement.Domain.Entities.Organization", "Organization")
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Organization");
                 });
 
             modelBuilder.Entity("FarmManagement.Domain.Entities.LaborCategory", b =>
