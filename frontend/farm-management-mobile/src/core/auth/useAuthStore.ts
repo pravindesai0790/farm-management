@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 import { create } from 'zustand';
 import { TokenStorage, CachedUserProfile } from './tokenStorage';
-import { apiClient, setApiClientBaseUrl } from '../api/client';
+import { apiClient, setApiClientBaseUrl, setSimulatedOfflineMode } from '../api/client';
 import { DEFAULT_API_BASE_URL } from '../config/env';
 import { initializeDatabase } from '../db/database';
 
@@ -15,6 +15,7 @@ export interface AuthState {
   hasPin: boolean;
   user: CachedUserProfile | null;
   serverUrl: string;
+  isSimulatedOffline: boolean;
 
   // Actions
   init: () => Promise<void>;
@@ -22,7 +23,9 @@ export interface AuthState {
   logout: () => Promise<void>;
   setPin: (pin: string) => Promise<void>;
   unlockWithPin: (pin: string) => Promise<boolean>;
+  lockSession: () => void;
   setServerUrl: (url: string) => Promise<void>;
+  setSimulatedOffline: (simulated: boolean) => void;
 }
 
 /**
@@ -36,6 +39,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   hasPin: false,
   user: null,
   serverUrl: DEFAULT_API_BASE_URL || 'http://localhost:5108',
+  isSimulatedOffline: false,
 
   /**
    * Initializes auth state on application startup.
@@ -144,15 +148,38 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   /**
-   * Verifies an entered PIN to unlock an offline field session.
+   * Verifies an entered PIN against the local SHA-256 hash to unlock an offline field session.
+   * Encapsulated within try/catch to protect against unexpected storage runtime failures.
    */
   unlockWithPin: async (pin: string) => {
-    const isValid = await TokenStorage.verifyPin(pin);
-    if (isValid) {
-      set({ isOfflineUnlocked: true });
-      return true;
+    try {
+      const isValid = await TokenStorage.verifyPin(pin);
+      if (isValid) {
+        set({ isOfflineUnlocked: true });
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error('[AuthStore] verifyPin failed unexpectedly:', err);
+      return false;
     }
-    return false;
+  },
+
+  /**
+   * Immediately locks the active session, requiring the user to re-authenticate with their 4-digit PIN.
+   * Triggered either manually via the UI or automatically when the app transitions into background.
+   */
+  lockSession: () => {
+    set({ isOfflineUnlocked: false });
+  },
+
+  /**
+   * Toggles simulated offline state to enable end-to-end testing of zero-reception farm workflows
+   * without severing the physical Wi-Fi connection between the device and the Expo Metro development bundler.
+   */
+  setSimulatedOffline: (simulated: boolean) => {
+    setSimulatedOfflineMode(simulated);
+    set({ isSimulatedOffline: simulated });
   },
 
   /**

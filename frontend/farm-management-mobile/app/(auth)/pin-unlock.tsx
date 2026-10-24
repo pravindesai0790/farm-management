@@ -26,25 +26,38 @@ export default function PinUnlockScreen() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
 
+  /**
+   * Handles numeric keypad tap:
+   * Appends the digit, and upon reaching 4 digits, validates against the stored SHA-256 hash.
+   * Uses safe try/catch/finally to guarantee that verification loading never stalls the UI.
+   */
   const handleKeyPress = async (num: string) => {
-    if (enteredPin.length < 4) {
-      setErrorMessage(null);
-      const next = enteredPin + num;
-      setEnteredPin(next);
+    if (isVerifying || enteredPin.length >= 4) return;
 
-      if (next.length === 4) {
-        setIsVerifying(true);
-        setTimeout(async () => {
+    setErrorMessage(null);
+    const next = enteredPin + num;
+    setEnteredPin(next);
+
+    if (next.length === 4) {
+      setIsVerifying(true);
+      setTimeout(async () => {
+        try {
           const success = await unlockWithPin(next);
           if (success) {
+            // Offline authentication verified: navigate to main tabs
             router.replace('/(tabs)');
           } else {
             setErrorMessage('Incorrect PIN. Please try again.');
             setEnteredPin('');
-            setIsVerifying(false);
           }
-        }, 150);
-      }
+        } catch (err: any) {
+          console.error('[PinUnlockScreen] Unexpected offline validation exception:', err);
+          setErrorMessage('Unable to verify PIN offline. Please try again.');
+          setEnteredPin('');
+        } finally {
+          setIsVerifying(false);
+        }
+      }, 100);
     }
   };
 

@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
+import { useAuthStore } from '../auth/useAuthStore';
 
 /**
  * Hook providing real-time network connectivity telemetry across the mobile app.
- * Automatically updates when the device transitions into or out of cellular/Wi-Fi coverage.
+ * Automatically updates when the device transitions into or out of cellular/Wi-Fi coverage,
+ * or when the user manually enables simulated field offline mode.
  */
 export function useNetworkStatus() {
+  const isSimulatedOffline = useAuthStore((s) => s.isSimulatedOffline);
   const [networkState, setNetworkState] = useState<{
     isConnected: boolean;
     isInternetReachable: boolean | null;
@@ -37,6 +40,15 @@ export function useNetworkStatus() {
 
     return () => unsubscribe();
   }, []);
+
+  // If user activated simulated offline mode, override connectivity status for field simulation
+  if (isSimulatedOffline) {
+    return {
+      isConnected: false,
+      isInternetReachable: false,
+      connectionType: 'simulated_offline',
+    };
+  }
 
   return networkState;
 }

@@ -24,7 +24,7 @@ import { TokenStorage } from '../../src/core/auth/tokenStorage';
  * 4. Real-time network transitions (Online <-> Offline).
  */
 export default function DiagnosticsDashboardScreen() {
-  const { user, logout, serverUrl } = useAuthStore();
+  const { user, logout, serverUrl, lockSession, isSimulatedOffline, setSimulatedOffline } = useAuthStore();
   const { isConnected, isInternetReachable, connectionType } = useNetworkStatus();
 
   const [dbHealth, setDbHealth] = useState<DbHealthResult | null>(null);
@@ -137,6 +137,35 @@ export default function DiagnosticsDashboardScreen() {
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Platform Diagnostics</Text>
           <Text style={styles.headerSubtitle}>Step 1 Foundation Verification</Text>
+        </View>
+
+        {/* Quick Offline Testing & Session Lock Controls */}
+        <View style={styles.quickActionsContainer}>
+          <TouchableOpacity
+            style={styles.lockActionBtn}
+            onPress={lockSession}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.lockActionBtnText}>🔒 Lock Session</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.simulateOfflineBtn,
+              isSimulatedOffline && styles.simulateOfflineBtnActive,
+            ]}
+            onPress={() => setSimulatedOffline(!isSimulatedOffline)}
+            activeOpacity={0.8}
+          >
+            <Text
+              style={[
+                styles.simulateOfflineBtnText,
+                isSimulatedOffline && styles.simulateOfflineBtnTextActive,
+              ]}
+            >
+              {isSimulatedOffline ? '📴 Field Offline: ACTIVE' : '🌐 Simulate Field Offline'}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* 1. Network Connectivity Card */}
@@ -321,6 +350,45 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     marginTop: 2,
     fontWeight: '500',
+  },
+  quickActionsContainer: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 16,
+  },
+  lockActionBtn: {
+    flex: 1,
+    backgroundColor: '#374151',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  lockActionBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  simulateOfflineBtn: {
+    flex: 1.2,
+    backgroundColor: '#E5E7EB',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  simulateOfflineBtnActive: {
+    backgroundColor: '#DC2626',
+  },
+  simulateOfflineBtnText: {
+    color: '#374151',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  simulateOfflineBtnTextActive: {
+    color: '#FFFFFF',
   },
   card: {
     backgroundColor: '#FFFFFF',

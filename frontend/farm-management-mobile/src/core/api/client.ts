@@ -23,12 +23,28 @@ export function setApiClientBaseUrl(url: string) {
   apiClient.defaults.baseURL = url.replace(/\/+$/, '');
 }
 
+// Simulated offline flag to enable testing zero-reception field scenarios
+let isSimulatedOfflineMode = false;
+
+/**
+ * Toggles the simulated offline mode for the HTTP client.
+ * When enabled, all outbound network requests immediately reject with an offline error.
+ */
+export function setSimulatedOfflineMode(offline: boolean) {
+  isSimulatedOfflineMode = offline;
+}
+
 /**
  * Request Interceptor:
  * Retrieves the access token from SecureStore and injects it into the Authorization header.
  */
 apiClient.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
+    // If simulated offline is active, reject immediately without attempting network transport
+    if (isSimulatedOfflineMode) {
+      return Promise.reject(new Error('Simulated offline: Device is in field mode without connectivity.'));
+    }
+
     // Dynamically ensure latest server URL is applied
     const customUrl = await TokenStorage.getServerUrl();
     if (customUrl && config.baseURL !== customUrl) {
