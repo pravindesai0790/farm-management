@@ -83,8 +83,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
    */
   login: async (email: string, password: string, customUrl?: string) => {
     set({ isLoading: true });
+    const activeUrl = customUrl ? customUrl.trim().replace(/\/+$/, '') : get().serverUrl;
     try {
-      const activeUrl = customUrl ? customUrl.trim().replace(/\/+$/, '') : get().serverUrl;
       setApiClientBaseUrl(activeUrl);
       await TokenStorage.saveServerUrl(activeUrl);
 
@@ -118,12 +118,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return { success: true };
     } catch (err: any) {
       console.error('[AuthStore] Login failed:', err);
-      const errorMsg =
+      let errorMsg =
         err.response?.data?.message ||
         err.response?.data?.detail ||
-        (err.response?.status === 401 ? 'Invalid email or password.' : null) ||
-        err.message ||
-        'Unable to connect to server. Please check your network and server URL.';
+        (err.response?.status === 401 ? 'Invalid email or password.' : null);
+
+      if (!errorMsg) {
+        if (err.message?.includes('Network Error')) {
+          errorMsg = `Cannot connect to ${activeUrl}.\n• If running Backend API in Docker, switch to Port 8080.\n• If running in VS Code (dotnet run), switch to Port 5108.`;
+        } else {
+          errorMsg = err.message || 'Unable to connect to server. Please check your network and server URL.';
+        }
+      }
       set({ isLoading: false });
       return { success: false, error: errorMsg };
     }

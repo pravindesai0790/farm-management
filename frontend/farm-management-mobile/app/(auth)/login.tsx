@@ -37,6 +37,19 @@ export default function LoginScreen() {
     }
   }, [serverUrl]);
 
+  const applyPort = (port: string) => {
+    let base = targetServerUrl.trim();
+    if (base.includes(':')) {
+      const parts = base.split(':');
+      parts[parts.length - 1] = port;
+      base = parts.join(':');
+    } else {
+      base = `${base}:${port}`;
+    }
+    setTargetServerUrl(base);
+    setServerUrl(base);
+  };
+
   const handleLogin = async () => {
     if (!email.trim() || !password) {
       setErrorMessage('Please enter both email and password.');
@@ -152,7 +165,27 @@ export default function LoginScreen() {
 
             {showServerSettings && (
               <View style={styles.serverSettingsBox}>
-                <Text style={styles.serverLabel}>Backend API Host URL:</Text>
+                <Text style={styles.serverLabel}>Quick Environment Selection:</Text>
+                <View style={styles.quickPortRow}>
+                  <TouchableOpacity
+                    style={[styles.portChip, targetServerUrl.includes(':8080') && styles.portChipActive]}
+                    onPress={() => applyPort('8080')}
+                  >
+                    <Text style={[styles.portChipText, targetServerUrl.includes(':8080') && styles.portChipTextActive]}>
+                      🐳 Docker API (8080)
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.portChip, targetServerUrl.includes(':5108') && styles.portChipActive]}
+                    onPress={() => applyPort('5108')}
+                  >
+                    <Text style={[styles.portChipText, targetServerUrl.includes(':5108') && styles.portChipTextActive]}>
+                      ⚡ VS Code API (5108)
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={[styles.serverLabel, { marginTop: 12 }]}>Backend API Host URL:</Text>
                 <TextInput
                   style={styles.serverInput}
                   value={targetServerUrl}
@@ -160,15 +193,14 @@ export default function LoginScreen() {
                     setTargetServerUrl(text);
                     setServerUrl(text);
                   }}
-                  placeholder="http://192.168.29.147:5108"
+                  placeholder="http://192.168.29.147:8080"
                   placeholderTextColor="#9CA3AF"
                   autoCapitalize="none"
                   autoCorrect={false}
                 />
                 <Text style={styles.serverHelp}>
-                  • Physical Phone over Wi-Fi: http://192.168.29.147:5108{'\n'}
-                  • Android Emulator: http://10.0.2.2:5108{'\n'}
-                  • Web / iOS Simulator: http://localhost:5108
+                  • Docker API: http://192.168.29.147:8080{'\n'}
+                  • VS Code dotnet run: http://192.168.29.147:5108
                 </Text>
               </View>
             )}
@@ -317,6 +349,30 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#E5E7EB',
+  },
+  quickPortRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 4,
+  },
+  portChip: {
+    flex: 1,
+    backgroundColor: '#E5E7EB',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  portChipActive: {
+    backgroundColor: '#2E7D32',
+  },
+  portChipText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#374151',
+  },
+  portChipTextActive: {
+    color: '#FFFFFF',
   },
   serverLabel: {
     fontSize: 13,

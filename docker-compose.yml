@@ -39,6 +39,7 @@ services:
       INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD}
     ports:
       - "${API_PORT}:8080"
+      - "5108:8080"
 
   web:
     build:
