@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import * as SQLite from 'expo-sqlite';
+import { CREATE_TABLES_SQL, MASTER_TABLE_NAMES, MasterTableName } from './schema';
 
 /**
  * Name of the local embedded SQLite database for offline operations.
@@ -7,6 +8,11 @@ import * as SQLite from 'expo-sqlite';
 export const DB_NAME = 'farm_management_offline.db';
 
 let dbInstance: SQLite.SQLiteDatabase | null = null;
+
+/**
+ * In-memory fallback dictionary for web preview when SharedArrayBuffer / native SQLite is unavailable.
+ */
+const webPreviewStore: Record<string, any[]> = {};
 
 /**
  * Retrieves or initializes the SQLite database connection singleton.
@@ -39,17 +45,24 @@ export interface DbHealthResult {
  * Initializes the SQLite database on app startup:
  * 1. Enables Write-Ahead Logging (WAL) for high concurrency.
  * 2. Enables foreign key enforcement.
- * 3. Provisions the internal `local_system_info` metadata table.
+ * 3. Provisions all 15 master cache tables and 2 operational/outbox tables.
+ * 4. Records schema version in metadata table.
  */
 export function initializeDatabase(): DbHealthResult {
   try {
     if (Platform.OS === 'web') {
+      // Initialize web mock tables if empty
+      for (const t of MASTER_TABLE_NAMES) {
+        if (!webPreviewStore[t]) {
+          webPreviewStore[t] = [];
+        }
+      }
       return {
         fileName: DB_NAME,
         status: 'Ready',
         journalMode: 'Web-Preview',
         version: 1,
-        tablesCount: 1,
+        tablesCount: MASTER_TABLE_NAMES.length + 3,
         lastInitializedAt: new Date().toISOString(),
       };
     }
@@ -72,7 +85,10 @@ export function initializeDatabase(): DbHealthResult {
       );
     `);
 
-    // 3. Record initialization metadata
+    // 3. Provision all 15 master tables, 2 operational tables, and indexes from schema definition
+    db.execSync(CREATE_TABLES_SQL);
+
+    // 4. Record initialization metadata
     const now = new Date().toISOString();
     db.runSync(
       `INSERT INTO local_system_info (key, value, updated_at) 
@@ -106,7 +122,7 @@ export function getDbHealth(): DbHealthResult {
         status: 'Ready',
         journalMode: 'Web-Preview',
         version: 1,
-        tablesCount: 1,
+        tablesCount: MASTER_TABLE_NAMES.length + 3,
         lastInitializedAt: new Date().toISOString(),
       };
     }
@@ -151,4 +167,69 @@ export function getDbHealth(): DbHealthResult {
       errorMessage: err.message || String(err),
     };
   }
+}
+
+/**
+ * Queries the record counts for all 15 master cache tables in real-time.
+ * Returns a mapping from table_name to row count.
+ */
+export function getTableCounts(): Record<MasterTableName, number> {
+  const counts: Partial<Record<MasterTableName, number>> = {};
+
+  if (Platform.OS === 'web') {
+    for (const t of MASTER_TABLE_NAMES) {
+      counts[t] = webPreviewStore[t]?.length ?? 0;
+    }
+    return counts as Record<MasterTableName, number>;
+  }
+
+  const db = getDatabase();
+  if (!db) {
+    for (const t of MASTER_TABLE_NAMES) {
+      counts[t] = 0;
+    }
+    return counts as Record<MasterTableName, number>;
+  }
+
+  try {
+    for (const tableName of MASTER_TABLE_NAMES) {
+      const res = db.getAllSync<{ count: number }>(`SELECT COUNT(*) as count FROM ${tableName};`);
+      counts[tableName] = res[0]?.count ?? 0;
+    }
+  } catch (err) {
+    console.warn('[database] getTableCounts error:', err);
+    for (const t of MASTER_TABLE_NAMES) {
+      if (counts[t] === undefined) {
+        counts[t] = 0;
+      }
+    }
+  }
+
+  return counts as Record<MasterTableName, number>;
+}
+
+/**
+ * Fetches sample rows from a specific local SQLite table for inspector verification.
+ */
+export function getTableSampleRows(tableName: MasterTableName, limit = 20): any[] {
+  if (Platform.OS === 'web') {
+    return (webPreviewStore[tableName] || []).slice(0, limit);
+  }
+
+  const db = getDatabase();
+  if (!db) return [];
+
+  try {
+    return db.getAllSync(`SELECT * FROM ${tableName} LIMIT ${limit};`);
+  } catch (err) {
+    console.warn(`[database] getTableSampleRows error for ${tableName}:`, err);
+    return [];
+  }
+}
+
+/**
+ * Web mock storage setter to allow simulated offline testing in browser.
+ */
+export function setWebPreviewData(tableName: MasterTableName, records: any[]) {
+  webPreviewStore[tableName] = records;
 }

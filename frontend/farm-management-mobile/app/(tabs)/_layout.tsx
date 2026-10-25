@@ -4,8 +4,9 @@ import { Text } from 'react-native';
 
 /**
  * Tab Navigation Shell:
- * Houses the primary dashboard and diagnostics screen for Step 1.
- * Subsequent steps will add Attendance, Operations, Scouting, and Sync tabs.
+ * Configures the two primary operational hubs for Step 2:
+ * 1. Master Data & Sync (index.tsx) — Real-time table telemetry, farm selection, and delta sync.
+ * 2. Diagnostics (diagnostics.tsx) — Step 1 test suite, WAL health, offline simulation, and auth validation.
  */
 export default function TabLayout() {
   return (
@@ -26,8 +27,15 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
+          title: 'Master Data',
+          tabBarIcon: () => <Text style={{ fontSize: 20 }}>🔄</Text>,
+        }}
+      />
+      <Tabs.Screen
+        name="diagnostics"
+        options={{
           title: 'Diagnostics',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20 }}>📊</Text>,
+          tabBarIcon: () => <Text style={{ fontSize: 20 }}>📊</Text>,
         }}
       />
     </Tabs>

@@ -80,6 +80,7 @@ public static class DependencyInjection
         services.AddScoped<FarmManagement.Application.Interfaces.Irrigation.IIrrigationStore, IrrigationStore>();
         services.AddScoped<FarmManagement.Application.Interfaces.Fertilizer.IFertilizerApplicationStore, FertilizerApplicationStore>();
         services.AddScoped<FarmManagement.Application.Interfaces.Fertilizer.IFertilizerReferenceGenerator, FarmManagement.Infrastructure.Services.FertilizerReferenceGenerator>();
+        services.AddScoped<FarmManagement.Application.Interfaces.MobileSync.IMobileSyncService, FarmManagement.Infrastructure.Services.MobileSyncService>();
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();
         services.AddScoped<IdentityDataSeeder>();
 
