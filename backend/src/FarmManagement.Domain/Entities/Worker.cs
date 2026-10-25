@@ -27,7 +27,8 @@ public sealed class Worker
         Guid? contractorId = null,
         DateOnly? joiningDate = null,
         DateOnly? leavingDate = null,
-        string? notes = null)
+        string? notes = null,
+        Guid? id = null)
     {
         if (organizationId == Guid.Empty)
         {
@@ -58,7 +59,7 @@ public sealed class Worker
             throw new ArgumentException("A display name is required.", nameof(displayName));
         }
 
-        Id = Guid.NewGuid();
+        Id = id.HasValue && id.Value != Guid.Empty ? id.Value : Guid.NewGuid();
         OrganizationId = organizationId;
         FirstName = firstName.Trim();
         LastName = NormalizeOptional(lastName);

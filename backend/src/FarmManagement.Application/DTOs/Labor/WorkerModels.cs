@@ -45,6 +45,10 @@ public sealed record WorkerDetailResponse(
     DateTimeOffset? UpdatedAt,
     Guid? UpdatedBy);
 
+/// <summary>
+/// Request payload for creating a new worker.
+/// Supports an optional client-supplied Id for offline creation idempotency.
+/// </summary>
 public sealed record CreateWorkerRequest(
     string? FirstName,
     string? LastName,
@@ -57,7 +61,8 @@ public sealed record CreateWorkerRequest(
     Guid? ContractorId,
     DateOnly? JoiningDate,
     DateOnly? LeavingDate,
-    string? Notes);
+    string? Notes,
+    Guid? Id = null);
 
 public sealed record UpdateWorkerRequest(
     string? FirstName,

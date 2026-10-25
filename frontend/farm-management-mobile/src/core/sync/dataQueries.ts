@@ -86,6 +86,15 @@ export interface CachedWageRate {
   is_active: number;
 }
 
+export interface CachedLaborCategory {
+  id: string;
+  organization_id?: string | null;
+  name: string;
+  description?: string | null;
+  is_system: number;
+  is_active: number;
+}
+
 /**
  * Retrieves all active farms cached in local SQLite.
  */
@@ -182,6 +191,25 @@ export function getCachedWageRates(): CachedWageRate[] {
     return db.getAllSync<CachedWageRate>('SELECT * FROM cached_labor_wage_rates WHERE is_active = 1 ORDER BY wage_type ASC;');
   } catch (err) {
     console.warn('[dataQueries] getCachedWageRates error:', err);
+    return [];
+  }
+}
+
+/**
+ * Retrieves active labor categories defined for the tenant.
+ */
+export function getCachedLaborCategories(): CachedLaborCategory[] {
+  if (Platform.OS === 'web') {
+    return getTableSampleRows('cached_labor_categories', 100);
+  }
+  const db = getDatabase();
+  if (!db) return [];
+  try {
+    return db.getAllSync<CachedLaborCategory>(
+      'SELECT * FROM cached_labor_categories WHERE is_active = 1 ORDER BY name ASC;'
+    );
+  } catch (err) {
+    console.warn('[dataQueries] getCachedLaborCategories error:', err);
     return [];
   }
 }

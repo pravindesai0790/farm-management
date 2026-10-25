@@ -85,7 +85,7 @@ public sealed class WorkerFarmAssignmentService(IWorkerFarmAssignmentStore store
             request.AssignedFrom.Value,
             actor.UserId,
             request.AssignedTo,
-            NormalizeOptional(request.Notes));
+            NormalizeOptional(request.Notes), request.Id);
 
         store.Add(assignment);
         AddAudit(

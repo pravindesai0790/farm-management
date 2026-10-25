@@ -149,7 +149,7 @@ public sealed class WorkerService(IWorkerStore store) : IWorkerService
             request.ContractorId,
             request.JoiningDate,
             request.LeavingDate,
-            NormalizeOptional(request.Notes));
+            NormalizeOptional(request.Notes), request.Id);
 
         store.Add(worker);
         AddAudit(
@@ -447,7 +447,7 @@ public sealed class WorkerService(IWorkerStore store) : IWorkerService
         {
             "PERMANENT" => EmploymentType.Permanent,
             "SEASONAL" => EmploymentType.Seasonal,
-            "DAILY_WAGE" or "DAILYWAGE" => EmploymentType.DailyWage,
+            "DAILY_WAGE" or "DAILYWAGE" or "DAILY_WAGED" or "DAILYWAGED" => EmploymentType.DailyWage,
             "CONTRACT" => EmploymentType.Contract,
             _ => throw Validation("employmentType", "Employment type is invalid. Valid values are PERMANENT, SEASONAL, DAILY_WAGE, CONTRACT.")
         };

@@ -16,11 +16,16 @@ public sealed record WorkerFarmAssignmentResponse(
     DateTimeOffset? UpdatedAt,
     Guid? UpdatedBy);
 
+/// <summary>
+/// Request payload for creating a worker-farm assignment.
+/// Supports optional client-supplied Id for offline creation idempotency.
+/// </summary>
 public sealed record CreateWorkerFarmAssignmentRequest(
     Guid? FarmId,
     DateOnly? AssignedFrom,
     DateOnly? AssignedTo,
-    string? Notes);
+    string? Notes,
+    Guid? Id = null);
 
 public sealed record UpdateWorkerFarmAssignmentRequest(
     DateOnly? AssignedFrom,

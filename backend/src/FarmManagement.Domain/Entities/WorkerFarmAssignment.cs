@@ -13,7 +13,8 @@ public sealed class WorkerFarmAssignment
         DateOnly assignedFrom,
         Guid createdBy,
         DateOnly? assignedTo = null,
-        string? notes = null)
+        string? notes = null,
+        Guid? id = null)
     {
         if (organizationId == Guid.Empty)
         {
@@ -37,7 +38,7 @@ public sealed class WorkerFarmAssignment
 
         ValidateDates(assignedFrom, assignedTo);
 
-        Id = Guid.NewGuid();
+        Id = id.HasValue && id.Value != Guid.Empty ? id.Value : Guid.NewGuid();
         OrganizationId = organizationId;
         WorkerId = workerId;
         FarmId = farmId;
