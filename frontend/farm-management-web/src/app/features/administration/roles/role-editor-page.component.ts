@@ -3,21 +3,37 @@ import {
   Component,
   DestroyRef,
   OnInit,
+  computed,
   inject,
   signal,
 } from "@angular/core";
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
+import { takeUntilDestroyed, toSignal } from "@angular/core/rxjs-interop";
+import {
+  FormBuilder,
+  FormControl,
+  ReactiveFormsModule,
+  Validators,
+} from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
+import { MatCheckboxModule } from "@angular/material/checkbox";
+import { MatDividerModule } from "@angular/material/divider";
+import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
-import { MatSelectModule } from "@angular/material/select";
 import { MatSnackBar } from "@angular/material/snack-bar";
+import { MatTooltipModule } from "@angular/material/tooltip";
 import { ActivatedRoute, Router, RouterLink } from "@angular/router";
-import { forkJoin, finalize, Observable, of, switchMap } from "rxjs";
+import {
+  forkJoin,
+  finalize,
+  Observable,
+  of,
+  startWith,
+  switchMap,
+} from "rxjs";
 
 import { PermissionService } from "../../../core/auth/permission.service";
 import { AdministrationService } from "../../../core/administration/administration.service";
@@ -37,11 +53,14 @@ import { ErrorAlertComponent } from "../../../shared/components/error-alert/erro
     ErrorAlertComponent,
     MatButtonModule,
     MatCardModule,
+    MatCheckboxModule,
+    MatDividerModule,
+    MatExpansionModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
     MatProgressSpinnerModule,
-    MatSelectModule,
+    MatTooltipModule,
     ReactiveFormsModule,
     RouterLink,
   ],
@@ -70,6 +89,31 @@ export class RoleEditorPageComponent implements OnInit {
   readonly errorMessage = signal<unknown>(null);
   readonly apiErrors = signal<Readonly<Record<string, readonly string[]>>>({});
   private initialPermissionIds: readonly string[] = [];
+
+  readonly permissionSearchControl = new FormControl("", { nonNullable: true });
+  readonly searchFilter = toSignal(
+    this.permissionSearchControl.valueChanges.pipe(startWith("")),
+    { initialValue: "" },
+  );
+  readonly selectedPermissionIds = signal<readonly string[]>([]);
+  readonly selectedPermissionIdSet = computed(
+    () => new Set(this.selectedPermissionIds()),
+  );
+  readonly expandedModules = signal<Set<string>>(new Set<string>());
+
+  readonly filteredModules = computed(() => {
+    const query = this.searchFilter().trim().toLowerCase();
+    const allModules = this.modules();
+    if (!query) return allModules;
+    return allModules.filter((module) => {
+      if (module.toLowerCase().includes(query)) return true;
+      return this.permissionsForModule(module).some(
+        (p) =>
+          p.name.toLowerCase().includes(query) ||
+          (p.description?.toLowerCase().includes(query) ?? false),
+      );
+    });
+  });
 
   ngOnInit(): void {
     const permissionRequest$ = this.permissionService.has(
@@ -167,10 +211,106 @@ export class RoleEditorPageComponent implements OnInit {
       (permission) => permission.module === module,
     );
   }
+
+  filteredPermissionsForModule(module: string): readonly Permission[] {
+    const query = this.searchFilter().trim().toLowerCase();
+    const perms = this.permissionsForModule(module);
+    if (!query) return perms;
+    if (module.toLowerCase().includes(query)) return perms;
+    return perms.filter(
+      (p) =>
+        p.name.toLowerCase().includes(query) ||
+        (p.description?.toLowerCase().includes(query) ?? false),
+    );
+  }
+
   modules(): readonly string[] {
     return [
       ...new Set(this.permissions().map((permission) => permission.module)),
     ].sort();
+  }
+
+  isPermissionSelected(permissionId: string): boolean {
+    return this.selectedPermissionIdSet().has(permissionId);
+  }
+
+  togglePermission(permissionId: string, checked: boolean): void {
+    const current = this.selectedPermissionIds();
+    const next = checked
+      ? [...current, permissionId]
+      : current.filter((id) => id !== permissionId);
+    this.syncPermissionSelection(next);
+  }
+
+  isModuleFullySelected(module: string): boolean {
+    const modulePermissions = this.permissionsForModule(module);
+    if (modulePermissions.length === 0) return false;
+    const set = this.selectedPermissionIdSet();
+    return modulePermissions.every((p) => set.has(p.id));
+  }
+
+  isModulePartiallySelected(module: string): boolean {
+    const modulePermissions = this.permissionsForModule(module);
+    const set = this.selectedPermissionIdSet();
+    const count = modulePermissions.filter((p) => set.has(p.id)).length;
+    return count > 0 && count < modulePermissions.length;
+  }
+
+  toggleModulePermissions(module: string, selectAll: boolean): void {
+    const modulePermissionIds = new Set(
+      this.permissionsForModule(module).map((p) => p.id),
+    );
+    const current = new Set(this.selectedPermissionIds());
+    if (selectAll) {
+      modulePermissionIds.forEach((id) => current.add(id));
+    } else {
+      modulePermissionIds.forEach((id) => current.delete(id));
+    }
+    this.syncPermissionSelection(Array.from(current));
+  }
+
+  getSelectedCountForModule(module: string): number {
+    const set = this.selectedPermissionIdSet();
+    return this.permissionsForModule(module).filter((p) => set.has(p.id)).length;
+  }
+
+  selectAllPermissions(): void {
+    const allIds = this.permissions().map((p) => p.id);
+    this.syncPermissionSelection(allIds);
+  }
+
+  clearAllPermissions(): void {
+    this.syncPermissionSelection([]);
+  }
+
+  private syncPermissionSelection(ids: string[]): void {
+    this.selectedPermissionIds.set(ids);
+    this.roleForm.controls.permissionIds.setValue(ids);
+    this.roleForm.controls.permissionIds.markAsDirty();
+    this.roleForm.controls.permissionIds.markAsTouched();
+  }
+
+  isModuleExpanded(module: string): boolean {
+    if (this.searchFilter().trim().length > 0) return true;
+    return this.expandedModules().has(module);
+  }
+
+  setModuleExpanded(module: string, expanded: boolean): void {
+    const current = new Set(this.expandedModules());
+    if (expanded) {
+      current.add(module);
+    } else {
+      current.delete(module);
+    }
+    this.expandedModules.set(current);
+  }
+
+  expandAll(): void {
+    this.expandedModules.set(new Set(this.modules()));
+  }
+
+  collapseAll(): void {
+    this.expandedModules.set(new Set());
   }
 
   private populateForm(role: Role): void {
@@ -180,9 +320,19 @@ export class RoleEditorPageComponent implements OnInit {
       description: role.description ?? "",
       permissionIds,
     });
+    this.selectedPermissionIds.set(permissionIds);
     this.initialPermissionIds = [...permissionIds].sort();
-    if (!this.permissionService.has("Roles.ManagePermissions"))
+
+    const initialExpanded = new Set<string>();
+    for (const permission of role.permissions) {
+      initialExpanded.add(permission.module);
+    }
+    this.expandedModules.set(initialExpanded);
+
+    if (!this.permissionService.has("Roles.ManagePermissions")) {
       this.roleForm.controls.permissionIds.disable();
+      this.permissionSearchControl.disable();
+    }
   }
 
   private shouldUpdatePermissions(permissionIds: readonly string[]): boolean {

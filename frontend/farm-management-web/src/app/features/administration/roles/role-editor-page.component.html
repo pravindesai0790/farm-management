@@ -10,9 +10,8 @@
     <mat-spinner diameter="36" /><span>Loading…</span>
   </div>
 } @else {
-  <mat-card
-    ><mat-card-content
-      ><form [formGroup]="roleForm" (ngSubmit)="submit()">
+  <mat-card class="role-card">
+  <mat-card-content><form [formGroup]="roleForm" (ngSubmit)="submit()">
         <mat-form-field appearance="outline"
           ><mat-label>Role name</mat-label
           ><input matInput formControlName="name" />
@@ -34,26 +33,166 @@
           }
         </mat-form-field>
         @if (permissionService.has("Roles.ManagePermissions")) {
-          <mat-form-field appearance="outline"
-            ><mat-label>Permissions</mat-label
-            ><mat-select formControlName="permissionIds" multiple>
-              @for (module of modules(); track module) {
-                <mat-optgroup [label]="module">
-                  @for (
-                    permission of permissionsForModule(module);
-                    track permission.id
-                  ) {
-                    <mat-option [value]="permission.id">{{
-                      permission.name
-                    }}</mat-option>
-                  }
-                </mat-optgroup>
-              }</mat-select
-            ><mat-hint>Permissions are grouped by module.</mat-hint>
+          <div class="permissions-section">
+            <div class="permissions-header">
+              <div class="permissions-header-left">
+                <div class="section-title">
+                  <mat-icon class="section-icon">security</mat-icon>
+                  <span>Role Permissions</span>
+                </div>
+                <p class="permissions-subtitle">
+                  Configure access permissions for this role grouped by operational module.
+                  <span class="selection-pill">
+                    {{ selectedPermissionIds().length }} of {{ permissions().length }} selected
+                  </span>
+                </p>
+              </div>
+
+              <div class="permissions-global-actions">
+                <button
+                  mat-stroked-button
+                  type="button"
+                  class="action-btn"
+                  (click)="expandAll()"
+                  title="Expand all module panels"
+                >
+                  <mat-icon>unfold_more</mat-icon>
+                  <span>Expand all</span>
+                </button>
+                <button
+                  mat-stroked-button
+                  type="button"
+                  class="action-btn"
+                  (click)="collapseAll()"
+                  title="Collapse all module panels"
+                >
+                  <mat-icon>unfold_less</mat-icon>
+                  <span>Collapse all</span>
+                </button>
+                <button
+                  mat-stroked-button
+                  type="button"
+                  class="action-btn"
+                  [disabled]="isSubmitting() || roleForm.controls.permissionIds.disabled"
+                  (click)="selectAllPermissions()"
+                >
+                  <mat-icon>done_all</mat-icon>
+                  <span>Select all</span>
+                </button>
+                <button
+                  mat-stroked-button
+                  type="button"
+                  class="action-btn"
+                  [disabled]="isSubmitting() || roleForm.controls.permissionIds.disabled || selectedPermissionIds().length === 0"
+                  (click)="clearAllPermissions()"
+                >
+                  <mat-icon>clear_all</mat-icon>
+                  <span>Clear all</span>
+                </button>
+              </div>
+            </div>
+
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="permission-filter-field">
+              <mat-icon matIconPrefix>search</mat-icon>
+              <mat-label>Filter permissions or modules</mat-label>
+              <input
+                matInput
+                [formControl]="permissionSearchControl"
+                placeholder="Search by module name, permission code, or keyword..."
+              />
+              @if (permissionSearchControl.value) {
+                <button
+                  matSuffix
+                  mat-icon-button
+                  type="button"
+                  aria-label="Clear filter"
+                  (click)="permissionSearchControl.setValue('')"
+                >
+                  <mat-icon>close</mat-icon>
+                </button>
+              }
+            </mat-form-field>
+
             @if (apiError("permissionIds"); as message) {
-              <mat-error>{{ message }}</mat-error>
+              <div class="permissions-error">{{ message }}</div>
             }
-          </mat-form-field>
+
+            @if (filteredModules().length === 0) {
+              <div class="no-permissions-match">
+                <mat-icon>search_off</mat-icon>
+                <p>No permissions found matching "{{ permissionSearchControl.value }}".</p>
+              </div>
+            } @else {
+              <mat-accordion multi="true" class="permissions-accordion">
+                @for (module of filteredModules(); track module) {
+                  <mat-expansion-panel
+                    class="module-panel"
+                    [expanded]="isModuleExpanded(module)"
+                    (opened)="setModuleExpanded(module, true)"
+                    (closed)="setModuleExpanded(module, false)"
+                  >
+                    <mat-expansion-panel-header>
+                      <mat-panel-title class="module-title">
+                        <mat-icon class="module-icon">folder_shared</mat-icon>
+                        <span class="module-name">{{ module }}</span>
+                      </mat-panel-title>
+                      <mat-panel-description class="module-desc">
+                        @if (getSelectedCountForModule(module) > 0) {
+                          <span class="count-badge count-badge-active">
+                            {{ getSelectedCountForModule(module) }} of {{ permissionsForModule(module).length }} selected
+                          </span>
+                        } @else {
+                          <span class="count-badge">
+                            0 of {{ permissionsForModule(module).length }} selected
+                          </span>
+                        }
+                      </mat-panel-description>
+                    </mat-expansion-panel-header>
+
+                    <div class="panel-inner">
+                      <div class="module-toolbar">
+                        <mat-checkbox
+                          [checked]="isModuleFullySelected(module)"
+                          [indeterminate]="isModulePartiallySelected(module)"
+                          [disabled]="isSubmitting() || roleForm.controls.permissionIds.disabled"
+                          (change)="toggleModulePermissions(module, $event.checked)"
+                        >
+                          <span class="select-all-group-label">Select all in {{ module }}</span>
+                        </mat-checkbox>
+                      </div>
+
+                      <mat-divider></mat-divider>
+
+                      <div class="permissions-grid">
+                        @for (
+                          permission of filteredPermissionsForModule(module);
+                          track permission.id
+                        ) {
+                          <div
+                            class="permission-item"
+                            [class.is-selected]="isPermissionSelected(permission.id)"
+                          >
+                            <mat-checkbox
+                              [checked]="isPermissionSelected(permission.id)"
+                              [disabled]="isSubmitting() || roleForm.controls.permissionIds.disabled"
+                              (change)="togglePermission(permission.id, $event.checked)"
+                            >
+                              <div class="permission-text">
+                                <span class="perm-name">{{ permission.name }}</span>
+                                @if (permission.description) {
+                                  <span class="perm-desc">{{ permission.description }}</span>
+                                }
+                              </div>
+                            </mat-checkbox>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  </mat-expansion-panel>
+                }
+              </mat-accordion>
+            }
+          </div>
         }
         @if (errorMessage()) {
           <app-error-alert [error]="errorMessage()" fallback="The role could not be saved." />
