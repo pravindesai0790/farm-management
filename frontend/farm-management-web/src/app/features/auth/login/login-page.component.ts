@@ -42,10 +42,15 @@ export class LoginPageComponent {
 
   readonly isSubmitting = signal(false);
   readonly errorMessage = signal<unknown>(null);
+  readonly showPassword = signal(false);
   readonly loginForm = this.formBuilder.nonNullable.group({
     email: ["", [Validators.required, Validators.email]],
     password: ["", Validators.required],
   });
+
+  togglePasswordVisibility(): void {
+    this.showPassword.update((visible) => !visible);
+  }
 
   submit(): void {
     if (this.loginForm.invalid) {

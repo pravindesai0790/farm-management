@@ -1,46 +1,108 @@
-<main class="login-page">
-  <section class="login-intro" aria-labelledby="login-title">
-    <div class="brand-mark" aria-hidden="true">
-      <mat-icon>eco</mat-icon>
+<main class="login-layout">
+  <!-- Left Panel: Hero Visual (58% desktop width) -->
+  <section class="hero-panel" aria-label="Agricultural intelligence overview">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <!-- Top Branding Strip -->
+      <div class="hero-brand">
+        <div class="brand-badge">
+          <mat-icon class="brand-icon">eco</mat-icon>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">Farm ERP</span>
+          <span class="brand-edition">Enterprise Edition</span>
+        </div>
+      </div>
+
+      <!-- Main Inspiring Copy -->
+      <div class="hero-main">
+        <p class="hero-eyebrow">PRECISION AGRICULTURE & RESOURCE PLANNING</p>
+        <h1 class="hero-title">Next-generation intelligence for modern farm enterprises.</h1>
+        <p class="hero-tagline">
+          Empowering growers with end-to-end land parcelation, multi-stage crop lifecycles, precision spray safety, and real-time workforce analytics.
+        </p>
+      </div>
+
+      <!-- Key Operational Capability Highlights -->
+      <div class="hero-capabilities" aria-label="Platform capabilities">
+        <div class="capability-chip">
+          <mat-icon>layers</mat-icon>
+          <span>Land & Plot Parcelation</span>
+        </div>
+        <div class="capability-chip">
+          <mat-icon>spa</mat-icon>
+          <span>Lifecycle Tracking</span>
+        </div>
+        <div class="capability-chip">
+          <mat-icon>event_note</mat-icon>
+          <span>Daily Activity Tracking</span>
+        </div>
+        <div class="capability-chip">
+          <mat-icon>groups</mat-icon>
+          <span>Workforce & Payroll</span>
+        </div>
+      </div>
     </div>
-    <p class="eyebrow">Farm Management Platform</p>
-    <h1 id="login-title">Welcome back to the field.</h1>
-    <p class="intro-copy">
-      Sign in to keep your farms, crops, and daily work moving forward.
-    </p>
   </section>
 
-  <mat-card class="login-card">
-    <mat-card-header>
-      <mat-card-title>Sign in</mat-card-title>
-      <mat-card-subtitle>Use your Farm Management account.</mat-card-subtitle>
-    </mat-card-header>
+  <!-- Right Panel: High-Contrast Login Portal (42% desktop width) -->
+  <section class="form-panel" aria-label="Sign in form">
+    <div class="form-container">
+      <!-- Mobile-only brand header -->
+      <div class="mobile-brand">
+        <div class="mobile-brand-badge">
+          <mat-icon>eco</mat-icon>
+        </div>
+        <div>
+          <span class="mobile-brand-title">Farm ERP</span>
+          <span class="mobile-brand-sub">Enterprise Management</span>
+        </div>
+      </div>
 
-    <mat-card-content>
-      <form [formGroup]="loginForm" (ngSubmit)="submit()">
-        <mat-form-field appearance="outline">
-          <mat-label>Email</mat-label>
+      <!-- Sign In Header -->
+      <div class="form-header">
+        <h2 id="login-heading">Welcome back</h2>
+        <p class="form-subheading">Enter your credentials to access your farm workspace.</p>
+      </div>
+
+      <!-- Login Form -->
+      <form [formGroup]="loginForm" (ngSubmit)="submit()" aria-labelledby="login-heading">
+        <mat-form-field appearance="outline" class="input-field">
+          <mat-label>Email address</mat-label>
+          <mat-icon matIconPrefix>email</mat-icon>
           <input
             matInput
             type="email"
             formControlName="email"
             autocomplete="username"
+            placeholder="name@farm.com"
           />
           @if (loginForm.controls.email.hasError("required")) {
-            <mat-error>Email is required.</mat-error>
+            <mat-error>Email address is required.</mat-error>
           } @else if (loginForm.controls.email.hasError("email")) {
             <mat-error>Enter a valid email address.</mat-error>
           }
         </mat-form-field>
 
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" class="input-field">
           <mat-label>Password</mat-label>
+          <mat-icon matIconPrefix>lock</mat-icon>
           <input
             matInput
-            type="password"
+            [type]="showPassword() ? 'text' : 'password'"
             formControlName="password"
             autocomplete="current-password"
+            placeholder="••••••••"
           />
+          <button
+            mat-icon-button
+            matSuffix
+            type="button"
+            (click)="togglePasswordVisibility()"
+            [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
+          >
+            <mat-icon>{{ showPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
           @if (loginForm.controls.password.hasError("required")) {
             <mat-error>Password is required.</mat-error>
           }
@@ -57,15 +119,25 @@
           mat-flat-button
           color="primary"
           type="submit"
+          class="submit-button"
           [disabled]="isSubmitting()"
         >
           @if (isSubmitting()) {
             <mat-spinner diameter="20" />
           } @else {
-            <span>Sign in</span>
+            <span>Sign in to Dashboard</span>
           }
         </button>
       </form>
-    </mat-card-content>
-  </mat-card>
+
+      <!-- Security & Version Footprint -->
+      <div class="form-footer">
+        <div class="security-badge">
+          <mat-icon>verified_user</mat-icon>
+          <span>Encrypted with enterprise SSL/TLS security</span>
+        </div>
+        <p class="copyright">Farm ERP v1.0 • All rights reserved</p>
+      </div>
+    </div>
+  </section>
 </main>

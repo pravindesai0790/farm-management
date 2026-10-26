@@ -1,115 +1,407 @@
 :host {
   display: block;
   min-height: 100vh;
+  background: var(--app-background, #f4f6f4);
 }
 
-.login-page {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 470px);
-  align-items: center;
-  gap: clamp(48px, 9vw, 140px);
-  width: min(1120px, 100%);
+// ---------------------------------------------------------------------------
+// Hero Image Presets (Unsplash Commercial-Use Royalty-Free High-Res)
+// Preset 1 (Default): Aerial Precision Crop Field & Farmland
+// Preset 2: Vineyard & Viticulture Rows at Sunrise
+// Preset 3: Morning Farmland Valley & Mist
+// Preset 4: Golden Wheat Harvest under Dramatic Sky
+// ---------------------------------------------------------------------------
+.login-layout {
+  --login-hero-image: url("https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=2160&q=85");
+  --login-hero-overlay: linear-gradient(
+    145deg,
+    rgba(10, 32, 18, 0.92) 0%,
+    rgba(18, 48, 28, 0.78) 50%,
+    rgba(5, 18, 10, 0.88) 100%
+  );
+
+  display: flex;
   min-height: 100vh;
-  margin: 0 auto;
-  padding: 48px 32px;
+  width: 100%;
 }
 
-.login-intro {
-  max-width: 560px;
+// ---------------------------------------------------------------------------
+// Left Panel: Agricultural Hero Visual (58% width on desktop)
+// ---------------------------------------------------------------------------
+.hero-panel {
+  flex: 1 1 58%;
+  width: 58%;
+  min-height: 100vh;
+  position: relative;
+  background-image: var(--login-hero-image);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 48px 56px;
+  overflow: hidden;
+
+  .hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: var(--login-hero-overlay);
+    backdrop-filter: blur(1px);
+    z-index: 1;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    color: #ffffff;
+  }
 }
 
-.brand-mark {
-  display: grid;
-  width: 54px;
-  height: 54px;
-  margin-bottom: 36px;
-  place-items: center;
-  border-radius: 17px;
-  background: var(--app-primary);
-  color: #fff;
+.hero-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .brand-badge {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.16);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    display: grid;
+    place-items: center;
+
+    .brand-icon {
+      color: #6ee7b7;
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
+    }
+  }
+
+  .brand-text {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .brand-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #ffffff;
+  }
+
+  .brand-edition {
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #a7f3d0;
+    background: rgba(16, 185, 129, 0.22);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    padding: 3px 9px;
+    border-radius: 9999px;
+  }
 }
 
-.brand-mark mat-icon {
-  font-size: 28px;
+.hero-main {
+  max-width: 620px;
+  margin: 40px 0;
+
+  .hero-eyebrow {
+    margin: 0 0 14px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #6ee7b7;
+  }
+
+  .hero-title {
+    margin: 0 0 18px;
+    font-size: clamp(2.1rem, 3.2vw, 3.1rem);
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+    color: #ffffff;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+  }
+
+  .hero-tagline {
+    margin: 0;
+    font-size: clamp(0.95rem, 1.2vw, 1.12rem);
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.88);
+  }
 }
 
-.eyebrow {
-  margin: 0 0 12px;
-  color: var(--app-primary);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+.hero-capabilities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+
+  .capability-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 14px;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #f0fdf4;
+    transition: background 0.2s ease;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      color: #6ee7b7;
+    }
+  }
 }
 
-h1 {
-  max-width: 540px;
-  margin: 0;
-  color: var(--app-ink);
-  font-size: clamp(2.8rem, 6vw, 5.6rem);
-  line-height: 0.98;
+// ---------------------------------------------------------------------------
+// Right Panel: High-Contrast Login Portal (42% width on desktop)
+// ---------------------------------------------------------------------------
+.form-panel {
+  flex: 1 1 42%;
+  width: 42%;
+  min-height: 100vh;
+  background: var(--app-surface, #ffffff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 40px;
 }
 
-.intro-copy {
-  max-width: 440px;
-  margin: 24px 0 0;
-  color: var(--app-muted);
-  font-size: 1.08rem;
-  line-height: 1.6;
+.form-container {
+  width: 100%;
+  max-width: 420px;
+  margin: auto;
 }
 
-.login-card {
-  border: 1px solid var(--app-border);
-  border-radius: 20px;
-  box-shadow: 0 20px 60px rgba(38, 72, 48, 0.08);
+.mobile-brand {
+  display: none;
 }
 
-.login-card mat-card-header {
-  padding: 28px 28px 0;
-}
+.form-header {
+  margin-bottom: 28px;
 
-.login-card mat-card-title {
-  font-size: 1.7rem;
-}
+  h2 {
+    margin: 0 0 6px;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--app-text, #1e293b);
+    letter-spacing: -0.02em;
+  }
 
-.login-card mat-card-content {
-  padding: 24px 28px 30px;
+  .form-subheading {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--app-muted, #64748b);
+    line-height: 1.5;
+  }
 }
 
 form {
-  display: grid;
-  gap: 12px;
-}
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 
-button[type="submit"] {
-  min-height: 48px;
-  margin-top: 6px;
-}
+  .input-field {
+    width: 100%;
 
-button mat-spinner {
-  margin: 0 auto;
-}
-
-.form-error {
-  margin: 0 0 4px;
-  color: #a23b2f;
-  font-size: 0.88rem;
-  line-height: 1.45;
-}
-
-@media (max-width: 760px) {
-  .login-page {
-    grid-template-columns: 1fr;
-    align-content: center;
-    gap: 32px;
-    padding: 32px 20px;
+    mat-icon[matIconPrefix] {
+      color: var(--app-muted, #64748b);
+      margin-right: 8px;
+    }
   }
 
-  .brand-mark {
+  .submit-button {
+    height: 48px;
+    border-radius: var(--app-radius-sm, 6px);
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    margin-top: 6px;
+    box-shadow: 0 4px 14px rgba(45, 110, 75, 0.25);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+    &:hover:not([disabled]) {
+      box-shadow: 0 6px 18px rgba(45, 110, 75, 0.35);
+    }
+
+    &:active:not([disabled]) {
+      transform: translateY(1px);
+    }
+  }
+}
+
+.form-footer {
+  margin-top: 36px;
+  padding-top: 20px;
+  border-top: 1px solid var(--app-border-light, #e7ede8);
+  text-align: center;
+
+  .security-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: var(--app-muted, #64748b);
+    font-weight: 500;
+
+    mat-icon {
+      font-size: 15px;
+      width: 15px;
+      height: 15px;
+      color: var(--app-primary, #2d6e4b);
+    }
+  }
+
+  .copyright {
+    margin: 8px 0 0;
+    font-size: 0.72rem;
+    color: #94a3b8;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Tablet Breakpoint (768px – 991px)
+// ---------------------------------------------------------------------------
+@media (max-width: 991px) {
+  .hero-panel {
+    flex: 1 1 48%;
+    width: 48%;
+    padding: 36px 32px;
+  }
+
+  .form-panel {
+    flex: 1 1 52%;
+    width: 52%;
+    padding: 36px 28px;
+  }
+
+  .hero-main .hero-title {
+    font-size: 1.85rem;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Mobile Breakpoint (< 768px): Collapse Hero into Top Banner
+// ---------------------------------------------------------------------------
+@media (max-width: 767px) {
+  .login-layout {
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  .hero-panel {
+    flex: none;
+    width: 100%;
+    min-height: 220px;
+    height: 220px;
+    padding: 24px 20px;
+    justify-content: flex-end;
+
+    .hero-brand {
+      display: none;
+    }
+
+    .hero-capabilities {
+      display: none;
+    }
+
+    .hero-main {
+      margin: 0;
+
+      .hero-eyebrow {
+        font-size: 0.65rem;
+        margin-bottom: 6px;
+      }
+
+      .hero-title {
+        font-size: 1.35rem;
+        margin: 0 0 6px;
+      }
+
+      .hero-tagline {
+        font-size: 0.8rem;
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+    }
+  }
+
+  .form-panel {
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: auto;
+    padding: 32px 20px 40px;
+    background: var(--app-surface, #ffffff);
+    align-items: flex-start;
+  }
+
+  .mobile-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     margin-bottom: 24px;
+
+    .mobile-brand-badge {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: var(--app-primary, #2d6e4b);
+      color: #ffffff;
+      display: grid;
+      place-items: center;
+
+      mat-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+      }
+    }
+
+    .mobile-brand-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--app-text, #1e293b);
+      display: block;
+      line-height: 1.2;
+    }
+
+    .mobile-brand-sub {
+      font-size: 0.72rem;
+      color: var(--app-muted, #64748b);
+      display: block;
+    }
   }
 
-  h1 {
-    font-size: clamp(2.7rem, 12vw, 4.4rem);
+  .form-header {
+    margin-bottom: 22px;
+
+    h2 {
+      font-size: 1.5rem;
+    }
   }
 }
