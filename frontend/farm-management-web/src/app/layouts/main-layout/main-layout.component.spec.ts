@@ -72,7 +72,7 @@ describe("MainLayoutComponent Navigation", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should structure Activities with Labor, Spray & Protection nested children, and Irrigation", () => {
+  it("should structure Activities with Labor, Spray & Protection nested children, Irrigation, and Fertilizer", () => {
     const farmOpsGroup = component.navigationGroups.find(
       (g) => g.title === "Farm Operations",
     );
@@ -80,10 +80,15 @@ describe("MainLayoutComponent Navigation", () => {
 
     const activitiesItem = farmOpsGroup?.items.find((i) => i.id === "activities");
     expect(activitiesItem).toBeDefined();
-    expect(activitiesItem?.children?.length).toBe(3);
+    expect(activitiesItem?.children?.length).toBe(4);
 
     const childIds = activitiesItem?.children?.map((c) => c.id);
-    expect(childIds).toEqual(["labor-activities", "activities-sprays", "irrigations"]);
+    expect(childIds).toEqual([
+      "labor-activities",
+      "activities-sprays",
+      "irrigations",
+      "fertilizer-applications",
+    ]);
 
     const sprayParent = activitiesItem?.children?.find(
       (c) => c.id === "activities-sprays",
@@ -108,6 +113,12 @@ describe("MainLayoutComponent Navigation", () => {
     );
     expect(irrigationItem?.label).toBe("Irrigation");
     expect(irrigationItem?.route).toBe("/irrigations");
+
+    const fertilizerItem = activitiesItem?.children?.find(
+      (c) => c.id === "fertilizer-applications",
+    );
+    expect(fertilizerItem?.label).toBe("Fertilizer");
+    expect(fertilizerItem?.route).toBe("/fertilizer-applications");
   });
 
   it("should not contain standalone sprays or irrigations directly under Farm Operations", () => {

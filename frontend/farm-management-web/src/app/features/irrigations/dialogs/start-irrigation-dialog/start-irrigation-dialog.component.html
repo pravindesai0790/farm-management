@@ -55,7 +55,6 @@
         <mat-select
           formControlName="cropCycleId"
           (valueChange)="onCropCycleChange($event)"
-          [disabled]="!form.value.plantationId"
           placeholder="Select Cycle"
         >
           <mat-option value="">None / Inter-cycle</mat-option>
@@ -70,7 +69,6 @@
         <mat-label>Cycle Stage (Optional)</mat-label>
         <mat-select
           formControlName="cropCycleStageId"
-          [disabled]="!form.value.cropCycleId"
           placeholder="Select Stage"
         >
           <mat-option value="">None / Unassigned Stage</mat-option>

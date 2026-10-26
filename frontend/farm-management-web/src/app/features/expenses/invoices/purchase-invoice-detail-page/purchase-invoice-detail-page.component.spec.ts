@@ -56,13 +56,14 @@ describe('PurchaseInvoiceDetailPageComponent', () => {
         { provide: PurchaseInvoiceService, useValue: mockInvoiceService },
         { provide: PermissionService, useValue: mockPermissionService },
         { provide: MatSnackBar, useValue: mockSnackBar },
-        { provide: MatDialog, useValue: mockDialog },
         {
           provide: ActivatedRoute,
           useValue: { snapshot: { paramMap: new Map([['id', 'inv-1']]) } },
         },
       ],
-    }).compileComponents();
+    })
+      .overrideProvider(MatDialog, { useValue: mockDialog })
+      .compileComponents();
 
     fixture = TestBed.createComponent(PurchaseInvoiceDetailPageComponent);
     component = fixture.componentInstance;
@@ -76,12 +77,22 @@ describe('PurchaseInvoiceDetailPageComponent', () => {
   });
 
   it('should post invoice when post button clicked and confirmed', () => {
-    spyOn(window, 'confirm').and.returnValue(true);
+    mockDialog.open.and.returnValue({ afterClosed: () => of(true) } as any);
     mockInvoiceService.post.and.returnValue(of({ ...mockInvoice, status: 'Posted' } as PurchaseInvoiceResponse));
 
     component.postInvoice();
 
+    expect(mockDialog.open).toHaveBeenCalled();
     expect(mockInvoiceService.post).toHaveBeenCalledWith('inv-1');
     expect(component.invoice()?.status).toBe('Posted');
+  });
+
+  it('should not post invoice when post confirmation is cancelled', () => {
+    mockDialog.open.and.returnValue({ afterClosed: () => of(false) } as any);
+
+    component.postInvoice();
+
+    expect(mockDialog.open).toHaveBeenCalled();
+    expect(mockInvoiceService.post).not.toHaveBeenCalled();
   });
 });

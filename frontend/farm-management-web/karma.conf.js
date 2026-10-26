@@ -28,6 +28,15 @@ module.exports = function (config) {
     },
     reporters: ['progress', 'kjhtml'],
     browsers: ['Chrome'],
+    customLaunchers: {
+      ChromeHeadlessCustom: {
+        base: 'ChromeHeadless',
+        flags: ['--no-sandbox', '--disable-gpu']
+      }
+    },
+    browserNoActivityTimeout: 120000,
+    captureTimeout: 120000,
+    browserDisconnectTimeout: 20000,
     restartOnFileChange: true
   });
 };

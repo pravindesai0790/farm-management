@@ -153,7 +153,7 @@ describe('DirectExpenseListPageComponent', () => {
   });
 
   it('posts an expense draft when confirmed', () => {
-    spyOn(window, 'confirm').and.returnValue(true);
+    mockDialog.open.and.returnValue({ afterClosed: () => of(true) } as any);
     mockExpenseService.post.and.returnValue(of({ ...sampleExpense, status: 'Posted' }));
 
     component.postExpense(sampleExpense);
@@ -167,7 +167,7 @@ describe('DirectExpenseListPageComponent', () => {
   });
 
   it('cancels post when user declines confirmation', () => {
-    spyOn(window, 'confirm').and.returnValue(false);
+    mockDialog.open.and.returnValue({ afterClosed: () => of(false) } as any);
 
     component.postExpense(sampleExpense);
 
