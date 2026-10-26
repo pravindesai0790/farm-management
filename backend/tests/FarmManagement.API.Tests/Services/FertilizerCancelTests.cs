@@ -160,6 +160,7 @@ public class FertilizerCancelTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.CancelAsync(actor, app.Id, request, null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("cancellationReason"));
     }
 
@@ -182,6 +183,7 @@ public class FertilizerCancelTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.CancelAsync(actor, app.Id, request, null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("products"));
     }
 
@@ -211,6 +213,7 @@ public class FertilizerCancelTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.CancelAsync(actor, app.Id, request, null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("actualApplicationDate"));
     }
 
@@ -236,6 +239,7 @@ public class FertilizerCancelTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.CancelAsync(actor, app.Id, request, null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("actualApplicationDate"));
     }
 
@@ -260,6 +264,7 @@ public class FertilizerCancelTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.CancelAsync(actor, app.Id, request, null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("products"));
     }
 
@@ -286,6 +291,7 @@ public class FertilizerCancelTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.CancelAsync(actor, app.Id, request, null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("storageLocationId"));
     }
 
@@ -508,6 +514,7 @@ public class FertilizerCancelTests
         var audit = Assert.Single(_store.AuditLogs, a => a.Action == "Fertilizer.Cancelled");
         Assert.Equal("FertilizerApplication", audit.EntityType);
         Assert.Equal(app.Id, audit.EntityId);
+        Assert.NotNull(audit.Details);
         Assert.Contains("Wind speed exceeded safe threshold", audit.Details.RootElement.ToString());
     }
 

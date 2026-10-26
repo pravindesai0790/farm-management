@@ -33,7 +33,6 @@ import {
   ATTENDANCE_TYPE_OPTIONS,
   AttendanceEligibleWorker,
   AttendanceGridRow,
-  AttendanceRecord,
   AttendanceType,
   CopyPreviousDayAttendanceResponse,
   DailyAttendanceSummary,
@@ -45,7 +44,7 @@ import {
 } from "../../../core/labor/attendance.models";
 import { AttendanceService } from "../../../core/labor/attendance.service";
 import { getApiErrorMessage } from "../../../core/models/api-error.model";
-import { formatDateOnly, parseDateOnly } from "../../../core/utils/date.utils";
+import { formatDateOnly } from "../../../core/utils/date.utils";
 import { ErrorAlertComponent } from "../../../shared/components/error-alert/error-alert.component";
 import {
   AttendanceLoadWorkersDialogComponent,

@@ -1,4 +1,4 @@
-import { CurrencyPipe, DatePipe, DecimalPipe } from "@angular/common";
+import { DecimalPipe } from "@angular/common";
 import {
   ChangeDetectionStrategy,
   Component,
@@ -39,7 +39,6 @@ import {
   PaymentMethod,
   PaymentType,
   RecordWorkerPaymentRequest,
-  WorkerPayment,
   WorkerSettlementCalculation,
 } from "../../../../core/labor/labor.models";
 import { LaborService } from "../../../../core/labor/labor.service";

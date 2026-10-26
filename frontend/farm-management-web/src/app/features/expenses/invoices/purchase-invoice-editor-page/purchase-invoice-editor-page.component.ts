@@ -29,7 +29,6 @@ import {
   CreatePurchaseInvoiceLineRequest,
   CreatePurchaseInvoiceRequest,
   PurchaseInvoiceLineType,
-  PurchaseInvoiceResponse,
   UpdatePurchaseInvoiceRequest,
 } from '../../../../core/expenses/purchase-invoice.models';
 import { PurchaseInvoiceService } from '../../../../core/expenses/purchase-invoice.service';

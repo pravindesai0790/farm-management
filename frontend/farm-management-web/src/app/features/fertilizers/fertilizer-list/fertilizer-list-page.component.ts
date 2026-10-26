@@ -47,7 +47,7 @@ import {
 } from '../../../core/fertilizers/fertilizer.models';
 import { FertilizerService } from '../../../core/fertilizers/fertilizer.service';
 import { getApiErrorMessage } from '../../../core/models/api-error.model';
-import { formatDateOnly, parseDateOnly } from '../../../core/utils/date.utils';
+import { formatDateOnly } from '../../../core/utils/date.utils';
 import { downloadFileBlob, extractBlobErrorMessage } from '../../../core/utils/download.utils';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { StartFertilizerDialogComponent } from '../dialogs/start-fertilizer-dialog/start-fertilizer-dialog.component';

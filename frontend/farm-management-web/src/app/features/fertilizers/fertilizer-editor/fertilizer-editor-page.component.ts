@@ -58,7 +58,7 @@ import {
   getFertilizerStatusDisplayName,
 } from '../../../core/fertilizers/fertilizer.models';
 import { FertilizerService } from '../../../core/fertilizers/fertilizer.service';
-import { formatDateOnly, parseDateOnly } from '../../../core/utils/date.utils';
+import { parseDateOnly } from '../../../core/utils/date.utils';
 import { DateTimePickerComponent } from '../../../shared/components/date-time-picker/date-time-picker.component';
 import {
   ScheduleFertilizerDialogComponent,

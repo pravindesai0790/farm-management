@@ -19,12 +19,10 @@ import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { MatSelectModule } from "@angular/material/select";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { ActivatedRoute, Router, RouterLink } from "@angular/router";
-import { finalize, of } from "rxjs";
+import { finalize } from "rxjs";
 import { BreadcrumbService } from "../../core/breadcrumb/breadcrumb.service";
 import {
   CreateCropLifecycleStageRequest,
-  CropLifecycleStage,
-  CropLifecycleTemplate,
 } from "../../core/crop-lifecycle-templates/crop-lifecycle-template.models";
 import { CropLifecycleTemplateService } from "../../core/crop-lifecycle-templates/crop-lifecycle-template.service";
 import { Crop } from "../../core/farm-management/farm-management.models";

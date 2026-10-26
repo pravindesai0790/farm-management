@@ -79,8 +79,8 @@ public sealed class AttendanceIdempotencyTests
 
         Assert.NotNull(result1);
         Assert.Equal("DRAFT", result1.Status);
-        Assert.Equal(1, store.Attendances.Count);
-        Assert.Equal(1, store.IdempotencyRecords.Count);
+        Assert.Single(store.Attendances);
+        Assert.Single(store.IdempotencyRecords);
 
         // Act 2: Retry with exact same key and payload
         var result2 = await service.CreateDraftAsync(CreateActorA(), request);
@@ -90,7 +90,7 @@ public sealed class AttendanceIdempotencyTests
         Assert.Equal(result1.AttendanceDate, result2.AttendanceDate);
         Assert.Equal(result1.Status, result2.Status);
         // Ensure no second attendance record was created
-        Assert.Equal(1, store.Attendances.Count);
+        Assert.Single(store.Attendances);
     }
 
     [Fact]
@@ -164,7 +164,7 @@ public sealed class AttendanceIdempotencyTests
 
         Assert.Equal(2, result1.Summary.TotalCount);
         Assert.Equal(2, store.Attendances.Count);
-        Assert.Equal(1, store.IdempotencyRecords.Count);
+        Assert.Single(store.IdempotencyRecords);
 
         // Act 2: Identical retry
         var result2 = await service.SaveDailyDraftBatchAsync(CreateActorA(), request);
@@ -250,7 +250,7 @@ public sealed class AttendanceIdempotencyTests
         Assert.Equal(2, response1.PaidCount);
         Assert.Equal(2, earnings.CreatedEarnings.Count);
         Assert.All(store.Attendances, a => Assert.Equal(AttendanceStatus.Finalized, a.Status));
-        Assert.Equal(1, store.IdempotencyRecords.Count);
+        Assert.Single(store.IdempotencyRecords);
 
         // Act 2: Mobile retries after network timeout with the SAME idempotency key
         var response2 = await service.FinalizeAttendanceAsync(CreateActorA(), finalizeRequest);
@@ -391,7 +391,7 @@ public sealed class AttendanceIdempotencyTests
         // Act 1: Initial call
         var result1 = await service.CopyPreviousDayAsync(CreateActorA(), copyRequest);
         Assert.Equal(1, result1.CopiedCount);
-        Assert.Equal(1, store.IdempotencyRecords.Count);
+        Assert.Single(store.IdempotencyRecords);
 
         // Act 2: Idempotent retry
         var result2 = await service.CopyPreviousDayAsync(CreateActorA(), copyRequest);

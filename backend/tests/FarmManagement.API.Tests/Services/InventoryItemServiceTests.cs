@@ -116,6 +116,7 @@ public class InventoryItemServiceTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             service.UpdateAsync(CreateActor(), item.Id, request, "127.0.0.1"));
 
+        Assert.NotNull(ex.Errors);
         Assert.Contains("stockUnitId", ex.Errors.Keys);
         Assert.Contains("cannot be changed once stock movements have been recorded", ex.Errors["stockUnitId"][0]);
     }
@@ -139,6 +140,7 @@ public class InventoryItemServiceTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             service.DeactivateAsync(CreateActor(), item.Id, "127.0.0.1"));
 
+        Assert.NotNull(ex.Errors);
         Assert.Contains("isActive", ex.Errors.Keys);
         Assert.Contains("Cannot deactivate inventory item", ex.Errors["isActive"][0]);
         Assert.Contains("500", ex.Errors["isActive"][0]);

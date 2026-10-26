@@ -138,6 +138,7 @@ public class FertilizerRecordCompletedTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.RecordCompletedAsync(actor, request, null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("farmId"));
     }
 
@@ -164,6 +165,7 @@ public class FertilizerRecordCompletedTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.RecordCompletedAsync(actor, request, null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("farmAreaId"));
     }
 
@@ -193,6 +195,7 @@ public class FertilizerRecordCompletedTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.RecordCompletedAsync(actor, request, null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("otherMethodDescription"));
     }
 
@@ -218,6 +221,7 @@ public class FertilizerRecordCompletedTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.RecordCompletedAsync(actor, request, null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("irrigationEventId"));
     }
 
@@ -305,6 +309,7 @@ public class FertilizerRecordCompletedTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.RecordCompletedAsync(actor, request, null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("actualApplicationDate"));
         Assert.Contains("future", ex.Errors["actualApplicationDate"][0], StringComparison.OrdinalIgnoreCase);
     }
@@ -333,6 +338,7 @@ public class FertilizerRecordCompletedTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.RecordCompletedAsync(actor, request, null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("actualApplicationDate"));
         Assert.Contains("current on-hand stock", ex.Errors["actualApplicationDate"][0], StringComparison.OrdinalIgnoreCase);
     }
@@ -393,6 +399,7 @@ public class FertilizerRecordCompletedTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.RecordCompletedAsync(actor, request, null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("actualAreaUnitId"));
     }
 
@@ -415,6 +422,7 @@ public class FertilizerRecordCompletedTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.RecordCompletedAsync(actor, request, null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("products"));
     }
 
@@ -443,6 +451,7 @@ public class FertilizerRecordCompletedTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.RecordCompletedAsync(actor, request, null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("products"));
         Assert.Contains("duplicate", ex.Errors["products"][0], StringComparison.OrdinalIgnoreCase);
     }
@@ -470,6 +479,7 @@ public class FertilizerRecordCompletedTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.RecordCompletedAsync(actor, request, null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("products"));
         Assert.Contains("greater than zero", ex.Errors["products"][0], StringComparison.OrdinalIgnoreCase);
     }
@@ -496,6 +506,7 @@ public class FertilizerRecordCompletedTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.RecordCompletedAsync(actor, request, null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("storageLocationId"));
     }
 
@@ -521,6 +532,7 @@ public class FertilizerRecordCompletedTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.RecordCompletedAsync(actor, request, null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("products"));
         Assert.Contains("inactive", ex.Errors["products"][0], StringComparison.OrdinalIgnoreCase);
     }
@@ -551,6 +563,7 @@ public class FertilizerRecordCompletedTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.RecordCompletedAsync(actor, request, null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("products[0]"));
         Assert.Contains("insufficient stock", ex.Message, StringComparison.OrdinalIgnoreCase);
 
@@ -708,6 +721,7 @@ public class FertilizerRecordCompletedTests
         Assert.Equal("FertilizerApplication", audit.EntityType);
         Assert.Equal(result.Id, audit.EntityId);
         Assert.Equal("10.0.0.1", audit.IpAddress);
+        Assert.NotNull(audit.Details);
         Assert.Contains(result.ReferenceNumber, audit.Details.RootElement.ToString());
     }
 

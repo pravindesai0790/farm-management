@@ -2,16 +2,14 @@ import { downloadFileBlob, extractBlobErrorMessage } from './download.utils';
 
 describe('download.utils', () => {
   describe('downloadFileBlob', () => {
-    let appendChildSpy: jasmine.Spy;
-    let removeChildSpy: jasmine.Spy;
     let createObjectURLSpy: jasmine.Spy;
     let revokeObjectURLSpy: jasmine.Spy;
 
     beforeEach(() => {
       createObjectURLSpy = spyOn(window.URL, 'createObjectURL').and.returnValue('blob:http://localhost/test');
       revokeObjectURLSpy = spyOn(window.URL, 'revokeObjectURL');
-      appendChildSpy = spyOn(document.body, 'appendChild').and.callThrough();
-      removeChildSpy = spyOn(document.body, 'removeChild').and.callThrough();
+      spyOn(document.body, 'appendChild').and.callThrough();
+      spyOn(document.body, 'removeChild').and.callThrough();
     });
 
     it('should use defaultFilename when contentDisposition is omitted', () => {

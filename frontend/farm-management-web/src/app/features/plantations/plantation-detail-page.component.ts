@@ -16,7 +16,7 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { MatSelectModule } from "@angular/material/select";
 import { MatSnackBar } from "@angular/material/snack-bar";
-import { ActivatedRoute, Router, RouterLink } from "@angular/router";
+import { ActivatedRoute, RouterLink } from "@angular/router";
 import { FarmManagementService } from "../../core/farm-management/farm-management.service";
 import {
   CropCycle,
@@ -48,7 +48,6 @@ import { PlantationTerminateDialogComponent } from "./plantation-terminate-dialo
 export class PlantationDetailPageComponent implements OnInit {
   private readonly service = inject(FarmManagementService);
   private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
   private readonly snack = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);

@@ -18,7 +18,6 @@ import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { FarmManagementService } from "../../../../core/farm-management/farm-management.service";
 import {
   DashboardRecentActivityResponse,
-  RecentActivityItem,
 } from "../../../../core/farm-management/farm-management.models";
 
 @Component({

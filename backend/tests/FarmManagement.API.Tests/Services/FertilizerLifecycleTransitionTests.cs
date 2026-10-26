@@ -149,6 +149,7 @@ public class FertilizerLifecycleTransitionTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.PlanAsync(actor, draft.Id, new PlanFertilizerApplicationRequest(), null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("farmId"));
     }
 
@@ -165,6 +166,7 @@ public class FertilizerLifecycleTransitionTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.PlanAsync(actor, draft.Id, new PlanFertilizerApplicationRequest(), null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("farmAreaId"));
     }
 
@@ -182,6 +184,7 @@ public class FertilizerLifecycleTransitionTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.PlanAsync(actor, draft.Id, new PlanFertilizerApplicationRequest(), null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("applicationMethodId"));
     }
 
@@ -207,6 +210,7 @@ public class FertilizerLifecycleTransitionTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.PlanAsync(actor, draft.Id, new PlanFertilizerApplicationRequest(), null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("otherMethodDescription"));
     }
 
@@ -257,6 +261,7 @@ public class FertilizerLifecycleTransitionTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.PlanAsync(actor, draft.Id, new PlanFertilizerApplicationRequest(), null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("products"));
     }
 
@@ -282,6 +287,7 @@ public class FertilizerLifecycleTransitionTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.PlanAsync(actor, draft.Id, new PlanFertilizerApplicationRequest(), null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("products"));
     }
 
@@ -306,6 +312,7 @@ public class FertilizerLifecycleTransitionTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.PlanAsync(actor, draft.Id, new PlanFertilizerApplicationRequest(), null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("storageLocationId"));
     }
 
@@ -332,6 +339,7 @@ public class FertilizerLifecycleTransitionTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.PlanAsync(actor, draft.Id, new PlanFertilizerApplicationRequest(), null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("storageLocationId"));
     }
 
@@ -485,6 +493,7 @@ public class FertilizerLifecycleTransitionTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.ScheduleAsync(actor, app.Id, request, null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("scheduledDate"));
     }
 
@@ -575,6 +584,7 @@ public class FertilizerLifecycleTransitionTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.RescheduleAsync(actor, app.Id, request, null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("scheduledDate"));
     }
 
@@ -677,6 +687,7 @@ public class FertilizerLifecycleTransitionTests
         Assert.Equal(40m, stock.QuantityOnHand);
 
         // Validation errors detail shortage
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("products[0]"));
         var errorMsg = ex.Errors["products[0]"][0];
         Assert.Contains("Insufficient stock", errorMsg);
@@ -717,6 +728,7 @@ public class FertilizerLifecycleTransitionTests
             _sut.StartAsync(actor, app.Id, new StartFertilizerApplicationRequest(), null));
 
         // Both products are returned in errors dictionary
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("products[0]"));
         Assert.True(ex.Errors.ContainsKey("products[1]"));
         Assert.Contains("Shortage: 70", ex.Errors["products[0]"][0]);
@@ -755,6 +767,7 @@ public class FertilizerLifecycleTransitionTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.StartAsync(actor, app.Id, new StartFertilizerApplicationRequest(), null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("farmId"));
     }
 
@@ -787,6 +800,7 @@ public class FertilizerLifecycleTransitionTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.StartAsync(actor, app.Id, new StartFertilizerApplicationRequest(), null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("products"));
     }
 
@@ -819,6 +833,7 @@ public class FertilizerLifecycleTransitionTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.StartAsync(actor, app.Id, new StartFertilizerApplicationRequest(), null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("storageLocationId"));
     }
 

@@ -171,6 +171,7 @@ public class IrrigationFinalValidationHardeningTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.CreateDraftAsync(actor, new CreateIrrigationDraftRequest(farm1.Id, areaOfFarm2.Id), null));
 
+        Assert.NotNull(ex.Errors);
         Assert.Contains("farmAreaId", ex.Errors.Keys);
     }
 
@@ -188,6 +189,7 @@ public class IrrigationFinalValidationHardeningTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.CreateDraftAsync(actor, new CreateIrrigationDraftRequest(farm.Id, area1.Id, PlantationId: plantationInArea2.Id), null));
 
+        Assert.NotNull(ex.Errors);
         Assert.Contains("plantationId", ex.Errors.Keys);
     }
 
@@ -205,6 +207,7 @@ public class IrrigationFinalValidationHardeningTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.CreateDraftAsync(actor, new CreateIrrigationDraftRequest(farm.Id, area.Id, PlantationId: null, CropCycleId: cycle.Id), null));
 
+        Assert.NotNull(ex.Errors);
         Assert.Contains("cropCycleId", ex.Errors.Keys);
     }
 
@@ -228,6 +231,7 @@ public class IrrigationFinalValidationHardeningTests
                 PlantationId: plantation.Id,
                 CropCycleId: null,
                 CropCycleStageId: stageOfCycle2.Id), null));
+        Assert.NotNull(ex1.Errors);
         Assert.Contains("cropCycleStageId", ex1.Errors.Keys);
 
         // Stage does not belong to specified cycle1
@@ -238,6 +242,7 @@ public class IrrigationFinalValidationHardeningTests
                 PlantationId: plantation.Id,
                 CropCycleId: cycle1.Id,
                 CropCycleStageId: stageOfCycle2.Id), null));
+        Assert.NotNull(ex2.Errors);
         Assert.Contains("cropCycleStageId", ex2.Errors.Keys);
     }
 
@@ -261,6 +266,7 @@ public class IrrigationFinalValidationHardeningTests
                 PlannedWaterQuantity: 500m,
                 PlannedWaterUnitId: massUnit.Id), null));
 
+        Assert.NotNull(ex.Errors);
         Assert.Contains("plannedWaterUnitId", ex.Errors.Keys);
     }
 
@@ -280,6 +286,7 @@ public class IrrigationFinalValidationHardeningTests
                 area.Id,
                 IrrigationMethodId: method.Id), null));
 
+        Assert.NotNull(ex.Errors);
         Assert.Contains("irrigationMethodId", ex.Errors.Keys);
     }
 
@@ -298,6 +305,7 @@ public class IrrigationFinalValidationHardeningTests
                 area.Id,
                 PlannedWaterQuantity: 0m,
                 PlannedWaterUnitId: volumeUnit.Id), null));
+        Assert.NotNull(exZero.Errors);
         Assert.Contains("plannedWaterQuantity", exZero.Errors.Keys);
 
         var exNeg = await Assert.ThrowsAsync<ValidationException>(() =>
@@ -306,6 +314,7 @@ public class IrrigationFinalValidationHardeningTests
                 area.Id,
                 PlannedWaterQuantity: -10m,
                 PlannedWaterUnitId: volumeUnit.Id), null));
+        Assert.NotNull(exNeg.Errors);
         Assert.Contains("plannedWaterQuantity", exNeg.Errors.Keys);
     }
 
@@ -443,6 +452,7 @@ public class IrrigationFinalValidationHardeningTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.CancelAsync(actor, draft.Id, new CancelIrrigationRequest("   "), null));
 
+        Assert.NotNull(ex.Errors);
         Assert.Contains("cancellationReason", ex.Errors.Keys);
     }
 

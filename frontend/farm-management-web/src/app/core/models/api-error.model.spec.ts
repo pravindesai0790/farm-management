@@ -1,6 +1,5 @@
 import {
   getApiErrorMessage,
-  getApiValidationErrors,
   getApiValidationMessages,
 } from './api-error.model';
 

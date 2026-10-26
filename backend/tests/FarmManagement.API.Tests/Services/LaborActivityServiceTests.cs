@@ -145,6 +145,7 @@ public sealed class LaborActivityServiceTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             service.CreateAsync(CreateActor(), request, "127.0.0.1"));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("cropCycleStageId"));
     }
 
@@ -174,6 +175,7 @@ public sealed class LaborActivityServiceTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             service.CreateAsync(CreateActor(), request, "127.0.0.1"));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("cropCycleStageId"));
     }
 

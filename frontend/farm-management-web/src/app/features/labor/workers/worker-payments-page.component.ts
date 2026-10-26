@@ -32,7 +32,6 @@ import { BreadcrumbService } from "../../../core/breadcrumb/breadcrumb.service";
 import {
   PAYMENT_STATUS_OPTIONS,
   PAYMENT_TYPE_OPTIONS,
-  PaymentType,
   WorkerDetail,
   WorkerPayment,
   WorkerSettlementCalculation,

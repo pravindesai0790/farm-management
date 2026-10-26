@@ -24,7 +24,7 @@ import { MatSelectModule } from "@angular/material/select";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { Router, RouterLink } from "@angular/router";
+import { RouterLink } from "@angular/router";
 import { finalize } from "rxjs";
 import { PermissionService } from "../../../core/auth/permission.service";
 import {
@@ -76,7 +76,6 @@ import { SpraySubNavComponent } from "../components/spray-sub-nav/spray-sub-nav.
 export class SprayListPageComponent implements OnInit {
   private readonly sprayService = inject(SprayService);
   private readonly farmService = inject(FarmManagementService);
-  private readonly router = inject(Router);
   private readonly dialog = inject(MatDialog);
   private readonly snack = inject(MatSnackBar);
   private readonly destroyRef = inject(DestroyRef);

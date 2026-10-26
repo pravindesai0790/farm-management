@@ -38,7 +38,6 @@ import {
 } from "../../../../core/labor/labor.models";
 import { LaborService } from "../../../../core/labor/labor.service";
 import {
-  getApiErrorMessage,
   getApiValidationErrors,
 } from "../../../../core/models/api-error.model";
 import { formatDateOnly, parseDateOnly } from "../../../../core/utils/date.utils";

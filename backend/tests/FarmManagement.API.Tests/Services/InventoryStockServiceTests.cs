@@ -404,6 +404,7 @@ public sealed class InventoryStockServiceTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             service.RecordStockIssueAsync(CreateActor(), issueRequest, "127.0.0.1"));
 
+        Assert.NotNull(ex.Errors);
         Assert.Contains("Crop cycle stage cannot be selected without selecting a crop cycle", ex.Errors["cropCycleStageId"][0]);
     }
 
@@ -437,6 +438,7 @@ public sealed class InventoryStockServiceTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             service.RecordStockIssueAsync(CreateActor(), issueRequest, "127.0.0.1"));
 
+        Assert.NotNull(ex.Errors);
         Assert.Contains("does not belong to the selected farm", ex.Errors["cropCycleId"][0]);
     }
 
@@ -474,6 +476,7 @@ public sealed class InventoryStockServiceTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             service.RecordStockIssueAsync(CreateActor(), issueRequest, "127.0.0.1"));
 
+        Assert.NotNull(ex.Errors);
         Assert.Contains("does not belong to the selected crop cycle", ex.Errors["cropCycleStageId"][0]);
     }
 

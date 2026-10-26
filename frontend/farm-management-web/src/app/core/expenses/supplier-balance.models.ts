@@ -1,5 +1,3 @@
-import { OverdueInvoiceItem } from './expense-report.models';
-
 export interface SupplierBalanceFilter {
   asOfDate?: string | null;
   supplierId?: string | null;

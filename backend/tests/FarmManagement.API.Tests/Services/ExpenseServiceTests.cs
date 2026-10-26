@@ -98,6 +98,7 @@ public class ExpenseServiceTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             service.CreateDraftAsync(CreateActor(), request, "127.0.0.1"));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("description"));
     }
 
@@ -120,6 +121,7 @@ public class ExpenseServiceTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             service.CreateDraftAsync(CreateActor(), request, "127.0.0.1"));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("amount"));
     }
 
@@ -140,6 +142,7 @@ public class ExpenseServiceTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             service.CreateDraftAsync(CreateActor(), request, "127.0.0.1"));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("expenseDate"));
     }
 
@@ -160,6 +163,7 @@ public class ExpenseServiceTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             service.CreateDraftAsync(CreateActor(), request, "127.0.0.1"));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("farmId"));
     }
 
@@ -182,6 +186,7 @@ public class ExpenseServiceTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             service.CreateDraftAsync(CreateActor(), request, "127.0.0.1"));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("farmAreaId"));
     }
 
@@ -207,6 +212,7 @@ public class ExpenseServiceTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             service.CreateDraftAsync(CreateActor(), request, "127.0.0.1"));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("cropCycleStageId"));
     }
 
@@ -391,6 +397,7 @@ public class ExpenseServiceTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             service.ReverseAsync(CreateActor(), expense.Id, request, "127.0.0.1"));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("reason"));
     }
 

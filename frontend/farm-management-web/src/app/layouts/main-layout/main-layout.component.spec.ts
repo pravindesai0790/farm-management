@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { provideRouter, Router } from "@angular/router";
+import { provideRouter } from "@angular/router";
 import { signal } from "@angular/core";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { MainLayoutComponent } from "./main-layout.component";
@@ -14,7 +14,6 @@ describe("MainLayoutComponent Navigation", () => {
   let mockAuthService: { user: ReturnType<typeof signal<CurrentUser | null>>; logout: jasmine.Spy };
   let mockPermissionService: { has: jasmine.Spy; hasAny: jasmine.Spy };
   let mockBreadcrumbService: { breadcrumbs: ReturnType<typeof signal<any[]>> };
-  let router: Router;
 
   const mockUser: CurrentUser = {
     id: "user-1",
@@ -64,7 +63,6 @@ describe("MainLayoutComponent Navigation", () => {
       ],
     }).compileComponents();
 
-    router = TestBed.inject(Router);
     fixture = TestBed.createComponent(MainLayoutComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();

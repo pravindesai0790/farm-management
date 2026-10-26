@@ -41,16 +41,12 @@ import {
   WorkerPaymentAllocationItem,
   WorkerSettlementCalculation,
   formatEmploymentType,
-  formatFinancialTransactionType,
   formatGender,
-  formatPaymentMethod,
-  formatPaymentStatus,
-  formatPaymentType,
   formatWageType,
 } from "../../../core/labor/labor.models";
 import { LaborService } from "../../../core/labor/labor.service";
 import { getApiErrorMessage } from "../../../core/models/api-error.model";
-import { formatDateOnly, parseDateOnly } from "../../../core/utils/date.utils";
+import { formatDateOnly } from "../../../core/utils/date.utils";
 import { WorkerFarmAssignmentDialogComponent } from "./dialogs/worker-farm-assignment-dialog.component";
 import { WorkerFarmAssignmentEndDialogComponent } from "./dialogs/worker-farm-assignment-end-dialog.component";
 import {

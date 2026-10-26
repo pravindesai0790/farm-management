@@ -7,7 +7,6 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
 import { PermissionService } from "../../../../core/auth/permission.service";
 import {
-  ActiveCycleStageSummary,
   ActiveCycleSummary,
   CropAllocationSummary,
   FarmLaborDashboard,

@@ -149,6 +149,7 @@ public class FertilizerStockIssueAndIdempotencyTests
                 null));
 
         // Shortage reported
+        Assert.NotNull(ex.Errors);
         Assert.Single(ex.Errors);
         var errorMsg = ex.Errors.Values.First()[0];
         Assert.Contains("Insufficient stock", errorMsg);
@@ -200,6 +201,7 @@ public class FertilizerStockIssueAndIdempotencyTests
                 null));
 
         // Both lines appear in errors
+        Assert.NotNull(ex.Errors);
         Assert.Equal(2, ex.Errors.Count);
         var allErrors = ex.Errors.Values.SelectMany(v => v).ToList();
         Assert.Contains(allErrors, e => e.Contains("Urea") && e.Contains("Shortage: 30"));

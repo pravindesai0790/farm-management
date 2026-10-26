@@ -49,6 +49,7 @@ public class FertilizerValidatorTests
         // Act & Assert
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.ValidateHierarchyAsync(_orgId, farm.Id, null, null, null, null, isPreStart: true));
+        Assert.NotNull(ex.Errors);
         Assert.Contains("farmId", ex.Errors.Keys);
     }
 
@@ -72,6 +73,7 @@ public class FertilizerValidatorTests
         // Act & Assert
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.ValidateHierarchyAsync(_orgId, null, area.Id, null, null, null));
+        Assert.NotNull(ex.Errors);
         Assert.Contains("farmAreaId", ex.Errors.Keys);
     }
 
@@ -86,6 +88,7 @@ public class FertilizerValidatorTests
         // Act & Assert
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.ValidateHierarchyAsync(_orgId, farm1.Id, area.Id, null, null, null));
+        Assert.NotNull(ex.Errors);
         Assert.Contains("farmAreaId", ex.Errors.Keys);
     }
 
@@ -100,6 +103,7 @@ public class FertilizerValidatorTests
         // Act & Assert
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.ValidateHierarchyAsync(_orgId, farm.Id, null, plantation.Id, null, null));
+        Assert.NotNull(ex.Errors);
         Assert.Contains("plantationId", ex.Errors.Keys);
     }
 
@@ -115,6 +119,7 @@ public class FertilizerValidatorTests
         // Act & Assert
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.ValidateHierarchyAsync(_orgId, farm.Id, area2.Id, plantation.Id, null, null));
+        Assert.NotNull(ex.Errors);
         Assert.Contains("plantationId", ex.Errors.Keys);
     }
 
@@ -130,6 +135,7 @@ public class FertilizerValidatorTests
         // Act & Assert
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.ValidateHierarchyAsync(_orgId, farm.Id, area.Id, null, cycle.Id, null));
+        Assert.NotNull(ex.Errors);
         Assert.Contains("cropCycleId", ex.Errors.Keys);
     }
 
@@ -146,6 +152,7 @@ public class FertilizerValidatorTests
         // Act & Assert
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.ValidateHierarchyAsync(_orgId, farm.Id, area.Id, plantation.Id, null, stage.Id));
+        Assert.NotNull(ex.Errors);
         Assert.Contains("cropCycleStageId", ex.Errors.Keys);
     }
 
@@ -168,6 +175,7 @@ public class FertilizerValidatorTests
         // Act & Assert
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.ValidateProductEligibilityAsync(_orgId, item.Id, isPreStart: true));
+        Assert.NotNull(ex.Errors);
         Assert.Contains("products", ex.Errors.Keys);
     }
 
@@ -190,6 +198,7 @@ public class FertilizerValidatorTests
         // Act & Assert
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.ValidateProductEligibilityAsync(_orgId, item.Id));
+        Assert.NotNull(ex.Errors);
         Assert.Contains("products", ex.Errors.Keys);
     }
 
@@ -203,6 +212,7 @@ public class FertilizerValidatorTests
         // Act & Assert
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.ValidateProductEligibilityAsync(_orgId, item.Id));
+        Assert.NotNull(ex.Errors);
         Assert.Contains("products", ex.Errors.Keys);
     }
 
@@ -228,6 +238,7 @@ public class FertilizerValidatorTests
         // Act & Assert
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.ValidateStorageLocationAsync(_orgId, farm1.Id, location.Id));
+        Assert.NotNull(ex.Errors);
         Assert.Contains("storageLocationId", ex.Errors.Keys);
     }
 
@@ -241,6 +252,7 @@ public class FertilizerValidatorTests
         // Act & Assert
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.ValidateStorageLocationAsync(_orgId, farm.Id, location.Id, isPreStart: true));
+        Assert.NotNull(ex.Errors);
         Assert.Contains("storageLocationId", ex.Errors.Keys);
     }
 
@@ -274,6 +286,7 @@ public class FertilizerValidatorTests
         // Act & Assert
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.ValidateApplicationMethodAsync(_orgId, method.Id, null));
+        Assert.NotNull(ex.Errors);
         Assert.Contains("applicationMethodId", ex.Errors.Keys);
     }
 
@@ -286,6 +299,7 @@ public class FertilizerValidatorTests
         // Act & Assert
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.ValidateApplicationMethodAsync(_orgId, method.Id, null));
+        Assert.NotNull(ex.Errors);
         Assert.Contains("otherMethodDescription", ex.Errors.Keys);
     }
 
@@ -324,6 +338,7 @@ public class FertilizerValidatorTests
         // Act & Assert
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.ValidateIrrigationLinkAsync(_orgId, method.Id, irrigation.Id, farm.Id, area.Id));
+        Assert.NotNull(ex.Errors);
         Assert.Contains("irrigationEventId", ex.Errors.Keys);
     }
 
@@ -340,6 +355,7 @@ public class FertilizerValidatorTests
         // Act & Assert
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.ValidateIrrigationLinkAsync(_orgId, method.Id, irrigation.Id, farm.Id, area2.Id));
+        Assert.NotNull(ex.Errors);
         Assert.Contains("irrigationEventId", ex.Errors.Keys);
     }
 
@@ -362,6 +378,7 @@ public class FertilizerValidatorTests
         // Act & Assert
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.ValidateAreaAndUnitsAsync(_orgId, 0m, unit.Id, null, null));
+        Assert.NotNull(ex.Errors);
         Assert.Contains("plannedArea", ex.Errors.Keys);
     }
 
@@ -371,6 +388,7 @@ public class FertilizerValidatorTests
         // Act & Assert
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.ValidateAreaAndUnitsAsync(_orgId, 5.5m, null, null, null));
+        Assert.NotNull(ex.Errors);
         Assert.Contains("plannedAreaUnitId", ex.Errors.Keys);
     }
 
@@ -387,6 +405,7 @@ public class FertilizerValidatorTests
         // Act & Assert
         var ex = Assert.Throws<ValidationException>(() =>
             _sut.ValidateFreezeRules(app, newFarmId, null, null, null, null, null, null, null, null, null, null, null, null));
+        Assert.NotNull(ex.Errors);
         Assert.Contains("status", ex.Errors.Keys);
     }
 

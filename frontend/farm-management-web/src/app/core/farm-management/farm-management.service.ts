@@ -2,7 +2,6 @@ import { HttpClient, HttpParams } from "@angular/common/http";
 import { Injectable, inject } from "@angular/core";
 import { Observable, map } from "rxjs";
 import { environment } from "../../../environments/environment";
-import { PagedResponse } from "../models/paged-response.model";
 import {
   CompleteCropCycleStageRequest,
   CompleteCropCycleResponse,
@@ -27,7 +26,6 @@ import {
   FarmList,
   FarmOwnershipType,
   LifecycleList,
-  LifecycleTemplate,
   Organization,
   OrganizationListResponse,
   OverrideCropCycleStageRequest,

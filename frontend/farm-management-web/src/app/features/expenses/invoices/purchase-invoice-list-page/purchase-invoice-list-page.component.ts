@@ -18,7 +18,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { debounceTime, distinctUntilChanged, finalize, map, merge, auditTime, catchError, of, switchMap, Subject, tap } from 'rxjs';
 import { PermissionService } from '../../../../core/auth/permission.service';
 import {
@@ -72,7 +72,6 @@ export class PurchaseInvoiceListPageComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly snack = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
-  private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   readonly permissionService = inject(PermissionService);
 

@@ -3,7 +3,6 @@ import { HttpTestingController, provideHttpClientTesting } from "@angular/common
 import { TestBed } from "@angular/core/testing";
 import { environment } from "../../../environments/environment";
 import {
-  IrrigationListItem,
   IrrigationMethodDto,
   IrrigationSummaryCounts,
 } from "./irrigation.models";

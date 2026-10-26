@@ -10,11 +10,6 @@ import { of, throwError } from "rxjs";
 import { PermissionService } from "../../../core/auth/permission.service";
 import { FarmManagementService } from "../../../core/farm-management/farm-management.service";
 import {
-  CropCycle,
-  CropCycleStage,
-  Farm,
-  FarmArea,
-  Plantation,
   Unit,
 } from "../../../core/farm-management/farm-management.models";
 import {

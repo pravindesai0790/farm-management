@@ -21,7 +21,7 @@ import { MatSnackBar } from "@angular/material/snack-bar";
 import { MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { ActivatedRoute, RouterLink } from "@angular/router";
-import { debounceTime, distinctUntilChanged, finalize, merge } from "rxjs";
+import { finalize } from "rxjs";
 import { PermissionService } from "../../core/auth/permission.service";
 import { CropLifecycleTemplate } from "../../core/crop-lifecycle-templates/crop-lifecycle-template.models";
 import { CropLifecycleTemplateService } from "../../core/crop-lifecycle-templates/crop-lifecycle-template.service";

@@ -1160,6 +1160,7 @@ public sealed class SprayFinalValidationHardeningTests
         Assert.Equal(storage.Id, mov.StorageLocationId);
         Assert.Equal(item.Id, mov.InventoryItemId);
         Assert.Equal(10m, mov.Quantity);
+        Assert.NotNull(mov.ReferenceNumber);
         Assert.StartsWith("SP-", mov.ReferenceNumber);
         Assert.Contains(mov.ReferenceNumber, mov.Notes);
     }

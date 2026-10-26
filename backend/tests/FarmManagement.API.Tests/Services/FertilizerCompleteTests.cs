@@ -108,6 +108,7 @@ public class FertilizerCompleteTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.CompleteAsync(actor, app.Id, request, null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("actualApplicationDate"));
         Assert.Contains("cannot be in the future", ex.Errors["actualApplicationDate"][0]);
     }
@@ -165,6 +166,7 @@ public class FertilizerCompleteTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.CompleteAsync(actor, app.Id, request, null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("products"));
         Assert.Contains("actual quantities are required", ex.Errors["products"][0]);
     }
@@ -201,6 +203,7 @@ public class FertilizerCompleteTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.CompleteAsync(actor, app.Id, request, null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("products"));
         Assert.Contains("Actual quantities must be provided for every product line", ex.Errors["products"][0]);
     }
@@ -226,6 +229,7 @@ public class FertilizerCompleteTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.CompleteAsync(actor, app.Id, request, null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("products"));
         Assert.Contains("Missing actual quantity for product", ex.Errors["products"][0]);
     }
@@ -252,6 +256,7 @@ public class FertilizerCompleteTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.CompleteAsync(actor, app.Id, request, null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("products"));
         Assert.Contains("must be greater than zero", ex.Errors["products"][0]);
     }
@@ -285,6 +290,7 @@ public class FertilizerCompleteTests
             _sut.CompleteAsync(actor, app.Id, request, null));
 
         Assert.Contains("variance compared to planned", ex.Message);
+        Assert.NotNull(ex.Errors);
         Assert.Single(ex.Errors);
         var errorMsg = ex.Errors.Values.First()[0];
         Assert.Contains("DAP Special", errorMsg);
@@ -552,6 +558,7 @@ public class FertilizerCompleteTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.CompleteAsync(actor, app.Id, request, null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("actualAreaUnitId"));
         Assert.Contains("required when actual area is specified", ex.Errors["actualAreaUnitId"][0]);
     }
@@ -580,6 +587,7 @@ public class FertilizerCompleteTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             _sut.CompleteAsync(actor, app.Id, request, null));
 
+        Assert.NotNull(ex.Errors);
         Assert.True(ex.Errors.ContainsKey("actualArea"));
         Assert.Contains("must be greater than zero", ex.Errors["actualArea"][0]);
     }
@@ -614,6 +622,7 @@ public class FertilizerCompleteTests
 
         var audit = Assert.Single(_store.AuditLogs, a => a.Action == "Fertilizer.Completed");
         Assert.Equal("127.0.0.1", audit.IpAddress);
+        Assert.NotNull(audit.Details);
         Assert.Contains(app.ReferenceNumber, audit.Details.RootElement.ToString());
     }
 

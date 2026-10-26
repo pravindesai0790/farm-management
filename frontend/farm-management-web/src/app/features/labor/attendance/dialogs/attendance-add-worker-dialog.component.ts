@@ -26,7 +26,7 @@ import { MatInputModule } from "@angular/material/input";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { MatSelectModule } from "@angular/material/select";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { debounceTime, distinctUntilChanged, finalize, switchMap } from "rxjs";
+import { debounceTime, distinctUntilChanged, finalize } from "rxjs";
 
 import {
   ATTENDANCE_TYPE_OPTIONS,

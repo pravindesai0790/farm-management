@@ -36,7 +36,7 @@ import {
 } from "../../../../core/farm-management/farm-management.models";
 import { FarmManagementService } from "../../../../core/farm-management/farm-management.service";
 import { getApiErrorMessage } from "../../../../core/models/api-error.model";
-import { formatDateOnly, parseDateOnly } from "../../../../core/utils/date.utils";
+import { formatDateOnly } from "../../../../core/utils/date.utils";
 import {
   LaborActivityCancelDialogComponent,
 } from "../../components/labor-activity-cancel-dialog/labor-activity-cancel-dialog.component";

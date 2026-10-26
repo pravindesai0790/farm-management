@@ -10,12 +10,7 @@ import { PermissionService } from "../../../core/auth/permission.service";
 import { BreadcrumbService } from "../../../core/breadcrumb/breadcrumb.service";
 import { FarmManagementService } from "../../../core/farm-management/farm-management.service";
 import {
-  CropCycle,
-  CropCycleStage,
   CycleList,
-  Farm,
-  FarmArea,
-  Plantation,
   PlantationList,
   Unit,
 } from "../../../core/farm-management/farm-management.models";
