@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -81,8 +82,14 @@ export default function PinUnlockScreen() {
           </Text>
         </View>
 
-        <Text style={styles.icon}>🌾</Text>
-        <Text style={styles.title}>Unlock Farm App</Text>
+        <View style={styles.logoCard}>
+          <Image
+            source={require('../../assets/farmnxt-logo.png')}
+            style={styles.logoImg}
+            resizeMode="contain"
+          />
+        </View>
+        <Text style={styles.title}>Unlock FarmNxt</Text>
         <Text style={styles.userName}>{user?.firstName ? `${user.firstName} ${user.lastName || ''}` : 'Supervisor'}</Text>
         <Text style={styles.subtitle}>{user?.organizationName || 'Farm Operations'}</Text>
       </View>
@@ -177,9 +184,23 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#374151',
   },
-  icon: {
-    fontSize: 42,
+  logoCard: {
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 12,
     marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  logoImg: {
+    width: 180,
+    height: 52,
   },
   title: {
     fontSize: 22,

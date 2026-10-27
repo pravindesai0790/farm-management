@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../src/core/auth/useAuthStore';
@@ -136,6 +137,13 @@ export default function DiagnosticsDashboardScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Top Header */}
         <View style={styles.header}>
+          <View style={styles.headerTopRow}>
+            <Image
+              source={require('../../assets/farmnxt-logo.png')}
+              style={styles.headerBrandLogo}
+              resizeMode="contain"
+            />
+          </View>
           <Text style={styles.headerTitle}>Platform Diagnostics</Text>
           <Text style={styles.headerSubtitle}>System Health & Connection Verification</Text>
         </View>
@@ -340,6 +348,13 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: 16,
+  },
+  headerTopRow: {
+    marginBottom: 8,
+  },
+  headerBrandLogo: {
+    width: 130,
+    height: 36,
   },
   headerTitle: {
     fontSize: 24,

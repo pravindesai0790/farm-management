@@ -82,7 +82,7 @@ export default function RootLayout() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#2E7D32" />
-        <Text style={styles.loadingText}>Initializing Farm Management...</Text>
+        <Text style={styles.loadingText}>Initializing FarmNxt...</Text>
       </View>
     );
   }

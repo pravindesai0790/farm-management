@@ -14,6 +14,7 @@ import {
   StatusBar,
   ScrollView,
   RefreshControl,
+  Image,
 } from 'react-native';
 import { useNetworkStatus } from '../../src/core/network/useNetworkStatus';
 import { useSyncStore } from '../../src/core/sync/syncManager';
@@ -549,6 +550,25 @@ export default function AttendanceScreen() {
     <SafeAreaView style={styles.safeArea}>
       {/* Top Header */}
       <View style={styles.header}>
+        <View style={styles.brandRow}>
+          <Image
+            source={require('../../assets/farmnxt-logo.png')}
+            style={styles.headerBrandLogo}
+            resizeMode="contain"
+          />
+          {/* Network Status Pill */}
+          <View
+            style={[
+              styles.networkBadge,
+              !network.isConnected && styles.networkBadgeOffline,
+            ]}
+          >
+            <Text style={styles.networkBadgeText}>
+              {!network.isConnected ? '📡 Offline' : '🟢 Online'}
+            </Text>
+          </View>
+        </View>
+
         <View style={styles.headerRow}>
           <TouchableOpacity
             style={styles.farmSelectorButton}
@@ -561,18 +581,6 @@ export default function AttendanceScreen() {
             </Text>
             <Text style={styles.dropdownArrow}>▼</Text>
           </TouchableOpacity>
-
-          {/* Network Status Pill */}
-          <View
-            style={[
-              styles.networkBadge,
-              !network.isConnected && styles.networkBadgeOffline,
-            ]}
-          >
-            <Text style={styles.networkBadgeText}>
-              {!network.isConnected ? '📡 Offline' : '🟢 Online'}
-            </Text>
-          </View>
         </View>
 
         {/* Date Selector Row */}
@@ -1333,6 +1341,16 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
+  },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  headerBrandLogo: {
+    width: 120,
+    height: 32,
   },
   headerRow: {
     flexDirection: 'row',

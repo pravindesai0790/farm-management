@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../src/core/auth/useAuthStore';
@@ -83,10 +84,13 @@ export default function LoginScreen() {
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           {/* Header & Brand */}
           <View style={styles.brandContainer}>
-            <View style={styles.logoBadge}>
-              <Text style={styles.logoIcon}>🚜</Text>
+            <View style={styles.logoCard}>
+              <Image
+                source={require('../../assets/farmnxt-logo.png')}
+                style={styles.brandLogo}
+                resizeMode="contain"
+              />
             </View>
-            <Text style={styles.appTitle}>Farm Management</Text>
             <Text style={styles.subtitle}>Field Operations & Workforce</Text>
 
             {/* Offline Alert if device has no connection */}
@@ -228,25 +232,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 24,
   },
-  logoBadge: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    backgroundColor: '#E8F5E9',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
+  logoCard: {
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 10,
+    paddingHorizontal: 22,
+    borderRadius: 14,
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
     borderWidth: 1,
-    borderColor: '#C8E6C9',
+    borderColor: '#E5E7EB',
   },
-  logoIcon: {
-    fontSize: 34,
-  },
-  appTitle: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: '#1B5E20',
-    letterSpacing: -0.5,
+  brandLogo: {
+    width: 220,
+    height: 64,
   },
   subtitle: {
     fontSize: 14,

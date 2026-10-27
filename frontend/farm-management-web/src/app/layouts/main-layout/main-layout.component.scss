@@ -137,6 +137,20 @@
   position: relative;
   transition: padding 0.22s ease, gap 0.22s ease;
 
+  .brand-logo-wrapper {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+
+    .sidebar-brand-logo {
+      height: 50px;
+      max-width: 165px;
+      object-fit: contain;
+      display: block;
+    }
+  }
+
   .brand-title {
     flex: 1;
     min-width: 0;
@@ -160,6 +174,20 @@
   color: #fff;
   flex-shrink: 0;
   transition: transform 0.2s ease;
+
+  &.brand-mark-collapsed {
+    background: #ffffff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    border: 1px solid #eef2ee;
+    padding: 2px;
+
+    .sidebar-brand-mark-img {
+      width: 28px;
+      height: 28px;
+      object-fit: contain;
+      display: block;
+    }
+  }
 }
 
 .sidebar-toggle-btn {

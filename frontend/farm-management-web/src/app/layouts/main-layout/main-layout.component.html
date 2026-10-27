@@ -12,15 +12,20 @@
     (openedChange)="isSidenavOpened.set($event)"
   >
     <div class="navigation-brand" [class.brand-collapsed]="isCollapsedRail()">
-      <div
-        class="brand-mark"
-        aria-hidden="true"
-        [matTooltip]="isCollapsedRail() ? 'Farm Management' : ''"
-        matTooltipPosition="right"
-      >
-        <mat-icon>eco</mat-icon>
-      </div>
-      <span class="brand-title">Farm Management</span>
+      @if (isCollapsedRail()) {
+        <div
+          class="brand-mark brand-mark-collapsed"
+          aria-hidden="true"
+          matTooltip="FarmNxt"
+          matTooltipPosition="right"
+        >
+          <img src="assets/images/farmnxt-mark.png" alt="FarmNxt" class="sidebar-brand-mark-img" />
+        </div>
+      } @else {
+        <div class="brand-logo-wrapper" matTooltip="FarmNxt" matTooltipPosition="right">
+          <img src="assets/images/farmnxt-logo.png" alt="FarmNxt" class="sidebar-brand-logo" />
+        </div>
+      }
       <button
         type="button"
         class="sidebar-toggle-btn"
@@ -201,11 +206,11 @@
     <div
       class="navigation-footer"
       [class.footer-collapsed]="isCollapsedRail()"
-      [matTooltip]="isCollapsedRail() ? 'Farm Management v1.0' : ''"
+      [matTooltip]="isCollapsedRail() ? 'FarmNxt v1.0' : ''"
       matTooltipPosition="right"
     >
       <mat-icon aria-hidden="true">eco</mat-icon>
-      <span class="footer-text">Farm Management v1.0</span>
+      <span class="footer-text">FarmNxt v1.0</span>
     </div>
   </mat-sidenav>
 

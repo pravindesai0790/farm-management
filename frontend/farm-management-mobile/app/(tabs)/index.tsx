@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Modal,
   FlatList,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../src/core/auth/useAuthStore';
@@ -99,6 +100,13 @@ export default function MasterDataSyncScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Screen Header */}
         <View style={styles.header}>
+          <View style={styles.headerTopRow}>
+            <Image
+              source={require('../../assets/farmnxt-logo.png')}
+              style={styles.headerBrandLogo}
+              resizeMode="contain"
+            />
+          </View>
           <Text style={styles.headerTitle}>Master Data & Sync</Text>
           <Text style={styles.headerSubtitle}>
             {user?.organizationName ? `Organization: ${user.organizationName}` : 'Offline Field Cache'}
@@ -317,6 +325,13 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: 14,
+  },
+  headerTopRow: {
+    marginBottom: 8,
+  },
+  headerBrandLogo: {
+    width: 130,
+    height: 36,
   },
   headerTitle: {
     fontSize: 24,
