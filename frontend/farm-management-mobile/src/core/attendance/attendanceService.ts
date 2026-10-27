@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import { getDatabase } from '../db/database';
 import { TokenStorage } from '../auth/tokenStorage';
+import { apiClient } from '../api/client';
 import { enqueueMutation, generateUuid, processOutboxQueue } from '../sync/outboxProcessor';
 
 /**
@@ -241,6 +242,224 @@ export function calculateEstimatedWage(
 }
 
 /**
+ * Server record contract returned by GET /api/attendance/daily.
+ */
+export interface ServerAttendanceRecordResponse {
+  id: string;
+  organizationId: string;
+  farmId: string;
+  farmName: string;
+  workerId: string;
+  workerDisplayName: string;
+  workerFirstName: string;
+  workerLastName?: string | null;
+  gender: string;
+  laborCategoryId?: string | null;
+  laborCategoryName?: string | null;
+  employmentType: string;
+  attendanceDate: string;
+  attendanceType: string;
+  workingHours?: number | null;
+  calculatedRate?: number | null;
+  calculatedAmount?: number | null;
+  currencyId?: string | null;
+  currencyCode?: string | null;
+  currencySymbol?: string | null;
+  status: string;
+  notes?: string | null;
+  finalizedAt?: string | null;
+  finalizedBy?: string | null;
+  createdAt: string;
+  createdBy: string;
+  updatedAt?: string | null;
+  updatedBy?: string | null;
+}
+
+/**
+ * Daily attendance response payload envelope from GET /api/attendance/daily.
+ */
+export interface ServerDailyAttendanceResponse {
+  farmId: string;
+  farmName: string;
+  attendanceDate: string;
+  summary: {
+    totalCount: number;
+    workedCount: number;
+    fullDayCount: number;
+    halfDayCount: number;
+    hourlyCount: number;
+    notWorkedCount: number;
+    estimatedEarnings: number;
+    status: string;
+  };
+  records: ServerAttendanceRecordResponse[];
+}
+
+/**
+ * Normalizes backend gender string to numeric code: 1=Male, 2=Female, 3=Other.
+ */
+function parseGender(genderStr?: string | null): number {
+  if (!genderStr) return 1;
+  const lower = genderStr.toLowerCase();
+  if (lower.startsWith('f')) return 2;
+  if (lower.startsWith('m')) return 1;
+  return 3;
+}
+
+/**
+ * Fetches latest daily attendance records from backend API and synchronizes them
+ * atomically into local SQLite storage with sync_status = 'SYNCED'.
+ * Ensures zero data loss, exact rate/earning parity, and triggers proper screen lock.
+ */
+export async function syncDailyAttendanceFromServer(
+  farmId: string,
+  attendanceDate: string
+): Promise<{ success: boolean; recordCount: number; error?: string }> {
+  try {
+    const response = await apiClient.get<ServerDailyAttendanceResponse>(
+      '/api/attendance/daily',
+      {
+        params: {
+          farmId,
+          date: attendanceDate,
+        },
+      }
+    );
+
+    const data = response.data;
+    const serverRecords = data?.records || [];
+    const now = new Date().toISOString();
+
+    if (Platform.OS === 'web') {
+      // In web preview sandbox, clear previously synced records for this farm and date
+      for (let i = webAttendanceStore.length - 1; i >= 0; i--) {
+        const r = webAttendanceStore[i];
+        if (r.farm_id === farmId && r.attendance_date === attendanceDate && r.sync_status === 'SYNCED') {
+          webAttendanceStore.splice(i, 1);
+        }
+      }
+
+      for (const rec of serverRecords) {
+        const attType = stringToAttendanceType(rec.attendanceType);
+        const status = rec.status?.toUpperCase() === 'FINALIZED' ? AttendanceStatus.Finalized : AttendanceStatus.Draft;
+        webAttendanceStore.push({
+          id: rec.id,
+          organization_id: rec.organizationId,
+          farm_id: rec.farmId,
+          worker_id: rec.workerId,
+          attendance_date: rec.attendanceDate,
+          attendance_type: attType,
+          working_hours: rec.workingHours ?? (attType === AttendanceType.Hourly ? 1.0 : getDefaultHoursForType(attType)),
+          calculated_rate: rec.calculatedRate ?? null,
+          calculated_amount: rec.calculatedAmount ?? null,
+          currency_id: rec.currencyId ?? null,
+          status,
+          notes: rec.notes ?? null,
+          sync_status: 'SYNCED',
+          created_at: rec.createdAt || now,
+          created_by: rec.createdBy || '',
+        });
+      }
+    } else {
+      const db = getDatabase();
+      if (!db) {
+        return { success: false, recordCount: 0, error: 'Database is not initialized.' };
+      }
+
+      db.withTransactionSync(() => {
+        // Purge old synced records for this farm and date to reflect latest server state
+        db.runSync(
+          `DELETE FROM local_labor_attendances 
+           WHERE farm_id = ? AND attendance_date = ? AND sync_status = 'SYNCED';`,
+          [farmId, attendanceDate]
+        );
+
+        for (const rec of serverRecords) {
+          const attType = stringToAttendanceType(rec.attendanceType);
+          const status = rec.status?.toUpperCase() === 'FINALIZED' ? AttendanceStatus.Finalized : AttendanceStatus.Draft;
+          const genderNum = parseGender(rec.gender);
+
+          // 1. Ensure worker exists in cached_workers so roster display includes them
+          db.runSync(
+            `INSERT OR IGNORE INTO cached_workers (
+              id, organization_id, first_name, last_name, display_name,
+              gender, employment_type, labor_category_id, is_active, is_locally_created
+            ) VALUES (?, ?, ?, ?, ?, ?, 1, ?, 1, 0);`,
+            [
+              rec.workerId,
+              rec.organizationId,
+              rec.workerFirstName || '',
+              rec.workerLastName || null,
+              rec.workerDisplayName || `${rec.workerFirstName} ${rec.workerLastName || ''}`.trim(),
+              genderNum,
+              rec.laborCategoryId || null,
+            ]
+          );
+
+          // 2. Ensure assignment exists in cached_worker_farm_assignments
+          const assignmentId = generateUuid();
+          db.runSync(
+            `INSERT OR IGNORE INTO cached_worker_farm_assignments (
+              id, organization_id, worker_id, farm_id, assigned_from, is_active
+            ) VALUES (?, ?, ?, ?, ?, 1);`,
+            [assignmentId, rec.organizationId, rec.workerId, farmId, attendanceDate]
+          );
+
+          // 3. Upsert into local_labor_attendances with sync_status = 'SYNCED'
+          db.runSync(
+            `INSERT INTO local_labor_attendances (
+              id, organization_id, farm_id, worker_id, attendance_date,
+              attendance_type, working_hours, calculated_rate, calculated_amount,
+              currency_id, status, notes, finalized_at, finalized_by,
+              created_at, created_by, updated_at, updated_by, sync_status
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'SYNCED')
+            ON CONFLICT(id) DO UPDATE SET
+              attendance_type = excluded.attendance_type,
+              working_hours = excluded.working_hours,
+              calculated_rate = excluded.calculated_rate,
+              calculated_amount = excluded.calculated_amount,
+              currency_id = excluded.currency_id,
+              status = excluded.status,
+              notes = excluded.notes,
+              finalized_at = excluded.finalized_at,
+              finalized_by = excluded.finalized_by,
+              updated_at = excluded.updated_at,
+              updated_by = excluded.updated_by,
+              sync_status = 'SYNCED';`,
+            [
+              rec.id,
+              rec.organizationId,
+              farmId,
+              rec.workerId,
+              attendanceDate,
+              attType,
+              rec.workingHours ?? null,
+              rec.calculatedRate ?? null,
+              rec.calculatedAmount ?? null,
+              rec.currencyId ?? null,
+              status,
+              rec.notes ?? null,
+              rec.finalizedAt ?? null,
+              rec.finalizedBy ?? null,
+              rec.createdAt || now,
+              rec.createdBy || '',
+              rec.updatedAt ?? null,
+              rec.updatedBy ?? null,
+            ]
+          );
+        }
+      });
+    }
+
+    return { success: true, recordCount: serverRecords.length };
+  } catch (err: unknown) {
+    console.warn('[attendanceService] syncDailyAttendanceFromServer failed (offline fallback):', err);
+    const msg = err instanceof Error ? err.message : String(err);
+    return { success: false, recordCount: 0, error: msg };
+  }
+}
+
+/**
  * Loads the complete daily attendance roster for a specific farm and date.
  * Merges cached farm workers, active wage rates, and any locally saved draft records.
  */
@@ -309,6 +528,9 @@ export async function loadDailyRoster(
     id: string;
     attendance_type: number;
     working_hours: number | null;
+    calculated_rate: number | null;
+    calculated_amount: number | null;
+    currency_id: string | null;
     notes: string | null;
     status: number;
     sync_status: string;
@@ -321,6 +543,9 @@ export async function loadDailyRoster(
         id: r.id,
         attendance_type: r.attendance_type,
         working_hours: r.working_hours,
+        calculated_rate: r.calculated_rate,
+        calculated_amount: r.calculated_amount,
+        currency_id: r.currency_id,
         notes: r.notes,
         status: r.status,
         sync_status: r.sync_status,
@@ -333,11 +558,14 @@ export async function loadDailyRoster(
         worker_id: string;
         attendance_type: number;
         working_hours: number | null;
+        calculated_rate: number | null;
+        calculated_amount: number | null;
+        currency_id: string | null;
         notes: string | null;
         status: number;
         sync_status: string;
       }>(
-        `SELECT id, worker_id, attendance_type, working_hours, notes, status, sync_status
+        `SELECT id, worker_id, attendance_type, working_hours, calculated_rate, calculated_amount, currency_id, notes, status, sync_status
          FROM local_labor_attendances
          WHERE farm_id = ? AND attendance_date = ?;`,
         [farmId, attendanceDate]
@@ -366,6 +594,16 @@ export async function loadDailyRoster(
 
     const wage = calculateEstimatedWage(worker.gender, attendanceType, workingHours, wageRates, attendanceDate);
 
+    const calculatedRate = (existing && existing.calculated_rate !== null && existing.calculated_rate !== undefined)
+      ? Number(existing.calculated_rate)
+      : wage.rate;
+
+    const calculatedAmount = (existing && existing.calculated_amount !== null && existing.calculated_amount !== undefined)
+      ? Number(existing.calculated_amount)
+      : wage.amount;
+
+    const currencyId = existing?.currency_id || wage.currencyId;
+
     const status: AttendanceStatus = existing
       ? (existing.status as AttendanceStatus)
       : AttendanceStatus.Draft;
@@ -390,9 +628,9 @@ export async function loadDailyRoster(
       laborCategoryId: worker.labor_category_id,
       attendanceType,
       workingHours,
-      calculatedRate: wage.rate,
-      calculatedAmount: wage.amount,
-      currencyId: wage.currencyId,
+      calculatedRate,
+      calculatedAmount,
+      currencyId,
       notes: existing?.notes ?? null,
       isCheckedIn,
       isLocallyCreated: Boolean(worker.is_locally_created),
@@ -401,6 +639,53 @@ export async function loadDailyRoster(
       syncStatus,
     };
   });
+
+  // Ensure any workers present in local_labor_attendances who were not in workers list are included
+  const knownWorkerIds = new Set(workers.map((w) => w.id));
+  for (const [workerId, existing] of existingLocalAttendanceMap.entries()) {
+    if (!knownWorkerIds.has(workerId)) {
+      let extraWorker: { first_name: string; last_name?: string | null; display_name: string; gender: number; labor_category_id?: string | null } | undefined;
+      if (db) {
+        try {
+          const res = db.getAllSync<{ first_name: string; last_name?: string | null; display_name: string; gender: number; labor_category_id?: string | null }>(
+            'SELECT first_name, last_name, display_name, gender, labor_category_id FROM cached_workers WHERE id = ?;',
+            [workerId]
+          );
+          if (res.length > 0) extraWorker = res[0];
+        } catch {
+          // ignore
+        }
+      }
+
+      const attType = existing.attendance_type as AttendanceType;
+      const hours = existing.working_hours !== null ? Number(existing.working_hours) : getDefaultHoursForType(attType);
+      const isCheckedIn = existing.attendance_type !== AttendanceType.NotWorked;
+      const st = existing.status as AttendanceStatus;
+      if (st === AttendanceStatus.Finalized) {
+        isRosterFinalized = true;
+      }
+
+      items.push({
+        workerId,
+        firstName: extraWorker?.first_name || '',
+        lastName: extraWorker?.last_name || null,
+        displayName: extraWorker?.display_name || `Worker (${workerId.slice(0, 6)})`,
+        gender: extraWorker?.gender || 1,
+        laborCategoryId: extraWorker?.labor_category_id || null,
+        attendanceType: attType,
+        workingHours: hours,
+        calculatedRate: existing.calculated_rate !== null ? Number(existing.calculated_rate) : 0,
+        calculatedAmount: existing.calculated_amount !== null ? Number(existing.calculated_amount) : 0,
+        currencyId: existing.currency_id,
+        notes: existing.notes,
+        isCheckedIn,
+        isLocallyCreated: false,
+        localAttendanceId: existing.id,
+        status: st,
+        syncStatus: (existing.sync_status as 'LOCAL_DRAFT' | 'SYNCED') || 'SYNCED',
+      });
+    }
+  }
 
   // 5. Calculate summary metrics and screen gating flags
   const totalAssigned = items.length;

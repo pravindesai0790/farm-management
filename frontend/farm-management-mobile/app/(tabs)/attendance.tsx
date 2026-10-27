@@ -13,12 +13,14 @@ import {
   Platform,
   StatusBar,
   ScrollView,
+  RefreshControl,
 } from 'react-native';
 import { useNetworkStatus } from '../../src/core/network/useNetworkStatus';
 import { useSyncStore } from '../../src/core/sync/syncManager';
 import { getCachedFarms, CachedFarm } from '../../src/core/sync/dataQueries';
 import {
   loadDailyRoster,
+  syncDailyAttendanceFromServer,
   saveOfflineDraft,
   syncDraftOnline,
   finalizeAttendance,
@@ -82,6 +84,7 @@ export default function AttendanceScreen() {
   // UI Interactive States
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSavingOffline, setIsSavingOffline] = useState(false);
   const [isSyncingOnline, setIsSyncingOnline] = useState(false);
   const [isFinalizing, setIsFinalizing] = useState(false);
@@ -115,10 +118,71 @@ export default function AttendanceScreen() {
   }, []);
 
   // 2. Load Daily Roster when Farm or Date Changes
-  const reloadRoster = useCallback(async () => {
+  const reloadRoster = useCallback(
+    async (options?: { skipServerSync?: boolean }) => {
+      if (!selectedFarmId) return;
+      setIsLoading(true);
+      try {
+        if (!options?.skipServerSync && network.isConnected) {
+          await syncDailyAttendanceFromServer(selectedFarmId, attendanceDate);
+        }
+        const { items, summary: s, wageRates: rates } = await loadDailyRoster(selectedFarmId, attendanceDate);
+        setRosterItems(items);
+        setWageRates(rates);
+        setSummary(s);
+        setHasOfflineDraftChanges(false);
+        updateOutboxCount();
+      } catch (err: unknown) {
+        console.warn('[AttendanceScreen] Error loading roster:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [selectedFarmId, attendanceDate, network.isConnected, updateOutboxCount]
+  );
+
+  // Pull-to-Refresh handler to fetch latest server state
+  const handleRefresh = useCallback(async () => {
     if (!selectedFarmId) return;
-    setIsLoading(true);
+
+    if (hasOfflineDraftChanges) {
+      Alert.alert(
+        'Unsaved Local Changes',
+        'You have unsaved offline attendance changes for today. Refreshing will reload server records. Do you wish to continue?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Discard & Refresh',
+            style: 'destructive',
+            onPress: async () => {
+              setIsRefreshing(true);
+              try {
+                if (network.isConnected) {
+                  await syncDailyAttendanceFromServer(selectedFarmId, attendanceDate);
+                }
+                const { items, summary: s, wageRates: rates } = await loadDailyRoster(selectedFarmId, attendanceDate);
+                setRosterItems(items);
+                setWageRates(rates);
+                setSummary(s);
+                setHasOfflineDraftChanges(false);
+                updateOutboxCount();
+              } catch (err: unknown) {
+                console.warn('[AttendanceScreen] Error during pull-to-refresh:', err);
+              } finally {
+                setIsRefreshing(false);
+              }
+            },
+          },
+        ]
+      );
+      return;
+    }
+
+    setIsRefreshing(true);
     try {
+      if (network.isConnected) {
+        await syncDailyAttendanceFromServer(selectedFarmId, attendanceDate);
+      }
       const { items, summary: s, wageRates: rates } = await loadDailyRoster(selectedFarmId, attendanceDate);
       setRosterItems(items);
       setWageRates(rates);
@@ -126,11 +190,11 @@ export default function AttendanceScreen() {
       setHasOfflineDraftChanges(false);
       updateOutboxCount();
     } catch (err: unknown) {
-      console.warn('[AttendanceScreen] Error loading roster:', err);
+      console.warn('[AttendanceScreen] Error during pull-to-refresh:', err);
     } finally {
-      setIsLoading(false);
+      setIsRefreshing(false);
     }
-  }, [selectedFarmId, attendanceDate, updateOutboxCount]);
+  }, [selectedFarmId, attendanceDate, network.isConnected, hasOfflineDraftChanges, updateOutboxCount]);
 
   useEffect(() => {
     reloadRoster();
@@ -354,7 +418,7 @@ export default function AttendanceScreen() {
       const res = await saveOfflineDraft(selectedFarmId, attendanceDate, rosterItems);
       if (res.success) {
         setHasOfflineDraftChanges(false);
-        await reloadRoster();
+        await reloadRoster({ skipServerSync: true });
         Alert.alert(
           'Draft Saved Locally',
           `Successfully saved ${res.savedCount} marked laborer(s) to SQLite storage. You can continue updating or proceed to sync online.`
@@ -623,7 +687,17 @@ export default function AttendanceScreen() {
           <Text style={styles.loadingText}>Loading attendance roster from SQLite...</Text>
         </View>
       ) : filteredRoster.length === 0 ? (
-        <View style={styles.emptyContainer}>
+        <ScrollView
+          contentContainerStyle={styles.emptyContainer}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={handleRefresh}
+              colors={['#2E7D32']}
+              tintColor="#2E7D32"
+            />
+          }
+        >
           <Text style={styles.emptyIcon}>👷</Text>
           <Text style={styles.emptyTitle}>No Workers Found</Text>
           <Text style={styles.emptySubtitle}>
@@ -639,11 +713,19 @@ export default function AttendanceScreen() {
               <Text style={styles.emptyActionButtonText}>+ Quick Add Worker</Text>
             </TouchableOpacity>
           )}
-        </View>
+        </ScrollView>
       ) : (
         <FlatList
           data={filteredRoster}
           keyExtractor={(item) => item.workerId}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={handleRefresh}
+              colors={['#2E7D32']}
+              tintColor="#2E7D32"
+            />
+          }
           renderItem={({ item }) => {
             const isHourly = item.attendanceType === AttendanceType.Hourly;
 
