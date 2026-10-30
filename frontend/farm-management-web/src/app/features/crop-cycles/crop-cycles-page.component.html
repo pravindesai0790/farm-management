@@ -149,10 +149,16 @@
 
           <ng-container matColumnDef="actions">
             <th mat-header-cell *matHeaderCellDef class="text-right">Actions</th>
-            <td mat-cell *matCellDef="let c" class="text-right">
+            <td mat-cell *matCellDef="let c" class="actions-cell text-right">
               <div class="actions-group">
-                <a mat-button class="action-btn" [routerLink]="['/crop-cycles', c.id]">
-                  View
+                <a
+                  mat-icon-button
+                  class="action-icon-btn"
+                  [routerLink]="['/crop-cycles', c.id]"
+                  matTooltip="View crop cycle details"
+                  aria-label="View crop cycle details"
+                >
+                  <mat-icon>visibility</mat-icon>
                 </a>
                 @if (
                   c.status === "PLANNED" &&
@@ -162,6 +168,7 @@
                     mat-icon-button
                     class="action-icon-btn"
                     matTooltip="Edit cycle"
+                    aria-label="Edit cycle"
                     [routerLink]="['/crop-cycles', c.id, 'edit']"
                   >
                     <mat-icon>edit</mat-icon>

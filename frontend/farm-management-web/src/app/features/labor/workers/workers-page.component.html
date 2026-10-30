@@ -116,41 +116,56 @@
 
           <ng-container matColumnDef="actions">
             <th mat-header-cell *matHeaderCellDef class="actions-header">Actions</th>
-            <td mat-cell *matCellDef="let worker" class="actions-cell">
-              <a mat-button [routerLink]="['/labor/workers', worker.id]">View</a>
-
-              @if (permissionService.has("Worker.Update")) {
+            <td mat-cell *matCellDef="let worker" class="actions-cell text-right">
+              <div class="actions-group">
                 <a
                   mat-icon-button
-                  [routerLink]="['/labor/workers', worker.id, 'edit']"
-                  aria-label="Edit worker"
-                  matTooltip="Edit worker"
-                >
-                  <mat-icon>edit</mat-icon>
-                </a>
-              }
-
-              @if (worker.isActive && permissionService.has("Worker.Deactivate")) {
-                <button
-                  mat-icon-button
-                  (click)="changeStatus(worker, false)"
-                  [disabled]="actionInProgress()"
-                  aria-label="Deactivate worker"
-                  matTooltip="Deactivate worker"
-                >
-                  <mat-icon>visibility_off</mat-icon>
-                </button>
-              } @else if (!worker.isActive && permissionService.has("Worker.Activate")) {
-                <button
-                  mat-icon-button
-                  (click)="changeStatus(worker, true)"
-                  [disabled]="actionInProgress()"
-                  aria-label="Activate worker"
-                  matTooltip="Activate worker"
+                  class="action-icon-btn"
+                  [routerLink]="['/labor/workers', worker.id]"
+                  matTooltip="View worker details"
+                  aria-label="View worker details"
                 >
                   <mat-icon>visibility</mat-icon>
-                </button>
-              }
+                </a>
+
+                @if (permissionService.has("Worker.Update")) {
+                  <a
+                    mat-icon-button
+                    class="action-icon-btn"
+                    [routerLink]="['/labor/workers', worker.id, 'edit']"
+                    aria-label="Edit worker"
+                    matTooltip="Edit worker"
+                  >
+                    <mat-icon>edit</mat-icon>
+                  </a>
+                }
+
+                @if (worker.isActive && permissionService.has("Worker.Deactivate")) {
+                  <button
+                    mat-icon-button
+                    color="warn"
+                    class="action-icon-btn"
+                    (click)="changeStatus(worker, false)"
+                    [disabled]="actionInProgress()"
+                    aria-label="Deactivate worker"
+                    matTooltip="Deactivate worker"
+                  >
+                    <mat-icon>person_off</mat-icon>
+                  </button>
+                } @else if (!worker.isActive && permissionService.has("Worker.Activate")) {
+                  <button
+                    mat-icon-button
+                    color="primary"
+                    class="action-icon-btn"
+                    (click)="changeStatus(worker, true)"
+                    [disabled]="actionInProgress()"
+                    aria-label="Activate worker"
+                    matTooltip="Activate worker"
+                  >
+                    <mat-icon>person</mat-icon>
+                  </button>
+                }
+              </div>
             </td>
           </ng-container>
 

@@ -243,8 +243,9 @@ All tables must use the `.table-wrap` container and `.dense-table` class:
    - MUST use tabular numbers (`font-variant-numeric: tabular-nums`).
    - MUST display the measurement unit or currency symbol.
 5. **Actions Column**:
-   - Right-aligned.
-   - Use a 30px stroked/text "View" button plus 32px icon buttons for Edit/Actions with `matTooltip`.
+   - Right-aligned (`class="actions-cell text-right"`).
+   - All inline actions MUST be 32px icon-only buttons (`.action-icon-btn` with `matTooltip` and `aria-label`).
+   - Context/overflow menus retain their existing dropdown menu items untouched.
 6. **Compact Paginator**: Always add `class="compact-paginator"` to `<mat-paginator>`.
 
 ---
@@ -279,7 +280,7 @@ All status values across the application must use the unified `.status-pill` str
 | **Primary CTA** | `<button mat-flat-button color="primary">` | `36–38px` | `0 16px` | Single primary action per view (Save, Create, Submit, Start) |
 | **Secondary Action** | `<button mat-stroked-button>` | `36px` | `0 14px` | Secondary workflows (Filter, Export, Back, Reopen) |
 | **Subtle Action** | `<button mat-button>` | `32–36px` | `0 12px` | Cancel, dismiss, non-intrusive operations |
-| **Table Action** | `<a mat-button class="action-btn">` | `30px` | `0 10px` | In-table View / Review action |
+| **Table Action** | `<a mat-icon-button class="action-icon-btn">` | `32px` | `0` | In-table View / Review action (strictly icon-only with `matTooltip`) |
 | **Icon Action** | `<a mat-icon-button class="action-icon-btn">` | `32px` | `0` | Edit, More options, Delete (always include `matTooltip`) |
 | **Destructive Action**| `<button mat-flat-button color="warn">` | `36px` | `0 16px` | Terminate, Delete, Cancel (requires confirmation modal) |
 

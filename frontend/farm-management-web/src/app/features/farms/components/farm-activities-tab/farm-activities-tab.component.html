@@ -82,14 +82,16 @@
 
           <!-- Actions -->
           <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef class="text-right">Actions</th>
-            <td mat-cell *matCellDef="let element" class="text-right">
+            <th mat-header-cell *matHeaderCellDef class="actions-header text-right">Actions</th>
+            <td mat-cell *matCellDef="let element" class="actions-cell text-right">
               <a
-                mat-button
-                color="primary"
-                [routerLink]="['/labor-activities', element.id]"
+                mat-icon-button
+                class="action-icon-btn"
+                [routerLink]="['/activities/labor-activities', element.id]"
+                matTooltip="View activity details"
+                aria-label="View activity details"
               >
-                Details →
+                <mat-icon>visibility</mat-icon>
               </a>
             </td>
           </ng-container>

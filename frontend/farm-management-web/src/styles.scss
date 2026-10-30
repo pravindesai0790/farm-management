@@ -373,6 +373,59 @@ a {
   }
 }
 
+/* Standard Table Action Columns & Icon Buttons */
+.actions-cell,
+.actions-col,
+.col-actions {
+  text-align: right !important;
+  white-space: nowrap !important;
+  padding-right: 14px !important;
+
+  .actions-group,
+  .action-buttons-group,
+  .row-actions {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+  }
+}
+
+.action-icon-btn {
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  line-height: 32px !important;
+  color: var(--app-muted, #64748b);
+  border-radius: var(--app-radius-sm, 6px);
+
+  mat-icon {
+    font-size: 18px !important;
+    width: 18px !important;
+    height: 18px !important;
+    line-height: 18px !important;
+  }
+
+  &:hover {
+    color: var(--app-ink, #0f172a);
+    background: rgba(0, 0, 0, 0.04);
+  }
+
+  &[color="primary"] {
+    color: var(--app-primary, #15803d);
+    &:hover {
+      background: var(--app-primary-light, #ecfdf5);
+    }
+  }
+
+  &[color="warn"] {
+    color: #b91c1c;
+    &:hover {
+      background: #fef2f2;
+    }
+  }
+}
+
 /* Standard Status Pills / Badges */
 .status-pill,
 .status-badge {

@@ -115,40 +115,58 @@
 
           <!-- Actions Column -->
           <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef>Actions</th>
-            <td mat-cell *matCellDef="let template">
-              <a mat-button [routerLink]="['/crop-lifecycle-templates', template.id]">View</a>
-
-              @if (canModify(template) && permissionService.has("CropLifecycleTemplate.Update")) {
+            <th mat-header-cell *matHeaderCellDef class="actions-header text-right">Actions</th>
+            <td mat-cell *matCellDef="let template" class="actions-cell text-right">
+              <div class="actions-group">
                 <a
                   mat-icon-button
-                  [routerLink]="['/crop-lifecycle-templates', template.id, 'edit']"
-                  matTooltip="Edit template"
+                  class="action-icon-btn"
+                  [routerLink]="['/crop-lifecycle-templates', template.id]"
+                  matTooltip="View template details"
+                  aria-label="View template details"
                 >
-                  <mat-icon>edit</mat-icon>
+                  <mat-icon>visibility</mat-icon>
                 </a>
-              }
 
-              @if (canModify(template)) {
-                @if (template.isActive && permissionService.has("CropLifecycleTemplate.Deactivate")) {
-                  <button
+                @if (canModify(template) && permissionService.has("CropLifecycleTemplate.Update")) {
+                  <a
                     mat-icon-button
-                    [disabled]="template.isDefault"
-                    (click)="changeStatus(template, false)"
-                    [matTooltip]="template.isDefault ? 'Default template cannot be deactivated' : 'Deactivate template'"
+                    class="action-icon-btn"
+                    [routerLink]="['/crop-lifecycle-templates', template.id, 'edit']"
+                    matTooltip="Edit template"
+                    aria-label="Edit template"
                   >
-                    <mat-icon>visibility_off</mat-icon>
-                  </button>
-                } @else if (!template.isActive && permissionService.has("CropLifecycleTemplate.Activate")) {
-                  <button
-                    mat-icon-button
-                    (click)="changeStatus(template, true)"
-                    matTooltip="Activate template"
-                  >
-                    <mat-icon>visibility</mat-icon>
-                  </button>
+                    <mat-icon>edit</mat-icon>
+                  </a>
                 }
-              }
+
+                @if (canModify(template)) {
+                  @if (template.isActive && permissionService.has("CropLifecycleTemplate.Deactivate")) {
+                    <button
+                      mat-icon-button
+                      color="warn"
+                      class="action-icon-btn"
+                      [disabled]="template.isDefault"
+                      (click)="changeStatus(template, false)"
+                      [matTooltip]="template.isDefault ? 'Default template cannot be deactivated' : 'Deactivate template'"
+                      aria-label="Deactivate template"
+                    >
+                      <mat-icon>block</mat-icon>
+                    </button>
+                  } @else if (!template.isActive && permissionService.has("CropLifecycleTemplate.Activate")) {
+                    <button
+                      mat-icon-button
+                      color="primary"
+                      class="action-icon-btn"
+                      (click)="changeStatus(template, true)"
+                      matTooltip="Activate template"
+                      aria-label="Activate template"
+                    >
+                      <mat-icon>check_circle</mat-icon>
+                    </button>
+                  }
+                }
+              </div>
             </td>
           </ng-container>
 

@@ -92,19 +92,6 @@
     justify-content: flex-end;
     gap: 4px;
 
-    .action-btn {
-      height: 30px;
-      line-height: 30px;
-      padding: 0 10px;
-      font-size: 0.8rem;
-      font-weight: 500;
-      color: var(--app-primary, #2d6e4b);
-
-      &:hover {
-        background: var(--app-primary-light, #eaf5ee);
-      }
-    }
-
     .action-icon-btn {
       width: 32px;
       height: 32px;

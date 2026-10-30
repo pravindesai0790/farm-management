@@ -209,12 +209,14 @@
                           </td>
                           <td class="text-center">
                             <button
-                              mat-flat-button
+                              mat-icon-button
                               color="primary"
-                              class="btn-sm"
+                              class="action-icon-btn"
                               (click)="recordPaymentForInvoice(supplier.supplierId, inv.invoiceId)"
+                              matTooltip="Record payment for invoice"
+                              aria-label="Record payment for invoice"
                             >
-                              <mat-icon>payment</mat-icon> Pay
+                              <mat-icon>payment</mat-icon>
                             </button>
                           </td>
                         </tr>

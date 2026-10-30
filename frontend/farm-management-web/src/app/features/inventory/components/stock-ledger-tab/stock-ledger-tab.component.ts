@@ -16,6 +16,7 @@ import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { MatSelectModule } from "@angular/material/select";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { MatTableModule } from "@angular/material/table";
+import { MatTooltipModule } from "@angular/material/tooltip";
 import { finalize, merge } from "rxjs";
 
 import { ActivatedRoute } from "@angular/router";
@@ -48,6 +49,7 @@ import { StockMovementReversalDialogComponent } from "../stock-movement-reversal
     MatProgressSpinnerModule,
     MatSelectModule,
     MatTableModule,
+    MatTooltipModule,
     InventorySubNavComponent,
   ],
   templateUrl: "./stock-ledger-tab.component.html",

@@ -288,24 +288,26 @@
                       <!-- Single Primary Action Button -->
                       @if (canComplete(stage)) {
                         <button
-                          mat-flat-button
+                          mat-icon-button
                           color="primary"
-                          class="btn-compact"
+                          class="action-icon-btn"
                           [disabled]="isLoading || isActionProcessing()"
                           (click)="openActionDialog(stage, 'complete')"
                           matTooltip="Complete current stage and advance"
+                          aria-label="Complete current stage and advance"
                         >
-                          <mat-icon class="btn-icon">check_circle</mat-icon> Complete
+                          <mat-icon>check_circle</mat-icon>
                         </button>
                       } @else if (canReopen(stage)) {
                         <button
-                          mat-button
-                          class="btn-compact btn-subtle-accent"
+                          mat-icon-button
+                          class="action-icon-btn"
                           [disabled]="isLoading || isActionProcessing()"
                           (click)="openActionDialog(stage, 'reopen')"
                           matTooltip="Reopen this stage and reconcile timeline"
+                          aria-label="Reopen this stage and reconcile timeline"
                         >
-                          <mat-icon class="btn-icon">restart_alt</mat-icon> Reopen
+                          <mat-icon>restart_alt</mat-icon>
                         </button>
                       }
 

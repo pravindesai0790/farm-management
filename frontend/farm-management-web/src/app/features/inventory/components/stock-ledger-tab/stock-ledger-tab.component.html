@@ -175,18 +175,18 @@
 
         <!-- Actions -->
         <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef class="text-right">Actions</th>
-          <td mat-cell *matCellDef="let m" class="text-right">
+          <th mat-header-cell *matHeaderCellDef class="actions-header text-right">Actions</th>
+          <td mat-cell *matCellDef="let m" class="actions-cell text-right">
             @if (canReverse(m)) {
               <button
-                mat-stroked-button
+                mat-icon-button
                 color="warn"
-                class="btn-xs"
+                class="action-icon-btn"
                 (click)="openReversalDialog(m)"
-                title="Reverse / void this movement"
+                matTooltip="Reverse this transaction"
+                aria-label="Reverse this transaction"
               >
                 <mat-icon>undo</mat-icon>
-                <span>Reverse</span>
               </button>
             } @else if (m.isReversed) {
               <span class="sub-text text-muted">Voided</span>

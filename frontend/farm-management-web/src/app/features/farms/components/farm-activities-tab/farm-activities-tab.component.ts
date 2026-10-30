@@ -4,6 +4,7 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
 import { MatIconModule } from "@angular/material/icon";
 import { MatTableModule } from "@angular/material/table";
+import { MatTooltipModule } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
 import { PermissionService } from "../../../../core/auth/permission.service";
 import { LaborActivity } from "../../../labor-activities/models/labor-activity.models";
@@ -17,6 +18,7 @@ import { LaborActivity } from "../../../labor-activities/models/labor-activity.m
     MatCardModule,
     MatIconModule,
     MatTableModule,
+    MatTooltipModule,
     RouterLink,
   ],
   templateUrl: "./farm-activities-tab.component.html",

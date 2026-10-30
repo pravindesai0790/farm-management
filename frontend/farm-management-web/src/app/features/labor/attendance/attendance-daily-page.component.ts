@@ -105,7 +105,6 @@ export class AttendanceDailyPageComponent implements OnInit {
     "category",
     "attendanceType",
     "workingHours",
-    "wageRate",
     "earnings",
     "status",
     "actions",

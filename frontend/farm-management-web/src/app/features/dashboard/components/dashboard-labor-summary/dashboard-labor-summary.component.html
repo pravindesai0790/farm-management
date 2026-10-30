@@ -172,15 +172,17 @@
                         {{ fs.status }}
                       </span>
                     </td>
-                    <td>
+                    <td class="text-right">
                       <a
-                        mat-button
+                        mat-icon-button
                         color="primary"
+                        class="action-icon-btn"
                         routerLink="/labor/attendance"
                         [queryParams]="{ farmId: fs.farmId }"
-                        class="table-action-btn"
+                        matTooltip="View Farm Attendance Roster"
+                        aria-label="View Farm Attendance Roster"
                       >
-                        Roster <mat-icon>chevron_right</mat-icon>
+                        <mat-icon>calendar_today</mat-icon>
                       </a>
                     </td>
                   </tr>

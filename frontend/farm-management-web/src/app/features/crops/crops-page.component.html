@@ -65,31 +65,61 @@
           </ng-container>
 
           <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef>Actions</th>
-            <td mat-cell *matCellDef="let crop">
-              <a mat-button [routerLink]="['/crops', crop.id]">View</a>
-              @if (!crop.isSystem && permissionService.has("Crop.Update")) {
-                <a mat-icon-button [routerLink]="['/crops', crop.id, 'edit']">
-                  <mat-icon>edit</mat-icon>
-                </a>
-              }
-              @if (
-                !crop.isSystem &&
-                crop.isActive &&
-                permissionService.has("Crop.Deactivate")
-              ) {
-                <button mat-icon-button (click)="changeStatus(crop, false)">
-                  <mat-icon>visibility_off</mat-icon>
-                </button>
-              } @else if (
-                !crop.isSystem &&
-                !crop.isActive &&
-                permissionService.has("Crop.Activate")
-              ) {
-                <button mat-icon-button (click)="changeStatus(crop, true)">
+            <th mat-header-cell *matHeaderCellDef class="actions-header text-right">Actions</th>
+            <td mat-cell *matCellDef="let crop" class="actions-cell text-right">
+              <div class="actions-group">
+                <a
+                  mat-icon-button
+                  class="action-icon-btn"
+                  [routerLink]="['/crops', crop.id]"
+                  matTooltip="View crop details"
+                  aria-label="View crop details"
+                >
                   <mat-icon>visibility</mat-icon>
-                </button>
-              }
+                </a>
+                @if (!crop.isSystem && permissionService.has("Crop.Update")) {
+                  <a
+                    mat-icon-button
+                    class="action-icon-btn"
+                    [routerLink]="['/crops', crop.id, 'edit']"
+                    matTooltip="Edit crop"
+                    aria-label="Edit crop"
+                  >
+                    <mat-icon>edit</mat-icon>
+                  </a>
+                }
+                @if (
+                  !crop.isSystem &&
+                  crop.isActive &&
+                  permissionService.has("Crop.Deactivate")
+                ) {
+                  <button
+                    mat-icon-button
+                    color="warn"
+                    class="action-icon-btn"
+                    (click)="changeStatus(crop, false)"
+                    matTooltip="Deactivate crop"
+                    aria-label="Deactivate crop"
+                  >
+                    <mat-icon>block</mat-icon>
+                  </button>
+                } @else if (
+                  !crop.isSystem &&
+                  !crop.isActive &&
+                  permissionService.has("Crop.Activate")
+                ) {
+                  <button
+                    mat-icon-button
+                    color="primary"
+                    class="action-icon-btn"
+                    (click)="changeStatus(crop, true)"
+                    matTooltip="Activate crop"
+                    aria-label="Activate crop"
+                  >
+                    <mat-icon>check_circle</mat-icon>
+                  </button>
+                }
+              </div>
             </td>
           </ng-container>
 

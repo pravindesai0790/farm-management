@@ -106,11 +106,13 @@
             <td mat-cell *matCellDef="let farm" class="actions-cell text-right">
               <div class="actions-group">
                 <a
-                  mat-button
-                  class="action-btn"
+                  mat-icon-button
+                  class="action-icon-btn"
                   [routerLink]="['/farms', farm.id]"
+                  matTooltip="View farm details"
+                  aria-label="View farm details"
                 >
-                  View
+                  <mat-icon>visibility</mat-icon>
                 </a>
                 @if (permissionService.has("Farm.Update")) {
                   <a
@@ -126,26 +128,28 @@
                 @if (farm.isActive && permissionService.has("Farm.Deactivate")) {
                   <button
                     mat-icon-button
+                    color="warn"
                     class="action-icon-btn"
                     (click)="changeStatus(farm, false)"
                     [disabled]="actionInProgress()"
                     matTooltip="Deactivate farm"
                     aria-label="Deactivate farm"
                   >
-                    <mat-icon>visibility_off</mat-icon>
+                    <mat-icon>block</mat-icon>
                   </button>
                 } @else if (
                   !farm.isActive && permissionService.has("Farm.Activate")
                 ) {
                   <button
                     mat-icon-button
+                    color="primary"
                     class="action-icon-btn"
                     (click)="changeStatus(farm, true)"
                     [disabled]="actionInProgress()"
                     matTooltip="Activate farm"
                     aria-label="Activate farm"
                   >
-                    <mat-icon>visibility</mat-icon>
+                    <mat-icon>check_circle</mat-icon>
                   </button>
                 }
               </div>

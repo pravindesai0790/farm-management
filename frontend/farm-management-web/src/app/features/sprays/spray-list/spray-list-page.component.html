@@ -299,20 +299,46 @@
               <div class="row-actions">
                 <!-- Primary Action Quick Button -->
                 @if (s.status === 'Draft' && permissionService.has("Spray.Update")) {
-                  <a mat-button class="action-btn" [routerLink]="['/sprays', s.id, 'edit']" matTooltip="Edit Draft">
-                    Edit
+                  <a
+                    mat-icon-button
+                    class="action-icon-btn"
+                    [routerLink]="['/sprays', s.id, 'edit']"
+                    matTooltip="Edit Draft"
+                    aria-label="Edit Draft"
+                  >
+                    <mat-icon>edit</mat-icon>
                   </a>
                 } @else if (s.status === 'Scheduled' && permissionService.has("Spray.Start")) {
-                  <a mat-button color="primary" class="action-btn action-btn-primary" [routerLink]="['/sprays', s.id, 'start']" matTooltip="Start Execution">
-                    Start
+                  <a
+                    mat-icon-button
+                    color="primary"
+                    class="action-icon-btn"
+                    [routerLink]="['/sprays', s.id, 'start']"
+                    matTooltip="Start Application"
+                    aria-label="Start Application"
+                  >
+                    <mat-icon>play_arrow</mat-icon>
                   </a>
                 } @else if (s.status === 'InProgress' && permissionService.has("Spray.Complete")) {
-                  <a mat-button color="primary" class="action-btn action-btn-primary" [routerLink]="['/sprays', s.id, 'complete']" matTooltip="Complete Application">
-                    Complete
+                  <a
+                    mat-icon-button
+                    color="primary"
+                    class="action-icon-btn"
+                    [routerLink]="['/sprays', s.id, 'complete']"
+                    matTooltip="Complete Application"
+                    aria-label="Complete Application"
+                  >
+                    <mat-icon>check_circle</mat-icon>
                   </a>
                 } @else {
-                  <a mat-button class="action-btn" [routerLink]="['/sprays', s.id]" matTooltip="View Details">
-                    View
+                  <a
+                    mat-icon-button
+                    class="action-icon-btn"
+                    [routerLink]="['/sprays', s.id]"
+                    matTooltip="View Details"
+                    aria-label="View Details"
+                  >
+                    <mat-icon>visibility</mat-icon>
                   </a>
                 }
 

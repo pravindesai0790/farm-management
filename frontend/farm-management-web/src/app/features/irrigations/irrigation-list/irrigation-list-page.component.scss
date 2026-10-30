@@ -320,22 +320,10 @@
   justify-content: flex-end;
   gap: 0.25rem;
 
-  .action-btn {
-    font-size: 0.775rem;
-    padding: 0 0.5rem;
-    min-width: 48px;
-    height: 28px;
-    line-height: 28px;
-  }
-
-  .action-btn-primary {
-    font-weight: 600;
-  }
-
   .action-icon-btn {
-    width: 28px;
-    height: 28px;
-    line-height: 28px;
+    width: 32px;
+    height: 32px;
+    line-height: 32px;
 
     mat-icon {
       font-size: 18px;
