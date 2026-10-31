@@ -54,7 +54,7 @@
       <!-- Receipt Metadata Form Fields -->
       <div class="form-section">
         <div class="fields-grid">
-          <mat-form-field appearance="outline" class="w-full">
+          <mat-form-field subscriptSizing="dynamic" appearance="outline" class="w-full">
             <mat-label>Destination Storage Location</mat-label>
             <mat-select formControlName="storageLocationId" placeholder="Select location">
               @for (loc of storageLocations(); track loc.id) {
@@ -67,7 +67,7 @@
             }
           </mat-form-field>
 
-          <mat-form-field appearance="outline" class="w-full">
+          <mat-form-field subscriptSizing="dynamic" appearance="outline" class="w-full">
             <mat-label>Delivery Date</mat-label>
             <input matInput [matDatepicker]="picker" formControlName="movementDate" [max]="today" />
             <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
@@ -77,13 +77,13 @@
             }
           </mat-form-field>
 
-          <mat-form-field appearance="outline" class="w-full">
+          <mat-form-field subscriptSizing="dynamic" appearance="outline" class="w-full">
             <mat-label>Delivery Challan / GRN Ref No.</mat-label>
             <input matInput formControlName="referenceNumber" placeholder="e.g. DC-2026-089 or GRN-101" />
             <mat-icon matPrefix class="field-icon">tag</mat-icon>
           </mat-form-field>
 
-          <mat-form-field appearance="outline" class="w-full">
+          <mat-form-field subscriptSizing="dynamic" appearance="outline" class="w-full">
             <mat-label>Delivery Remarks / Notes</mat-label>
             <input matInput formControlName="notes" placeholder="Batch details, carrier info, inspection notes..." />
             <mat-icon matPrefix class="field-icon">notes</mat-icon>

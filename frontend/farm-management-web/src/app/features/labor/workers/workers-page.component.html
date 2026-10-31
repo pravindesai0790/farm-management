@@ -14,7 +14,7 @@
 <mat-card>
   <mat-card-content>
     <form class="filters" [formGroup]="filterForm">
-      <mat-form-field appearance="outline" class="search-field">
+      <mat-form-field subscriptSizing="dynamic" appearance="outline" class="search-field">
         <mat-label>Search workers</mat-label>
         <input
           matInput
@@ -24,7 +24,7 @@
         <mat-icon matSuffix>search</mat-icon>
       </mat-form-field>
 
-      <mat-form-field appearance="outline" class="filter-field">
+      <mat-form-field subscriptSizing="dynamic" appearance="outline" class="filter-field">
         <mat-label>Status</mat-label>
         <mat-select formControlName="status">
           <mat-option value="all">All statuses</mat-option>
@@ -33,7 +33,7 @@
         </mat-select>
       </mat-form-field>
 
-      <mat-form-field appearance="outline" class="filter-field">
+      <mat-form-field subscriptSizing="dynamic" appearance="outline" class="filter-field">
         <mat-label>Gender</mat-label>
         <mat-select formControlName="gender">
           @for (option of genderOptions; track option.value) {
@@ -42,7 +42,7 @@
         </mat-select>
       </mat-form-field>
 
-      <mat-form-field appearance="outline" class="filter-field">
+      <mat-form-field subscriptSizing="dynamic" appearance="outline" class="filter-field">
         <mat-label>Employment type</mat-label>
         <mat-select formControlName="employmentType">
           @for (option of employmentTypeOptions; track option.value) {

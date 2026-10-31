@@ -24,7 +24,7 @@
 <mat-card>
   <mat-card-content>
     <form class="filters" [formGroup]="filterForm">
-      <mat-form-field appearance="outline" class="filter-field">
+      <mat-form-field subscriptSizing="dynamic" appearance="outline" class="filter-field">
         <mat-label>Gender</mat-label>
         <mat-select formControlName="gender">
           @for (option of genderOptions; track option.value) {
@@ -33,7 +33,7 @@
         </mat-select>
       </mat-form-field>
 
-      <mat-form-field appearance="outline" class="filter-field">
+      <mat-form-field subscriptSizing="dynamic" appearance="outline" class="filter-field">
         <mat-label>Wage type</mat-label>
         <mat-select formControlName="wageType">
           <mat-option value="all">All wage types</mat-option>
@@ -43,7 +43,7 @@
         </mat-select>
       </mat-form-field>
 
-      <mat-form-field appearance="outline" class="filter-field">
+      <mat-form-field subscriptSizing="dynamic" appearance="outline" class="filter-field">
         <mat-label>Status</mat-label>
         <mat-select formControlName="status">
           <mat-option value="all">All statuses</mat-option>
@@ -52,7 +52,7 @@
         </mat-select>
       </mat-form-field>
 
-      <mat-form-field appearance="outline" class="filter-field date-filter">
+      <mat-form-field subscriptSizing="dynamic" appearance="outline" class="filter-field date-filter">
         <mat-label>Effective as of</mat-label>
         <input
           matInput

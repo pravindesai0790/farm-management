@@ -25,7 +25,7 @@
     <mat-card-content>
       <div class="filters-grid">
         <!-- Date Range Filter -->
-        <mat-form-field appearance="outline" class="filter-field date-range-field">
+        <mat-form-field subscriptSizing="dynamic" appearance="outline" class="filter-field date-range-field">
           <mat-label>Date Range</mat-label>
           <mat-date-range-input [rangePicker]="rangePicker">
             <input
@@ -46,7 +46,7 @@
         </mat-form-field>
 
         <!-- Farm Filter -->
-        <mat-form-field appearance="outline" class="filter-field">
+        <mat-form-field subscriptSizing="dynamic" appearance="outline" class="filter-field">
           <mat-label>Farm</mat-label>
           <mat-select [value]="farmId()" (valueChange)="onFarmChange($event)">
             <mat-option value="">All Farms</mat-option>
@@ -57,7 +57,7 @@
         </mat-form-field>
 
         <!-- Worker Filter -->
-        <mat-form-field appearance="outline" class="filter-field">
+        <mat-form-field subscriptSizing="dynamic" appearance="outline" class="filter-field">
           <mat-label>Worker</mat-label>
           <mat-select [value]="workerId()" (valueChange)="onWorkerChange($event)">
             <mat-option value="">All Workers</mat-option>
@@ -68,7 +68,7 @@
         </mat-form-field>
 
         <!-- Attendance Type Filter -->
-        <mat-form-field appearance="outline" class="filter-field">
+        <mat-form-field subscriptSizing="dynamic" appearance="outline" class="filter-field">
           <mat-label>Attendance Type</mat-label>
           <mat-select [value]="attendanceType()" (valueChange)="onAttendanceTypeChange($event)">
             <mat-option value="">All Types</mat-option>
@@ -79,7 +79,7 @@
         </mat-form-field>
 
         <!-- Status Filter -->
-        <mat-form-field appearance="outline" class="filter-field">
+        <mat-form-field subscriptSizing="dynamic" appearance="outline" class="filter-field">
           <mat-label>Status</mat-label>
           <mat-select [value]="status()" (valueChange)="onStatusChange($event)">
             <mat-option value="">All Statuses</mat-option>
@@ -89,7 +89,7 @@
         </mat-form-field>
 
         <!-- Search Input -->
-        <mat-form-field appearance="outline" class="filter-field search-field">
+        <mat-form-field subscriptSizing="dynamic" appearance="outline" class="filter-field search-field">
           <mat-label>Search</mat-label>
           <input
             matInput

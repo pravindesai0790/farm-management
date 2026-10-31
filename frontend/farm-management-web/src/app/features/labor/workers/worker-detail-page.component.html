@@ -512,7 +512,7 @@
               </div>
 
               <div class="date-pickers-group">
-                <mat-form-field appearance="outline" density="compact" class="date-field">
+                <mat-form-field subscriptSizing="dynamic" appearance="outline" density="compact" class="date-field">
                   <mat-label>Period From</mat-label>
                   <input
                     matInput
@@ -524,7 +524,7 @@
                   <mat-datepicker #detailPickerFrom />
                 </mat-form-field>
 
-                <mat-form-field appearance="outline" density="compact" class="date-field">
+                <mat-form-field subscriptSizing="dynamic" appearance="outline" density="compact" class="date-field">
                   <mat-label>Period To</mat-label>
                   <input
                     matInput
@@ -786,7 +786,7 @@
 
               <!-- Table Filters -->
               <div class="table-filters-area">
-                <mat-form-field appearance="outline" density="compact" class="filter-field">
+                <mat-form-field subscriptSizing="dynamic" appearance="outline" density="compact" class="filter-field">
                   <mat-label>Transaction Type</mat-label>
                   <mat-select
                     [value]="selectedTxType()"
@@ -801,7 +801,7 @@
                   </mat-select>
                 </mat-form-field>
 
-                <mat-form-field appearance="outline" density="compact" class="filter-field">
+                <mat-form-field subscriptSizing="dynamic" appearance="outline" density="compact" class="filter-field">
                   <mat-label>Status</mat-label>
                   <mat-select
                     [value]="selectedStatus()"

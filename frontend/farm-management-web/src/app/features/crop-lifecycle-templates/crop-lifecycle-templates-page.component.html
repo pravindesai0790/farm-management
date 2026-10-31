@@ -14,7 +14,7 @@
 <mat-card>
   <mat-card-content>
     <form class="filters" [formGroup]="filterForm">
-      <mat-form-field appearance="outline">
+      <mat-form-field subscriptSizing="dynamic" appearance="outline">
         <mat-label>Crop</mat-label>
         <mat-select formControlName="cropId">
           <mat-option value="all">All Crops</mat-option>
@@ -24,7 +24,7 @@
         </mat-select>
       </mat-form-field>
 
-      <mat-form-field appearance="outline">
+      <mat-form-field subscriptSizing="dynamic" appearance="outline">
         <mat-label>Status</mat-label>
         <mat-select formControlName="status">
           <mat-option value="all">All</mat-option>

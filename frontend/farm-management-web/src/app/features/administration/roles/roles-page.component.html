@@ -13,7 +13,7 @@
 <mat-card>
   <mat-card-content>
     <form class="filters" [formGroup]="filterForm">
-      <mat-form-field appearance="outline" class="search-field"
+      <mat-form-field subscriptSizing="dynamic" appearance="outline" class="search-field"
         ><mat-label>Search roles</mat-label
         ><mat-icon matIconPrefix>search</mat-icon
         ><input
@@ -21,7 +21,7 @@
           formControlName="search"
           placeholder="Name or description"
       /></mat-form-field>
-      <mat-form-field appearance="outline" class="status-field"
+      <mat-form-field subscriptSizing="dynamic" appearance="outline" class="status-field"
         ><mat-label>Status</mat-label
         ><mat-select formControlName="status"
           ><mat-option value="all">All roles</mat-option

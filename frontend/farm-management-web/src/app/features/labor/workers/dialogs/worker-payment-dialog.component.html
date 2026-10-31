@@ -87,7 +87,7 @@
     <form [formGroup]="form" (ngSubmit)="submit()" class="payment-form">
       <div class="form-row two-cols">
         <!-- Payment Date -->
-        <mat-form-field appearance="outline">
+        <mat-form-field subscriptSizing="dynamic" appearance="outline">
           <mat-label>Payment Date</mat-label>
           <input
             matInput
@@ -103,7 +103,7 @@
         </mat-form-field>
 
         <!-- Payment Type -->
-        <mat-form-field appearance="outline">
+        <mat-form-field subscriptSizing="dynamic" appearance="outline">
           <mat-label>Payment Type</mat-label>
           <mat-select formControlName="paymentType" required>
             @for (type of paymentTypes; track type.value) {
@@ -120,7 +120,7 @@
 
       <div class="form-row two-cols">
         <!-- Amount -->
-        <mat-form-field appearance="outline">
+        <mat-form-field subscriptSizing="dynamic" appearance="outline">
           <mat-label>Amount</mat-label>
           <span matTextPrefix class="prefix-currency">{{ currencySymbol() }}&nbsp;</span>
           <input
@@ -146,7 +146,7 @@
         </mat-form-field>
 
         <!-- Currency -->
-        <mat-form-field appearance="outline">
+        <mat-form-field subscriptSizing="dynamic" appearance="outline">
           <mat-label>Currency</mat-label>
           <mat-select formControlName="currencyId" required>
             @for (c of currencies(); track c.id) {
@@ -163,7 +163,7 @@
 
       <div class="form-row two-cols">
         <!-- Payment Method -->
-        <mat-form-field appearance="outline">
+        <mat-form-field subscriptSizing="dynamic" appearance="outline">
           <mat-label>Payment Method</mat-label>
           <mat-select formControlName="paymentMethod" required>
             @for (m of paymentMethods; track m.value) {
@@ -178,7 +178,7 @@
         </mat-form-field>
 
         <!-- Reference Number -->
-        <mat-form-field appearance="outline">
+        <mat-form-field subscriptSizing="dynamic" appearance="outline">
           <mat-label>Reference / Receipt No.</mat-label>
           <input
             matInput
@@ -190,7 +190,7 @@
 
       <!-- Applicable Period (Optional) -->
       <div class="form-row two-cols">
-        <mat-form-field appearance="outline">
+        <mat-form-field subscriptSizing="dynamic" appearance="outline">
           <mat-label>Applicable Period From</mat-label>
           <input
             matInput
@@ -202,7 +202,7 @@
           <mat-datepicker #periodFromPicker></mat-datepicker>
         </mat-form-field>
 
-        <mat-form-field appearance="outline">
+        <mat-form-field subscriptSizing="dynamic" appearance="outline">
           <mat-label>Applicable Period To</mat-label>
           <input
             matInput
@@ -222,7 +222,7 @@
       }
 
       <!-- Notes -->
-      <mat-form-field appearance="outline" class="full-width">
+      <mat-form-field subscriptSizing="dynamic" appearance="outline" class="full-width">
         <mat-label>Notes / Comments</mat-label>
         <textarea
           matInput

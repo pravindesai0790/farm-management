@@ -14,11 +14,11 @@
 <mat-card>
   <mat-card-content>
     <form class="filters" [formGroup]="filterForm">
-      <mat-form-field appearance="outline">
+      <mat-form-field subscriptSizing="dynamic" appearance="outline">
         <mat-label>Search crops</mat-label>
         <input matInput formControlName="search" />
       </mat-form-field>
-      <mat-form-field appearance="outline">
+      <mat-form-field subscriptSizing="dynamic" appearance="outline">
         <mat-label>Status</mat-label>
         <mat-select formControlName="status">
           <mat-option value="all">All</mat-option>

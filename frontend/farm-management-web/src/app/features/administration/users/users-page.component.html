@@ -14,12 +14,12 @@
 <mat-card>
   <mat-card-content>
     <form class="filters" [formGroup]="filterForm">
-      <mat-form-field appearance="outline" class="search-field">
+      <mat-form-field subscriptSizing="dynamic" appearance="outline" class="search-field">
         <mat-label>Search users</mat-label>
         <mat-icon matIconPrefix>search</mat-icon>
         <input matInput formControlName="search" placeholder="Name or email" />
       </mat-form-field>
-      <mat-form-field appearance="outline" class="status-field">
+      <mat-form-field subscriptSizing="dynamic" appearance="outline" class="status-field">
         <mat-label>Status</mat-label>
         <mat-select formControlName="status">
           <mat-option value="all">All users</mat-option>

@@ -82,7 +82,7 @@
 
   <!-- Reversal Form -->
   <form [formGroup]="form" (ngSubmit)="submit()" id="reversalForm" class="reversal-form">
-    <mat-form-field appearance="outline" class="full-width">
+    <mat-form-field subscriptSizing="dynamic" appearance="outline" class="full-width">
       <mat-label>Reversal Effective Date</mat-label>
       <input
         matInput
@@ -99,7 +99,7 @@
       }
     </mat-form-field>
 
-    <mat-form-field appearance="outline" class="full-width">
+    <mat-form-field subscriptSizing="dynamic" appearance="outline" class="full-width">
       <mat-label>Reason for Reversal / Voiding</mat-label>
       <textarea
         matInput

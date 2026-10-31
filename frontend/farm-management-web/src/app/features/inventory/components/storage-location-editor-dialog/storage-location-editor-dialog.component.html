@@ -5,7 +5,7 @@
 
 <mat-dialog-content>
   <form [formGroup]="form" class="editor-form">
-    <mat-form-field appearance="outline" class="full-width">
+    <mat-form-field subscriptSizing="dynamic" appearance="outline" class="full-width">
       <mat-label>Farm</mat-label>
       <mat-select formControlName="farmId">
         @for (farm of farms(); track farm.id) {
@@ -18,13 +18,13 @@
       }
     </mat-form-field>
 
-    <mat-form-field appearance="outline" class="full-width">
+    <mat-form-field subscriptSizing="dynamic" appearance="outline" class="full-width">
       <mat-label>Storage Location name</mat-label>
       <input matInput formControlName="name" placeholder="e.g. Main Chemical Shed, Warehouse B" />
       <mat-error>Location name is required</mat-error>
     </mat-form-field>
 
-    <mat-form-field appearance="outline" class="full-width">
+    <mat-form-field subscriptSizing="dynamic" appearance="outline" class="full-width">
       <mat-label>Description</mat-label>
       <textarea matInput formControlName="description" rows="3" placeholder="Optional notes or access instructions"></textarea>
     </mat-form-field>

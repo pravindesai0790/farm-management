@@ -20,7 +20,7 @@
 
       <div class="form-grid">
         <!-- Farm -->
-        <mat-form-field appearance="outline" class="full-width">
+        <mat-form-field subscriptSizing="dynamic" appearance="outline" class="full-width">
           <mat-label>Farm</mat-label>
           <mat-select formControlName="farmId" placeholder="Select farm">
             @for (farm of farms(); track farm.id) {
@@ -33,7 +33,7 @@
         </mat-form-field>
 
         <!-- Category -->
-        <mat-form-field appearance="outline" class="half-width">
+        <mat-form-field subscriptSizing="dynamic" appearance="outline" class="half-width">
           <mat-label>Expense Category</mat-label>
           <mat-select formControlName="expenseCategoryId" placeholder="Select category">
             @for (cat of categories(); track cat.id) {
@@ -46,7 +46,7 @@
         </mat-form-field>
 
         <!-- Expense Date -->
-        <mat-form-field appearance="outline" class="half-width">
+        <mat-form-field subscriptSizing="dynamic" appearance="outline" class="half-width">
           <mat-label>Expense Date</mat-label>
           <input
             matInput
@@ -63,7 +63,7 @@
         </mat-form-field>
 
         <!-- Amount -->
-        <mat-form-field appearance="outline" class="half-width">
+        <mat-form-field subscriptSizing="dynamic" appearance="outline" class="half-width">
           <mat-label>Amount</mat-label>
           <input matInput type="number" step="0.01" min="0.01" formControlName="amount" placeholder="0.00" />
           @if (form.controls.amount.hasError('required') && form.controls.amount.touched) {
@@ -75,7 +75,7 @@
         </mat-form-field>
 
         <!-- Currency -->
-        <mat-form-field appearance="outline" class="half-width">
+        <mat-form-field subscriptSizing="dynamic" appearance="outline" class="half-width">
           <mat-label>Currency</mat-label>
           <mat-select formControlName="currencyId" placeholder="Select currency">
             @for (curr of currencies(); track curr.id) {
@@ -88,7 +88,7 @@
         </mat-form-field>
 
         <!-- Description -->
-        <mat-form-field appearance="outline" class="full-width">
+        <mat-form-field subscriptSizing="dynamic" appearance="outline" class="full-width">
           <mat-label>Description</mat-label>
           <textarea
             matInput
@@ -105,7 +105,7 @@
         </mat-form-field>
 
         <!-- Optional Supplier -->
-        <mat-form-field appearance="outline" class="half-width">
+        <mat-form-field subscriptSizing="dynamic" appearance="outline" class="half-width">
           <mat-label>Supplier (Optional)</mat-label>
           <mat-select formControlName="supplierId" placeholder="None / Direct expense">
             <mat-option value="">None (Direct)</mat-option>
@@ -116,7 +116,7 @@
         </mat-form-field>
 
         <!-- Optional Reference Number -->
-        <mat-form-field appearance="outline" class="half-width">
+        <mat-form-field subscriptSizing="dynamic" appearance="outline" class="half-width">
           <mat-label>Reference / Receipt # (Optional)</mat-label>
           <input matInput formControlName="referenceNumber" placeholder="e.g. REC-12048" />
         </mat-form-field>
@@ -130,7 +130,7 @@
         </div>
 
         <!-- Farm Area -->
-        <mat-form-field appearance="outline" class="half-width">
+        <mat-form-field subscriptSizing="dynamic" appearance="outline" class="half-width">
           <mat-label>Farm Area / Zone</mat-label>
           <mat-select formControlName="farmAreaId">
             <mat-option value="">None</mat-option>
@@ -141,7 +141,7 @@
         </mat-form-field>
 
         <!-- Plantation -->
-        <mat-form-field appearance="outline" class="half-width">
+        <mat-form-field subscriptSizing="dynamic" appearance="outline" class="half-width">
           <mat-label>Plantation</mat-label>
           <mat-select formControlName="plantationId">
             <mat-option value="">None</mat-option>
@@ -152,7 +152,7 @@
         </mat-form-field>
 
         <!-- Crop Cycle -->
-        <mat-form-field appearance="outline" class="half-width">
+        <mat-form-field subscriptSizing="dynamic" appearance="outline" class="half-width">
           <mat-label>Crop Cycle</mat-label>
           <mat-select formControlName="cropCycleId">
             <mat-option value="">None</mat-option>
@@ -163,7 +163,7 @@
         </mat-form-field>
 
         <!-- Crop Cycle Stage -->
-        <mat-form-field appearance="outline" class="half-width">
+        <mat-form-field subscriptSizing="dynamic" appearance="outline" class="half-width">
           <mat-label>Crop Cycle Stage</mat-label>
           <mat-select formControlName="cropCycleStageId">
             <mat-option value="">None</mat-option>
@@ -174,7 +174,7 @@
         </mat-form-field>
 
         <!-- Attachment Reference / URL -->
-        <mat-form-field appearance="outline" class="full-width">
+        <mat-form-field subscriptSizing="dynamic" appearance="outline" class="full-width">
           <mat-label>Attachment URL / Document Reference (Optional)</mat-label>
           <input
             matInput
