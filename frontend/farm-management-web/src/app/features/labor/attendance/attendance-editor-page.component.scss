@@ -5,7 +5,7 @@
   justify-content: center;
   min-height: 280px;
   gap: 1rem;
-  color: #64748b;
+  color: var(--app-muted);
   font-size: 0.95rem;
 }
 
@@ -39,7 +39,7 @@
       display: inline-flex;
       align-items: center;
       gap: 0.35rem;
-      color: #64748b;
+      color: var(--app-muted);
       text-decoration: none;
       font-size: 0.85rem;
       font-weight: 500;
@@ -51,7 +51,7 @@
       }
 
       &:hover {
-        color: #1e293b;
+        color: var(--app-ink);
       }
     }
   }
@@ -102,7 +102,7 @@
   .subtitle {
     margin: 0.35rem 0 0;
     font-size: 0.9rem;
-    color: #64748b;
+    color: var(--app-muted);
   }
 }
 
@@ -160,7 +160,7 @@
 
 .form-card {
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--app-border);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 
   .form-card-content {
@@ -176,7 +176,7 @@
   align-items: center;
   justify-content: space-between;
   background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--app-border);
   border-radius: 8px;
   padding: 0.75rem 1rem;
   flex-wrap: wrap;
@@ -191,14 +191,14 @@
       font-size: 0.7rem;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      color: #64748b;
+      color: var(--app-muted);
       font-weight: 500;
     }
 
     .col-val {
       font-size: 0.85rem;
       font-weight: 600;
-      color: #1e293b;
+      color: var(--app-ink);
     }
   }
 }
@@ -307,7 +307,7 @@
 
         &.amount {
           font-size: 1.1rem;
-          color: #15803d;
+          color: var(--app-success);
         }
       }
     }

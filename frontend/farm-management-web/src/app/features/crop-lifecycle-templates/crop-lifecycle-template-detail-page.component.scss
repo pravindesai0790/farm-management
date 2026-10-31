@@ -82,7 +82,7 @@
     color: #6b21a8;
   }
   &.org-badge {
-    background: #f1f5f9;
+    background: var(--app-border-light);
     color: #475569;
   }
 }
@@ -96,8 +96,8 @@
   background: #dcfce7;
   color: #166534;
   &.status-pill-inactive {
-    background: #f1f5f9;
-    color: #64748b;
+    background: var(--app-border-light);
+    color: var(--app-muted);
   }
 }
 
@@ -115,13 +115,13 @@
     .label {
       font-size: 0.8rem;
       font-weight: 600;
-      color: #64748b;
+      color: var(--app-muted);
       text-transform: uppercase;
       letter-spacing: 0.04em;
     }
     .value {
       font-size: 0.95rem;
-      color: #1e293b;
+      color: var(--app-ink);
       &.highlight-text {
         font-size: 1.1rem;
         color: #0284c7;
@@ -230,7 +230,7 @@
 }
 
 .desc-text-cell {
-  color: #64748b;
+  color: var(--app-muted);
   font-size: 0.875rem;
   max-width: 300px;
   display: block;

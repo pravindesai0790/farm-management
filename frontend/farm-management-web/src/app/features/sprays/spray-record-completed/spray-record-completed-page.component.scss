@@ -14,7 +14,7 @@
     font-size: 0.75rem;
     font-weight: 600;
     letter-spacing: 0.05em;
-    color: var(--app-primary, #2e7d32);
+    color: var(--app-primary, var(--app-primary));
     margin: 0 0 4px 0;
   }
 
@@ -27,7 +27,7 @@
 
   .subtitle {
     margin: 0;
-    color: var(--app-muted, #5f6368);
+    color: var(--app-muted, var(--app-muted));
     font-size: 0.9rem;
     max-width: 680px;
   }
@@ -105,7 +105,7 @@
   justify-content: center;
   padding: 64px 16px;
   gap: 16px;
-  color: var(--app-muted, #5f6368);
+  color: var(--app-muted, var(--app-muted));
 }
 
 .inline-spinner {
@@ -122,7 +122,7 @@
 .form-card {
   border-radius: var(--app-radius-card, 8px);
   border: 1px solid var(--app-border, #e0e0e0);
-  background: var(--app-surface, #ffffff);
+  background: var(--app-surface, var(--app-surface));
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 
   mat-card-header {
@@ -136,7 +136,7 @@
 
     mat-card-subtitle {
       font-size: 0.8125rem;
-      color: var(--app-muted, #5f6368);
+      color: var(--app-muted, var(--app-muted));
       margin-top: 2px;
     }
   }
@@ -210,7 +210,7 @@
 
   .empty-prod-desc {
     font-size: 0.8125rem;
-    color: var(--app-muted, #5f6368);
+    color: var(--app-muted, var(--app-muted));
     margin: 0;
     max-width: 480px;
   }
@@ -237,7 +237,7 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--app-muted, #5f6368);
+    color: var(--app-muted, var(--app-muted));
     padding: 8px 10px;
     border-bottom: 1px solid var(--app-border, #e0e0e0);
     text-align: left;
@@ -246,7 +246,7 @@
 
   td {
     padding: 8px 10px;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid var(--app-border-light);
     vertical-align: top;
   }
 
@@ -341,13 +341,13 @@
 
 .stock-badge {
   font-size: 0.72rem;
-  color: var(--app-muted, #5f6368);
+  color: var(--app-muted, var(--app-muted));
   margin-left: 4px;
 }
 
 .sku-hint {
   font-size: 0.72rem;
-  color: var(--app-muted, #5f6368);
+  color: var(--app-muted, var(--app-muted));
   margin-left: 4px;
 }
 
@@ -363,7 +363,7 @@
   .unit-symbol {
     font-size: 0.75rem;
     font-weight: 600;
-    color: var(--app-muted, #5f6368);
+    color: var(--app-muted, var(--app-muted));
     white-space: nowrap;
     padding-top: 6px;
   }
@@ -371,7 +371,7 @@
 
 .field-hint {
   font-size: 0.72rem;
-  color: var(--app-muted, #5f6368);
+  color: var(--app-muted, var(--app-muted));
   margin-top: 2px;
 
   &.text-warn {
@@ -380,7 +380,7 @@
 }
 
 .text-muted {
-  color: var(--app-muted, #5f6368);
+  color: var(--app-muted, var(--app-muted));
   display: inline-block;
   padding-top: 6px;
 }

@@ -31,22 +31,22 @@
   }
 
   &:hover {
-    color: var(--app-primary, #2f6f4e);
+    color: var(--app-primary, var(--app-primary));
     background-color: rgba(47, 111, 78, 0.06);
 
     .tab-icon {
-      color: var(--app-primary, #2f6f4e);
+      color: var(--app-primary, var(--app-primary));
     }
   }
 
   &.active {
-    color: var(--app-primary, #2f6f4e);
-    border-bottom: 2px solid var(--app-primary, #2f6f4e);
+    color: var(--app-primary, var(--app-primary));
+    border-bottom: 2px solid var(--app-primary, var(--app-primary));
     background-color: rgba(47, 111, 78, 0.08);
     font-weight: 600;
 
     .tab-icon {
-      color: var(--app-primary, #2f6f4e);
+      color: var(--app-primary, var(--app-primary));
     }
   }
 }

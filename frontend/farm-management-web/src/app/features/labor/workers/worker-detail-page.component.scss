@@ -5,8 +5,8 @@
   display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap;
 }
 .history-header { align-items: flex-end; margin-bottom: 12px; }
-.back-link { margin-bottom: 8px; padding-left: 0; color: #2e7d32; }
-.eyebrow { font-size: 0.8125rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #2e7d32; margin-bottom: 4px; }
+.back-link { margin-bottom: 8px; padding-left: 0; color: var(--app-primary); }
+.eyebrow { font-size: 0.8125rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--app-primary); margin-bottom: 4px; }
 .title-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .title-row h2 { margin: 0; font-size: 1.75rem; font-weight: 600; }
 .subtext { margin-top: 6px; color: #616161; font-size: 0.9375rem; }
@@ -17,7 +17,7 @@
   display: inline-flex; align-items: center; padding: 3px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 12px;
 }
 .badge-type { background: #e8f5e9; color: #1b5e20; }
-.status-pill { background: #e8f5e9; color: #2e7d32; }
+.status-pill { background: #e8f5e9; color: var(--app-primary); }
 .status-pill-inactive, .period-pill, .settlement-badge { background: #f5f5f5; color: #616161; }
 
 [data-status="SETTLED"], [data-status="COMPLETED"], [data-status="APPROVED"], [data-tx-type="PARTIAL_PAYOUT"] { background: #e8f5e9; color: #1b5e20; }
@@ -34,7 +34,7 @@
 
 .overview-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
 .wide-card { grid-column: 1 / -1; }
-.card-icon { display: flex; align-items: center; justify-content: center; background: #e8f5e9; color: #2e7d32; border-radius: 50%; }
+.card-icon { display: flex; align-items: center; justify-content: center; background: #e8f5e9; color: var(--app-primary); border-radius: 50%; }
 .info-list { display: flex; flex-direction: column; gap: 12px; padding-top: 12px; }
 .info-item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 0, 0, 0.05); padding-bottom: 8px; }
 .info-item:last-child { border-bottom: none; }
@@ -55,7 +55,7 @@
 
 .financial-toolbar { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; background: #fafafa; padding: 12px 16px; border-radius: 8px; border: 1px solid #e0e0e0; }
 .preset-chip { font-size: 0.8125rem; height: 36px; border-radius: 18px; border-color: #ccc; color: #555; }
-.preset-chip.active-preset { background: #2e7d32; color: #fff; border-color: #2e7d32; font-weight: 600; }
+.preset-chip.active-preset { background: var(--app-primary); color: #fff; border-color: var(--app-primary); font-weight: 600; }
 .date-field { width: 155px; margin-bottom: -1.25em; }
 .reset-btn { color: #d32f2f; font-size: 0.8125rem; mat-icon { font-size: 18px; width: 18px; height: 18px; } }
 .actions-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding-top: 6px; border-top: 1px solid rgba(0, 0, 0, 0.06); }
@@ -68,14 +68,14 @@
 
 .financial-cards-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 24px; }
 .financial-card { border-radius: 8px; border: 1px solid #e0e0e0; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); display: flex; flex-direction: column; overflow: hidden; padding: 14px;}
-.earnings-card { border-top: 3px solid #2e7d32; }
+.earnings-card { border-top: 3px solid var(--app-primary); }
 .advance-card { border-top: 3px solid #f57c00; }
 .payout-card { border-top: 3px solid #1976d2; }
 
 .card-top-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 16px 10px; border-bottom: 1px solid #f0f0f0; }
 .card-icon-title { display: flex; align-items: center; gap: 10px; }
 .icon-avatar { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; }
-.icon-earnings { background: #e8f5e9; color: #2e7d32; }
+.icon-earnings { background: #e8f5e9; color: var(--app-primary); }
 .icon-advance { background: #fff3e0; color: #e65100; }
 .icon-payout { background: #e3f2fd; color: #1565c0; }
 .card-heading { margin: 0; font-size: 0.9375rem; font-weight: 600; color: #212121; }
@@ -85,7 +85,7 @@
 .hero-label { display: block; font-size: 0.7813rem; text-transform: uppercase; letter-spacing: 0.04em; color: #757575; margin-bottom: 2px; }
 .hero-val { font-size: 1.5rem; font-weight: 700; line-height: 1.2; }
 
-.positive-val, .hero-val-earnings, .amount-earning, .hero-val-outstanding.settled { color: #2e7d32; }
+.positive-val, .hero-val-earnings, .amount-earning, .hero-val-outstanding.settled { color: var(--app-primary); }
 .negative-val, .deduction-val, .hero-val-outstanding { color: #c62828; }
 .carried-active, .hero-val-advance { color: #e65100; }
 .amount-payment, .allocation-text { color: #1565c0; }

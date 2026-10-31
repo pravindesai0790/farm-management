@@ -18,7 +18,7 @@
 .section-card {
   border: 1px solid var(--app-border, #dce5de);
   border-radius: 10px;
-  background: var(--app-surface, #ffffff);
+  background: var(--app-surface, var(--app-surface));
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 
   .section-header {
@@ -50,7 +50,7 @@
           height: 15px;
         }
 
-        &.icon-emerald { background: #e8f5e9; color: #2e7d32; }
+        &.icon-emerald { background: #e8f5e9; color: var(--app-primary); }
         &.icon-purple { background: #f3e5f5; color: #7b1fa2; }
         &.icon-blue { background: #e3f2fd; color: #1976d2; }
         &.icon-amber { background: #fff8e1; color: #f57f17; }
@@ -118,7 +118,7 @@
   transition: border-color 0.15s ease;
 
   &:hover {
-    border-color: var(--app-primary, #2f6f4e);
+    border-color: var(--app-primary, var(--app-primary));
   }
 
   .cycle-top {
@@ -205,7 +205,7 @@
         color: var(--app-muted, #65746a);
 
         &.completed {
-          color: #2e7d32;
+          color: var(--app-primary);
           font-weight: 600;
           .check-mark { font-weight: 700; margin-right: 1px; }
         }
@@ -234,7 +234,7 @@
 
       .progress-fill {
         height: 100%;
-        background: linear-gradient(90deg, #2e7d32, #7b1fa2);
+        background: linear-gradient(90deg, var(--app-primary), #7b1fa2);
         border-radius: 9999px;
         transition: width 0.3s ease;
       }
@@ -258,7 +258,7 @@
 
     .lifecycle-link {
       font-weight: 700;
-      color: var(--app-primary, #2f6f4e);
+      color: var(--app-primary, var(--app-primary));
       text-decoration: none;
 
       &:hover { text-decoration: underline; }
@@ -387,7 +387,7 @@
     .details-link {
       font-size: 0.72rem;
       font-weight: 600;
-      color: var(--app-primary, #2f6f4e);
+      color: var(--app-primary, var(--app-primary));
       text-decoration: none;
 
       &:hover { text-decoration: underline; }
@@ -436,7 +436,7 @@
     &.highlight {
       background: #e8f3ec;
 
-      .stat-num { color: var(--app-primary, #2f6f4e); }
+      .stat-num { color: var(--app-primary, var(--app-primary)); }
     }
   }
 }
@@ -459,7 +459,7 @@
 
   &.finalized {
     background: #e8f5e9;
-    color: #2e7d32;
+    color: var(--app-primary);
   }
 }
 

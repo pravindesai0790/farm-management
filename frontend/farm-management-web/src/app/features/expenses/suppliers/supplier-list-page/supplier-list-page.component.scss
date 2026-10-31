@@ -18,7 +18,7 @@
       font-size: 0.75rem;
       font-weight: 600;
       letter-spacing: 0.05em;
-      color: var(--app-primary, #2f6f4e);
+      color: var(--app-primary, var(--app-primary));
       margin: 0 0 4px 0;
     }
 
@@ -68,11 +68,11 @@
 
       &.primary {
         background-color: #eaf3ed;
-        color: #2f6f4e;
+        color: var(--app-primary);
       }
       &.success {
         background-color: #dcfce7;
-        color: #15803d;
+        color: var(--app-success);
       }
       &.danger {
         background-color: #fee2e2;

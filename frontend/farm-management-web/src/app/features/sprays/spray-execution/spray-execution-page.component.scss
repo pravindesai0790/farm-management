@@ -14,7 +14,7 @@
   justify-content: center;
   padding: 4rem 1rem;
   gap: 1rem;
-  color: var(--color-text-secondary, #64748b);
+  color: var(--color-text-secondary, var(--app-muted));
 }
 
 .error-banner {
@@ -67,7 +67,7 @@
     font-size: 0.72rem;
     font-weight: 700;
     letter-spacing: 0.08em;
-    color: var(--color-text-secondary, #64748b);
+    color: var(--color-text-secondary, var(--app-muted));
   }
 
   .title-row {
@@ -86,13 +86,13 @@
 
   .ref-badge {
     padding: 0.2rem 0.6rem;
-    background: var(--color-bg-subtle, #f1f5f9);
-    border: 1px solid var(--color-border, #e2e8f0);
+    background: var(--color-bg-subtle, var(--app-border-light));
+    border: 1px solid var(--color-border, var(--app-border));
     border-radius: var(--radius-sm, 4px);
     font-family: monospace;
     font-size: 0.85rem;
     font-weight: 600;
-    color: var(--color-text-primary, #1e293b);
+    color: var(--color-text-primary, var(--app-ink));
   }
 }
 
@@ -163,9 +163,9 @@
 }
 
 .content-card {
-  border: 1px solid var(--color-border, #e2e8f0);
+  border: 1px solid var(--color-border, var(--app-border));
   border-radius: var(--radius-lg, 12px);
-  background: var(--color-surface, #ffffff);
+  background: var(--color-surface, var(--app-surface));
 
   mat-card-header {
     display: flex;
@@ -192,7 +192,7 @@
 
     .context-caption {
       font-size: 0.78rem;
-      color: var(--color-text-secondary, #64748b);
+      color: var(--color-text-secondary, var(--app-muted));
     }
   }
 
@@ -221,13 +221,13 @@
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      color: var(--color-text-secondary, #64748b);
+      color: var(--color-text-secondary, var(--app-muted));
     }
 
     .context-value {
       font-size: 0.88rem;
       font-weight: 600;
-      color: var(--color-text-primary, #1e293b);
+      color: var(--color-text-primary, var(--app-ink));
     }
   }
 }
@@ -268,7 +268,7 @@
 
 .opt-desc {
   font-size: 0.8rem;
-  color: var(--color-text-secondary, #64748b);
+  color: var(--color-text-secondary, var(--app-muted));
 }
 
 // Table Styles
@@ -284,15 +284,15 @@
   th {
     padding: 0.6rem 0.75rem;
     font-weight: 600;
-    color: var(--color-text-secondary, #64748b);
+    color: var(--color-text-secondary, var(--app-muted));
     text-align: left;
     background: var(--color-bg-subtle, #f8fafc);
-    border-bottom: 2px solid var(--color-border, #e2e8f0);
+    border-bottom: 2px solid var(--color-border, var(--app-border));
   }
 
   td {
     padding: 0.65rem 0.75rem;
-    border-bottom: 1px solid var(--color-border, #e2e8f0);
+    border-bottom: 1px solid var(--color-border, var(--app-border));
     vertical-align: middle;
   }
 
@@ -312,12 +312,12 @@
 
   .product-name {
     font-weight: 600;
-    color: var(--color-text-primary, #1e293b);
+    color: var(--color-text-primary, var(--app-ink));
   }
 
   .product-sku {
     font-size: 0.75rem;
-    color: var(--color-text-secondary, #64748b);
+    color: var(--color-text-secondary, var(--app-muted));
     font-family: monospace;
   }
 }
@@ -338,7 +338,7 @@
     font-size: 18px;
     width: 18px;
     height: 18px;
-    color: var(--color-text-secondary, #64748b);
+    color: var(--color-text-secondary, var(--app-muted));
   }
 }
 
@@ -359,7 +359,7 @@
 
   .unit-suffix {
     font-size: 0.8rem;
-    color: var(--color-text-secondary, #64748b);
+    color: var(--color-text-secondary, var(--app-muted));
     margin-right: 0.25rem;
   }
 
@@ -388,7 +388,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 1rem 0;
-  border-top: 1px solid var(--color-border, #e2e8f0);
+  border-top: 1px solid var(--color-border, var(--app-border));
 
   .primary-actions {
     display: flex;
@@ -421,7 +421,7 @@
 
 .sku-hint {
   font-size: 0.75rem;
-  color: var(--color-text-secondary, #64748b);
+  color: var(--color-text-secondary, var(--app-muted));
   margin-left: 0.25rem;
 }
 

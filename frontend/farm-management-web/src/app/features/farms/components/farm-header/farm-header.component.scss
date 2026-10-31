@@ -3,7 +3,7 @@
 }
 
 .farm-header-card {
-  background: var(--app-surface, #ffffff);
+  background: var(--app-surface, var(--app-surface));
   border: 1px solid var(--app-border, #dce5de);
   border-radius: 12px;
   padding: 16px 20px;
@@ -38,7 +38,7 @@
     }
 
     &:hover {
-      color: var(--app-primary, #2f6f4e);
+      color: var(--app-primary, var(--app-primary));
     }
   }
 }
@@ -60,7 +60,7 @@
   padding: 2px 8px;
   border-radius: 9999px;
   background: #e8f5e9;
-  color: #2e7d32;
+  color: var(--app-primary);
   border: 1px solid #c8e6c9;
 
   .status-dot {

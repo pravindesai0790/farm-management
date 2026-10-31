@@ -28,7 +28,7 @@
 .page-title {
   font-size: 1.35rem;
   font-weight: 700;
-  color: var(--app-text, #1e293b);
+  color: var(--app-text, var(--app-ink));
   margin: 0;
   letter-spacing: -0.01em;
 }
@@ -40,22 +40,22 @@
   padding: 3px 10px;
   border-radius: 999px;
   background: var(--app-surface-variant, #f8fafc);
-  border: 1px solid var(--app-border, #e2e8f0);
+  border: 1px solid var(--app-border, var(--app-border));
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--app-muted, #64748b);
+  color: var(--app-muted, var(--app-muted));
 
   mat-icon {
     font-size: 14px;
     width: 14px;
     height: 14px;
-    color: var(--app-primary, #15803d);
+    color: var(--app-primary, var(--app-success));
   }
 }
 
 .page-description {
   font-size: 0.825rem;
-  color: var(--app-muted, #64748b);
+  color: var(--app-muted, var(--app-muted));
   margin: 4px 0 0 0;
 }
 
@@ -126,7 +126,7 @@
 
 .state-text {
   font-size: 0.875rem;
-  color: var(--app-muted, #64748b);
+  color: var(--app-muted, var(--app-muted));
 }
 
 .error-card {
@@ -180,16 +180,16 @@
   gap: 10px;
   padding: 32px 16px;
   background: var(--app-surface-variant, #f8fafc);
-  border: 1px dashed var(--app-border, #e2e8f0);
+  border: 1px dashed var(--app-border, var(--app-border));
   border-radius: var(--app-radius-md, 8px);
-  color: var(--app-muted, #64748b);
+  color: var(--app-muted, var(--app-muted));
   font-size: 0.825rem;
 }
 
 .farm-table-card {
-  border: 1px solid var(--app-border, #e2e8f0);
+  border: 1px solid var(--app-border, var(--app-border));
   border-radius: var(--app-radius-md, 8px);
-  background: var(--app-surface, #ffffff);
+  background: var(--app-surface, var(--app-surface));
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 
   mat-card-content {
@@ -209,14 +209,14 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--app-muted, #64748b);
+    color: var(--app-muted, var(--app-muted));
     margin: 0 0 2px 0;
   }
 
   h2 {
     font-size: 1.1rem;
     font-weight: 700;
-    color: var(--app-text, #1e293b);
+    color: var(--app-text, var(--app-ink));
     margin: 0;
   }
 
@@ -252,19 +252,19 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--app-muted, #64748b);
-    border-bottom: 1px solid var(--app-border, #e2e8f0);
+    color: var(--app-muted, var(--app-muted));
+    border-bottom: 1px solid var(--app-border, var(--app-border));
   }
 
   td {
     padding: 10px 12px;
-    border-bottom: 1px solid var(--app-border-light, #f1f5f9);
-    color: var(--app-text, #1e293b);
+    border-bottom: 1px solid var(--app-border-light, var(--app-border-light));
+    color: var(--app-text, var(--app-ink));
   }
 
   .farm-cell strong {
     font-weight: 600;
-    color: var(--app-text, #1e293b);
+    color: var(--app-text, var(--app-ink));
   }
 
   .allocated-val {
@@ -273,11 +273,11 @@
   }
 
   .available-val {
-    color: var(--app-muted, #64748b);
+    color: var(--app-muted, var(--app-muted));
   }
 
   .plantations-count {
-    background: #f1f5f9;
+    background: var(--app-border-light);
     padding: 2px 8px;
     border-radius: 999px;
     font-size: 0.75rem;
@@ -297,21 +297,21 @@
   .rate-bar {
     flex: 1;
     height: 6px;
-    background: #e2e8f0;
+    background: var(--app-border);
     border-radius: 999px;
     overflow: hidden;
   }
 
   .rate-fill {
     height: 100%;
-    background: var(--app-primary, #15803d);
+    background: var(--app-primary, var(--app-success));
     border-radius: 999px;
   }
 
   .rate-text {
     font-size: 0.75rem;
     font-weight: 600;
-    color: var(--app-text, #1e293b);
+    color: var(--app-text, var(--app-ink));
     min-width: 32px;
   }
 }

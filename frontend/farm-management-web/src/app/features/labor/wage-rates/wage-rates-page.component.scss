@@ -14,7 +14,7 @@
     font-size: 0.75rem;
     font-weight: 600;
     letter-spacing: 0.05em;
-    color: var(--app-primary, #2f6f4e);
+    color: var(--app-primary, var(--app-primary));
     margin: 0 0 4px 0;
   }
 
@@ -43,7 +43,7 @@
   color: #1e4b34;
 
   mat-icon {
-    color: #2f6f4e;
+    color: var(--app-primary);
     font-size: 20px;
     width: 20px;
     height: 20px;
@@ -202,7 +202,7 @@
   border-radius: 999px;
   padding: 4px 9px;
   background: #edf4ee;
-  color: var(--app-primary, #2f6f4e);
+  color: var(--app-primary, var(--app-primary));
   font-size: 0.72rem;
   font-weight: 600;
   white-space: nowrap;

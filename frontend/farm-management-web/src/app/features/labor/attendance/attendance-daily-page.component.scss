@@ -167,7 +167,7 @@
 
   .excluded-tag {
     padding: 3px 8px;
-    background: #ffffff;
+    background: var(--app-surface);
     border-radius: 6px;
     font-size: 0.8rem;
     border: 1px solid #ffcc80;
@@ -418,7 +418,7 @@
 .type-pill {
   border-radius: 12px;
   font-size: 0.75rem;
-  &.type-badge-full-day { background: #e8f5e9; color: #2e7d32; }
+  &.type-badge-full-day { background: #e8f5e9; color: var(--app-primary); }
   &.type-badge-half-day { background: #f3e5f5; color: #7b1fa2; }
   &.type-badge-hourly { background: #e1f5fe; color: #0277bd; }
   &.type-badge-not-worked { background: #eee; color: #616161; }

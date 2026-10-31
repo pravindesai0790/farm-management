@@ -97,7 +97,7 @@
     font-size: 40px;
     width: 40px;
     height: 40px;
-    color: #2e7d32;
+    color: var(--app-primary);
   }
 
   h3 {
@@ -181,8 +181,8 @@
         font-weight: 700;
         margin-top: 2px;
 
-        &.green { color: #2e7d32; }
-        &.zero { color: #2e7d32; }
+        &.green { color: var(--app-primary); }
+        &.zero { color: var(--app-primary); }
         &.warn { color: #d32f2f; }
       }
     }

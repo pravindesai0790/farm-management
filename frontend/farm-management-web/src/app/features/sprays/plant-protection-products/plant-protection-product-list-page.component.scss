@@ -14,7 +14,7 @@
     font-size: 0.75rem;
     font-weight: 600;
     letter-spacing: 0.05em;
-    color: var(--app-primary, #2e7d32);
+    color: var(--app-primary, var(--app-primary));
     margin: 0 0 4px 0;
   }
 
@@ -27,7 +27,7 @@
 
   .subtitle {
     margin: 0;
-    color: var(--app-muted, #5f6368);
+    color: var(--app-muted, var(--app-muted));
     font-size: 0.9rem;
     max-width: 680px;
   }
@@ -43,7 +43,7 @@
 .content-card {
   border-radius: var(--app-radius-card, 8px);
   border: 1px solid var(--app-border, #e0e0e0);
-  background: var(--app-surface, #ffffff);
+  background: var(--app-surface, var(--app-surface));
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
@@ -90,7 +90,7 @@
   justify-content: center;
   padding: 64px 16px;
   gap: 16px;
-  color: var(--app-muted, #5f6368);
+  color: var(--app-muted, var(--app-muted));
 }
 
 .empty-state {
@@ -118,7 +118,7 @@
 
   p {
     margin: 0 0 20px 0;
-    color: var(--app-muted, #5f6368);
+    color: var(--app-muted, var(--app-muted));
     font-size: 0.875rem;
     max-width: 420px;
   }
@@ -141,7 +141,7 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--app-muted, #5f6368);
+    color: var(--app-muted, var(--app-muted));
     padding: 10px 12px;
     border-bottom: 1px solid var(--app-border, #e0e0e0);
     white-space: nowrap;
@@ -149,7 +149,7 @@
 
   td {
     padding: 10px 12px;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid var(--app-border-light);
     font-size: 0.8125rem;
     vertical-align: middle;
   }
@@ -203,11 +203,11 @@
 
   .sku-code {
     font-size: 0.6875rem;
-    background-color: #f1f5f9;
+    background-color: var(--app-border-light);
     color: #475569;
     padding: 1px 5px;
     border-radius: 4px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--app-border);
   }
 }
 
@@ -230,7 +230,7 @@
 .unit-chip {
   display: inline-block;
   font-size: 0.75rem;
-  background-color: #f1f5f9;
+  background-color: var(--app-border-light);
   color: #334155;
   padding: 2px 6px;
   border-radius: 4px;
@@ -260,7 +260,7 @@
 }
 
 .text-muted {
-  color: var(--app-muted, #5f6368);
+  color: var(--app-muted, var(--app-muted));
 }
 
 .text-right {

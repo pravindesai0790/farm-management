@@ -14,7 +14,7 @@
     font-size: 0.75rem;
     font-weight: 600;
     letter-spacing: 0.05em;
-    color: var(--app-primary, #2e7d32);
+    color: var(--app-primary, var(--app-primary));
     margin: 0 0 4px 0;
   }
 
@@ -27,7 +27,7 @@
 
   .subtitle {
     margin: 0;
-    color: var(--app-muted, #5f6368);
+    color: var(--app-muted, var(--app-muted));
     font-size: 0.9rem;
   }
 
@@ -42,7 +42,7 @@
 .content-card {
   border-radius: var(--app-radius-card, 8px);
   border: 1px solid var(--app-border, #e0e0e0);
-  background: var(--app-surface, #ffffff);
+  background: var(--app-surface, var(--app-surface));
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 
   mat-card-content {
@@ -148,7 +148,7 @@
 
   .primary-link {
     font-weight: 600;
-    color: var(--app-primary, #2e7d32);
+    color: var(--app-primary, var(--app-primary));
     text-decoration: none;
     font-size: 0.85rem;
 
@@ -191,7 +191,7 @@
 
   .area-tag {
     font-size: 0.75rem;
-    color: var(--app-muted, #5f6368);
+    color: var(--app-muted, var(--app-muted));
   }
 }
 
@@ -208,7 +208,7 @@
 
   .cycle-label {
     font-size: 0.75rem;
-    color: var(--app-muted, #5f6368);
+    color: var(--app-muted, var(--app-muted));
   }
 
   .stage-tag {
@@ -218,7 +218,7 @@
     padding: 1px 6px;
     border-radius: 4px;
     background: #e8f5e9;
-    color: #2e7d32;
+    color: var(--app-primary);
     font-weight: 500;
   }
 }
@@ -248,13 +248,13 @@
 
   .date-label {
     font-weight: 600;
-    color: var(--app-muted, #5f6368);
+    color: var(--app-muted, var(--app-muted));
     font-size: 0.75rem;
     margin-right: 2px;
   }
 
   .actual-date {
-    color: #15803d;
+    color: var(--app-success);
     font-weight: 500;
   }
 
@@ -268,7 +268,7 @@
   }
 
   .planned-date {
-    color: var(--app-muted, #5f6368);
+    color: var(--app-muted, var(--app-muted));
   }
 }
 
@@ -377,7 +377,7 @@
   justify-content: center;
   padding: 48px 16px;
   gap: 12px;
-  color: var(--app-muted, #5f6368);
+  color: var(--app-muted, var(--app-muted));
   font-size: 0.9rem;
 }
 
@@ -406,7 +406,7 @@
 
   p {
     margin: 0 0 16px 0;
-    color: var(--app-muted, #5f6368);
+    color: var(--app-muted, var(--app-muted));
     font-size: 0.875rem;
     max-width: 360px;
   }

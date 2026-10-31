@@ -1,7 +1,7 @@
 .financial-card {
-  border: 1px solid var(--app-border, #e2e8f0);
+  border: 1px solid var(--app-border, var(--app-border));
   border-radius: var(--app-radius-md, 8px);
-  background: var(--app-surface, #ffffff);
+  background: var(--app-surface, var(--app-surface));
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 
   mat-card-content {
@@ -22,14 +22,14 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--app-muted, #64748b);
+    color: var(--app-muted, var(--app-muted));
     margin: 0 0 2px 0;
   }
 
   h2 {
     font-size: 1.1rem;
     font-weight: 700;
-    color: var(--app-text, #1e293b);
+    color: var(--app-text, var(--app-ink));
     margin: 0;
   }
 }
@@ -60,14 +60,14 @@
   justify-content: center;
   gap: 12px;
   padding: 32px 16px;
-  color: var(--app-muted, #64748b);
+  color: var(--app-muted, var(--app-muted));
   font-size: 0.85rem;
 }
 
 .empty-status {
   text-align: center;
   padding: 24px 12px;
-  color: var(--app-muted, #64748b);
+  color: var(--app-muted, var(--app-muted));
 
   mat-icon {
     font-size: 28px;
@@ -91,18 +91,18 @@
 
 .currency-chip {
   background: var(--app-surface-variant, #f8fafc);
-  border: 1px solid var(--app-border, #e2e8f0);
+  border: 1px solid var(--app-border, var(--app-border));
   border-radius: 999px;
   padding: 4px 12px;
   font-size: 0.775rem;
   font-weight: 600;
-  color: var(--app-muted, #64748b);
+  color: var(--app-muted, var(--app-muted));
   cursor: pointer;
   transition: all 0.15s ease;
 
   &:hover {
     border-color: #cbd5e1;
-    color: var(--app-text, #1e293b);
+    color: var(--app-text, var(--app-ink));
   }
 
   &.active {
@@ -120,7 +120,7 @@
 
 .fin-stat-card {
   background: var(--app-surface-variant, #f8fafc);
-  border: 1px solid var(--app-border-light, #f1f5f9);
+  border: 1px solid var(--app-border-light, var(--app-border-light));
   border-radius: var(--app-radius-sm, 6px);
   padding: 12px 14px;
   display: flex;
@@ -144,7 +144,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--app-muted, #64748b);
+  color: var(--app-muted, var(--app-muted));
 }
 
 .fin-icon {
@@ -170,7 +170,7 @@
 .fin-stat-value {
   font-size: 1.35rem;
   font-weight: 700;
-  color: var(--app-text, #1e293b);
+  color: var(--app-text, var(--app-ink));
   line-height: 1.1;
 
   &.alert-value {
@@ -180,7 +180,7 @@
 
 .fin-stat-caption {
   font-size: 0.725rem;
-  color: var(--app-muted, #64748b);
+  color: var(--app-muted, var(--app-muted));
   margin-top: 4px;
 
   strong {

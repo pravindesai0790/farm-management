@@ -56,7 +56,7 @@
   font-weight: 600;
   text-transform: capitalize;
 
-  &.completed { background: #e8f5e9; color: #2e7d32; }
+  &.completed { background: #e8f5e9; color: var(--app-primary); }
   &.reversed { background: #ffebee; color: #c62828; }
 }
 
@@ -146,7 +146,7 @@
       .amount-val {
         font-size: 1.25rem;
         font-weight: 700;
-        color: #2e7d32;
+        color: var(--app-primary);
 
         small {
           font-size: 0.75rem;
@@ -165,7 +165,7 @@
   font-weight: 600;
 
   &.badge-info { background: #e3f2fd; color: #1565c0; }
-  &.badge-success { background: #e8f5e9; color: #2e7d32; }
+  &.badge-success { background: #e8f5e9; color: var(--app-primary); }
   &.badge-warning { background: #fff8e1; color: #f57f17; }
   &.badge-purple { background: #f3e5f5; color: #7b1fa2; }
   &.badge-teal { background: #e0f2f1; color: #00695c; }
@@ -206,7 +206,7 @@
 
   .allocated-val {
     font-weight: 700;
-    color: #2e7d32;
+    color: var(--app-primary);
   }
 }
 

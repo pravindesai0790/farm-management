@@ -21,8 +21,8 @@
   align-items: center;
   gap: 0.85rem;
   padding: 0.75rem 1rem;
-  background: var(--app-surface, #ffffff);
-  border: 1px solid var(--app-border, #e2e8f0);
+  background: var(--app-surface, var(--app-surface));
+  border: 1px solid var(--app-border, var(--app-border));
   border-radius: var(--app-radius-md, 8px);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 
@@ -36,8 +36,8 @@
   }
 
   &--active {
-    border-color: var(--app-primary, #15803d);
-    box-shadow: 0 0 0 1px var(--app-primary, #15803d);
+    border-color: var(--app-primary, var(--app-success));
+    box-shadow: 0 0 0 1px var(--app-primary, var(--app-success));
   }
 }
 
@@ -58,7 +58,7 @@
 }
 
 .kpi-draft-bg {
-  background: #f1f5f9;
+  background: var(--app-border-light);
   .icon-draft { color: #475569; }
 }
 
@@ -92,19 +92,19 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: var(--app-muted, #64748b);
+    color: var(--app-muted, var(--app-muted));
   }
 
   .kpi-value {
     font-size: 1.35rem;
     font-weight: 700;
     line-height: 1.2;
-    color: var(--app-text, #1e293b);
+    color: var(--app-text, var(--app-ink));
   }
 
   .kpi-subtext {
     font-size: 0.725rem;
-    color: var(--app-muted, #64748b);
+    color: var(--app-muted, var(--app-muted));
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -119,7 +119,7 @@
   gap: 0.5rem;
   padding-bottom: 0.75rem;
   margin-bottom: 0.75rem;
-  border-bottom: 1px solid var(--app-border-light, #f1f5f9);
+  border-bottom: 1px solid var(--app-border-light, var(--app-border-light));
 
   .filter-item {
     width: 140px;
@@ -140,7 +140,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  border-color: var(--app-border, #e2e8f0);
+  border-color: var(--app-border, var(--app-border));
   font-size: 0.8rem;
   font-weight: 500;
 
@@ -159,7 +159,7 @@
 
 .clear-filter-btn {
   height: 38px;
-  color: var(--app-muted, #64748b);
+  color: var(--app-muted, var(--app-muted));
   font-size: 0.8rem;
 
   mat-icon {
@@ -177,7 +177,7 @@
 
   .primary-link {
     font-weight: 600;
-    color: var(--app-primary, #15803d);
+    color: var(--app-primary, var(--app-success));
     text-decoration: none;
 
     &:hover {
@@ -213,12 +213,12 @@
 
   .farm-name {
     font-weight: 600;
-    color: var(--app-text, #1e293b);
+    color: var(--app-text, var(--app-ink));
   }
 
   .area-tag {
     font-size: 0.725rem;
-    color: var(--app-muted, #64748b);
+    color: var(--app-muted, var(--app-muted));
   }
 }
 
@@ -230,17 +230,17 @@
   .plantation-label {
     font-weight: 500;
     font-size: 0.8rem;
-    color: var(--app-text, #1e293b);
+    color: var(--app-text, var(--app-ink));
   }
 
   .cycle-label {
     font-size: 0.725rem;
-    color: var(--app-muted, #64748b);
+    color: var(--app-muted, var(--app-muted));
   }
 
   .stage-tag {
     font-size: 0.7rem;
-    background: #f1f5f9;
+    background: var(--app-border-light);
     color: #475569;
     padding: 0.05rem 0.35rem;
     border-radius: 4px;
@@ -273,14 +273,14 @@
   font-size: 0.8rem;
 
   .date-label {
-    color: var(--app-muted, #64748b);
+    color: var(--app-muted, var(--app-muted));
     font-size: 0.725rem;
     margin-right: 0.2rem;
   }
 
   .duration-label {
     font-size: 0.725rem;
-    color: var(--app-muted, #64748b);
+    color: var(--app-muted, var(--app-muted));
     margin-left: 0.25rem;
   }
 
@@ -305,11 +305,11 @@
   }
 
   &.actual-water {
-    color: var(--app-text, #1e293b);
+    color: var(--app-text, var(--app-ink));
   }
 
   &.planned-water {
-    color: var(--app-muted, #64748b);
+    color: var(--app-muted, var(--app-muted));
     font-weight: 500;
   }
 }
@@ -346,7 +346,7 @@
   gap: 0.5rem;
 
   p {
-    color: var(--app-muted, #64748b);
+    color: var(--app-muted, var(--app-muted));
     margin: 0;
   }
 
@@ -354,7 +354,7 @@
     margin: 0;
     font-size: 1.1rem;
     font-weight: 600;
-    color: var(--app-text, #1e293b);
+    color: var(--app-text, var(--app-ink));
   }
 }
 

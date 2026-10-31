@@ -58,7 +58,7 @@
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    color: #ffffff;
+    color: var(--app-surface);
   }
 }
 
@@ -68,7 +68,7 @@
   gap: 14px;
 
   .hero-brand-pill {
-    background: #ffffff;
+    background: var(--app-surface);
     padding: 8px 18px;
     border-radius: 12px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
@@ -117,7 +117,7 @@
     font-weight: 800;
     line-height: 1.15;
     letter-spacing: -0.03em;
-    color: #ffffff;
+    color: var(--app-surface);
     text-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
   }
 
@@ -168,7 +168,7 @@
   flex: 1 1 42%;
   width: 42%;
   min-height: 100vh;
-  background: var(--app-surface, #ffffff);
+  background: var(--app-surface, var(--app-surface));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -205,14 +205,14 @@
     margin: 0 0 6px;
     font-size: 1.8rem;
     font-weight: 700;
-    color: var(--app-text, #1e293b);
+    color: var(--app-text, var(--app-ink));
     letter-spacing: -0.02em;
   }
 
   .form-subheading {
     margin: 0;
     font-size: 0.88rem;
-    color: var(--app-muted, #64748b);
+    color: var(--app-muted, var(--app-muted));
     line-height: 1.5;
   }
 }
@@ -226,7 +226,7 @@ form {
     width: 100%;
 
     mat-icon[matIconPrefix] {
-      color: var(--app-muted, #64748b);
+      color: var(--app-muted, var(--app-muted));
       margin-right: 8px;
     }
   }
@@ -262,14 +262,14 @@ form {
     align-items: center;
     gap: 6px;
     font-size: 0.75rem;
-    color: var(--app-muted, #64748b);
+    color: var(--app-muted, var(--app-muted));
     font-weight: 500;
 
     mat-icon {
       font-size: 15px;
       width: 15px;
       height: 15px;
-      color: var(--app-primary, #2d6e4b);
+      color: var(--app-primary, var(--app-primary));
     }
   }
 
@@ -355,7 +355,7 @@ form {
     width: 100%;
     min-height: auto;
     padding: 32px 20px 40px;
-    background: var(--app-surface, #ffffff);
+    background: var(--app-surface, var(--app-surface));
     align-items: flex-start;
   }
 
@@ -365,11 +365,11 @@ form {
     margin-bottom: 20px;
 
     .mobile-brand-pill {
-      background: #ffffff;
+      background: var(--app-surface);
       padding: 6px 14px;
       border-radius: 10px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-      border: 1px solid var(--app-border, #e2e8f0);
+      border: 1px solid var(--app-border, var(--app-border));
       display: inline-flex;
       align-items: center;
 

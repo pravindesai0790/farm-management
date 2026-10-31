@@ -11,11 +11,11 @@
     font-size: 1.75rem;
     font-weight: 600;
     margin: 0 0 4px;
-    color: #1e293b;
+    color: var(--app-ink);
   }
 
   .subtitle {
-    color: #64748b;
+    color: var(--app-muted);
     margin: 0;
     font-size: 0.95rem;
   }
@@ -23,7 +23,7 @@
 
 .filter-card {
   margin-bottom: 24px;
-  background-color: #ffffff;
+  background-color: var(--app-surface);
 }
 
 .preset-buttons {
@@ -39,7 +39,7 @@
 
     &.active-preset {
       background-color: #eaf3ed;
-      color: #2f6f4e;
+      color: var(--app-primary);
       border-color: #bce1c7;
       font-weight: 600;
     }
@@ -61,16 +61,16 @@
   display: flex;
   gap: 8px;
   margin-bottom: 20px;
-  border-bottom: 2px solid #e2e8f0;
+  border-bottom: 2px solid var(--app-border);
   padding-bottom: 8px;
 
   button {
     font-weight: 500;
-    color: #64748b;
+    color: var(--app-muted);
 
     &.active-tab {
-      color: #2f6f4e;
-      border-bottom: 3px solid #2f6f4e;
+      color: var(--app-primary);
+      border-bottom: 3px solid var(--app-primary);
       border-radius: 0;
     }
   }
@@ -107,7 +107,7 @@
   .kpi-label {
     font-size: 0.85rem;
     font-weight: 500;
-    color: #64748b;
+    color: var(--app-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-bottom: 8px;
@@ -172,7 +172,7 @@
 
   .overdue-item-chip {
     padding: 6px 12px;
-    background-color: #ffffff;
+    background-color: var(--app-surface);
     border: 1px solid #fca5a5;
     border-radius: 16px;
     font-size: 0.8rem;
@@ -218,7 +218,7 @@
 
     .item-name {
       font-weight: 600;
-      color: #1e293b;
+      color: var(--app-ink);
     }
 
     .item-amount {
@@ -254,7 +254,7 @@
   th, td {
     padding: 12px 16px;
     text-align: left;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid var(--app-border-light);
   }
 
   th {
@@ -264,7 +264,7 @@
   }
 
   .text-right { text-align: right; }
-  .bold-text { font-weight: 600; color: #1e293b; }
+  .bold-text { font-weight: 600; color: var(--app-ink); }
 
   .grand-cell {
     font-weight: 700;

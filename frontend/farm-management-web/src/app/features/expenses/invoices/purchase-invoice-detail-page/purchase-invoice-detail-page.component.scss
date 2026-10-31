@@ -113,7 +113,7 @@
 
   &.InventoryItem {
     background-color: #e8f5e9;
-    color: #2e7d32;
+    color: var(--app-primary);
   }
 
   &.NonInventoryExpense {
@@ -180,7 +180,7 @@
 
   &.payment-paid {
     background-color: #e8f5e9;
-    color: #2e7d32;
+    color: var(--app-primary);
   }
 }
 
@@ -197,7 +197,7 @@
 }
 
 .text-success {
-  color: #2e7d32;
+  color: var(--app-primary);
 }
 
 .text-danger {
@@ -273,7 +273,7 @@
   .receipt-items-table {
     width: 100%;
     border-collapse: collapse;
-    background: #ffffff;
+    background: var(--app-surface);
     border: 1px solid #e0e0e0;
     border-radius: 6px;
     font-size: 0.88rem;
@@ -308,7 +308,7 @@
 
     &.received {
       background-color: #dcfce7;
-      color: #15803d;
+      color: var(--app-success);
     }
 
     &.reversed {

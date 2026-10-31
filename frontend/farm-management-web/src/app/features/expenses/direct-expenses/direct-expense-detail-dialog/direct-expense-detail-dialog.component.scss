@@ -46,7 +46,7 @@
 
   &.status-posted {
     background-color: #e8f5e9;
-    color: #2e7d32;
+    color: var(--app-primary);
     border: 1px solid #c8e6c9;
   }
 
@@ -64,7 +64,7 @@
 }
 
 .amount-banner {
-  background: linear-gradient(135deg, #1c4a34, #2f6f4e);
+  background: linear-gradient(135deg, #1c4a34, var(--app-primary));
   color: white;
   padding: 18px 24px;
   border-radius: 10px;

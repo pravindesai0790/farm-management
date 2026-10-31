@@ -6,7 +6,7 @@
   max-width: 840px;
   margin: 0 auto;
   border-radius: var(--app-radius-md, 8px);
-  border: 1px solid var(--app-border, #e2e8f0);
+  border: 1px solid var(--app-border, var(--app-border));
 
   mat-card-content {
     padding: 24px 28px;
@@ -50,10 +50,10 @@
   gap: 8px;
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--app-text, #1e293b);
+  color: var(--app-text, var(--app-ink));
   padding-bottom: 8px;
   margin: 16px 0 12px 0;
-  border-bottom: 1px solid var(--app-border-light, #f1f5f9);
+  border-bottom: 1px solid var(--app-border-light, var(--app-border-light));
 
   &:first-of-type {
     margin-top: 0;
@@ -63,7 +63,7 @@
     font-size: 18px;
     width: 18px;
     height: 18px;
-    color: var(--app-primary, #15803d);
+    color: var(--app-primary, var(--app-success));
   }
 }
 
@@ -84,7 +84,7 @@
   gap: 12px;
   margin-top: 24px;
   padding-top: 16px;
-  border-top: 1px solid var(--app-border-light, #f1f5f9);
+  border-top: 1px solid var(--app-border-light, var(--app-border-light));
 
   button, a {
     min-width: 100px;

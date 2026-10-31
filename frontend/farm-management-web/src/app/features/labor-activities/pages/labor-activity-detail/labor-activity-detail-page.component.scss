@@ -159,7 +159,7 @@
     word-break: break-word;
 
     a {
-      color: var(--app-primary, #2e7d32);
+      color: var(--app-primary, var(--app-primary));
       text-decoration: none;
 
       &:hover {

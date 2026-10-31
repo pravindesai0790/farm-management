@@ -1,7 +1,7 @@
 .cycles-card {
-  border: 1px solid var(--app-border, #e2e8f0);
+  border: 1px solid var(--app-border, var(--app-border));
   border-radius: var(--app-radius-md, 8px);
-  background: var(--app-surface, #ffffff);
+  background: var(--app-surface, var(--app-surface));
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   height: 435px;
   display: flex;
@@ -30,14 +30,14 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--app-muted, #64748b);
+    color: var(--app-muted, var(--app-muted));
     margin: 0 0 2px 0;
   }
 
   h2 {
     font-size: 1.1rem;
     font-weight: 700;
-    color: var(--app-text, #1e293b);
+    color: var(--app-text, var(--app-ink));
     margin: 0;
   }
 
@@ -62,20 +62,20 @@
   padding: 32px 16px;
   background: var(--app-surface-variant, #f8fafc);
   border-radius: var(--app-radius-sm, 6px);
-  border: 1px dashed var(--app-border, #e2e8f0);
+  border: 1px dashed var(--app-border, var(--app-border));
 
   mat-icon {
     font-size: 36px;
     width: 36px;
     height: 36px;
-    color: var(--app-muted, #64748b);
+    color: var(--app-muted, var(--app-muted));
     margin-bottom: 8px;
     opacity: 0.7;
   }
 
   p {
     font-size: 0.85rem;
-    color: var(--app-muted, #64748b);
+    color: var(--app-muted, var(--app-muted));
     margin: 0 0 8px 0;
   }
 }
@@ -105,14 +105,14 @@
 }
 
 .cycle-item {
-  border: 1px solid var(--app-border-light, #f1f5f9);
+  border: 1px solid var(--app-border-light, var(--app-border-light));
   background: var(--app-surface-variant, #f8fafc);
   border-radius: var(--app-radius-sm, 6px);
   padding: 14px 16px;
   transition: border-color 0.15s ease;
 
   &:hover {
-    border-color: var(--app-border, #e2e8f0);
+    border-color: var(--app-border, var(--app-border));
   }
 }
 
@@ -138,7 +138,7 @@
   .cycle-name {
     font-size: 0.95rem;
     font-weight: 600;
-    color: var(--app-text, #1e293b);
+    color: var(--app-text, var(--app-ink));
   }
 }
 
@@ -151,7 +151,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  background: #f1f5f9;
+  background: var(--app-border-light);
   color: #475569;
 
   &.status-tag-active {
@@ -162,7 +162,7 @@
 
 .cycle-meta {
   font-size: 0.8rem;
-  color: var(--app-muted, #64748b);
+  color: var(--app-muted, var(--app-muted));
   margin: 0;
   display: flex;
   align-items: center;
@@ -179,13 +179,13 @@
   align-items: center;
   gap: 4px;
   padding: 4px 10px;
-  background: #ffffff;
-  border: 1px solid var(--app-border, #e2e8f0);
+  background: var(--app-surface);
+  border: 1px solid var(--app-border, var(--app-border));
   border-radius: 6px;
   font-size: 0.775rem;
 
   .stage-prefix {
-    color: var(--app-muted, #64748b);
+    color: var(--app-muted, var(--app-muted));
   }
 
   .stage-name {
@@ -194,7 +194,7 @@
   }
 
   .stage-count {
-    color: var(--app-muted, #64748b);
+    color: var(--app-muted, var(--app-muted));
     font-size: 0.725rem;
   }
 }
@@ -204,14 +204,14 @@
 
   .timeline-bar {
     height: 6px;
-    background: #e2e8f0;
+    background: var(--app-border);
     border-radius: 999px;
     overflow: hidden;
   }
 
   .timeline-fill {
     height: 100%;
-    background: var(--app-primary, #15803d);
+    background: var(--app-primary, var(--app-success));
     border-radius: 999px;
     transition: width 0.3s ease;
   }
@@ -221,12 +221,12 @@
     justify-content: space-between;
     align-items: center;
     font-size: 0.725rem;
-    color: var(--app-muted, #64748b);
+    color: var(--app-muted, var(--app-muted));
     margin-top: 4px;
 
     .timeline-pct {
       font-weight: 600;
-      color: var(--app-text, #1e293b);
+      color: var(--app-text, var(--app-ink));
     }
   }
 }

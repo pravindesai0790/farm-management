@@ -6,9 +6,9 @@
 }
 
 .kpi-card {
-  border: 1px solid var(--app-border, #e2e8f0);
+  border: 1px solid var(--app-border, var(--app-border));
   border-radius: var(--app-radius-md, 8px);
-  background: var(--app-surface, #ffffff);
+  background: var(--app-surface, var(--app-surface));
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 
@@ -34,7 +34,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--app-muted, #64748b);
+  color: var(--app-muted, var(--app-muted));
 }
 
 .kpi-icon {
@@ -56,13 +56,13 @@
   &.kpi-icon-plantations { background: #fef3c7; color: #b45309; }
   &.kpi-icon-cycles { background: #f3e8ff; color: #7c3aed; }
   &.kpi-icon-workers { background: #e0e7ff; color: #4338ca; }
-  &.kpi-icon-wages { background: #f0fdf4; color: #15803d; }
+  &.kpi-icon-wages { background: #f0fdf4; color: var(--app-success); }
 }
 
 .kpi-value {
   font-size: 1.45rem;
   font-weight: 700;
-  color: var(--app-text, #1e293b);
+  color: var(--app-text, var(--app-ink));
   line-height: 1.2;
   margin-bottom: 6px;
   display: flex;
@@ -73,7 +73,7 @@
   .kpi-unit {
     font-size: 0.85rem;
     font-weight: 500;
-    color: var(--app-muted, #64748b);
+    color: var(--app-muted, var(--app-muted));
   }
 }
 
@@ -99,7 +99,7 @@
 
 .mini-progress-bar {
   height: 4px;
-  background: #f1f5f9;
+  background: var(--app-border-light);
   border-radius: 2px;
   overflow: hidden;
   margin: 6px 0 8px;
@@ -107,14 +107,14 @@
 
 .mini-progress-fill {
   height: 100%;
-  background: var(--app-primary, #15803d);
+  background: var(--app-primary, var(--app-success));
   border-radius: 2px;
   transition: width 0.3s ease;
 }
 
 .kpi-subtext {
   font-size: 0.775rem;
-  color: var(--app-muted, #64748b);
+  color: var(--app-muted, var(--app-muted));
   margin: 0;
   line-height: 1.35;
 }

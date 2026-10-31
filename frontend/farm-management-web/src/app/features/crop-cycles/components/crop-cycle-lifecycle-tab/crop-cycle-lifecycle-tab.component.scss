@@ -10,7 +10,7 @@
   justify-content: center;
   gap: 1rem;
   padding: 3rem 0;
-  color: #64748b;
+  color: var(--app-muted);
 }
 
 .lifecycle-container {
@@ -38,7 +38,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #64748b;
+  color: var(--app-muted);
   font-size: 0.85rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -48,7 +48,7 @@
     font-size: 1.1rem;
     width: 1.1rem;
     height: 1.1rem;
-    color: #2f6f4e;
+    color: var(--app-primary);
   }
 }
 
@@ -63,7 +63,7 @@
 }
 
 .highlight-text {
-  color: #2f6f4e;
+  color: var(--app-primary);
 }
 
 .text-success {
@@ -71,7 +71,7 @@
 }
 
 .text-muted {
-  color: #64748b;
+  color: var(--app-muted);
 }
 
 .metric-subtext {
@@ -85,7 +85,7 @@
   gap: 0.35rem;
   font-size: 1.1rem;
   font-weight: 700;
-  color: #2f6f4e;
+  color: var(--app-primary);
   text-decoration: none;
 
   &:hover {
@@ -155,11 +155,11 @@
 
   &.alert-info {
     background: #f0fdf4;
-    border-left-color: #2f6f4e;
+    border-left-color: var(--app-primary);
     color: #14532d;
 
     .alert-icon {
-      color: #2f6f4e;
+      color: var(--app-primary);
     }
   }
 
@@ -200,7 +200,7 @@
   &.status-not-started {
     background: #f8fafc;
     color: #475569;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--app-border);
     .status-dot { background-color: #94a3b8; }
   }
 
@@ -213,7 +213,7 @@
 
   &.status-completed {
     background: #ecfdf5;
-    color: #15803d;
+    color: var(--app-success);
     border: 1px solid #a7f3d0;
     .status-dot { background-color: #16a34a; }
   }
@@ -245,7 +245,7 @@
     }
 
     mat-card-subtitle {
-      color: #64748b;
+      color: var(--app-muted);
       font-size: 0.875rem;
     }
   }
@@ -303,14 +303,14 @@
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  background: #e2e8f0;
+  background: var(--app-border);
   color: #334155;
   font-weight: 700;
   font-size: 0.8rem;
 
   &.current-seq {
     background: #10b981;
-    color: #ffffff;
+    color: var(--app-surface);
   }
 }
 
@@ -369,7 +369,7 @@
     font-size: 0.95rem;
     width: 0.95rem;
     height: 0.95rem;
-    color: #64748b;
+    color: var(--app-muted);
   }
 }
 
@@ -395,7 +395,7 @@
 
     &:hover {
       opacity: 1;
-      color: #2f6f4e;
+      color: var(--app-primary);
     }
 
     .icon-sm {
@@ -407,7 +407,7 @@
 
   .date-row {
     font-size: 0.8rem;
-    color: #64748b;
+    color: var(--app-muted);
     white-space: nowrap;
 
     .date-label {

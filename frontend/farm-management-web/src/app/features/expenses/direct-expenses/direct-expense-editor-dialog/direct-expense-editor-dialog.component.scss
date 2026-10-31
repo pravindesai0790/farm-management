@@ -74,7 +74,7 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: var(--app-primary, #2f6f4e);
+    color: var(--app-primary, var(--app-primary));
 
     mat-icon {
       font-size: 18px;

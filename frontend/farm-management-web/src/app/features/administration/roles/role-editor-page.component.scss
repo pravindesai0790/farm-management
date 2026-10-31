@@ -5,12 +5,12 @@
     margin: 8px 0 0;
     font-size: 1.6rem;
     font-weight: 700;
-    color: var(--app-text, #1e293b);
+    color: var(--app-text, var(--app-ink));
   }
 
   .eyebrow {
     margin: 18px 0 0;
-    color: var(--app-primary, #15803d);
+    color: var(--app-primary, var(--app-success));
     font-size: 0.72rem;
     font-weight: 700;
     letter-spacing: 0.12em;
@@ -44,7 +44,7 @@ form {
   align-items: center;
   justify-content: center;
   gap: 12px;
-  color: var(--app-muted, #64748b);
+  color: var(--app-muted, var(--app-muted));
 }
 
 // Permissions Section
@@ -52,7 +52,7 @@ form {
   margin-top: 8px;
   margin-bottom: 16px;
   padding-top: 16px;
-  border-top: 1px solid var(--app-border, #e2e8f0);
+  border-top: 1px solid var(--app-border, var(--app-border));
 }
 
 .permissions-header {
@@ -70,10 +70,10 @@ form {
       gap: 8px;
       font-size: 0.95rem;
       font-weight: 600;
-      color: var(--app-text, #1e293b);
+      color: var(--app-text, var(--app-ink));
 
       .section-icon {
-        color: var(--app-primary, #15803d);
+        color: var(--app-primary, var(--app-success));
         font-size: 20px;
         width: 20px;
         height: 20px;
@@ -83,7 +83,7 @@ form {
     .permissions-subtitle {
       margin: 4px 0 0;
       font-size: 0.8rem;
-      color: var(--app-muted, #64748b);
+      color: var(--app-muted, var(--app-muted));
       display: flex;
       align-items: center;
       gap: 10px;
@@ -96,7 +96,7 @@ form {
     padding: 2px 8px;
     border-radius: 9999px;
     background: var(--app-primary-light, #ecfdf5);
-    color: var(--app-primary, #15803d);
+    color: var(--app-primary, var(--app-success));
     font-size: 0.75rem;
     font-weight: 600;
   }
@@ -129,7 +129,7 @@ form {
   margin-bottom: 12px;
 
   mat-icon {
-    color: var(--app-muted, #64748b);
+    color: var(--app-muted, var(--app-muted));
   }
 }
 
@@ -146,9 +146,9 @@ form {
   gap: 10px;
   padding: 32px 16px;
   background: var(--app-surface-variant, #f8fafc);
-  border: 1px dashed var(--app-border, #e2e8f0);
+  border: 1px dashed var(--app-border, var(--app-border));
   border-radius: var(--app-radius-sm, 6px);
-  color: var(--app-muted, #64748b);
+  color: var(--app-muted, var(--app-muted));
   font-size: 0.85rem;
 
   mat-icon {
@@ -165,13 +165,13 @@ form {
 // Accordion & Panels
 .permissions-accordion {
   display: block;
-  border: 1px solid var(--app-border, #e2e8f0);
+  border: 1px solid var(--app-border, var(--app-border));
   border-radius: var(--app-radius-md, 8px);
   overflow: hidden;
 
   .module-panel {
     border-radius: 0 !important;
-    border-bottom: 1px solid var(--app-border-light, #f1f5f9);
+    border-bottom: 1px solid var(--app-border-light, var(--app-border-light));
     box-shadow: none !important;
 
     &:last-child {
@@ -195,13 +195,13 @@ form {
       gap: 8px;
       font-size: 0.85rem;
       font-weight: 600;
-      color: var(--app-text, #1e293b);
+      color: var(--app-text, var(--app-ink));
 
       .module-icon {
         font-size: 18px;
         width: 18px;
         height: 18px;
-        color: var(--app-muted, #64748b);
+        color: var(--app-muted, var(--app-muted));
       }
     }
 
@@ -214,13 +214,13 @@ form {
       font-size: 0.725rem;
       padding: 2px 8px;
       border-radius: 9999px;
-      background: #f1f5f9;
-      color: var(--app-muted, #64748b);
+      background: var(--app-border-light);
+      color: var(--app-muted, var(--app-muted));
       font-weight: 500;
 
       &.count-badge-active {
         background: var(--app-primary-light, #ecfdf5);
-        color: var(--app-primary, #15803d);
+        color: var(--app-primary, var(--app-success));
         font-weight: 600;
       }
     }
@@ -235,7 +235,7 @@ form {
       .select-all-group-label {
         font-size: 0.8rem;
         font-weight: 600;
-        color: var(--app-text, #1e293b);
+        color: var(--app-text, var(--app-ink));
       }
     }
 
@@ -246,14 +246,14 @@ form {
       margin-top: 10px;
 
       .permission-item {
-        border: 1px solid var(--app-border, #e2e8f0);
+        border: 1px solid var(--app-border, var(--app-border));
         border-radius: var(--app-radius-sm, 6px);
         background: var(--app-surface-variant, #f8fafc);
         padding: 6px 10px;
         transition: background 0.15s ease, border-color 0.15s ease;
 
         &:hover {
-          background: #ffffff;
+          background: var(--app-surface);
           border-color: #cbd5e1;
         }
 
@@ -274,12 +274,12 @@ form {
           .perm-name {
             font-size: 0.825rem;
             font-weight: 600;
-            color: var(--app-text, #1e293b);
+            color: var(--app-text, var(--app-ink));
           }
 
           .perm-desc {
             font-size: 0.725rem;
-            color: var(--app-muted, #64748b);
+            color: var(--app-muted, var(--app-muted));
             margin-top: 2px;
             display: -webkit-box;
             -webkit-line-clamp: 2;

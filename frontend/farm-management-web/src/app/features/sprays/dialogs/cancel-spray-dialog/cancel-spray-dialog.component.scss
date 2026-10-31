@@ -26,14 +26,14 @@
   margin: 0;
   font-size: 1.15rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--app-ink);
   line-height: 1.2;
 }
 
 .dialog-subtitle {
   margin: 2px 0 0;
   font-size: 0.8rem;
-  color: #64748b;
+  color: var(--app-muted);
 }
 
 .dialog-content {

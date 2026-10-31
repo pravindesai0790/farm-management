@@ -12,7 +12,7 @@
     font-size: 0.75rem;
     font-weight: 600;
     letter-spacing: 0.05em;
-    color: var(--app-primary, #2e7d32);
+    color: var(--app-primary, var(--app-primary));
     margin: 0 0 4px 0;
   }
 
@@ -25,7 +25,7 @@
 
   .subtitle {
     margin: 0;
-    color: var(--app-muted, #5f6368);
+    color: var(--app-muted, var(--app-muted));
     font-size: 0.9rem;
   }
 }
@@ -69,7 +69,7 @@ table {
 
 .badge-active {
   background: #e8f5e9;
-  color: #2e7d32;
+  color: var(--app-primary);
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 12px;

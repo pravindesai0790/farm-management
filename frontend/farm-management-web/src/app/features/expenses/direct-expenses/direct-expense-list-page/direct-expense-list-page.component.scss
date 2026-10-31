@@ -17,7 +17,7 @@
       font-size: 0.75rem;
       font-weight: 600;
       letter-spacing: 0.05em;
-      color: var(--app-primary, #2f6f4e);
+      color: var(--app-primary, var(--app-primary));
       margin: 0 0 4px 0;
     }
 
@@ -66,7 +66,7 @@
 
       &.primary {
         background-color: #eaf3ed;
-        color: #2f6f4e;
+        color: var(--app-primary);
       }
       &.warning {
         background-color: #fef3c7;
@@ -74,7 +74,7 @@
       }
       &.success {
         background-color: #dcfce7;
-        color: #15803d;
+        color: var(--app-success);
       }
       &.info {
         background-color: #e0f2fe;
@@ -244,7 +244,7 @@
 
   &.status-posted {
     background-color: #e8f5e9;
-    color: #2e7d32;
+    color: var(--app-primary);
     border: 1px solid #c8e6c9;
   }
 

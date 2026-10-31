@@ -43,13 +43,13 @@
       font-size: 0.7rem;
       text-transform: uppercase;
       letter-spacing: 0.04em;
-      color: var(--text-muted, #64748b);
+      color: var(--text-muted, var(--app-muted));
       font-weight: 600;
     }
 
     .context-value {
       font-size: 0.875rem;
-      color: var(--text-color, #1e293b);
+      color: var(--text-color, var(--app-ink));
     }
   }
 }

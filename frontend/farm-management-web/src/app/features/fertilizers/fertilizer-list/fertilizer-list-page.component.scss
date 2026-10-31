@@ -11,21 +11,21 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--app-primary, #15803d);
+    color: var(--app-primary, var(--app-success));
     margin: 0 0 0.25rem;
   }
 
   h2 {
     font-size: 1.35rem;
     font-weight: 700;
-    color: var(--app-text, #1e293b);
+    color: var(--app-text, var(--app-ink));
     margin: 0 0 0.25rem;
     line-height: 1.2;
   }
 
   .subtitle {
     font-size: 0.85rem;
-    color: var(--app-muted, #64748b);
+    color: var(--app-muted, var(--app-muted));
     margin: 0;
   }
 
@@ -65,7 +65,7 @@
   align-items: center;
   gap: 0.35rem;
   margin-bottom: 1rem;
-  border-bottom: 1px solid var(--app-border, #e2e8f0);
+  border-bottom: 1px solid var(--app-border, var(--app-border));
   padding-bottom: 0.25rem;
   overflow-x: auto;
 
@@ -77,7 +77,7 @@
     padding: 0.5rem 0.85rem;
     font-size: 0.85rem;
     font-weight: 500;
-    color: var(--app-muted, #64748b);
+    color: var(--app-muted, var(--app-muted));
     cursor: pointer;
     display: inline-flex;
     align-items: center;
@@ -86,17 +86,17 @@
     transition: all 0.15s ease-in-out;
 
     &:hover {
-      color: var(--app-text, #1e293b);
+      color: var(--app-text, var(--app-ink));
     }
 
     &.active {
-      color: var(--app-primary, #15803d);
+      color: var(--app-primary, var(--app-success));
       font-weight: 600;
-      border-bottom-color: var(--app-primary, #15803d);
+      border-bottom-color: var(--app-primary, var(--app-success));
 
       .tab-badge {
         background: var(--app-primary-light, #ecfdf5);
-        color: var(--app-primary, #15803d);
+        color: var(--app-primary, var(--app-success));
       }
     }
 
@@ -110,16 +110,16 @@
       font-size: 0.725rem;
       font-weight: 600;
       border-radius: 999px;
-      background: #f1f5f9;
-      color: #64748b;
+      background: var(--app-border-light);
+      color: var(--app-muted);
     }
   }
 }
 
 .content-card {
-  border: 1px solid var(--app-border, #e2e8f0);
+  border: 1px solid var(--app-border, var(--app-border));
   border-radius: var(--app-radius-md, 8px);
-  background: var(--app-surface, #ffffff);
+  background: var(--app-surface, var(--app-surface));
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 
   mat-card-content {
@@ -201,7 +201,7 @@
   justify-content: center;
   padding: 3rem 1.5rem;
   text-align: center;
-  color: var(--app-muted, #64748b);
+  color: var(--app-muted, var(--app-muted));
 
   p {
     font-size: 0.85rem;
@@ -211,7 +211,7 @@
   h3 {
     font-size: 1.1rem;
     font-weight: 600;
-    color: var(--app-text, #1e293b);
+    color: var(--app-text, var(--app-ink));
     margin: 0.5rem 0 0.25rem;
   }
 
@@ -227,7 +227,7 @@
 // Table Wrapper
 .table-wrap {
   overflow-x: auto;
-  border: 1px solid var(--app-border, #e2e8f0);
+  border: 1px solid var(--app-border, var(--app-border));
   border-radius: var(--app-radius-sm, 6px);
 }
 
@@ -240,17 +240,17 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--app-muted, #64748b);
+    color: var(--app-muted, var(--app-muted));
     background: var(--app-surface-variant, #f8fafc);
     padding: 0.55rem 0.75rem;
-    border-bottom: 1px solid var(--app-border, #e2e8f0);
+    border-bottom: 1px solid var(--app-border, var(--app-border));
   }
 
   td.mat-mdc-cell {
     font-size: 0.85rem;
     padding: 0.55rem 0.75rem;
-    color: var(--app-text, #1e293b);
-    border-bottom: 1px solid var(--app-border-light, #f1f5f9);
+    color: var(--app-text, var(--app-ink));
+    border-bottom: 1px solid var(--app-border-light, var(--app-border-light));
   }
 
   .interactive-row:hover {
@@ -265,7 +265,7 @@
 
   .ref-link {
     font-weight: 600;
-    color: var(--app-primary, #15803d);
+    color: var(--app-primary, var(--app-success));
     text-decoration: none;
 
     &:hover {
@@ -275,7 +275,7 @@
 
   .cell-subtext {
     font-size: 0.75rem;
-    color: var(--app-muted, #64748b);
+    color: var(--app-muted, var(--app-muted));
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -294,7 +294,7 @@
 
   .secondary-context {
     font-size: 0.75rem;
-    color: var(--app-muted, #64748b);
+    color: var(--app-muted, var(--app-muted));
 
     .sep {
       margin: 0 0.25rem;
@@ -306,7 +306,7 @@
     align-self: flex-start;
     font-size: 0.7rem;
     padding: 0.1rem 0.35rem;
-    background: #f1f5f9;
+    background: var(--app-border-light);
     border-radius: 4px;
     color: #475569;
     font-weight: 500;
@@ -368,13 +368,13 @@
 
     .product-qty {
       font-size: 0.8rem;
-      color: var(--app-muted, #64748b);
+      color: var(--app-muted, var(--app-muted));
     }
 
     .more-products-chip {
       font-size: 0.725rem;
       font-weight: 600;
-      background: #f1f5f9;
+      background: var(--app-border-light);
       color: #047857;
       padding: 0.1rem 0.35rem;
       border-radius: 4px;
@@ -394,7 +394,7 @@
   white-space: nowrap;
 
   &--draft {
-    background: #f1f5f9;
+    background: var(--app-border-light);
     color: #475569;
   }
 
@@ -415,7 +415,7 @@
 
   &--completed {
     background: #f0fdf4;
-    color: #15803d;
+    color: var(--app-success);
   }
 
   &--cancelled {
@@ -424,8 +424,8 @@
   }
 
   &--neutral {
-    background: #f1f5f9;
-    color: #64748b;
+    background: var(--app-border-light);
+    color: var(--app-muted);
   }
 }
 
@@ -440,13 +440,13 @@
 }
 
 .compact-paginator {
-  background: var(--app-surface, #ffffff);
-  border-top: 1px solid var(--app-border-light, #f1f5f9);
+  background: var(--app-surface, var(--app-surface));
+  border-top: 1px solid var(--app-border-light, var(--app-border-light));
   font-size: 0.8rem;
 }
 
 .text-muted {
-  color: var(--app-muted, #64748b);
+  color: var(--app-muted, var(--app-muted));
 }
 
 .danger-menu-item {

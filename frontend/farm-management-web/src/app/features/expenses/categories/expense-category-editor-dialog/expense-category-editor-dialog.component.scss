@@ -21,7 +21,7 @@
     font-weight: 600;
 
     mat-icon {
-      color: var(--app-primary, #2f6f4e);
+      color: var(--app-primary, var(--app-primary));
     }
   }
 }

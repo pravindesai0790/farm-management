@@ -36,7 +36,7 @@
     .page-subtitle {
       margin: 0.25rem 0 0;
       font-size: 0.875rem;
-      color: var(--text-secondary, #64748b);
+      color: var(--text-secondary, var(--app-muted));
     }
   }
 
@@ -46,7 +46,7 @@
     gap: 0.75rem;
 
     .back-link {
-      color: var(--text-secondary, #64748b);
+      color: var(--text-secondary, var(--app-muted));
     }
 
     .create-btn {
@@ -63,7 +63,7 @@
   gap: 1rem;
 
   .kpi-card {
-    border: 1px solid var(--border-color, #e2e8f0);
+    border: 1px solid var(--border-color, var(--app-border));
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 
     mat-card-content {
@@ -78,7 +78,7 @@
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      color: var(--text-secondary, #64748b);
+      color: var(--text-secondary, var(--app-muted));
     }
 
     .kpi-value {
@@ -115,7 +115,7 @@
 }
 
 .content-card {
-  border: 1px solid var(--border-color, #e2e8f0);
+  border: 1px solid var(--border-color, var(--app-border));
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   padding: 0;
   overflow: hidden;
@@ -146,7 +146,7 @@
 
 .table-container {
   overflow-x: auto;
-  border: 1px solid var(--border-color, #e2e8f0);
+  border: 1px solid var(--border-color, var(--app-border));
   border-radius: 6px;
 }
 
@@ -158,7 +158,7 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: var(--text-secondary, #64748b);
+    color: var(--text-secondary, var(--app-muted));
     background-color: #f8fafc;
   }
 
@@ -173,7 +173,7 @@
 
   .desc-cell {
     max-width: 300px;
-    color: var(--text-secondary, #64748b);
+    color: var(--text-secondary, var(--app-muted));
   }
 
   .actions-col {
@@ -185,8 +185,8 @@
 .code-badge {
   display: inline-block;
   padding: 0.15rem 0.45rem;
-  background-color: #f1f5f9;
-  border: 1px solid #e2e8f0;
+  background-color: var(--app-border-light);
+  border: 1px solid var(--app-border);
   border-radius: 4px;
   font-family: monospace;
   font-size: 0.8125rem;
@@ -220,7 +220,7 @@
   }
 
   &.badge-system {
-    background-color: #f1f5f9;
+    background-color: var(--app-border-light);
     color: #475569;
     border: 1px solid #cbd5e1;
   }
@@ -232,12 +232,12 @@
 
   &.badge-active {
     background-color: #dcfce7;
-    color: #15803d;
+    color: var(--app-success);
   }
 
   &.badge-inactive {
-    background-color: #f1f5f9;
-    color: #64748b;
+    background-color: var(--app-border-light);
+    color: var(--app-muted);
   }
 }
 
@@ -249,7 +249,7 @@
   justify-content: center;
   gap: 0.75rem;
   padding: 3rem 1rem;
-  color: var(--text-secondary, #64748b);
+  color: var(--text-secondary, var(--app-muted));
 
   .empty-icon {
     font-size: 2.5rem;

@@ -14,7 +14,7 @@
       margin: 4px 0 0 0;
       font-size: 1.35rem;
       font-weight: 700;
-      color: var(--app-text, #1e293b);
+      color: var(--app-text, var(--app-ink));
     }
   }
 
@@ -79,7 +79,7 @@
 
   .metric-card {
     border-radius: var(--app-radius-sm, 6px);
-    border: 1px solid var(--app-border, #e2e8f0);
+    border: 1px solid var(--app-border, var(--app-border));
 
     mat-card-content {
       padding: 12px 14px;
@@ -96,7 +96,7 @@
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.04em;
-        color: var(--app-muted, #64748b);
+        color: var(--app-muted, var(--app-muted));
       }
 
       .metric-icon {
@@ -110,7 +110,7 @@
     .metric-value {
       font-size: 1.15rem;
       font-weight: 700;
-      color: var(--app-text, #1e293b);
+      color: var(--app-text, var(--app-ink));
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -123,7 +123,7 @@
       .metric-unit {
         font-size: 0.75rem;
         font-weight: 500;
-        color: var(--app-muted, #64748b);
+        color: var(--app-muted, var(--app-muted));
         margin-left: 2px;
       }
     }
@@ -132,7 +132,7 @@
 
 .cycles-card {
   border-radius: var(--app-radius-sm, 6px);
-  border: 1px solid var(--app-border, #e2e8f0);
+  border: 1px solid var(--app-border, var(--app-border));
 
   mat-card-content {
     padding: 18px 20px;
@@ -144,7 +144,7 @@
     justify-content: space-between;
     margin-bottom: 12px;
     padding-bottom: 10px;
-    border-bottom: 1px solid var(--app-border-light, #f1f5f9);
+    border-bottom: 1px solid var(--app-border-light, var(--app-border-light));
 
     .title-with-badge {
       display: flex;
@@ -155,14 +155,14 @@
         font-size: 18px;
         width: 18px;
         height: 18px;
-        color: var(--app-primary, #15803d);
+        color: var(--app-primary, var(--app-success));
       }
 
       h3 {
         font-size: 0.95rem;
         font-weight: 600;
         margin: 0;
-        color: var(--app-text, #1e293b);
+        color: var(--app-text, var(--app-ink));
       }
 
       .count-badge {
@@ -170,8 +170,8 @@
         font-weight: 600;
         padding: 1px 6px;
         border-radius: 999px;
-        background: var(--app-surface-variant, #f1f5f9);
-        color: var(--app-muted, #64748b);
+        background: var(--app-surface-variant, var(--app-border-light));
+        color: var(--app-muted, var(--app-muted));
       }
     }
   }
@@ -179,7 +179,7 @@
   .empty-state-mini {
     padding: 16px 0;
     text-align: center;
-    color: var(--app-muted, #64748b);
+    color: var(--app-muted, var(--app-muted));
     font-size: 0.85rem;
   }
 
@@ -193,7 +193,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 10px 0;
-    border-bottom: 1px solid var(--app-border-light, #f1f5f9);
+    border-bottom: 1px solid var(--app-border-light, var(--app-border-light));
 
     &:last-child {
       border-bottom: none;
@@ -208,7 +208,7 @@
       .cycle-name-link {
         font-weight: 600;
         font-size: 0.875rem;
-        color: var(--app-primary, #15803d);
+        color: var(--app-primary, var(--app-success));
         text-decoration: none;
 
         &:hover {
@@ -218,7 +218,7 @@
 
       .cycle-season {
         font-size: 0.75rem;
-        color: var(--app-muted, #64748b);
+        color: var(--app-muted, var(--app-muted));
       }
     }
   }

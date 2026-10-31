@@ -9,7 +9,7 @@
   border-bottom: 1px solid var(--mat-sys-outline-variant, #e0e0e0);
 
   .title-icon {
-    color: var(--mat-sys-primary, #2e7d32);
+    color: var(--mat-sys-primary, var(--app-primary));
   }
 }
 

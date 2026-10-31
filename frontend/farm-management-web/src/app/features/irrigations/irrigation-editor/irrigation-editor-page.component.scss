@@ -14,7 +14,7 @@
     font-size: 0.75rem;
     font-weight: 600;
     letter-spacing: 0.05em;
-    color: var(--app-primary, #2e7d32);
+    color: var(--app-primary, var(--app-primary));
     margin: 0 0 4px 0;
   }
 
@@ -27,7 +27,7 @@
 
   .subtitle {
     margin: 0;
-    color: var(--app-muted, #5f6368);
+    color: var(--app-muted, var(--app-muted));
     font-size: 0.9rem;
     max-width: 680px;
   }
@@ -74,7 +74,7 @@
   justify-content: center;
   padding: 64px 16px;
   gap: 16px;
-  color: var(--app-muted, #5f6368);
+  color: var(--app-muted, var(--app-muted));
 }
 
 .inline-spinner {
@@ -91,7 +91,7 @@
 .form-card {
   border-radius: var(--app-radius-card, 8px);
   border: 1px solid var(--app-border, #e0e0e0);
-  background: var(--app-surface, #ffffff);
+  background: var(--app-surface, var(--app-surface));
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 
   mat-card-header {
@@ -106,7 +106,7 @@
 
     mat-card-subtitle {
       font-size: 0.825rem;
-      color: var(--app-muted, #5f6368);
+      color: var(--app-muted, var(--app-muted));
       margin: 0;
     }
   }

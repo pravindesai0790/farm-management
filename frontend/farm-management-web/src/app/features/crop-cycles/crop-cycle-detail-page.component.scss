@@ -14,12 +14,12 @@
       margin: 4px 0;
       font-size: 1.35rem;
       font-weight: 700;
-      color: var(--app-text, #1e293b);
+      color: var(--app-text, var(--app-ink));
     }
 
     .cycle-context {
       font-size: 0.825rem;
-      color: var(--app-muted, #64748b);
+      color: var(--app-muted, var(--app-muted));
       margin: 0;
     }
   }
@@ -76,7 +76,7 @@
 
 .details-card {
   border-radius: var(--app-radius-sm, 6px);
-  border: 1px solid var(--app-border, #e2e8f0);
+  border: 1px solid var(--app-border, var(--app-border));
 
   mat-card-content {
     padding: 20px 22px;
@@ -88,20 +88,20 @@
     gap: 8px;
     margin-bottom: 16px;
     padding-bottom: 10px;
-    border-bottom: 1px solid var(--app-border-light, #f1f5f9);
+    border-bottom: 1px solid var(--app-border-light, var(--app-border-light));
 
     mat-icon {
       font-size: 18px;
       width: 18px;
       height: 18px;
-      color: var(--app-primary, #15803d);
+      color: var(--app-primary, var(--app-success));
     }
 
     h3 {
       font-size: 0.95rem;
       font-weight: 600;
       margin: 0;
-      color: var(--app-text, #1e293b);
+      color: var(--app-text, var(--app-ink));
     }
   }
 
@@ -120,13 +120,13 @@
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.04em;
-        color: var(--app-muted, #64748b);
+        color: var(--app-muted, var(--app-muted));
       }
 
       .detail-value {
         font-size: 0.875rem;
         font-weight: 500;
-        color: var(--app-text, #1e293b);
+        color: var(--app-text, var(--app-ink));
       }
     }
   }
@@ -137,7 +137,7 @@
     gap: 10px;
     margin-top: 24px;
     padding-top: 16px;
-    border-top: 1px solid var(--app-border-light, #f1f5f9);
+    border-top: 1px solid var(--app-border-light, var(--app-border-light));
 
     .action-btn {
       height: 36px;

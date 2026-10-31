@@ -19,7 +19,7 @@
       font-size: 24px;
       width: 24px;
       height: 24px;
-      color: var(--app-primary, #2e7d32);
+      color: var(--app-primary, var(--app-primary));
     }
 
     h2 {
@@ -106,13 +106,13 @@
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      color: var(--app-muted, #5f6368);
+      color: var(--app-muted, var(--app-muted));
     }
 
     .unit-badge {
       font-size: 0.6875rem;
       font-weight: 600;
-      background-color: #e2e8f0;
+      background-color: var(--app-border);
       color: #334155;
       padding: 2px 6px;
       border-radius: 4px;
@@ -127,7 +127,7 @@
 
   .item-sku {
     font-size: 0.75rem;
-    color: var(--app-muted, #5f6368);
+    color: var(--app-muted, var(--app-muted));
     margin-top: 2px;
 
     code {
@@ -152,7 +152,7 @@
   justify-content: center;
   padding: 36px 16px;
   gap: 12px;
-  color: var(--app-muted, #5f6368);
+  color: var(--app-muted, var(--app-muted));
 }
 
 .dialog-actions {
@@ -163,7 +163,7 @@
 
 .sku-hint {
   font-size: 0.75rem;
-  color: var(--app-muted, #5f6368);
+  color: var(--app-muted, var(--app-muted));
   margin-left: 4px;
 }
 

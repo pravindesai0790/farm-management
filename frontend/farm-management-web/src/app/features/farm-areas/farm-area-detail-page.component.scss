@@ -14,7 +14,7 @@
       margin: 4px 0 0 0;
       font-size: 1.35rem;
       font-weight: 700;
-      color: var(--app-text, #1e293b);
+      color: var(--app-text, var(--app-ink));
     }
   }
 
@@ -30,8 +30,8 @@
     font-weight: 600;
     padding: 2px 8px;
     border-radius: 999px;
-    background: var(--app-surface-variant, #f1f5f9);
-    color: var(--app-muted, #64748b);
+    background: var(--app-surface-variant, var(--app-border-light));
+    color: var(--app-muted, var(--app-muted));
 
     &.sub-area {
       background: #e0f2fe;
@@ -66,7 +66,7 @@
 
   .metric-card {
     border-radius: var(--app-radius-sm, 6px);
-    border: 1px solid var(--app-border, #e2e8f0);
+    border: 1px solid var(--app-border, var(--app-border));
 
     mat-card-content {
       padding: 14px 16px;
@@ -84,7 +84,7 @@
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.04em;
-      color: var(--app-muted, #64748b);
+      color: var(--app-muted, var(--app-muted));
     }
 
     .metric-icon-wrap {
@@ -102,7 +102,7 @@
       }
 
       &.total {
-        background: #f1f5f9;
+        background: var(--app-border-light);
         color: #475569;
       }
 
@@ -113,32 +113,32 @@
 
       &.available {
         background: #dcfce7;
-        color: #15803d;
+        color: var(--app-success);
       }
     }
 
     &__value {
       font-size: 1.45rem;
       font-weight: 700;
-      color: var(--app-text, #1e293b);
+      color: var(--app-text, var(--app-ink));
       font-variant-numeric: tabular-nums;
       line-height: 1.2;
 
       .unit {
         font-size: 0.85rem;
         font-weight: 500;
-        color: var(--app-muted, #64748b);
+        color: var(--app-muted, var(--app-muted));
         margin-left: 2px;
       }
 
       &.positive {
-        color: var(--app-primary, #15803d);
+        color: var(--app-primary, var(--app-success));
       }
     }
 
     &__subtext {
       font-size: 0.725rem;
-      color: var(--app-muted, #64748b);
+      color: var(--app-muted, var(--app-muted));
       margin-top: 4px;
     }
   }
@@ -146,7 +146,7 @@
 
 .details-card {
   border-radius: var(--app-radius-sm, 6px);
-  border: 1px solid var(--app-border, #e2e8f0);
+  border: 1px solid var(--app-border, var(--app-border));
 
   mat-card-content {
     padding: 18px 20px;
@@ -158,20 +158,20 @@
     gap: 8px;
     margin-bottom: 14px;
     padding-bottom: 8px;
-    border-bottom: 1px solid var(--app-border-light, #f1f5f9);
+    border-bottom: 1px solid var(--app-border-light, var(--app-border-light));
 
     mat-icon {
       font-size: 18px;
       width: 18px;
       height: 18px;
-      color: var(--app-muted, #64748b);
+      color: var(--app-muted, var(--app-muted));
     }
 
     h3 {
       font-size: 0.95rem;
       font-weight: 600;
       margin: 0;
-      color: var(--app-text, #1e293b);
+      color: var(--app-text, var(--app-ink));
     }
   }
 
@@ -194,13 +194,13 @@
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.04em;
-        color: var(--app-muted, #64748b);
+        color: var(--app-muted, var(--app-muted));
       }
 
       .detail-value {
         font-size: 0.875rem;
         font-weight: 500;
-        color: var(--app-text, #1e293b);
+        color: var(--app-text, var(--app-ink));
       }
 
       .description-text {

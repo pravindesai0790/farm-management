@@ -69,7 +69,7 @@
       }
 
       &.blue { background-color: #e3f2fd; mat-icon { color: #1976d2; } }
-      &.green { background-color: #e8f5e9; mat-icon { color: #2e7d32; } }
+      &.green { background-color: #e8f5e9; mat-icon { color: var(--app-primary); } }
       &.teal { background-color: #e0f2f1; mat-icon { color: #00796b; } }
       &.red { background-color: #ffebee; mat-icon { color: #c62828; } }
     }
@@ -218,7 +218,7 @@
       width: fit-content;
 
       &.badge-info { background: #e3f2fd; color: #1565c0; }
-      &.badge-success { background: #e8f5e9; color: #2e7d32; }
+      &.badge-success { background: #e8f5e9; color: var(--app-primary); }
       &.badge-warning { background: #fff8e1; color: #f57f17; }
       &.badge-purple { background: #f3e5f5; color: #7b1fa2; }
       &.badge-teal { background: #e0f2f1; color: #00695c; }
@@ -227,7 +227,7 @@
 
     .amount-val {
       font-weight: 700;
-      color: #2e7d32;
+      color: var(--app-primary);
       font-size: 1rem;
     }
     .currency-code {
@@ -243,7 +243,7 @@
       font-weight: 600;
       text-transform: capitalize;
 
-      &.completed { background: #e8f5e9; color: #2e7d32; }
+      &.completed { background: #e8f5e9; color: var(--app-primary); }
       &.reversed { background: #ffebee; color: #c62828; }
     }
 

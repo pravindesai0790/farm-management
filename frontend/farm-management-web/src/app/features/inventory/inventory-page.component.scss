@@ -16,7 +16,7 @@
     font-size: 0.75rem;
     font-weight: 600;
     letter-spacing: 0.05em;
-    color: var(--app-primary, #2e7d32);
+    color: var(--app-primary, var(--app-primary));
     margin: 0 0 4px 0;
   }
 
@@ -29,7 +29,7 @@
 
   p {
     margin: 0;
-    color: var(--app-muted, #5f6368);
+    color: var(--app-muted, var(--app-muted));
     font-size: 0.95rem;
     max-width: 680px;
   }
@@ -46,7 +46,7 @@
   flex-direction: column;
   border-radius: 12px;
   border: 1px solid #e0e0e0;
-  background-color: #ffffff;
+  background-color: var(--app-surface);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 
   &:hover {
@@ -74,11 +74,11 @@
     height: 44px;
     border-radius: 10px;
     background-color: #f1f3f4;
-    color: #5f6368;
+    color: var(--app-muted);
 
     &.avatar-active {
       background-color: #e8f5e9;
-      color: var(--app-primary, #2e7d32);
+      color: var(--app-primary, var(--app-primary));
     }
 
     mat-icon {
@@ -96,7 +96,7 @@
       text-transform: uppercase;
       font-weight: 600;
       letter-spacing: 0.04em;
-      color: var(--app-muted, #70757a);
+      color: var(--app-muted, var(--app-muted));
       margin: 0 0 2px 0;
     }
 
@@ -123,7 +123,7 @@
 
     &.status-chip-upcoming {
       background-color: #f1f3f4;
-      color: #70757a;
+      color: var(--app-muted);
     }
   }
 

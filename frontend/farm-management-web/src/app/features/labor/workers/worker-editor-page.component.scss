@@ -10,7 +10,7 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--mat-sys-primary, #2e7d32);
+    color: var(--mat-sys-primary, var(--app-primary));
     margin: 0 0 4px 0;
   }
 
