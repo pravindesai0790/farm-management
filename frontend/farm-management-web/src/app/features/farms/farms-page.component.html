@@ -15,43 +15,65 @@
 
 <mat-card class="content-card">
   <mat-card-content>
-    <form class="filters" [formGroup]="filterForm">
-      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="search-field">
-        <mat-label>Search farms</mat-label>
-        <mat-icon matPrefix>search</mat-icon>
-        <input matInput formControlName="search" placeholder="Search by name" />
-        @if (filterForm.controls.search.value) {
+    <div class="toolbar-wrapper">
+      <form class="filters" [formGroup]="filterForm">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="search-field">
+          <mat-label>Search farms</mat-label>
+          <mat-icon matPrefix>search</mat-icon>
+          <input matInput formControlName="search" placeholder="Search by name" />
+          @if (filterForm.controls.search.value) {
+            <button
+              mat-icon-button
+              matSuffix
+              type="button"
+              class="clear-input-btn"
+              (click)="clearSearch()"
+              aria-label="Clear search"
+            >
+              <mat-icon>close</mat-icon>
+            </button>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="status-field">
+          <mat-label>Status</mat-label>
+          <mat-select formControlName="status">
+            <mat-option value="all">All farms</mat-option>
+            <mat-option value="active">Active</mat-option>
+            <mat-option value="inactive">Inactive</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        @if (hasActiveFilters()) {
           <button
-            mat-icon-button
-            matSuffix
+            mat-stroked-button
+            class="clear-filter-btn"
             type="button"
-            class="clear-input-btn"
-            (click)="clearSearch()"
-            aria-label="Clear search"
+            (click)="clearFilters()"
           >
-            <mat-icon>close</mat-icon>
+            <mat-icon>filter_alt_off</mat-icon>Clear filters
           </button>
         }
-      </mat-form-field>
-      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="status-field">
-        <mat-label>Status</mat-label>
-        <mat-select formControlName="status">
-          <mat-option value="all">All farms</mat-option>
-          <mat-option value="active">Active</mat-option>
-          <mat-option value="inactive">Inactive</mat-option>
-        </mat-select>
-      </mat-form-field>
-      @if (hasActiveFilters()) {
-        <button
-          mat-stroked-button
-          class="clear-filter-btn"
-          type="button"
-          (click)="clearFilters()"
+      </form>
+
+      <div class="view-toggle-wrap">
+        <mat-button-toggle-group
+          [value]="viewMode()"
+          (change)="setViewMode($event.value)"
+          aria-label="View layout mode"
+          class="view-toggle-group"
         >
-          <mat-icon>filter_alt_off</mat-icon>Clear filters
-        </button>
-      }
-    </form>
+          <mat-button-toggle value="grid" matTooltip="Grid view (Agro-Cards)" aria-label="Grid view">
+            <mat-icon>grid_view</mat-icon>
+            <span class="toggle-text">Grid</span>
+          </mat-button-toggle>
+          <mat-button-toggle value="table" matTooltip="Table view (Dense)" aria-label="Table view">
+            <mat-icon>table_rows</mat-icon>
+            <span class="toggle-text">Table</span>
+          </mat-button-toggle>
+        </mat-button-toggle-group>
+      </div>
+    </div>
 
     @if (isLoading()) {
       <div class="loading-state">
@@ -85,131 +107,257 @@
         </div>
       }
     } @else {
-      <div class="table-wrap">
-        <table mat-table [dataSource]="farms()" class="dense-table">
-          <ng-container matColumnDef="farm">
-            <th mat-header-cell *matHeaderCellDef>Farm</th>
-            <td mat-cell *matCellDef="let farm">
-              <a [routerLink]="['/farms', farm.id]" class="table-primary-link">
-                <strong>{{ farm.name }}</strong>
-              </a>
-              @if (farm.description) {
-                <small class="truncate-desc">{{ farm.description }}</small>
-              }
-            </td>
-          </ng-container>
+      @if (viewMode() === "grid") {
+        <!-- Agro-Cards Grid View -->
+        <div class="cards-grid">
+          @for (farm of farms(); track farm.id) {
+            <div class="agro-card" [class.agro-card--inactive]="!farm.isActive">
+              <div class="card-header">
+                <div class="header-main">
+                  <a [routerLink]="['/farms', farm.id]" class="card-title-link">
+                    <h3 class="card-title">{{ farm.name }}</h3>
+                  </a>
+                  @if (farm.description) {
+                    <p class="card-desc" [title]="farm.description">{{ farm.description }}</p>
+                  }
+                </div>
+                <div class="header-badges">
+                  @if (farm.ownershipTypeName) {
+                    <span class="meta-tag">{{ farm.ownershipTypeName }}</span>
+                  }
+                  <span
+                    class="status-pill"
+                    [class.status-active]="farm.isActive"
+                    [class.status-pill-active]="farm.isActive"
+                    [class.status-pill-inactive]="!farm.isActive"
+                  >
+                    {{ farm.isActive ? "Active" : "Inactive" }}
+                  </span>
+                </div>
+              </div>
 
-          <ng-container matColumnDef="ownership">
-            <th mat-header-cell *matHeaderCellDef>Ownership</th>
-            <td mat-cell *matCellDef="let farm">
-              @if (farm.ownershipTypeName) {
-                <span class="meta-tag">{{ farm.ownershipTypeName }}</span>
-              } @else {
-                <span class="unit-text">—</span>
-              }
-            </td>
-          </ng-container>
+              <div class="card-body">
+                <div class="location-row">
+                  <mat-icon class="geo-icon">location_on</mat-icon>
+                  <span class="location-text">{{ formatLocation(farm) }}</span>
+                  @if (farm.latitude !== null && farm.longitude !== null) {
+                    <span class="coords-badge" [title]="'GPS: ' + farm.latitude + ', ' + farm.longitude">
+                      <mat-icon>pin_drop</mat-icon>
+                      {{ farm.latitude | number: '1.2-2' }}, {{ farm.longitude | number: '1.2-2' }}
+                    </span>
+                  }
+                </div>
 
-          <ng-container matColumnDef="location">
-            <th mat-header-cell *matHeaderCellDef>Location</th>
-            <td mat-cell *matCellDef="let farm">
-              {{ farm.city || farm.state || "—" }}
-              @if (farm.city && farm.state) {
-                <small>{{ farm.state }}</small>
-              }
-            </td>
-          </ng-container>
+                <div class="land-metric-box">
+                  <div class="metric-icon-wrap">
+                    <mat-icon>terrain</mat-icon>
+                  </div>
+                  <div class="metric-details">
+                    <div class="metric-value-row">
+                      <span class="metric-val">{{ farm.totalArea !== null ? (farm.totalArea | number: '1.0-2') : "—" }}</span>
+                      @if (farm.areaUnitSymbol) {
+                        <span class="metric-unit">{{ farm.areaUnitSymbol }}</span>
+                      }
+                    </div>
+                    <span class="metric-label">Total Land Portfolio</span>
+                  </div>
+                </div>
+              </div>
 
-          <ng-container matColumnDef="area">
-            <th mat-header-cell *matHeaderCellDef class="text-right">Total Area</th>
-            <td mat-cell *matCellDef="let farm" class="text-right font-medium">
-              {{ farm.totalArea !== null ? (farm.totalArea | number: '1.0-2') : "—" }}
-              @if (farm.areaUnitSymbol) {
-                <span class="unit-text">{{ farm.areaUnitSymbol }}</span>
-              }
-            </td>
-          </ng-container>
-
-          <ng-container matColumnDef="status">
-            <th mat-header-cell *matHeaderCellDef>Status</th>
-            <td mat-cell *matCellDef="let farm">
-              <span
-                class="status-pill"
-                [class.status-active]="farm.isActive"
-                [class.status-pill-active]="farm.isActive"
-                [class.status-pill-inactive]="!farm.isActive"
-              >
-                {{ farm.isActive ? "Active" : "Inactive" }}
-              </span>
-            </td>
-          </ng-container>
-
-          <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef class="actions-header text-right">Actions</th>
-            <td mat-cell *matCellDef="let farm" class="actions-cell text-right">
-              <div class="actions-group">
-                <a
-                  mat-icon-button
-                  class="action-icon-btn"
-                  [routerLink]="['/farms', farm.id]"
-                  matTooltip="View farm details"
-                  aria-label="View farm details"
-                >
-                  <mat-icon>visibility</mat-icon>
+              <div class="card-footer">
+                <a [routerLink]="['/farms', farm.id]" class="view-hub-link">
+                  <span>Farm 360 Hub</span>
+                  <mat-icon>arrow_forward</mat-icon>
                 </a>
-                @if (permissionService.has("Farm.Update")) {
+
+                <div class="actions-group">
+                  @if (permissionService.has("FarmArea.Create")) {
+                    <a
+                      mat-icon-button
+                      class="action-icon-btn"
+                      [routerLink]="['/farm-areas/new']"
+                      [queryParams]="{ farmId: farm.id }"
+                      matTooltip="Add Area/Plot to this farm"
+                      aria-label="Add Area/Plot to this farm"
+                    >
+                      <mat-icon>add_box</mat-icon>
+                    </a>
+                  }
+                  @if (permissionService.has("Farm.Update")) {
+                    <a
+                      mat-icon-button
+                      class="action-icon-btn"
+                      [routerLink]="['/farms', farm.id, 'edit']"
+                      matTooltip="Edit farm"
+                      aria-label="Edit farm"
+                    >
+                      <mat-icon>edit</mat-icon>
+                    </a>
+                  }
+                  @if (farm.isActive && permissionService.has("Farm.Deactivate")) {
+                    <button
+                      mat-icon-button
+                      color="warn"
+                      class="action-icon-btn"
+                      type="button"
+                      (click)="changeStatus(farm, false)"
+                      [disabled]="actionInProgress()"
+                      matTooltip="Deactivate farm"
+                      aria-label="Deactivate farm"
+                    >
+                      <mat-icon>block</mat-icon>
+                    </button>
+                  } @else if (
+                    !farm.isActive && permissionService.has("Farm.Activate")
+                  ) {
+                    <button
+                      mat-icon-button
+                      color="primary"
+                      class="action-icon-btn"
+                      type="button"
+                      (click)="changeStatus(farm, true)"
+                      [disabled]="actionInProgress()"
+                      matTooltip="Activate farm"
+                      aria-label="Activate farm"
+                    >
+                      <mat-icon>check_circle</mat-icon>
+                    </button>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      } @else {
+        <!-- Dense Table View -->
+        <div class="table-wrap">
+          <table mat-table [dataSource]="farms()" class="dense-table">
+            <ng-container matColumnDef="farm">
+              <th mat-header-cell *matHeaderCellDef>Farm</th>
+              <td mat-cell *matCellDef="let farm">
+                <a [routerLink]="['/farms', farm.id]" class="table-primary-link">
+                  <strong>{{ farm.name }}</strong>
+                </a>
+                @if (farm.description) {
+                  <small class="truncate-desc">{{ farm.description }}</small>
+                }
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="ownership">
+              <th mat-header-cell *matHeaderCellDef>Ownership</th>
+              <td mat-cell *matCellDef="let farm">
+                @if (farm.ownershipTypeName) {
+                  <span class="meta-tag">{{ farm.ownershipTypeName }}</span>
+                } @else {
+                  <span class="unit-text">—</span>
+                }
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="location">
+              <th mat-header-cell *matHeaderCellDef>Location</th>
+              <td mat-cell *matCellDef="let farm">
+                {{ farm.city || farm.state || "—" }}
+                @if (farm.city && farm.state) {
+                  <small>{{ farm.state }}</small>
+                }
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="area">
+              <th mat-header-cell *matHeaderCellDef class="text-right">Total Area</th>
+              <td mat-cell *matCellDef="let farm" class="text-right font-medium">
+                {{ farm.totalArea !== null ? (farm.totalArea | number: '1.0-2') : "—" }}
+                @if (farm.areaUnitSymbol) {
+                  <span class="unit-text">{{ farm.areaUnitSymbol }}</span>
+                }
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>Status</th>
+              <td mat-cell *matCellDef="let farm">
+                <span
+                  class="status-pill"
+                  [class.status-active]="farm.isActive"
+                  [class.status-pill-active]="farm.isActive"
+                  [class.status-pill-inactive]="!farm.isActive"
+                >
+                  {{ farm.isActive ? "Active" : "Inactive" }}
+                </span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef class="actions-header text-right">Actions</th>
+              <td mat-cell *matCellDef="let farm" class="actions-cell text-right">
+                <div class="actions-group">
                   <a
                     mat-icon-button
                     class="action-icon-btn"
-                    [routerLink]="['/farms', farm.id, 'edit']"
-                    matTooltip="Edit farm"
-                    aria-label="Edit farm"
+                    [routerLink]="['/farms', farm.id]"
+                    matTooltip="View farm details"
+                    aria-label="View farm details"
                   >
-                    <mat-icon>edit</mat-icon>
+                    <mat-icon>visibility</mat-icon>
                   </a>
-                }
-                @if (farm.isActive && permissionService.has("Farm.Deactivate")) {
-                  <button
-                    mat-icon-button
-                    color="warn"
-                    class="action-icon-btn"
-                    type="button"
-                    (click)="changeStatus(farm, false)"
-                    [disabled]="actionInProgress()"
-                    matTooltip="Deactivate farm"
-                    aria-label="Deactivate farm"
-                  >
-                    <mat-icon>block</mat-icon>
-                  </button>
-                } @else if (
-                  !farm.isActive && permissionService.has("Farm.Activate")
-                ) {
-                  <button
-                    mat-icon-button
-                    color="primary"
-                    class="action-icon-btn"
-                    type="button"
-                    (click)="changeStatus(farm, true)"
-                    [disabled]="actionInProgress()"
-                    matTooltip="Activate farm"
-                    aria-label="Activate farm"
-                  >
-                    <mat-icon>check_circle</mat-icon>
-                  </button>
-                }
-              </div>
-            </td>
-          </ng-container>
+                  @if (permissionService.has("Farm.Update")) {
+                    <a
+                      mat-icon-button
+                      class="action-icon-btn"
+                      [routerLink]="['/farms', farm.id, 'edit']"
+                      matTooltip="Edit farm"
+                      aria-label="Edit farm"
+                    >
+                      <mat-icon>edit</mat-icon>
+                    </a>
+                  }
+                  @if (farm.isActive && permissionService.has("Farm.Deactivate")) {
+                    <button
+                      mat-icon-button
+                      color="warn"
+                      class="action-icon-btn"
+                      type="button"
+                      (click)="changeStatus(farm, false)"
+                      [disabled]="actionInProgress()"
+                      matTooltip="Deactivate farm"
+                      aria-label="Deactivate farm"
+                    >
+                      <mat-icon>block</mat-icon>
+                    </button>
+                  } @else if (
+                    !farm.isActive && permissionService.has("Farm.Activate")
+                  ) {
+                    <button
+                      mat-icon-button
+                      color="primary"
+                      class="action-icon-btn"
+                      type="button"
+                      (click)="changeStatus(farm, true)"
+                      [disabled]="actionInProgress()"
+                      matTooltip="Activate farm"
+                      aria-label="Activate farm"
+                    >
+                      <mat-icon>check_circle</mat-icon>
+                    </button>
+                  }
+                </div>
+              </td>
+            </ng-container>
 
-          <tr mat-header-row *matHeaderRowDef="columns"></tr>
-          <tr mat-row *matRowDef="let row; columns: columns"></tr>
-        </table>
+            <tr mat-header-row *matHeaderRowDef="columns"></tr>
+            <tr mat-row *matRowDef="let row; columns: columns"></tr>
+          </table>
+        </div>
+      }
 
+      <div class="paginator-container">
         <mat-paginator
           [length]="totalCount()"
           [pageIndex]="pageIndex()"
           [pageSize]="pageSize()"
-          [pageSizeOptions]="[10, 20, 50]"
+          [pageSizeOptions]="[12, 24, 48]"
           (page)="pageChanged($event)"
           showFirstLastButtons
         />

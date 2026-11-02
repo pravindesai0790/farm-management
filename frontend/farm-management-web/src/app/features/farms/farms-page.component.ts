@@ -9,6 +9,7 @@ import {
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { FormBuilder, ReactiveFormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
+import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { MatCardModule } from "@angular/material/card";
 import { MatDialog, MatDialogModule } from "@angular/material/dialog";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -34,6 +35,7 @@ import { ConfirmDialogComponent } from "../../shared/components/confirm-dialog/c
   standalone: true,
   imports: [
     MatButtonModule,
+    MatButtonToggleModule,
     MatCardModule,
     MatDialogModule,
     MatFormFieldModule,
@@ -58,6 +60,8 @@ export class FarmsPageComponent implements OnInit {
   private readonly snack = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly VIEW_MODE_KEY = "farm_portfolio_view_mode";
+
   readonly permissionService = inject(PermissionService);
   readonly columns = [
     "farm",
@@ -72,12 +76,41 @@ export class FarmsPageComponent implements OnInit {
   readonly isLoading = signal(false);
   readonly actionInProgress = signal(false);
   readonly pageIndex = signal(0);
-  readonly pageSize = signal(20);
+  readonly pageSize = signal(12);
   readonly hasActiveFilters = signal(false);
+  readonly viewMode = signal<"grid" | "table">(this.getInitialViewMode());
+
   readonly filterForm = this.formBuilder.nonNullable.group({
     search: [""],
     status: ["all"],
   });
+
+  private getInitialViewMode(): "grid" | "table" {
+    try {
+      const saved = localStorage.getItem(this.VIEW_MODE_KEY);
+      if (saved === "table" || saved === "grid") {
+        return saved;
+      }
+    } catch {
+      // ignore storage access errors
+    }
+    return "grid"; // Default View Mode Grid View
+  }
+
+  setViewMode(mode: "grid" | "table"): void {
+    if (!mode || (mode !== "grid" && mode !== "table")) return;
+    this.viewMode.set(mode);
+    try {
+      localStorage.setItem(this.VIEW_MODE_KEY, mode);
+    } catch {
+      // ignore storage errors
+    }
+  }
+
+  formatLocation(farm: Farm): string {
+    const parts = [farm.city, farm.district, farm.state].filter(Boolean);
+    return parts.length > 0 ? parts.join(", ") : "—";
+  }
 
   ngOnInit(): void {
     merge(
