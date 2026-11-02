@@ -51,7 +51,7 @@
       </div>
     } @else {
       <div class="table-wrap">
-        <table mat-table [dataSource]="farms()">
+        <table mat-table [dataSource]="farms()" class="dense-table">
           <ng-container matColumnDef="farm">
             <th mat-header-cell *matHeaderCellDef>Farm</th>
             <td mat-cell *matCellDef="let farm">
