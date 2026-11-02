@@ -321,6 +321,7 @@ a {
 .table-responsive {
   width: 100%;
   overflow-x: auto;
+  overflow-y: hidden;
   border: 1px solid var(--app-border);
   border-radius: 8px;
   background: var(--app-surface);
@@ -458,9 +459,9 @@ a {
   border-radius: 9999px;
   white-space: nowrap;
   letter-spacing: 0.02em;
-  background: #eef3ef;
-  color: #3b5042;
-  border: 1px solid #d4e2d8;
+  background: var(--app-primary-light, #e8f3ed);
+  color: var(--app-success, #176b3a);
+  border: 1px solid #c4e5ce;
 
   &::before {
     content: '';
@@ -468,7 +469,7 @@ a {
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background-color: currentColor;
+    background-color: var(--app-success, #176b3a);
     flex-shrink: 0;
   }
 
@@ -523,15 +524,16 @@ a {
   /* 3. General Active Entity (e.g. Active Plantation / Active Master Data) */
   &.status-active,
   &.active,
-  &.status-pill--active {
-    background: #eaf5ee;
-    color: #1b7340;
-    border-color: #c4e5ce;
+  &.status-pill--active,
+  &.status-pill-active {
+    background: var(--app-primary-light, #e8f3ed) !important;
+    color: var(--app-success, #176b3a) !important;
+    border-color: #c4e5ce !important;
 
     &::before,
     .status-dot,
     .status-pill__dot {
-      background-color: #1b7340;
+      background-color: var(--app-success, #176b3a) !important;
     }
   }
 
@@ -541,14 +543,14 @@ a {
   &.status-pill--planned,
   &.status-not-started,
   &.not-started {
-    background: #fff8e6;
-    color: #996200;
-    border-color: #fae4a7;
+    background: #fff8e6 !important;
+    color: #996200 !important;
+    border-color: #fae4a7 !important;
 
     &::before,
     .status-dot,
     .status-pill__dot {
-      background-color: #ca8a04;
+      background-color: #ca8a04 !important;
     }
   }
 
@@ -559,14 +561,14 @@ a {
   &.status-archived,
   &.archived,
   &.status-pill--archived {
-    background: #f1f4f2;
-    color: #64756a;
-    border-color: #d6e0d9;
+    background: var(--app-neutral-bg, #eef1ef) !important;
+    color: var(--app-neutral, #526158) !important;
+    border-color: var(--app-border, #d8e2da) !important;
 
     &::before,
     .status-dot,
     .status-pill__dot {
-      background-color: #8c9b91;
+      background-color: #8c9b91 !important;
     }
   }
 

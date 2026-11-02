@@ -10,6 +10,7 @@ import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { FormBuilder, ReactiveFormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
+import { MatDialog, MatDialogModule } from "@angular/material/dialog";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
@@ -26,6 +27,7 @@ import { FarmManagementService } from "../../core/farm-management/farm-managemen
 import { Farm } from "../../core/farm-management/farm-management.models";
 import { getApiErrorMessage } from "../../core/models/api-error.model";
 import { DecimalPipe } from "@angular/common";
+import { ConfirmDialogComponent } from "../../shared/components/confirm-dialog/confirm-dialog.component";
 
 @Component({
   selector: "app-farms-page",
@@ -33,6 +35,7 @@ import { DecimalPipe } from "@angular/common";
   imports: [
     MatButtonModule,
     MatCardModule,
+    MatDialogModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
@@ -53,6 +56,7 @@ export class FarmsPageComponent implements OnInit {
   private readonly service = inject(FarmManagementService);
   private readonly formBuilder = inject(FormBuilder);
   private readonly snack = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
   readonly permissionService = inject(PermissionService);
   readonly columns = [
@@ -69,10 +73,12 @@ export class FarmsPageComponent implements OnInit {
   readonly actionInProgress = signal(false);
   readonly pageIndex = signal(0);
   readonly pageSize = signal(20);
+  readonly hasActiveFilters = signal(false);
   readonly filterForm = this.formBuilder.nonNullable.group({
     search: [""],
     status: ["all"],
   });
+
   ngOnInit(): void {
     merge(
       this.filterForm.controls.search.valueChanges.pipe(
@@ -83,11 +89,27 @@ export class FarmsPageComponent implements OnInit {
     )
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
+        this.updateFilterState();
         this.pageIndex.set(0);
         this.load();
       });
     this.load();
   }
+
+  private updateFilterState(): void {
+    const search = this.filterForm.controls.search.value.trim();
+    const status = this.filterForm.controls.status.value;
+    this.hasActiveFilters.set(search !== "" || status !== "all");
+  }
+
+  clearSearch(): void {
+    this.filterForm.controls.search.setValue("");
+  }
+
+  clearFilters(): void {
+    this.filterForm.setValue({ search: "", status: "all" });
+  }
+
   load(): void {
     this.isLoading.set(true);
     const status = this.filterForm.controls.status.value;
@@ -95,7 +117,7 @@ export class FarmsPageComponent implements OnInit {
       .listFarms(
         this.pageIndex() + 1,
         this.pageSize(),
-        this.filterForm.controls.search.value,
+        this.filterForm.controls.search.value.trim(),
         status === "all" ? null : status === "active",
       )
       .pipe(
@@ -115,12 +137,42 @@ export class FarmsPageComponent implements OnInit {
           ),
       });
   }
+
   pageChanged(event: PageEvent): void {
     this.pageIndex.set(event.pageIndex);
     this.pageSize.set(event.pageSize);
     this.load();
   }
+
   changeStatus(farm: Farm, active: boolean): void {
+    if (!active) {
+      const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+        width: "420px",
+        data: {
+          title: "Deactivate Farm",
+          message: `Are you sure you want to deactivate "${farm.name}"? Inactive farms cannot be used for new operations until reactivated.`,
+          confirmText: "Deactivate",
+          cancelText: "Cancel",
+          color: "warn",
+          icon: "block",
+        },
+      });
+
+      dialogRef
+        .afterClosed()
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe((confirmed) => {
+          if (confirmed) {
+            this.executeStatusChange(farm, false);
+          }
+        });
+      return;
+    }
+
+    this.executeStatusChange(farm, true);
+  }
+
+  private executeStatusChange(farm: Farm, active: boolean): void {
     this.actionInProgress.set(true);
     const request = active
       ? this.service.activateFarm(farm.id)
@@ -133,7 +185,7 @@ export class FarmsPageComponent implements OnInit {
       .subscribe({
         next: () => {
           this.snack.open(
-            `Farm ${active ? "activated" : "deactivated"}.`,
+            `Farm "${farm.name}" ${active ? "activated" : "deactivated"}.`,
             "Dismiss",
             { duration: 3000 },
           );
