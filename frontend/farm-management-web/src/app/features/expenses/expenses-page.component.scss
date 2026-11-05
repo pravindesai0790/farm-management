@@ -155,12 +155,25 @@
 
     .action-buttons {
       display: flex;
-      flex-wrap: wrap;
+      align-items: center;
+      flex-wrap: nowrap;
       gap: 8px;
       width: 100%;
 
       a {
         font-size: 0.85rem;
+        white-space: nowrap;
+      }
+
+      a[mat-flat-button] {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      a[mat-stroked-button] {
+        flex-shrink: 0;
       }
     }
 
@@ -170,6 +183,7 @@
       gap: 6px;
       font-size: 0.8rem;
       color: #9aa0a6;
+      min-height: 36px;
 
       mat-icon {
         font-size: 18px;

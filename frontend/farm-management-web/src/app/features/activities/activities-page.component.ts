@@ -11,6 +11,7 @@ import { PermissionService } from "../../core/auth/permission.service";
 export interface FarmActivityCard {
   readonly id: string;
   readonly title: string;
+  readonly actionLabel?: string;
   readonly category: string;
   readonly description: string;
   readonly icon: string;
@@ -45,6 +46,7 @@ export class ActivitiesPageComponent {
     {
       id: "labor",
       title: "Labor activities",
+      actionLabel: "Open Labor",
       category: "Field operations",
       description:
         "Track daily labor operations across farms, plantations, crop cycles, and stages.",
@@ -64,6 +66,7 @@ export class ActivitiesPageComponent {
     {
       id: "spraying",
       title: "Spray applications",
+      actionLabel: "Open Sprays",
       category: "Crop protection",
       description:
         "Schedule and record chemical, pesticide, and organic spray applications, target pests, and safety intervals.",
@@ -83,6 +86,7 @@ export class ActivitiesPageComponent {
     {
       id: "fertilizer",
       title: "Fertilizer applications",
+      actionLabel: "Open Fertilizers",
       category: "Soil & nutrition",
       description:
         "Record fertilizer applications, dosage formulations, and nutritional management across plantations.",
@@ -102,6 +106,7 @@ export class ActivitiesPageComponent {
     {
       id: "irrigation",
       title: "Irrigation management",
+      actionLabel: "Open Irrigation",
       category: "Water management",
       description:
         "Monitor watering sessions, irrigation methods (drip, sprinkler, flood), durations, and water volumes.",

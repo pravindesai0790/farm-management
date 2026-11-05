@@ -10,6 +10,7 @@ import { PermissionService } from "../../core/auth/permission.service";
 export interface ExpenseCard {
   readonly id: string;
   readonly title: string;
+  readonly actionLabel?: string;
   readonly category: string;
   readonly description: string;
   readonly icon: string;
@@ -43,6 +44,7 @@ export class ExpensesPageComponent {
     {
       id: "direct-expenses",
       title: "Direct Expenses",
+      actionLabel: "Open Direct",
       category: "Direct Outflow",
       description:
         "Record and manage direct operational expenses, cash disbursements, farm overheads, and receipt attachments.",
@@ -61,6 +63,7 @@ export class ExpensesPageComponent {
     {
       id: "supplier-invoices",
       title: "Supplier Invoices",
+      actionLabel: "Open Invoices",
       category: "Payables & Billing",
       description:
         "Manage incoming vendor purchase invoices, itemized goods receipts, payment statuses, and tax breakdowns.",
@@ -80,6 +83,7 @@ export class ExpensesPageComponent {
     {
       id: "supplier-payments",
       title: "Supplier Payments",
+      actionLabel: "Open Payments",
       category: "Disbursements",
       description:
         "Record outgoing disbursements to suppliers, settle outstanding invoices, and track payment references.",
@@ -99,6 +103,7 @@ export class ExpensesPageComponent {
     {
       id: "supplier-balances",
       title: "Supplier Balances",
+      actionLabel: "Open Balances",
       category: "Financial Summary",
       description:
         "Monitor accounts payable, total invoiced amounts, settled payments, and outstanding balances across all vendors.",
@@ -116,6 +121,7 @@ export class ExpensesPageComponent {
     {
       id: "expense-reports",
       title: "Expense Reports",
+      actionLabel: "Open Reports",
       category: "Financial Analytics",
       description:
         "View categorized expense breakdowns, monthly cost trends, top supplier spend analysis, and cycle costing.",
@@ -133,6 +139,7 @@ export class ExpensesPageComponent {
     {
       id: "suppliers",
       title: "Suppliers",
+      actionLabel: "Open Suppliers",
       category: "Vendor Master",
       description:
         "Maintain vendor directory, contact persons, tax registration numbers, and standard payment terms.",
@@ -151,6 +158,7 @@ export class ExpensesPageComponent {
     {
       id: "expense-categories",
       title: "Expense Categories",
+      actionLabel: "Open Categories",
       category: "Master Data",
       description:
         "Configure organizational expense classification, system defaults, custom categories, and status management.",

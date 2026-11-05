@@ -11,6 +11,7 @@ import { PermissionService } from "../../core/auth/permission.service";
 export interface InventoryCard {
   readonly id: string;
   readonly title: string;
+  readonly actionLabel?: string;
   readonly category: string;
   readonly description: string;
   readonly icon: string;
@@ -45,6 +46,7 @@ export class InventoryPageComponent {
     {
       id: "balances",
       title: "Stock Balances",
+      actionLabel: "Open Balances",
       category: "Stock & Balances",
       description:
         "Monitor real-time on-hand stock quantities across all farm storage sheds, warehouses, and catalog items.",
@@ -62,6 +64,7 @@ export class InventoryPageComponent {
     {
       id: "ledger",
       title: "Stock Movement Ledger",
+      actionLabel: "Open Ledger",
       category: "Audit & Transactions",
       description:
         "Authoritative append-only transaction ledger tracking stock receipts, issues, opening stock, adjustments, and transfers.",
@@ -79,6 +82,7 @@ export class InventoryPageComponent {
     {
       id: "items",
       title: "Inventory Items",
+      actionLabel: "Open Items",
       category: "Catalog & Master Data",
       description:
         "Organization-wide catalog of agricultural inputs, fertilizers, agrochemicals, seeds, and unit of measures.",
@@ -97,6 +101,7 @@ export class InventoryPageComponent {
     {
       id: "locations",
       title: "Storage Locations",
+      actionLabel: "Open Locations",
       category: "Facilities & Storage",
       description:
         "Farm-specific storage facilities including chemical sheds, cold rooms, dry warehouses, and storage bins.",

@@ -47,7 +47,7 @@
           <div class="action-buttons">
             @if (card.route && canAccess(card)) {
               <a mat-flat-button color="primary" [routerLink]="card.route">
-                <mat-icon>launch</mat-icon>Open {{ card.title }}
+                <mat-icon>launch</mat-icon>{{ card.actionLabel || ('Open ' + card.title) }}
               </a>
             }
             @if (card.createRoute && card.createPermission && permissionService.has(card.createPermission)) {
